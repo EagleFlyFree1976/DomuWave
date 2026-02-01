@@ -1,0 +1,240 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+
+.wp-5 {
+    width: 5px;
+}
+
+.wp-10 {
+    width: 10px;
+}
+
+.wp-15 {
+    width: 15px;
+}
+
+.wp-20 {
+    width: 20px;
+}
+
+.wp-25 {
+    width: 25px;
+}
+
+.wp-30 {
+    width: 30px;
+}
+
+.wp-35 {
+    width: 35px;
+}
+
+.wp-40 {
+    width: 40px;
+}
+
+.wp-45 {
+    width: 45px;
+}
+
+.wp-50 {
+    width: 50px;
+}
+
+.wp-55 {
+    width: 55px;
+}
+
+.wp-60 {
+    width: 60px;
+}
+
+.wp-65 {
+    width: 65px;
+}
+
+.wp-70 {
+    width: 70px;
+}
+
+.wp-75 {
+    width: 75px;
+}
+
+.wp-80 {
+    width: 80px;
+}
+
+.wp-85 {
+    width: 85px;
+}
+
+.wp-90 {
+    width: 90px;
+}
+
+.wp-95 {
+    width: 95px;
+}
+
+.wp-100 {
+    width: 100px;
+}
+
+.wp-200 {
+    width: 200px;
+}
+
+
+
+
+
+.wpc-5 {
+    width: 5%;
+}
+
+.wpc-10 {
+    width: 10%;
+}
+
+.wpc-15 {
+    width: 15%;
+}
+
+.wpc-20 {
+    width: 20%;
+}
+
+.wpc-25 {
+    width: 25%;
+}
+
+.wpc-30 {
+    width: 30%;
+}
+
+.wpc-35 {
+    width: 35%;
+}
+
+.wpc-40 {
+    width: 40%;
+}
+
+.wpc-45 {
+    width: 45%;
+}
+
+.wpc-50 {
+    width: 50%;
+}
+
+.wpc-55 {
+    width: 55%;
+}
+
+.wpc-60 {
+    width: 60%;
+}
+
+.wpc-65 {
+    width: 65%;
+}
+
+.wpc-70 {
+    width: 70%;
+}
+
+.wpc-75 {
+    width: 75%;
+}
+
+.wpc-80 {
+    width: 80%;
+}
+
+.wpc-85 {
+    width: 85%;
+}
+
+.wpc-90 {
+    width: 90%;
+}
+
+.wpc-95 {
+    width: 95%;
+}
+
+.wpc-100 {
+    width: 100%;
+}
+
+
+
+.row_DRAFT {
+}
+
+.row_REC {
+    background-color: #d4edda!important; /* verde chiaro */
+}
+
+.row_UNREC {
+    background-color: #9AEA23 !important; /* verde scuro */
+}
+
+.row_VOID {
+    background-color: #C0C0C0 !important; /* grigio */
+}
+
+.row_WATCH {
+    background-color: #BF9713 !important; /* grigio */
+}
+
+.row_IMPORTED {
+    background-color: #f8d7da !important; /* rosso chiaro */
+}
+
+.row-selected {
+    /*background-color: #007bff !important;
+        color: white;*/
+    background-color: #b3d4fc !important; /* azzurrino chiaro */
+    transition: background-color 0.2s ease-in-out;
+}
+
+
+    .row-selected td:not(.no-highlight) {
+        background-color: rgba(179, 212, 252, 0.4) !important; /* 0.4 = 40% opaco */
+        background-color: rgba(100, 149, 237, 0.25) !important; /* cornflowerblue trasparente */
+        background-color: rgba(255, 200, 120, 0.25) !important;
+        transition: background-color 0.2s ease-in-out;
+    }

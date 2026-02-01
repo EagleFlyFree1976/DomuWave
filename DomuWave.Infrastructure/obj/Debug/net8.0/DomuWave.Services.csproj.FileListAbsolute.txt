@@ -1,0 +1,12 @@
+C:\Projects\tmp\DomuWave.Infrastructure\bin\Debug\net8.0\DomuWave.Services.deps.json
+C:\Projects\tmp\DomuWave.Infrastructure\bin\Debug\net8.0\DomuWave.Services.dll
+C:\Projects\tmp\DomuWave.Infrastructure\bin\Debug\net8.0\DomuWave.Services.pdb
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.csproj.AssemblyReference.cache
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.GeneratedMSBuildEditorConfig.editorconfig
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.AssemblyInfoInputs.cache
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.AssemblyInfo.cs
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.csproj.CoreCompileInputs.cache
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.dll
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\refint\DomuWave.Services.dll
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.pdb
+C:\Projects\tmp\DomuWave.Infrastructure\obj\Debug\net8.0\ref\DomuWave.Services.dll

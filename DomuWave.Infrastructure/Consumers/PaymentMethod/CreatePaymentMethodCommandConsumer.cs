@@ -1,0 +1,43 @@
+﻿using DomuWave.Services.Command.Book;
+using DomuWave.Services.Extensions;
+using DomuWave.Services.Interfaces;
+using DomuWave.Services.Models.Dto;
+using DomuWave.Services.Models.Dto.PaymentMethod;
+using CPQ.Core.Consumers;
+using CPQ.Core.Persistence.SessionFactories;
+using CPQ.Core.Services;
+using SimpleMediator.Core;
+using SimpleMediator.Queries;
+
+namespace DomuWave.Services.Command.PaymentMethod
+{
+    /// <summary>
+    /// Crea un nuovo metodo di pagamento con im parametri impostati
+    /// </summary>
+    public class CreatePaymentMethodCommandConsumer : InMemoryConsumerBase<CreatePaymentMethodCommand, PaymentMethodReadDto>
+    {
+        private IUserService _userService;
+        private IPaymentMethodService _paymentMethodService;
+
+        public CreatePaymentMethodCommandConsumer(ISessionFactoryProvider sessionFactoryProvider, IUserService userService, IPaymentMethodService paymentMethodService) : base(sessionFactoryProvider)
+        {
+            _userService = userService;
+            _paymentMethodService = paymentMethodService;
+        }
+
+        protected override async Task<PaymentMethodReadDto> Consume(CreatePaymentMethodCommand evt, IMediationContext mediationContext, CancellationToken cancellationToken)
+        {
+            var currentUser =
+                await _userService.GetByIdAsync(evt.CurrentUserId, cancellationToken).ConfigureAwait(false);
+
+            Models.PaymentMethod x = await _paymentMethodService.Create(evt.CreateDto, evt.CreateDto.BookId, currentUser, cancellationToken).ConfigureAwait(false);
+            return x.ToDto();
+
+        }
+    }
+
+ 
+
+        
+    
+}

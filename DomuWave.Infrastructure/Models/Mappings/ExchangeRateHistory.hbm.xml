@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<hibernate-mapping schema="dbo"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models" xmlns="urn:nhibernate-mapping-2.2"
+                   auto-import="false"
+                   >
+  <class name="DomuWave.Services.Models.ExchangeRateHistory, DomuWave.Services"
+         table="lck_ExchangeRateHistory" where="IsDeleted = 0">
+
+   
+
+    <id name="Id" type="Int64" unsaved-value="0" access="property" column="Id">
+	    <generator class="hilo">
+		    <param name="table">hibernate_unique_key</param>
+		    <param name="column">next_hi</param>
+		    <param name="max_lo">10</param>
+		    <param name="where">entity_type='ExchangeRateHistory'</param>
+	    </generator>
+	</id>
+	  <many-to-one name="FromCurrency" class="DomuWave.Services.Models.Currency, DomuWave.Services">
+		  <column name="FromCurrencyId" sql-type="int" not-null="true" />
+	  </many-to-one>
+	  <many-to-one name="ToCurrency" class="DomuWave.Services.Models.Currency, DomuWave.Services">
+		  <column name="ToCurrencyId" sql-type="int" not-null="true" />
+	  </many-to-one>
+
+	  <property name="Rate"  column="Rate"></property>
+	  <property name="ValidFrom"  column="ValidFrom" not-null="true"></property>
+	  <property name="ValidTo"  column="ValidTo" not-null="false"></property>
+
+	  <property name="IsEnabled"  column="IsEnabled">
+		  
+	  </property><property name="IsDeleted"  column="IsDeleted"></property>
+    <property name="CreationDate"  column="CreationDate"></property>
+    <property name="CreatedBy"  column="CreatedById"></property>
+    <property name="CreatedByFullName"  column="CreatedByFullName"></property>
+    <property name="LastUpdateDate"  column="LastUpdateDate"></property>
+	<property name="LastUpdatedBy"  column="LastUpdatedById"></property>
+    <property name="LastUpdatedByFullName"  column="LastUpdatedByFullName"></property>
+    
+    
+    
+
+  </class>
+</hibernate-mapping>

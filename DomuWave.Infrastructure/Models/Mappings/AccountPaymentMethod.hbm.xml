@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<hibernate-mapping schema="dbo"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models" xmlns="urn:nhibernate-mapping-2.2"
+                   auto-import="false"
+                   >
+ 	<class name="DomuWave.Services.Models.AccountPaymentMethod, DomuWave.Services"
+	       table="trn_AccountPaymentMethods" where="IsDeleted = 0">
+		<id name="Id" type="Int64" unsaved-value="0" access="property" column="Id">
+			<generator class="hilo">
+				<param name="table">hibernate_unique_key</param>
+				<param name="column">next_hi</param>
+				<param name="max_lo">10</param>
+				<param name="where">entity_type='AccountPaymentMethods'</param>
+			</generator>
+		</id>
+
+		<many-to-one name="Account" class="DomuWave.Services.Models.Account, DomuWave.Services">
+			<column name="AccountId" sql-type="bigint" not-null="false" />
+		</many-to-one>
+		<many-to-one name="PaymentMethod" class="DomuWave.Services.Models.PaymentMethod, DomuWave.Services">
+			<column name="PaymentMethodId" sql-type="int" not-null="false" />
+		</many-to-one>
+		<property name="IsEnabled"  column="IsEnabled"></property>
+		<property name="IsDefault"  column="IsDefault"></property>
+		<property name="IsDeleted"  column="IsDeleted"></property>
+		<property name="CreationDate"  column="CreationDate"></property>
+		<property name="CreatedBy"  column="CreatedById"></property>
+		<property name="CreatedByFullName"  column="CreatedByFullName"></property>
+		<property name="LastUpdateDate"  column="LastUpdateDate"></property>
+		<property name="LastUpdatedBy"  column="LastUpdatedById"></property>
+		<property name="LastUpdatedByFullName"  column="LastUpdatedByFullName"></property>
+	</class>
+</hibernate-mapping>

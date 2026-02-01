@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<hibernate-mapping schema="dbo"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models" xmlns="urn:nhibernate-mapping-2.2"
+                   auto-import="false"
+                   >
+  <class name="DomuWave.Services.Models.MenuItem, DomuWave.Services"
+         table="base_menues">
+
+    <!--<cache usage="nonstrict-read-write" region="CacheAuth" />-->
+
+    <id name="Id" type="Int32" unsaved-value="0" access="property" column="MenuId">
+      <generator class="hilo" />
+    </id>
+    <property name="Icon"  column="Icon"></property>
+    <property name="Description"  column="Description"></property>
+    <property name="Action"  column="Action"></property>
+    <property name="AuthorizationCode"  column="AuthorizationCode"></property>
+    <property name="ParentMenuId"  column="ParentMenuId" not-null="false"></property>
+    <property name="PopulateEvent"  column="PopulateEvent" not-null="false"></property>
+    <property name="OrderKey"  column="OrderKey" not-null="true"></property>
+
+  </class>
+</hibernate-mapping>

@@ -1,0 +1,198 @@
+using System.Reflection;
+using Auth.Services;
+using CPQ.Core.ActionFilters;
+using CPQ.Core.Extensions;
+using CPQ.Core.Settings;
+using CPQ.Core.Startups;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.OpenApi.Models;
+
+namespace Auth.Microservice;
+
+public class Startup
+{
+    private readonly IWebHostEnvironment _env;
+    protected        JobSettings         _jobSettings;
+
+
+    private ILogger<Startup> _logger;
+    private ILoggerFactory   _loggerFactory;
+
+    protected OxCoreSettings _oxCoreSettings;
+
+    public Startup(IWebHostEnvironment env)
+    {
+        _env = env;
+        _oxCoreSettings = new OxCoreSettings();
+        _jobSettings = new JobSettings();
+
+        IConfiguration dom;
+        if (env.IsDevelopment())
+        {
+            var path = $"appsettings.{env.EnvironmentName}_{Environment.MachineName}.json";
+            dom = new ConfigurationBuilder()
+                  .SetBasePath(env.ContentRootPath)
+                  .AddJsonFile($"appsettings.{env.EnvironmentName}.json", false, true)
+                  .AddJsonFile(path, false, true)
+                  .AddJsonFile($"jobsettings.{env.EnvironmentName}.json", true, true)
+                  .AddJsonFile($"jobsettings.{env.EnvironmentName}_{Environment.MachineName}.json", true, true)
+                  .AddEnvironmentVariables()
+                  .Build();
+        }
+        else
+        {
+            dom = new ConfigurationBuilder()
+                  .SetBasePath(env.ContentRootPath)
+                  .AddJsonFile($"appsettings.{env.EnvironmentName}.json", false, true)
+                  .AddJsonFile($"jobsettings.{env.EnvironmentName}.json", true, true)
+                  .AddEnvironmentVariables()
+                  .Build();
+        }
+
+        _configuration = dom;
+
+
+        _configuration.Bind("OxCore", _oxCoreSettings);
+
+        _configuration.Bind("JobSettings", _jobSettings);
+
+        //_configuration.Bind("OMX", _omxSettings);
+    }
+
+    private IConfiguration _configuration { get; }
+
+
+    // This method gets called by the runtime. Use this method to add services to the container.e 
+
+    public void ConfigureServices(IServiceCollection services)
+    {
+        //services.AddSingleton(_omxSettings);
+        services.AddSignalR(c => { });
+        services.AddCors(options => options.AddPolicy("CorsPolicy",
+                                                      builder => { _oxCoreSettings.SetDefault(builder); }));
+
+        services.AddHeaderPropagation();
+
+
+        services.Configure<IISServerOptions>(options => { options.AllowSynchronousIO = true; });
+        services.Configure<KestrelServerOptions>(options => { options.AllowSynchronousIO = true; });
+        services.AddMvc(option =>
+
+                        {
+                            option.EnableEndpointRouting = false;
+                            option.Filters.Add<TokenAuthorizeAttribute>();
+                        }
+                       )
+                        ;
+
+
+        //init bus trasport
+        services.AddAuthlBus(_env, _configuration);
+
+      
+        services.AddOxConfigureServices(_configuration, _oxCoreSettings, _env, false, _jobSettings);
+        services.AddAuthServices();
+
+
+        #region Swagger
+
+        services.AddSwaggerGen(c =>
+        {
+            c.IncludeXmlComments($@"{AppDomain.CurrentDomain.BaseDirectory}\Auth.Microservice.xml");
+            c.SwaggerDoc("v1", new OpenApiInfo
+            {
+                            Version = "v1",
+                            Title = "Auth.Microservice API"
+            });
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            c.IncludeXmlComments(xmlPath);
+        });
+
+    #endregion
+
+        services.AddControllers();
+    }
+
+
+    public void Configure(IApplicationBuilder      app, IWebHostEnvironment env,
+                          IHostApplicationLifetime hostApplicationLifetime,
+                          IServiceProvider         serviceProvider, ILoggerFactory loggerFactory)
+
+    {
+        _loggerFactory = loggerFactory;
+        _logger = _loggerFactory.CreateLogger<Startup>();
+
+
+        app.UseCors("CorsPolicy");
+
+        if (env.IsDevelopment()) app.UseDeveloperExceptionPage();
+
+        hostApplicationLifetime.ApplicationStarted.Register(() =>
+        {
+            _logger.LogInformation("MAIL Microservice started ");
+        });
+
+        hostApplicationLifetime.ApplicationStopping.Register(() =>
+        {
+            //if (env.IsDevelopment())
+            //{
+            //    NHibernateProfiler.Shutdown();
+            //}
+
+            _logger.LogInformation("MAIL Microservice Shutdown in progress");
+
+            var appApplicationServices = app.ApplicationServices;
+
+
+            OxCore.Shutdown(_loggerFactory, appApplicationServices);
+        });
+
+        hostApplicationLifetime.ApplicationStopped.Register(() =>
+        {
+            _logger.LogInformation("AUTH Microservice Shutdown ");
+        });
+
+        app.Use((context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/hangfire"))
+                if (_jobSettings?.JobServer != null && _jobSettings.JobServer.IamJobServer &&
+                    _jobSettings.JobServer.PathBase.NotIsNullOrEmpty())
+                    context.Request.PathBase = new PathString(_jobSettings.JobServer.PathBase);
+
+
+            return next();
+        });
+
+        app.UseOxCore(_oxCoreSettings);
+
+        app.UseOxHangfireDashboard(_jobSettings);
+
+
+        app.UseStaticFiles();
+
+        app.UseRouting();
+
+        app.UseAuthorization();
+
+
+        app.UseSwagger(c => { c.RouteTemplate = "swagger/{documentName}/swagger.json"; });
+        app.UseSwaggerUI(c =>
+        {
+            c.SwaggerEndpoint("v1/swagger.json", "Auth.Microservice");
+            c.RoutePrefix = "swagger";
+        });
+        app.UseMvc(routes =>
+        {
+            routes.MapRoute(
+                            "default",
+                            "{controller=Home}/{action=Index}/{id?}");
+        });
+
+
+        //if (env.IsDevelopment())
+        //{
+        //    NHibernateProfiler.Initialize();
+        //}
+    }
+}

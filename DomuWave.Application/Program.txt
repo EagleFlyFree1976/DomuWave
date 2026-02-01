@@ -1,0 +1,169 @@
+using System;
+using System.IO;
+using System.Linq;
+using CPQ.Core.Extensions;
+using CPQ.Core.Startups;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.EventLog;
+using NLog;
+using NLog.Web;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+
+namespace Auth.Microservice
+{
+    public class Program
+    {
+
+      
+        //public static async Task Main(string[] args)
+        public static void  Main(string[] args)
+        {
+         
+            var isService           = args?.Contains("--service")??false;
+
+
+            Logger logger = null;
+            //
+            try
+            {
+              
+
+                if (isService)
+                {
+                    var environment = OxCore.ChangeEnvironments(args);
+
+                     logger      = _configureLog(environment);
+
+                     logger.Info("Check env");
+                     logger.Info($"Port:{OxCore.ParsePort(args, 60103)}");
+                    
+                    if (!environment.IsNullOrEmpty())
+                    {
+                        logger.Info("Set ASPNETCORE_ENVIRONMENT: {env}", environment);
+                    }
+                    else
+                    {
+                        logger.Info("ASPNETCORE_ENVIRONMENT: {env}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
+                    }
+
+                    logger.Info("Init host");
+                        
+                        CreateHostBuilder(args)
+                                        
+                                                  .Build()
+                                                  
+                                                  .Run();
+                }
+              
+                else
+                {
+                    logger = _configureLog(string.Empty);
+                    logger.Info("Run application ");
+                    
+                    logger.Info("Init web host");
+
+                    CreateWebHostBuilder(args)
+                                    
+                                    .Build().Run();
+                }
+                
+               
+            }
+            catch (Exception exception)
+            {
+
+
+                Console.WriteLine(exception);
+                //NLog: catch setup errors
+                logger?.Error(exception, "Stopped program because of exception");
+                
+                throw;
+            }
+            finally
+            {
+                // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
+                logger?.Debug("Shutdown application ");
+                NLog.LogManager.Shutdown();
+            }
+        }
+
+        private static Logger _configureLog(string env)
+        {
+            var nlogBase       = "nlog.config";
+            var configFileName = env.IsNullOrEmpty()? nlogBase : $"nlog.{env}.config";
+           
+            var configureNLog  = LogManager.Setup().LoadConfigurationFromFile(configFileName);
+
+             
+            
+             return configureNLog.GetCurrentClassLogger();
+            
+        }
+
+        /// <summary>
+        /// create win hoss
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+                        Host.CreateDefaultBuilder(args)
+                            
+                            .ConfigureServices(services =>
+                            {
+                                services.Configure<EventLogSettings>(config =>
+                                {
+                                    config.LogName = "AUTH  Service";
+                                    config.SourceName = "AUTH   Service";
+                                });
+                            })
+                            
+                            .ConfigureLogging(logging =>
+                            {
+                                
+                                logging.ClearProviders();
+                                logging.SetMinimumLevel(LogLevel.Trace);
+                                logging.AddConsole();
+                                
+                            }).UseNLog()
+
+                            .ConfigureWebHostDefaults(webBuilder =>
+                            {
+                                webBuilder.UseStartup<Startup>();
+                            })
+
+                            .ConfigureWebHost(config =>
+                            {
+                                config.UseUrls($"http://*:{OxCore.ParsePort(args, 60103)}");
+                            }) 
+                            .UseWindowsService();
+                           
+        
+        /// <summary>
+        /// create web host
+        /// </summary>
+        /// <param name="args"></param>
+        /// <returns></returns>
+        public static IHostBuilder CreateWebHostBuilder(string[] args) =>
+                        Host.CreateDefaultBuilder(args)
+
+                            .ConfigureWebHostDefaults(webHostBuilder => {
+                                webHostBuilder
+                                                .ConfigureLogging(logging =>
+                                                {
+                                                    logging.ClearProviders();
+                                                    logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
+                                                })
+                                                .UseContentRoot(Directory.GetCurrentDirectory())
+                                                .UseIISIntegration()
+                                                .UseStartup<Startup>();
+                            })
+                           
+
+                            .UseNLog();  // NLog: Setup NLog for Dependency injection
+        
+
+    }
+}

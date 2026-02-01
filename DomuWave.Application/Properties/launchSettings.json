@@ -1,0 +1,13 @@
+{
+    "profiles": {
+        "DomuWave.Application": {
+            "commandName": "Executable",
+            "executablePath": ".\\DomuWave.Application.exe",
+            "commandLineArgs": "--service --env Development --port 60103",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "applicationUrl": "http://localhost:60101"
+        }
+    }
+}

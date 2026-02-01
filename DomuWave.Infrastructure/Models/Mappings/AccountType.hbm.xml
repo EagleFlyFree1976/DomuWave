@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<hibernate-mapping schema="dbo"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models" xmlns="urn:nhibernate-mapping-2.2"
+                   auto-import="false"
+                   >
+  <class name="DomuWave.Services.Models.AccountType, DomuWave.Services"
+         table="lck_AccountTypes" where="IsDeleted = 0">
+
+   
+
+    <id name="Id" type="Int32" unsaved-value="0" access="property" column="Id">
+	    <generator class="hilo">
+		    <param name="table">hibernate_unique_key</param>
+		    <param name="column">next_hi</param>
+		    <param name="max_lo">10</param>
+		    <param name="where">entity_type='AccountType'</param>
+	    </generator>
+	</id>
+	  
+    <property name="Code"  column="Code"></property>
+    <property name="Description"  column="Description"></property>
+    <property name="IsDeleted"  column="IsDeleted"></property>
+	  <property name="IsEnabled"  column="IsEnabled"></property>
+    <property name="CreationDate"  column="CreationDate"></property>
+    <property name="CreatedBy"  column="CreatedById"></property>
+    <property name="CreatedByFullName"  column="CreatedByFullName"></property>
+    <property name="LastUpdateDate"  column="LastUpdateDate"></property>
+	<property name="LastUpdatedBy"  column="LastUpdatedById"></property>
+    <property name="LastUpdatedByFullName"  column="LastUpdatedByFullName"></property>
+    
+    
+    
+
+  </class>
+</hibernate-mapping>

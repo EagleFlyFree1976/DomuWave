@@ -1,0 +1,1 @@
+import{aw as a}from"./app.js";const s=a.create({baseURL:"http://localhost:60101/api",timeout:1e4});s.interceptors.request.use(e=>{const t=localStorage.getItem("auth_token"),o=localStorage.getItem("bookId");return t&&(e.headers["X-Auth-Token"]=t),console.log("BOOK G",o),o!=null&&(console.log("Aggiungo book come header: id:",o),e.headers["X-Book-Id"]=o),e});export{s as a};

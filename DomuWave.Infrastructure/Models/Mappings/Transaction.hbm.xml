@@ -1,0 +1,74 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<hibernate-mapping schema="dbo"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models" xmlns="urn:nhibernate-mapping-2.2"
+                   auto-import="false"
+                   >
+	<class name="DomuWave.Services.Models.Transaction, DomuWave.Services"
+		   table="trn_Transactions" where="IsDeleted = 0">
+
+
+
+		<id name="Id" type="Int64" unsaved-value="0" access="property" column="Id">
+			<generator class="hilo">
+				<param name="table">hibernate_unique_key</param>
+				<param name="column">next_hi</param>
+				<param name="max_lo">10</param>
+				<param name="where">entity_type='Transactions'</param>
+			</generator>
+		</id>
+		<many-to-one name="Account" class="DomuWave.Services.Models.Account, DomuWave.Services">
+			<column name="AccountId" sql-type="bigint" not-null="true" />
+		</many-to-one>
+		<many-to-one name="DestinationAccount" class="DomuWave.Services.Models.Account, DomuWave.Services">
+			<column name="DestinationAccountId" sql-type="bigint" not-null="false" />
+		</many-to-one>
+		<many-to-one name="Book" class="DomuWave.Services.Models.Book, DomuWave.Services">
+			<column name="BookId" sql-type="int" not-null="false" />
+		</many-to-one>
+		
+		<property name="BookCurrencyExchangeRate" column="BookCurrencyExchangeRate" not-null="false" ></property>
+		<property name="AmountInBookCurrency" column="AmountInBookCurrency" insert="false" update="false" ></property>
+		
+		<property name="AccountCurrencyExchangeRate" column="AccountCurrencyExchangeRate" not-null="false" ></property>
+		<property name="AmountInAccountCurrency" column="AmountInAccountCurrency" insert="false" update="false" ></property>
+		
+		
+		<many-to-one name="Status" class="DomuWave.Services.Models.TransactionStatus, DomuWave.Services">
+			<column name="StatusId" sql-type="int" not-null="true" />
+		</many-to-one>
+		<many-to-one name="Currency" class="DomuWave.Services.Models.Currency, DomuWave.Services">
+			<column name="CurrencyId" sql-type="int" not-null="true" />
+		</many-to-one>
+		<many-to-one name="PaymentMethod" class="DomuWave.Services.Models.PaymentMethod, DomuWave.Services">
+			<column name="PaymentMethodId" sql-type="int" not-null="true" />
+		</many-to-one>
+		<many-to-one name="Beneficiary" class="DomuWave.Services.Models.Beneficiary, DomuWave.Services">
+			<column name="BeneficiaryId" sql-type="bigint" not-null="false" />
+		</many-to-one>
+		<many-to-one name="Category" class="DomuWave.Services.Models.Category, DomuWave.Services">
+			<column name="CategoryId" sql-type="bigint" not-null="false" />
+		</many-to-one>
+		<property name="Amount"  column="Amount"></property>
+		<property name="TransactionDate"  column="TransactionDate"></property>
+		<property name="TransactionTypeCode"  column="TransactionType"></property>
+		<property name="FlowDirectionCode"  column="FlowDirection"></property>
+		<property name="TransferKey"  column="TransferKey"></property>
+		<property name="Description"  column="Description"></property>
+		<property name="IsEnabled"  column="IsEnabled"></property>
+		<property name="IsDeleted"  column="IsDeleted"></property>
+		<property name="CreationDate"  column="CreationDate"></property>
+		<property name="CreatedBy"  column="CreatedById"></property>
+		<property name="CreatedByFullName"  column="CreatedByFullName"></property>
+		<property name="LastUpdateDate"  column="LastUpdateDate"></property>
+		<property name="LastUpdatedBy"  column="LastUpdatedById"></property>
+		<property name="LastUpdatedByFullName"  column="LastUpdatedByFullName"></property>
+		<property name="AccountBalance"  column="AccountBalance"></property>
+		<property name="BookBalance"  column="BookBalance"></property>
+
+
+
+
+	</class>
+</hibernate-mapping>

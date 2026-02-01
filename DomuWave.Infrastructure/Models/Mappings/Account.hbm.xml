@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<hibernate-mapping schema="dbo"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models" xmlns="urn:nhibernate-mapping-2.2"
+                   auto-import="false"
+                   >
+  <class name="DomuWave.Services.Models.Account, DomuWave.Services"
+         table="acc_Accounts" where="IsDeleted = 0">
+
+   
+
+    <id name="Id" type="Int64" unsaved-value="0" access="property" column="Id">
+	    <generator class="hilo">
+		    <param name="table">hibernate_unique_key</param>
+		    <param name="column">next_hi</param>
+		    <param name="max_lo">10</param>
+		    <param name="where">entity_type='Account'</param>
+	    </generator>
+	</id>
+	<many-to-one name="Book" class="DomuWave.Services.Models.Book, DomuWave.Services">
+		<column name="BookId" sql-type="int" not-null="false" />
+	</many-to-one>
+	  <many-to-one name="AccountType" class="DomuWave.Services.Models.AccountType, DomuWave.Services">
+		  <column name="AccountTypeId" sql-type="int" not-null="false" />
+	  </many-to-one>
+	  
+	  
+	  <many-to-one name="Currency" class="DomuWave.Services.Models.Currency, DomuWave.Services">
+		  <column name="CurrencyId" sql-type="int" not-null="false" />
+	  </many-to-one>
+	  <property name="Name"  column="Name"></property>
+	  <property name="Description"  column="Description"></property>
+      <property name="OwnerId"  column="OwnerId"></property>
+	  
+      <property name="OpenDate"  column="OpenDate"></property>
+      <property name="ClosedDate"  column="ClosedDate"></property>
+	  <property name="Balance"  column="Balance"></property>
+	  <property name="InitialBalance"  column="InitialBalance"></property>
+	  <property name="IsActive"  column="IsActive"></property>
+	  <property name="IsDeleted"  column="IsDeleted"></property>
+	  <property name="IsEnabled"  column="IsEnabled"></property>
+	  <property name="CreationDate"  column="CreationDate"></property>
+	  <property name="CreatedBy"  column="CreatedById"></property>
+	  <property name="CreatedByFullName"  column="CreatedByFullName"></property>
+	  <property name="LastUpdateDate"  column="LastUpdateDate"></property>
+	  <property name="LastUpdatedBy"  column="LastUpdatedById"></property>
+	  <property name="LastUpdatedByFullName"  column="LastUpdatedByFullName"></property>
+
+
+
+
+  </class>
+</hibernate-mapping>

@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   schema="dbo"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models" >
+
+	<class 
+		name="DomuWave.Services.Models.Import.ImportMapping, DomuWave.Services"
+		table="imp_ImportMapping">
+
+		 
+
+		<id name="Id" type="Int64" unsaved-value="0" access="property" column="Id">
+			<generator class="hilo">
+				<param name="table">hibernate_unique_key</param>
+				<param name="column">next_hi</param>
+				<param name="max_lo">10</param>
+				<param name="where">entity_type='ImportMapping'</param>
+			</generator>
+		</id>
+ 
+		<many-to-one name="Import" class="DomuWave.Services.Models.Import.Import, DomuWave.Services">
+			<column name="ImportId" sql-type="bigint" not-null="true" />
+		</many-to-one>
+		<property name="Entity" column="Entity" type="String" length="100" not-null="true" />
+		<property name="SourceValue" column="SourceValue" type="String" length="1000" not-null="true" />
+		<property name="TargetValue" column="TargetValue" type="String" length="1000" not-null="true" />
+		<property name="TrasformationRule" column="TrasformationRule" type="String" length="200" not-null="false" />
+		<property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
+
+		<!-- Campi di tracciamento ereditati da TraceEntity -->
+		<property name="IsDeleted"  column="IsDeleted"></property>
+		<property name="CreationDate"  column="CreationDate"></property>
+		<property name="CreatedBy"  column="CreatedById"></property>
+		<property name="CreatedByFullName"  column="CreatedByFullName"></property>
+		<property name="LastUpdateDate"  column="LastUpdateDate"></property>
+		<property name="LastUpdatedBy"  column="LastUpdatedById"></property>
+		<property name="LastUpdatedByFullName"  column="LastUpdatedByFullName"></property>
+
+	</class>
+
+</hibernate-mapping>

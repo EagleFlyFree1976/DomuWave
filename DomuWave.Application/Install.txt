@@ -1,0 +1,21 @@
+﻿sc.exe create xBill3 binPath="C:\_deploy\xBill.Microservice.exe --service --env Staging"
+sc.exe create xBill3 binPath="C:\_deploy\xBill.Microservice.exe --service --env Production"
+
+
+
+
+
+sc.exe create xBill binPath="C:\_deploy\OMX.WF.Microservice.exe --service --env Staging"
+
+sc description xBill "TWT xBill corporate billing"
+
+
+New-Service -Name "TWT-ORYX-AUTH" -Description "TWT-ORYX-AUTH" -BinaryPathName "C:\Program Files (x86)\TWT\TWT-ORYX-AUTH\Mail.Microservice.exe --service --env Production --port 60011"
+
+
+
+New-Service -Name "TWT-ORYX-AUTH" -Description "TWT-ORYX-AUTH (Staging)" -BinaryPathName "C:\Program Files (x86)\TWT\TWT-ORYX-AUTH-Staging\Mail.Microservice.exe --service --env Staging --port 60011"
+
+
+
+New-Service -Name "_cpq_auth" -Description "_cpq_auth" -BinaryPathName "C:\Windows-Services\_cpq_auth\Auth.Microservice.exe --service --env Development --port 60103"

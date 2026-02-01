@@ -1,0 +1,51 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <None Remove="Models\Mappings\MenuItem.hbm.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Models\Mappings\AccountReport.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\AccountTypePaymentMethod.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\AccountPaymentMethod.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Category.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Beneficiary.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ExchangeRateHistory.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ImportMapping.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Import.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ImportTransaction.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\TransactionStatus.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Transaction.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\TransactionTags.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Tag.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Project.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\PaymentMethod.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Book.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Account.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\AccountType.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Currency.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\MenuItem.hbm.xml" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Bogus" Version="35.6.3" />
+    <PackageReference Include="CPQ.Core" Version="1.2.1" />
+    <PackageReference Include="CPQ.Core.EventSource" Version="1.0.0" />
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="Hangfire.Core" Version="1.8.18" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Clients\Request\" />
+    <Folder Include="Orchestators\" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
