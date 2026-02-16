@@ -1,6 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="Orchestators\**" />
+    <EmbeddedResource Remove="Orchestators\**" />
+    <None Remove="Orchestators\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Models\Mappings\MenuItem.hbm.xml" />
   </ItemGroup>
 
@@ -20,7 +26,7 @@
 
   <ItemGroup>
     <Folder Include="Clients\Request\" />
-    <Folder Include="Orchestators\" />
+    <Folder Include="Consumers\Menu\" />
   </ItemGroup>
 
   <PropertyGroup>
