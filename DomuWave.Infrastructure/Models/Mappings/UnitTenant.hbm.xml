@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="UnitTenant" table="InquilinoUnita" schema="dbo">
+    <id name="Id" column="InquilinoId" type="Int32">
+      <generator class="identity" />
+    </id>
+    <property name="OwnerTenantId" column="Id" type="Guid" not-null="true" />
+    <property name="UnitId" column="UnitaId" type="Int32" not-null="true" />
+    <property name="FirstName" column="Nome" type="String" length="100" not-null="true" />
+    <property name="LastName" column="Cognome" type="String" length="100" not-null="true" />
+    <property name="TaxCode" column="CodiceFiscale" type="String" length="16" />
+    <property name="Email" column="Email" type="String" length="255" />
+    <property name="Phone" column="Telefono" type="String" length="20" />
+    <property name="LeaseStartDate" column="DataInizioLocazione" type="DateTime" not-null="true" />
+    <property name="LeaseEndDate" column="DataFineLocazione" type="DateTime" />
+    <property name="ContractPath" column="ContrattoPath" type="String" length="500" />
+    <property name="ExpensePayer" column="ChiPagaSpese" type="String" length="50" not-null="true" />
+    <property name="IsActive" column="IsAttivo" type="Boolean" not-null="true" />
+    <property name="Notes" column="Note" type="String" length="500" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="OwnerTenant" class="Tenant" column="Id" insert="false" update="false" />
+    <many-to-one name="RealEstateUnit" class="RealEstateUnit" column="UnitaId" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

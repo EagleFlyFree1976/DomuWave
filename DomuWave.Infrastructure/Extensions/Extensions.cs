@@ -4,15 +4,7 @@ namespace DomuWave.Services.Extensions;
 
 public static class Extensions
 {
-    public static FlowDirection ToFlowDirection(this TransactionType transactionType, FlowDirection defaultDirection)
-    {
-        return transactionType switch
-        {
-            TransactionType.Uscita => FlowDirection.Out,
-            TransactionType.Entrata => FlowDirection.In,
-            _ =>defaultDirection
-        };
-    }
+   
 
     /// <summary>
     /// Restituisce la data all'inizio della giornata (00:00:00.000).

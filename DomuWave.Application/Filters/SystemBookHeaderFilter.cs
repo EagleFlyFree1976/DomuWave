@@ -10,7 +10,7 @@ namespace DomuWave.Application.Filters;
 
 public class SystemBookHeaderFilter : IAsyncActionFilter
 {
-    private const string HeaderName = "X-Book-Id";
+    private const string HeaderName = "X-Tenant-Id";
     protected readonly IMediator _mediator;
     protected readonly IUserService _userService;
     public SystemBookHeaderFilter(IMediator mediator, IUserService userService)

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="CondominiumFee" table="QuotaCondominiale" schema="dbo">
+    <id name="FeeId" column="QuotaId" type="Int64">
+      <generator class="identity" />
+    </id>
+    <property name="Id" column="Id" type="Guid" not-null="true" />
+    <property name="InstallmentId" column="RataId" type="Int32" not-null="true" />
+    <property name="UnitId" column="UnitaId" type="Int32" not-null="true" />
+    <property name="UserId" column="UserId" type="Int64" not-null="true" />
+    <property name="AmountDue" column="ImportoDovuto" type="Decimal" precision="15" scale="2" not-null="true" />
+    <property name="AmountPaid" column="ImportoPagato" type="Decimal" precision="15" scale="2" not-null="true" />
+    <property name="Balance" column="Saldo" type="Decimal" precision="15" scale="2" not-null="true" />
+    <property name="PaymentStatus" column="StatoPagamento" type="String" length="50" not-null="true" />
+    <property name="PaymentDate" column="DataPagamento" type="DateTime" />
+    <property name="PaymentMethod" column="ModalitaPagamento" type="String" length="50" />
+    <property name="Notes" column="Note" type="String" length="500" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+    <many-to-one name="CondominiumInstallment" class="CondominiumInstallment" column="RataId" insert="false" update="false" />
+    <many-to-one name="RealEstateUnit" class="RealEstateUnit" column="UnitaId" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

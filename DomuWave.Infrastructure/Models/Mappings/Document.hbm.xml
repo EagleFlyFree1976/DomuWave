@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="Document" table="Documento" schema="dbo">
+    <id name="DocumentId" column="DocumentoId" type="Int32">
+      <generator class="identity" />
+    </id>
+    <property name="Id" column="Id" type="Guid" not-null="true" />
+    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
+    <property name="Title" column="Titolo" type="String" length="200" not-null="true" />
+    <property name="Description" column="Descrizione" type="String" length="1000" />
+    <property name="Category" column="Categoria" type="String" length="100" not-null="true" />
+    <property name="FileName" column="NomeFile" type="String" length="255" not-null="true" />
+    <property name="FilePath" column="FilePath" type="String" length="500" not-null="true" />
+    <property name="FileSize" column="FileSize" type="Int64" not-null="true" />
+    <property name="MimeType" column="MimeType" type="String" length="100" not-null="true" />
+    <property name="DocumentDate" column="DataDocumento" type="DateTime" />
+    <property name="IsVisibleToOwners" column="IsVisibleCondomini" type="Boolean" not-null="true" />
+    <property name="IsArchived" column="IsArchiviato" type="Boolean" not-null="true" />
+    <property name="Tags" column="Tags" type="String" length="500" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

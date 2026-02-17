@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="Message" table="Messaggio" schema="dbo">
+    <id name="MessageId" column="MessaggioId" type="Int64">
+      <generator class="identity" />
+    </id>
+    <property name="Id" column="Id" type="Guid" not-null="true" />
+    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
+    <property name="SenderId" column="MittenteId" type="Int64" not-null="true" />
+    <property name="RecipientId" column="DestinatarioId" type="Int64" not-null="true" />
+    <property name="Subject" column="Oggetto" type="String" length="200" not-null="true" />
+    <property name="Content" column="Contenuto" type="StringClob" not-null="true" />
+    <property name="ParentMessageId" column="MessaggioParentId" type="Int64" />
+    <property name="IsRead" column="IsLetto" type="Boolean" not-null="true" />
+    <property name="ReadDate" column="DataLettura" type="DateTime" />
+    <property name="AttachmentPath" column="AllegatoPath" type="String" length="500" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
+    <many-to-one name="ParentMessage" class="Message" column="MessaggioParentId" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

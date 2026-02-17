@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="Supplier" table="Fornitore" schema="dbo">
+    <id name="SupplierId" column="FornitoreId" type="Int32">
+      <generator class="identity" />
+    </id>
+    <property name="Id" column="Id" type="Guid" not-null="true" />
+    <property name="CompanyName" column="RagioneSociale" type="String" length="200" not-null="true" />
+    <property name="VatNumber" column="PartitaIva" type="String" length="11" />
+    <property name="TaxCode" column="CodiceFiscale" type="String" length="16" />
+    <property name="Address" column="Indirizzo" type="String" length="300" />
+    <property name="City" column="Citta" type="String" length="100" />
+    <property name="Province" column="Provincia" type="String" length="2" />
+    <property name="PostalCode" column="Cap" type="String" length="10" />
+    <property name="Email" column="Email" type="String" length="255" />
+    <property name="Phone" column="Telefono" type="String" length="20" />
+    <property name="Pec" column="Pec" type="String" length="255" />
+    <property name="ContactPerson" column="Referente" type="String" length="200" />
+    <property name="SupplierType" column="TipoFornitore" type="String" length="100" />
+    <property name="PaymentTerms" column="CondizioniPagamento" type="String" length="100" />
+    <property name="IbanAccount" column="IbanAccredito" type="String" length="34" />
+    <property name="Notes" column="Note" type="String" length="1000" />
+    <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

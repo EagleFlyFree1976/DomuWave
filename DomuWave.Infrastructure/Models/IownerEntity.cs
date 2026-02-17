@@ -6,12 +6,8 @@ public interface IownerEntity
 }
 
 
-public abstract class BookEntity<T> : GenericEntity<T>
+public abstract class TenantEntity<T> : GenericEntity<T>
 {
-    public virtual Book Book { get; set; } 
+    public virtual Tenant Tenant { get; set; } 
 }
 
-public abstract class AccountEntity<T> : BookEntity<T>
-{
-    public virtual Account Account { get; set; }
-}

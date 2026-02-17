@@ -1966,6 +1966,7 @@ C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\assets\js\accountStore.js
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\assets\js\AccountsView.js
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\assets\js\AccountTabber.js
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\assets\js\AccountTransactions.js
+C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\vendor\jquery\jquery.slim.min.map
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\assets\js\app.js
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\assets\js\CurrenciesView.js
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\assets\js\DashboardView.js
@@ -3750,4 +3751,3 @@ C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\vendor\jquery\jquery.min.js
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\vendor\jquery\jquery.min.map
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\vendor\jquery\jquery.slim.js
 C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\vendor\jquery\jquery.slim.min.js
-C:\Projects\Works\DomuWave\DomuWave.Web\wwwroot\vendor\jquery\jquery.slim.min.map

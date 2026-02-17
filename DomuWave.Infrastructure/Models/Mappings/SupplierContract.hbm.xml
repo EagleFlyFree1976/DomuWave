@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="SupplierContract" table="ContrattoFornitore" schema="dbo">
+    <id name="ContractId" column="ContrattoId" type="Int32">
+      <generator class="identity" />
+    </id>
+    <property name="Id" column="Id" type="Guid" not-null="true" />
+    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
+    <property name="SupplierId" column="FornitoreId" type="Int32" not-null="true" />
+    <property name="ContractNumber" column="NumeroContratto" type="String" length="50" />
+    <property name="Subject" column="Oggetto" type="String" length="200" not-null="true" />
+    <property name="StartDate" column="DataInizio" type="DateTime" not-null="true" />
+    <property name="EndDate" column="DataFine" type="DateTime" />
+    <property name="AnnualAmount" column="ImportoAnnuo" type="Decimal" precision="15" scale="2" />
+    <property name="Frequency" column="Periodicita" type="String" length="50" />
+    <property name="AutoRenewal" column="RinnovoAutomatico" type="Boolean" not-null="true" />
+    <property name="Status" column="Stato" type="String" length="50" not-null="true" />
+    <property name="DocumentPath" column="DocumentoPath" type="String" length="500" />
+    <property name="Notes" column="Note" type="String" length="1000" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
+    <many-to-one name="Supplier" class="Supplier" column="FornitoreId" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

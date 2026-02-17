@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="Receipt" table="Incasso" schema="dbo">
+    <id name="ReceiptId" column="IncassoId" type="Int64">
+      <generator class="identity" />
+    </id>
+    <property name="Id" column="Id" type="Guid" not-null="true" />
+    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
+    <property name="FeeId" column="QuotaId" type="Int64" />
+    <property name="UserId" column="UserId" type="Int64" not-null="true" />
+    <property name="UnitId" column="UnitaId" type="Int32" not-null="true" />
+    <property name="ReceiptDate" column="DataIncasso" type="DateTime" not-null="true" />
+    <property name="RegistrationDate" column="DataRegistrazione" type="DateTime" not-null="true" />
+    <property name="Amount" column="Importo" type="Decimal" precision="15" scale="2" not-null="true" />
+    <property name="PaymentMethod" column="ModalitaPagamento" type="String" length="50" not-null="true" />
+    <property name="Description" column="Causale" type="String" length="500" not-null="true" />
+    <property name="BankReference" column="RiferimentoBancario" type="String" length="100" />
+    <property name="ReconciliationStatus" column="StatoRiconciliazione" type="String" length="50" not-null="true" />
+    <property name="Notes" column="Note" type="String" length="500" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
+    <many-to-one name="CondominiumFee" class="CondominiumFee" column="QuotaId" insert="false" update="false" />
+    <many-to-one name="RealEstateUnit" class="RealEstateUnit" column="UnitaId" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

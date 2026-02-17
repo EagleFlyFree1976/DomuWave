@@ -3,7 +3,7 @@ using CPQ.Core.Memberships;
 
 namespace DomuWave.Services.Interfaces;
 
-public interface IServiceBase<T, T1, TCreateDto, TUpdateDto, TReadDto> : IService where T: BookEntity<T1> 
+public interface IServiceBase<T, T1, TCreateDto, TUpdateDto, TReadDto> : IService where T: TenantEntity<T1> 
 {
 
     Task<T> GetById(T1 itemId, long currentUserBookId, IUser currentUser, CancellationToken cancellationToken);

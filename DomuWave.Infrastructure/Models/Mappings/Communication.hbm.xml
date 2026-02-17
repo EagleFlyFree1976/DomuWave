@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="Communication" table="Comunicazione" schema="dbo">
+    <id name="CommunicationId" column="ComunicazioneId" type="Int32">
+      <generator class="identity" />
+    </id>
+    <property name="Id" column="Id" type="Guid" not-null="true" />
+    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
+    <property name="Title" column="Titolo" type="String" length="200" not-null="true" />
+    <property name="Content" column="Contenuto" type="StringClob" not-null="true" />
+    <property name="CommunicationType" column="TipoComunicazione" type="String" length="50" not-null="true" />
+    <property name="Priority" column="Priorita" type="String" length="50" not-null="true" />
+    <property name="PublicationDate" column="DataPubblicazione" type="DateTime" not-null="true" />
+    <property name="ExpirationDate" column="DataScadenza" type="DateTime" />
+    <property name="SendEmail" column="InviaEmail" type="Boolean" not-null="true" />
+    <property name="EmailSentAt" column="EmailInviataAt" type="DateTime" />
+    <property name="IsVisible" column="IsVisibile" type="Boolean" not-null="true" />
+    <property name="AttachmentPath" column="AllegatoPath" type="String" length="500" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

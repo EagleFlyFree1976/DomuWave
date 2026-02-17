@@ -1,5 +1,5 @@
 ﻿using DomuWave.Services.Models;
-using DomuWave.Services.Models.Dto;
+
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command;

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
+  <class name="UnitOwner" table="ProprietarioUnita" schema="dbo">
+    <id name="UnitOwnerId" column="ProprietarioUnitaId" type="Int32">
+      <generator class="identity" />
+    </id>
+    <property name="Id" column="Id" type="Guid" not-null="true" />
+    <property name="UnitId" column="UnitaId" type="Int32" not-null="true" />
+    <property name="UserId" column="UserId" type="Int64" not-null="true" />
+    <property name="OwnerType" column="TipoProprietario" type="String" length="50" not-null="true" />
+    <property name="OwnershipQuota" column="QuotaProprieta" type="Decimal" precision="5" scale="2" not-null="true" />
+    <property name="StartDate" column="DataInizio" type="DateTime" not-null="true" />
+    <property name="EndDate" column="DataFine" type="DateTime" />
+    <property name="IsResident" column="IsResidente" type="Boolean" not-null="true" />
+    <property name="IsActive" column="IsAttivo" type="Boolean" not-null="true" />
+    <property name="Notes" column="Note" type="String" length="500" />
+    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
+    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
+    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
+    <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+    <many-to-one name="RealEstateUnit" class="RealEstateUnit" column="UnitaId" insert="false" update="false" />
+  </class>
+</hibernate-mapping>

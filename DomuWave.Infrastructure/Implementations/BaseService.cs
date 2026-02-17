@@ -1,6 +1,6 @@
-﻿using DomuWave.Services.Interfaces;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
+using DomuWave.Services.Interfaces;
 
 namespace DomuWave.Services.Implementations;
 

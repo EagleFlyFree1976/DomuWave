@@ -1,11 +1,11 @@
 ﻿using System.Net;
 using DomuWave.Services.Command;
-using DomuWave.Services.Command.Book;
+
 using DomuWave.Services.Command.Menu;
 using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
-using DomuWave.Services.Models.Dto;
+using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.DTO;
 using CPQ.Core.Exceptions;
@@ -16,7 +16,7 @@ using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers.Book;
 
-public class PopulateAccountsEventCommandConsumer : InMemoryConsumerBase<PopulateAccountsEventCommand, IList<MenuItemDto>>
+public class PopulateAccountsEventCommandConsumer : InMemoryConsumerBase<PopulateAccountsEventCommand, IList<DomuWave.Services.Models.MenuItemDto>>
 {
     private readonly IMediator _mediator;
 
@@ -26,7 +26,7 @@ public class PopulateAccountsEventCommandConsumer : InMemoryConsumerBase<Populat
     }
 
 
-    protected override async Task<IList<MenuItemDto>> Consume(PopulateAccountsEventCommand evt, IMediationContext mediationContext, CancellationToken cancellationToken)
+    protected override async Task<IList<DomuWave.Services.Models.MenuItemDto>> Consume(PopulateAccountsEventCommand evt, IMediationContext mediationContext, CancellationToken cancellationToken)
     {
         GetMenuItemsCommand allAccountsCommand = new GetMenuItemsCommand(evt.CurrentUserId, ((BaseBookRelatedCommand)evt).BookId)
             { BookId = evt.BookId, CurrentUserId = evt.CurrentUserId, OwnerId = evt.CurrentUserId };
