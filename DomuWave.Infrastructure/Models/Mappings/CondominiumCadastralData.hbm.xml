@@ -5,7 +5,7 @@
 
   <class name="DomuWave.Domain.Models.CondominiumCadastralData, DomuWave.Services" table="CondominiumCadastralData" lazy="true">
 
-    <id name="Id" column="CadastralDataId" type="Int32">
+    <id name="Id" column="Id" type="Int32">
       <generator class="hilo">
         <param name="table">hibernate_unique_key</param>
         <param name="column">next_hi</param>

@@ -5,7 +5,7 @@
 
   <class name="DomuWave.Domain.Models.DocumentAccess, DomuWave.Services" table="DocumentAccess" lazy="true">
 
-    <id name="Id" column="AccessId" type="Int64">
+    <id name="Id" column="Id" type="Int64">
       <generator class="hilo">
         <param name="table">hibernate_unique_key</param>
         <param name="column">next_hi</param>

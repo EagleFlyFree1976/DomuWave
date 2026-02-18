@@ -5,7 +5,7 @@
 
   <class name="DomuWave.Domain.Models.Communication, DomuWave.Services" table="Communication" lazy="true">
 
-    <id name="Id" column="CommunicationId" type="Int32">
+    <id name="Id" column="Id" type="Int32">
       <generator class="hilo">
         <param name="table">hibernate_unique_key</param>
         <param name="column">next_hi</param>

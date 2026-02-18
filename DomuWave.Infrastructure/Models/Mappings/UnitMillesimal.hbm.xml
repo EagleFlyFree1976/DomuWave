@@ -5,7 +5,7 @@
 
   <class name="DomuWave.Domain.Models.UnitMillesimal, DomuWave.Services" table="UnitMillesimal" lazy="true">
 
-    <id name="Id" column="UnitMillesimalId" type="Int32">
+    <id name="Id" column="Id" type="Int32">
       <generator class="hilo">
         <param name="table">hibernate_unique_key</param>
         <param name="column">next_hi</param>

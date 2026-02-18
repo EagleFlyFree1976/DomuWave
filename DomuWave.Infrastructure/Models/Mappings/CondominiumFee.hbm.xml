@@ -5,7 +5,7 @@
 
   <class name="DomuWave.Domain.Models.CondominiumFee, DomuWave.Services" table="CondominiumFee" lazy="true">
 
-    <id name="Id" column="FeeId" type="Int64">
+    <id name="Id" column="Id" type="Int64">
       <generator class="hilo">
         <param name="table">hibernate_unique_key</param>
         <param name="column">next_hi</param>

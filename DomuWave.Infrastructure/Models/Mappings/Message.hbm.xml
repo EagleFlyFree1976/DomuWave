@@ -5,7 +5,7 @@
 
   <class name="DomuWave.Domain.Models.Message, DomuWave.Services" table="Message" lazy="true">
 
-    <id name="Id" column="MessageId" type="Int64">
+    <id name="Id" column="Id" type="Int64">
       <generator class="hilo">
         <param name="table">hibernate_unique_key</param>
         <param name="column">next_hi</param>
