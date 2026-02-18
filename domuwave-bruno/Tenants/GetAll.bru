@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/api/tenants
+  url: {{baseUrl}}/tenants
   body: none
   auth: bearer
+}
+
+headers {
+  X-Auth-Token: JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
 }
 
 auth:bearer {

@@ -1,11 +1,59 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <None Remove="Models\Mappings\Budget.hbm.xml" />
+    <None Remove="Models\Mappings\BudgetItem.hbm.xml" />
+    <None Remove="Models\Mappings\ChartOfAccounts.hbm.xml" />
+    <None Remove="Models\Mappings\Communication.hbm.xml" />
+    <None Remove="Models\Mappings\CommunicationRead.hbm.xml" />
+    <None Remove="Models\Mappings\Condominium.hbm.xml" />
+    <None Remove="Models\Mappings\CondominiumAddress.hbm.xml" />
+    <None Remove="Models\Mappings\CondominiumCadastralData.hbm.xml" />
+    <None Remove="Models\Mappings\CondominiumFee.hbm.xml" />
+    <None Remove="Models\Mappings\CondominiumInstallment.hbm.xml" />
+    <None Remove="Models\Mappings\Document.hbm.xml" />
+    <None Remove="Models\Mappings\DocumentAccess.hbm.xml" />
+    <None Remove="Models\Mappings\Expense.hbm.xml" />
+    <None Remove="Models\Mappings\ExpenseAllocation.hbm.xml" />
     <None Remove="Models\Mappings\MenuItem.hbm.xml" />
+    <None Remove="Models\Mappings\Message.hbm.xml" />
+    <None Remove="Models\Mappings\MillesimalTable.hbm.xml" />
+    <None Remove="Models\Mappings\RealEstateUnit.hbm.xml" />
+    <None Remove="Models\Mappings\Receipt.hbm.xml" />
+    <None Remove="Models\Mappings\Supplier.hbm.xml" />
+    <None Remove="Models\Mappings\SupplierContract.hbm.xml" />
+    <None Remove="Models\Mappings\Tenant.hbm.xml" />
+    <None Remove="Models\Mappings\UnitMillesimal.hbm.xml" />
+    <None Remove="Models\Mappings\UnitOwner.hbm.xml" />
+    <None Remove="Models\Mappings\UnitTenant.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Models\Mappings\Budget.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BudgetItem.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ChartOfAccounts.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Communication.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\CommunicationRead.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Condominium.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\CondominiumAddress.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\CondominiumCadastralData.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\CondominiumFee.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\CondominiumInstallment.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Document.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\DocumentAccess.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Expense.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ExpenseAllocation.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\MenuItem.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Message.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\MillesimalTable.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\RealEstateUnit.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Receipt.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Supplier.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\SupplierContract.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Tenant.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\UnitMillesimal.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\UnitOwner.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\UnitTenant.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace DomuWave.Application.Code
 {
-    [ServiceFilter(typeof(TenantHeaderFilter))]
+ //   [ServiceFilter(typeof(TenantHeaderFilter))]
     public class PrivateControllerBase : OxCoreTokenAuthorizeControllerBase
     {
         protected long TenantId

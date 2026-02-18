@@ -2,15 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using CPQ.Core.ActionFilters;
+using CPQ.Core.Controllers;
+using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
-using CPQ.Core.ActionFilters;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using CPQ.Core.Settings;
 
 namespace DomuWave.Microservice.Controllers
 {
@@ -22,7 +23,7 @@ namespace DomuWave.Microservice.Controllers
         ILogger<TenantsController> logger,
         IOptionsMonitor<OxCoreSettings> configuration,
         ITenantService tenantService)
-        : PrivateControllerBase(logger, configuration)
+        : PrivateAdminControllerBase(logger, configuration)
     {
         private readonly ITenantService _tenantService = tenantService;
 
@@ -58,8 +59,7 @@ namespace DomuWave.Microservice.Controllers
         /// Restituisce tutti i tenant non eliminati
         /// </summary>
         [HttpGet("")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.Admin)]
+        //[AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, AuthorizationKeys.Admin)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Tenant>))]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {

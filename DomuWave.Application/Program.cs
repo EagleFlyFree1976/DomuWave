@@ -1,20 +1,18 @@
 ﻿using System.Reflection;
 using Auth.Microservice;
-using DomuWave.Application.Filters;
-using DomuWave.Services;
-using DomuWave.Services.Settings;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using CPQ.Core.Startups;
+using DomuWave.Application.Filters;
+using DomuWave.Services;
+using DomuWave.Services.Settings;
+using Hangfire;
 using Microsoft.OpenApi.Models;
 using Serilog;
+using Serilog.Exceptions;
 using Serilog.Exceptions.Core;
 using Serilog.Exceptions.Refit.Destructurers;
-using Serilog.Exceptions;
-using Serilog.Settings.Configuration;
-using CPQ.Core.Startups;
-using Hangfire;
 
 IConfigurationRoot configuration;
 var NETCoreEnv = OxCore.ChangeEnvironments(args);
@@ -25,14 +23,11 @@ builder.Services.AddWindowsService();
 
 var isService = args?.Contains("--service") ?? false;
 
-
-
 var hostEnvironment = builder.Environment;
 if (hostEnvironment.IsDevelopment())
 {
     var path = $"appsettings.{hostEnvironment.EnvironmentName}_{Environment.MachineName}.json";
 
-    //configuration = new ConfigurationBuilder()
     configuration = builder
                     .Configuration.AddJsonFile("appsettings.json", true, true)
                     .AddJsonFile(path, true, true)
@@ -53,34 +48,20 @@ _initSettings(out var _jobSettings, out var _oxCoreSettings);
 
 var logger = new LoggerConfiguration()
              .ReadFrom.Configuration(configuration)
-            //  .Enrich.WithEnvironmentName()
-            //  .Enrich.WithMachineName()
-              .Enrich.WithThreadId()
-
-            //  .Enrich.WithEnvironmentUserName()
+             .Enrich.WithThreadId()
              .Enrich
-
              .WithExceptionDetails(new DestructuringOptionsBuilder()
                                    .WithDefaultDestructurers()
                                    .WithDestructurers([new ApiExceptionDestructurer(destructureHttpContent: true)]))
-
-
              .CreateLogger();
 
 logger.Information("Check env");
-
-logger.Information(
-                   "current ASPNETCORE_ENVIRONMENT: {env}",
-                   Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-                  );
+logger.Information("current ASPNETCORE_ENVIRONMENT: {env}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
 
 if (!NETCoreEnv.IsNullOrEmpty())
     logger.Information("set ASPNETCORE_ENVIRONMENT: {env}", NETCoreEnv);
 else
-    logger.Information(
-                       "ASPNETCORE_ENVIRONMENT: {env}",
-                       Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-                      );
+    logger.Information("ASPNETCORE_ENVIRONMENT: {env}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
 
 logger.Information("Init build host");
 
@@ -89,6 +70,7 @@ try
     var services = builder.Services;
 
     services.AddSignalR(c => { });
+
     services.AddCors(options =>
         options.AddPolicy(
             "CorsPolicy",
@@ -98,13 +80,14 @@ try
             }
         )
     );
+
     builder.Services.AddMemoryCache();
     builder.Services.AddSingleton<ICacheManager, CacheManager>();
 
+    // Unica registrazione di AddControllers con tutti i filtri globali
     builder.Services.AddControllers(options =>
     {
-        options.Filters.Add<TenantHeaderFilter>();
-        options.Filters.Add<SystemBookHeaderFilter>();
+        options.Filters.Add<TokenAuthorizeAttribute>();
     });
 
     services.AddHeaderPropagation();
@@ -112,25 +95,18 @@ try
     if (hostEnvironment.IsProduction())
         builder.Services.AddHealthChecks();
 
-    services.AddMvc(option =>
-    {
-        option.EnableEndpointRouting = false;
-        option.Filters.Add<TokenAuthorizeAttribute>();
-    });
-
-    //init bus trasport
-    builder.Services.AddScoped<TenantHeaderFilter>();
+    // SystemBookHeaderFilter usato solo via [ServiceFilter] su PrivateAdminControllerBase
     builder.Services.AddScoped<SystemBookHeaderFilter>();
+    builder.Services.AddScoped<TenantHeaderFilter>();
 
     services.AddOxConfigureServices(
-                                    configuration,
-                                    _oxCoreSettings,
-                                    hostEnvironment,
-                                    false,
-                                    _jobSettings
+        configuration,
+        _oxCoreSettings,
+        hostEnvironment,
+        false,
+        _jobSettings
     );
-    
-    
+
     services.AddOxSimpleMediator(configuration);
 
     services.AddDomuWaveAppServices(_oxCoreSettings);
@@ -149,16 +125,9 @@ try
 
     #endregion
 
-    services.AddControllers();
-
-
-
     builder.Services.Configure<DomuWaveSettings>(builder.Configuration.GetSection("DomuWave"));
 
-
     builder.Host.UseSerilog(logger);
-
-    // Configure the HTTP request pipeline.
 
     var app = builder.Build();
 
@@ -178,17 +147,11 @@ try
         }
         return next();
     });
+
     app.UseOxCore(_oxCoreSettings);
-  
     app.UseOxHangfireDashboard(_jobSettings);
 
-    //app.UseStaticFiles();
-
     app.UseRouting();
-
-    // Configure the HTTP request pipeline.
-
-    //app.UseHttpsRedirection();
 
     app.UseAuthorization();
 
@@ -201,44 +164,30 @@ try
         c.SwaggerEndpoint("v1/swagger.json", "Auth.Microservice");
         c.RoutePrefix = "swagger";
     });
-    app.UseMvc(routes =>
-    {
-        routes.MapRoute(
-            name: "default",
-            template: "{controller=Home}/{action=Index}/{id?}");
-    });
 
     app.MapControllers();
-    
-        //RecurringJob.
 
     app.Run();
 }
 catch (Exception exception)
 {
     Console.WriteLine(exception);
-    //NLog: catch setup errors
     logger?.Error(exception, "Stopped program because of exception");
-
     throw;
 }
 finally
 {
-    // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
     logger?.Debug("Shutdown application ");
 }
 
 void _initSettings(
-    
     out JobSettings jobSettings,
     out OxCoreSettings oxCoreSettings
 )
 {
     oxCoreSettings = new OxCoreSettings();
-
     configuration.Bind("OxCore", oxCoreSettings);
 
     jobSettings = new JobSettings();
-
     configuration.Bind("JobSettings", jobSettings);
 }

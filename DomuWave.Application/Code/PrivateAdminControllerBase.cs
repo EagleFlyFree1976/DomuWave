@@ -9,14 +9,7 @@ namespace DomuWave.Application.Code;
 [ServiceFilter(typeof(SystemBookHeaderFilter))]
 public class PrivateAdminControllerBase : OxCoreTokenAuthorizeControllerBase
 {
-    protected long BookId
-    {
-        get
-        {
-
-            return (long)HttpContext.Items["SystemBookId"];
-        }
-    }
+    
 
     public PrivateAdminControllerBase(ILogger logger, IOptionsMonitor<OxCoreSettings> configuration) : base(logger, configuration)
     {

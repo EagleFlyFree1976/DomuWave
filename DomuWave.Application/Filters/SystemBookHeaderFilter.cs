@@ -9,7 +9,7 @@ namespace DomuWave.Application.Filters;
 
 public class SystemBookHeaderFilter : IAsyncActionFilter
 {
-    private const string HeaderName = "X-Tenant-Id";
+ 
     protected readonly IMediator _mediator;
     protected readonly IUserService _userService;
     public SystemBookHeaderFilter(IMediator mediator, IUserService userService)
@@ -23,38 +23,9 @@ public class SystemBookHeaderFilter : IAsyncActionFilter
 
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        if (context.HttpContext.Request.Headers.TryGetValue(HeaderName, out StringValues bookid))
-        {
-            long lBookId = 0;
-            if (long.TryParse(bookid.ToString(), out lBookId))
-            {
-                context.HttpContext.Items["SystemBookId"] = lBookId;
-            }
-        }
+       
 
-        if (!context.HttpContext.Items.ContainsKey("SystemBookId"))
-        {
-            IUser user = context.HttpContext.User as IUser;
-
-            if (user == null && context.HttpContext.Request.Headers.ContainsKey("X-Auth-Token"))
-            {
-                var userToken = context.HttpContext.Request.Headers["X-Auth-Token"].ToString();
-                if (!string.IsNullOrEmpty(userToken))
-                {
-                    user = await _userService.GetByTokenAsync(userToken, CancellationToken.None)
-                        .ConfigureAwait(false);
-                }
-            }
-            if (user != null)
-            {
-
- 
-                
-
-
-            }
-
-        }
+         
 
 
         await next();
