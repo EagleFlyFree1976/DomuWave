@@ -59,3 +59,4 @@
 /DomuWave.Web/obj/Debug/net9.0
 /DomuWave.UnitTest/obj/Debug/net8.0
 /DomuWave.Application/Logs/auth.log
+/DomuWave.Application/Logs
