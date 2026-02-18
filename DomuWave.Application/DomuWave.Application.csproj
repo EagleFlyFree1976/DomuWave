@@ -99,5 +99,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Controllers\Admin\" />
+    <Folder Include="Models\" />
   </ItemGroup>
 </Project>

@@ -20,6 +20,15 @@
 
   <ItemGroup>
     <Folder Include="Clients\Request\" />
+    <Folder Include="Dto\Comunicazioni\" />
+    <Folder Include="Dto\Condominio\" />
+    <Folder Include="Dto\Contabilita\" />
+    <Folder Include="Dto\Documenti\" />
+    <Folder Include="Dto\Fornitori\" />
+    <Folder Include="Dto\Millesimi\" />
+    <Folder Include="Dto\Rate\" />
+    <Folder Include="Dto\Spese\" />
+    <Folder Include="Dto\Unita\" />
     <Folder Include="Orchestators\" />
   </ItemGroup>
 

@@ -9,13 +9,13 @@ using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Menu
 {
-    public class PopulateMenuEventCommand : BaseBookRelatedCommand, IQuery<IList<MenuItemDto>>
+    public class PopulateMenuEventCommand : BaseTenantRelatedCommand, IQuery<IList<MenuItemDto>>
     {
         public PopulateMenuEventCommand()
         {
         }
 
-        public PopulateMenuEventCommand(int currentUserId, long currentBookId) : base(currentUserId, currentBookId)
+        public PopulateMenuEventCommand(int currentUserId, Guid currentTenantId) : base(currentUserId, currentTenantId)
         {
         }
 

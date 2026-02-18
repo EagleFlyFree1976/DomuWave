@@ -1,18 +1,20 @@
 ﻿using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Services;
+using DomuWave.Services.Command.Tenant;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Primitives;
 using SimpleMediator.Core;
 
 namespace DomuWave.Application.Filters;
 
-public class SystemBookHeaderFilter : IAsyncActionFilter
+public class TenantHeaderFilter : IAsyncActionFilter
 {
     private const string HeaderName = "X-Tenant-Id";
     protected readonly IMediator _mediator;
     protected readonly IUserService _userService;
-    public SystemBookHeaderFilter(IMediator mediator, IUserService userService)
+    public TenantHeaderFilter(IMediator mediator, IUserService userService)
     {
         _mediator = mediator;
         _userService = userService;
@@ -25,14 +27,12 @@ public class SystemBookHeaderFilter : IAsyncActionFilter
     {
         if (context.HttpContext.Request.Headers.TryGetValue(HeaderName, out StringValues bookid))
         {
-            long lBookId = 0;
-            if (long.TryParse(bookid.ToString(), out lBookId))
-            {
-                context.HttpContext.Items["SystemBookId"] = lBookId;
-            }
+            
+                context.HttpContext.Items["TenantId"] = bookid;
+            
         }
 
-        if (!context.HttpContext.Items.ContainsKey("SystemBookId"))
+        if (!context.HttpContext.Items.ContainsKey("TenantId"))
         {
             IUser user = context.HttpContext.User as IUser;
 
@@ -47,9 +47,21 @@ public class SystemBookHeaderFilter : IAsyncActionFilter
             }
             if (user != null)
             {
-
- 
+                Guid tenantId = new Guid(context.HttpContext.Request.Headers["TenantId"].ToString());
                 
+                
+               
+                    GetTenantByIdCommand getBookById = 
+                        new GetTenantByIdCommand(user.Id, tenantId) ;
+                    var book = await _mediator.GetResponse(getBookById, CancellationToken.None)
+                        .ConfigureAwait(false);
+
+                    if (book != null)
+                    {
+                        context.HttpContext.Items["TenantId"] = book.Id;
+
+                    }
+                 
 
 
             }

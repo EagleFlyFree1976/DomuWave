@@ -103,7 +103,7 @@ try
 
     builder.Services.AddControllers(options =>
     {
-        options.Filters.Add<BookHeaderFilter>();
+        options.Filters.Add<TenantHeaderFilter>();
         options.Filters.Add<SystemBookHeaderFilter>();
     });
 
@@ -119,7 +119,7 @@ try
     });
 
     //init bus trasport
-    builder.Services.AddScoped<BookHeaderFilter>();
+    builder.Services.AddScoped<TenantHeaderFilter>();
     builder.Services.AddScoped<SystemBookHeaderFilter>();
 
     services.AddOxConfigureServices(

@@ -9,7 +9,7 @@ public class PopulateAccountsEventCommand :    PopulateMenuEventCommand, IQuery<
     {
     }
 
-    public PopulateAccountsEventCommand(int currentUserId, long currentBookId) : base(currentUserId, currentBookId)
+    public PopulateAccountsEventCommand(int currentUserId, Guid currentTenantId) : base(currentUserId, currentTenantId)
     {
     }
 }

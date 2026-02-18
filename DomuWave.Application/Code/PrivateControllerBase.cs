@@ -6,14 +6,14 @@ using Microsoft.Extensions.Options;
 
 namespace DomuWave.Application.Code
 {
-    [ServiceFilter(typeof(BookHeaderFilter))]
+    [ServiceFilter(typeof(TenantHeaderFilter))]
     public class PrivateControllerBase : OxCoreTokenAuthorizeControllerBase
     {
         protected long BookId
         {
             get
             {
-                return (long)HttpContext.Items["BookId"];
+                return (long)HttpContext.Items["TenantId"];
             }
         }
 

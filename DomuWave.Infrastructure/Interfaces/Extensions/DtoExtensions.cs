@@ -6,7 +6,7 @@ using DomuWave.Services.Models;
 using DomuWave.Services.Models;
 using DomuWave.Services.Models.Dto;
 using NHibernate.Mapping.ByCode;
-using MenuItem = Hangfire.Dashboard.MenuItem;
+ 
 
 
 using Bogus.DataSets;
@@ -45,7 +45,22 @@ public static class DtoExtensions
 
         return traceEntityDto;
     }
+    public static MenuItemDto ToDto(this MenuItem item)
+    {
+        if (item == null) return null;
 
-    
+        MenuItemDto dto = new MenuItemDto
+        {
+            Id = item.Id,
+            Icon = item.Icon,
+            ParentMenuId = item.ParentMenuId,
+            Action = item.Action,
+            AuthorizationCode = item.AuthorizationCode,
+            Description = item.Description
+        };
+        return dto;
+    }
+
+
 
 }
