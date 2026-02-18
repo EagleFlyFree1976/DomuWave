@@ -93,7 +93,7 @@
 <script setup>
   import { onMounted, ref, watch } from 'vue'
   
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import { useAccountStore } from '@/stores/accountStore'
   import { useConfirm } from "primevue/useconfirm";
   import AccountCreateForm from './AccountCreateForm.vue'
@@ -104,17 +104,17 @@
   const createForm = ref(null)
   var modalCreateAccountVisible = ref(false);
   const accountStore = useAccountStore();
-  const DomuWaveStore = useDomuWaveStore();
+  const bizlioStore = useBizlioStore();
   const confirm = useConfirm();
   const props = defineProps({
   
   })
 
   async function deleteAccount(id) {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await accountStore.deleteAccount(id);
     await refresh();
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
 
   const confirmRemove = (event, id) => {
@@ -145,9 +145,9 @@
 };
    
   async function refresh(){
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await accountStore.loadAllAccounts();
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   onMounted(async () => {
     

@@ -42,7 +42,7 @@
           <DatePicker name="targetDate" fluid
                   
                       @update:modelValue="onDateChange"
-                      :dateFormat="DomuWaveStore.options.dateFormat"
+                      :dateFormat="bizlioStore.options.dateFormat"
                       placeholder="Cerca per data" />
 
 
@@ -141,7 +141,7 @@
 </template>
 <script setup>
   import { onMounted, ref, watch } from 'vue'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import { useExchangeRateHistoryStore } from '@/stores/exchangeRateHistoryStore'
   import { useConfirm } from "primevue/useconfirm";
   import Toolbar from 'primevue/toolbar';
@@ -162,21 +162,21 @@
   const sortState = ref({ field: "ValidFrom", direction: 'asc' });
 
   const editForm = ref(null)
-  const DomuWaveStore = useDomuWaveStore();
+  const bizlioStore = useBizlioStore();
   const confirm = useConfirm();
   const props = defineProps({
     ExchangeRateHistoryid:Number
   })
 
   async function deleteExchangeRateHistory(id) {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     console.log("e",exchangeRateHistoryStore);
     await exchangeRateHistoryStore.deleteExchangeRateHistory(id);
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   const findCurrencies = async (event) => {
     console.log("Carico le valute", event.query);
-    currencies.value = await DomuWaveStore.loadCurrencies(event.query);
+    currencies.value = await bizlioStore.loadCurrencies(event.query);
     console.log("Ho caricato le valute:", currencies);
   };
   const confirmRemove = (event, id) => {
@@ -213,12 +213,12 @@
   };
   async function filter() {
     console.log("FILTER", targetDate);
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     var filterCurrencyId = toCurrencyId != null && toCurrencyId.value != null ? toCurrencyId.value.id : null;
     var filterDateValue = targetDate != null && targetDate.value != null ? targetDate.value : null;
 
     await exchangeRateHistoryStore.filterAllexchangeRateHistory(filterDateValue, filterCurrencyId,sortState.value.field, sortState.value.direction);
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
 
   async function onSortChanged(newSort) {
@@ -232,12 +232,12 @@
 }
 
   async function refresh(){
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     var filterCurrencyId = toCurrencyId != null && toCurrencyId.value != null ? toCurrencyId.value.id : null;
     var filterDateValue = targetDate != null && targetDate.value != null ? targetDate.value : null;
       console.log("nuovo sort rerf", sortState, sortState.value);
     await exchangeRateHistoryStore.filterAllexchangeRateHistory(filterDateValue, filterCurrencyId, sortState.value.field, sortState.value.direction);
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   onMounted(async () => {
 

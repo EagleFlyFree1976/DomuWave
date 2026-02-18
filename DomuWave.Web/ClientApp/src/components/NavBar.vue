@@ -5,7 +5,7 @@
       <div class="sidebar-brand-icon rotate-n-15">
         <i class="fas fa-laugh-wink"></i>
       </div>
-      <div class="sidebar-brand-text mx-3">DomuWave <sup>X</sup></div>
+      <div class="sidebar-brand-text mx-3">Bizlio <sup>X</sup></div>
     </a>
     <!-- Divider -->
     <hr class="sidebar-divider my-0">

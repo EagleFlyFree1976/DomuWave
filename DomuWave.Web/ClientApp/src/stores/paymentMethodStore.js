@@ -4,7 +4,7 @@ import { toUtcDate } from '@/code/utils/dateUtils'
 import axios from 'axios'
 //import { processApiResponse, handleApiError } from '@/code/utils/apiUtils'
 import { useMessageStore } from './messageStore'
-import { useDomuWaveStore } from './domuWaveStore'
+import { useBizlioStore } from './bizLioStore'
 import { MESSAGES, TYPES } from '@/code/messages'
 import router from '@/router'
 export const usePaymentMethodStore = defineStore('paymentMethodStore', {
@@ -40,7 +40,7 @@ export const usePaymentMethodStore = defineStore('paymentMethodStore', {
     },
     async updateEntity(paymentmethod) {
       const messageStore = useMessageStore();
-      const DomuWaveStore = useDomuWaveStore();
+      const bizlioStore = useBizlioStore();
       this.loading = true
       this.error = null
 
@@ -70,7 +70,7 @@ export const usePaymentMethodStore = defineStore('paymentMethodStore', {
           this.createmode = false;
         }
         
-        DomuWaveStore.loadMenu();
+        bizlioStore.loadMenu();
 
         this.edititem = { ...paymentmethod }
         this.createmode = false;

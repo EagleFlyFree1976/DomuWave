@@ -1,0 +1,15 @@
+meta {
+  name: GetOpen
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/condominiuminstallments/condominium/1/open
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

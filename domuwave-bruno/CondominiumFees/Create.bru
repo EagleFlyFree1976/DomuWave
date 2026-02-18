@@ -1,0 +1,26 @@
+meta {
+  name: Create
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/condominiumfees
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "installmentId": 1,
+    "unitId": 1,
+    "userId": 100,
+    "amount": 150.00,
+    "dueDate": "2024-06-30",
+    "isPaid": false
+  }
+}

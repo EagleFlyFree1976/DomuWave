@@ -6,7 +6,7 @@
            role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header">
           <i class="fa fa-atlassian"></i>
-          <strong class="me-auto">DomuWave</strong>
+          <strong class="me-auto">Bizlio</strong>
           <small></small>
 
           <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>

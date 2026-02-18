@@ -1,0 +1,15 @@
+meta {
+  name: GetOverdue
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/condominiumfees/condominium/1/overdue
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

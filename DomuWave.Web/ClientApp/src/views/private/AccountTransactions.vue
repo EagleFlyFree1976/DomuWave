@@ -348,14 +348,14 @@
       </div>
     </div>
  
-  <div v-if="accountStore.edititem == null && !DomuWaveStore.loading">
+  <div v-if="accountStore.edititem == null && !bizlioStore.loading">
     <Error404 :backaction="/accounts/"></Error404>
   </div>
 </template>
 <script setup>
   import { useRoute, useRouter } from 'vue-router'
   import { onMounted, ref, watch, computed, handleError } from 'vue'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import { useAccountStore } from '@/stores/accountStore'
   import { useTransactionStore } from '@/stores/transactionStore'
   import { useMessageStore } from '@/stores/messageStore'
@@ -401,7 +401,7 @@
   const editForm = ref(null);
   const massiveEditForm = ref(null);
   const editEntity = ref(null);
-  const DomuWaveStore = useDomuWaveStore();
+  const bizlioStore = useBizlioStore();
   const confirm = useConfirm();
   const props = defineProps({
     Transactionid: Number,
@@ -602,7 +602,7 @@
   })
   
   async function deleteTransaction(id) {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     console.log("e", transactionStore);
     await transactionStore.deleteTransaction(id);
 
@@ -610,11 +610,11 @@
     await refresh();
 
     
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   const findCurrencies = async (event) => {
     console.log("Carico le valute", event.query);
-    currencies.value = await DomuWaveStore.loadCurrencies(event.query);
+    currencies.value = await bizlioStore.loadCurrencies(event.query);
     console.log("Ho caricato le valute:", currencies);
   };
   const confirmRemove = (event, id) => {
@@ -685,7 +685,7 @@
 
   async function filter() {
 
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
 
     var filterCategoryId = transactionStore.currentFilter.categoryId != null ? transactionStore.currentFilter.categoryId : null;
     var filterFromDateValue = transactionStore.currentFilter.fromDate != null ? transactionStore.currentFilter.fromDate : null;
@@ -705,7 +705,7 @@
     await transactionStore.filterAlltransaction(props.accountid, filterAccountId, filterCategoryId, filterFromDateValue, filterToDateValue, filterTransactionTypeId, filterFlowDirectionId, filterStatusId, filterNote,
       sortState.value.field, sortState.value.direction, transactionStore.page);
 
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
 
   async function onSortChanged(newSort) {
@@ -719,7 +719,7 @@
   }
 
   async function refresh() {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await transactionStore.loadFilterLookups();
     await accountStore.loadLookups();
 
@@ -775,9 +775,9 @@
     (newId) => {
       if (newId != null) {
         if (newId != 0) {
-          DomuWaveStore.startLoading();
+          bizlioStore.startLoading();
           accountStore.edit(newId);
-          DomuWaveStore.stopLoading();
+          bizlioStore.stopLoading();
         }
         else {
           accountStore.newEntity();

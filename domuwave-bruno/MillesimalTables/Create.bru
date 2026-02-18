@@ -1,0 +1,25 @@
+meta {
+  name: Create
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/millesimaltables
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "condominiumId": 1,
+    "code": "GENERALE",
+    "name": "Tabella Generale",
+    "description": "Tabella millesimale generale",
+    "isActive": true
+  }
+}

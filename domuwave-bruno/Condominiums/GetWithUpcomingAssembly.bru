@@ -1,0 +1,15 @@
+meta {
+  name: GetWithUpcomingAssembly
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/condominiums/1/upcoming-assembly
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

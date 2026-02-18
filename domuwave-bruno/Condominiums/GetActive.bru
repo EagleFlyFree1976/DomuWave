@@ -1,0 +1,15 @@
+meta {
+  name: GetActive
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/condominiums/active
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

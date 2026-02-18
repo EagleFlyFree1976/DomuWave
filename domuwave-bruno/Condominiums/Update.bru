@@ -1,0 +1,27 @@
+meta {
+  name: Update
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/condominiums/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "code": "COND001",
+    "name": "Condominio Aggiornato",
+    "address": "Via Roma 1",
+    "city": "Milano",
+    "postalCode": "20100",
+    "province": "MI",
+    "isActive": true
+  }
+}

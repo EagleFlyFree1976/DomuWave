@@ -1,0 +1,15 @@
+meta {
+  name: GetUnpaid
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/expenses/condominium/1/unpaid
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -3,7 +3,7 @@ import authApi from '@/code/authApi'
 import axios from 'axios'
 //import { processApiResponse, handleApiError } from '@/code/utils/apiUtils'
 import { useMessageStore } from './messageStore'
-import { useDomuWaveStore } from './domuWaveStore'
+import { useBizlioStore } from './bizLioStore'
 import { MESSAGES, TYPES } from '@/code/messages'
 export const useAuthStore = defineStore('authStore', {
   state: () => ({
@@ -15,7 +15,7 @@ export const useAuthStore = defineStore('authStore', {
   actions: {
     async login(email, password) {
       const messageStore = useMessageStore();
-      const DomuWaveStore = useDomuWaveStore();
+      const bizlioStore = useBizlioStore();
       this.loading = true
       this.error = null
       try {
@@ -28,14 +28,14 @@ export const useAuthStore = defineStore('authStore', {
         localStorage.setItem('auth_token', this.token);
         localStorage.setItem('auth_user', JSON.stringify(this.user));
  
-        DomuWaveStore.setUser(this.user);
+        bizlioStore.setUser(this.user);
       } catch (err) {
         console.log("Error", err);
         messageStore.setMessages("Utente non trovato", TYPES.error)
         this.error = err.response?.data?.message || 'Errore durante il login'
         this.token = null
         this.user = null
-        DomuWaveStore.setUser(this.user);
+        bizlioStore.setUser(this.user);
       } finally {
         this.loading = false
       }
@@ -66,14 +66,14 @@ export const useAuthStore = defineStore('authStore', {
       }
     },
     logout() {
-      const DomuWaveStore = useDomuWaveStore();
+      const bizlioStore = useBizlioStore();
       this.token = null
       this.user = null
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
       localStorage.removeItem('bookId');
       delete axios.defaults.headers.common['Authorization']
-      DomuWaveStore.setUser(this.user);
+      bizlioStore.setUser(this.user);
     },
     loadFromStorage() {
       const token = localStorage.getItem('auth_token')

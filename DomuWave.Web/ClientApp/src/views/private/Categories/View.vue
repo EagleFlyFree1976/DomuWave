@@ -89,7 +89,7 @@
 <script setup>
   import { onMounted, ref, watch, computed  } from 'vue'
 
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import { useCategoryStore } from '@/stores/categoryStore'
   import { useConfirm } from "primevue/useconfirm";
   import InputText from 'primevue/inputtext';
@@ -108,17 +108,17 @@ import Column from 'primevue/column';
   const createForm = ref(null)
   var modalEditVisible = ref(false);
   const categoryStore = useCategoryStore();
-  const DomuWaveStore = useDomuWaveStore();
+  const bizlioStore = useBizlioStore();
   const confirm = useConfirm();
   const props = defineProps({
 
   })
 
   async function deleteCategory(id) {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await categoryStore.deleteCategory(id);
     await refresh();
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
 
   const confirmRemove = (event,item) => {
@@ -153,9 +153,9 @@ import Column from 'primevue/column';
     await refresh();
   }
   async function refresh(){
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await categoryStore.loadAllCategories();
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   onMounted(async () => {
 

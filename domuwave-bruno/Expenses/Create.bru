@@ -1,0 +1,27 @@
+meta {
+  name: Create
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/expenses
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "condominiumId": 1,
+    "supplierId": 1,
+    "description": "Manutenzione ascensore",
+    "amount": 500.00,
+    "type": "Maintenance",
+    "date": "2024-06-01",
+    "isPaid": false
+  }
+}

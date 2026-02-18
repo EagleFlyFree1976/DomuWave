@@ -6,7 +6,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from '@/stores/authStore'
-import { useDomuWaveStore } from '@/stores/domuWaveStore'
+import { useBizlioStore } from '@/stores/bizLioStore'
 import currencyDirective from './directives/currency'
 import dateDirective from './directives/date'
 
@@ -41,10 +41,10 @@ app.directive('date', dateDirective)
 const auth = useAuthStore()
 auth.loadFromStorage()
 
-const DomuWaveStore = useDomuWaveStore()
+const bizlioStore = useBizlioStore()
 
 // Caricamento del menu prima del mount
-DomuWaveStore.loadMenu().then(() => {
+bizlioStore.loadMenu().then(() => {
   console.log("app mount");
   app.mount('#wrapper');
 });

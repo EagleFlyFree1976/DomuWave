@@ -1,0 +1,15 @@
+meta {
+  name: GetByUser
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/condominiumfees/user/100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Create
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/condominiums
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "code": "COND001",
+    "name": "Condominio Esempio",
+    "address": "Via Roma 1",
+    "city": "Milano",
+    "postalCode": "20100",
+    "province": "MI",
+    "fiscalCode": "12345678901",
+    "isActive": true
+  }
+}

@@ -1,0 +1,15 @@
+meta {
+  name: GetByStaircase
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/realestateunits/condominium/1/staircase/A
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

@@ -19,7 +19,7 @@
                      
                       <DatePicker name="transactionDate" fluid
                                   v-model="editEntity.transactionDate"
-                                  :dateFormat="DomuWaveStore.options.dateFormat"
+                                  :dateFormat="bizlioStore.options.dateFormat"
                                   @update:modelValue="onTransactionDateChange"
                                   placeholder="Seleziona la data" class="w-100" />
                       <Message v-if="$form.transactionDate?.invalid" severity="error" size="small" variant="simple">{{ $form.transactionDate.error?.message }}</Message>
@@ -251,7 +251,7 @@
     </div>
   </div>
 
-  <div v-if="transactionStore.edititem == null && !DomuWaveStore.loading">
+  <div v-if="transactionStore.edititem == null && !bizlioStore.loading">
     <Error404 :backaction="/PaymentMethods/"></Error404>
   </div>
 </template>
@@ -259,7 +259,7 @@
 
   import { onMounted, watch, computed, reactive, ref } from 'vue'
   import { useMessageStore } from '@/stores/messageStore'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import { useAccountStore } from '@/stores/accountStore'
   import { useTransactionStore } from '@/stores/transactionStore'
   import AutoComplete from 'primevue/autocomplete';
@@ -278,7 +278,7 @@
   const categories = ref([]);
   const findCurrencies = async (event) => {
     console.log("Carico le valute", event.query);
-    currencies.value = await DomuWaveStore.loadCurrencies(event.query);
+    currencies.value = await bizlioStore.loadCurrencies(event.query);
     console.log("Ho caricato le valute:", currencies);
   };
 
@@ -319,7 +319,7 @@
   const transactionStore = useTransactionStore()
   const accountstore = useAccountStore()
   const messageStore = useMessageStore()
-  const DomuWaveStore = useDomuWaveStore()
+  const bizlioStore = useBizlioStore()
 
   var editEntity = ref({ ...transactionStore.edititem });
   const formSubmitResolve = ref(null);

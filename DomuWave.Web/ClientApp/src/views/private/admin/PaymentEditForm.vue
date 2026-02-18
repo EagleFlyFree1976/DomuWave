@@ -40,7 +40,7 @@
       </div>
     </div>
   </div>
-  <div v-if="paymentMethodStore.edititem == null && !DomuWaveStore.loading">
+  <div v-if="paymentMethodStore.edititem == null && !bizlioStore.loading">
     <Error404 :backaction="/PaymentMethods/"></Error404>
   </div>
 </template>
@@ -51,7 +51,7 @@
 
   
   import { useMessageStore } from '@/stores/messageStore'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
     import { usePaymentMethodStore } from '@/stores/paymentMethodStore'
   import Button from 'primevue/button';
   import Error404 from '@/components/Error404.vue'
@@ -62,7 +62,7 @@
   var saving = ref(false);
   const paymentMethodStore = usePaymentMethodStore()
   const messageStore = useMessageStore()
-  const DomuWaveStore = useDomuWaveStore()
+  const bizlioStore = useBizlioStore()
   var editEntity = ref({ ...paymentMethodStore.edititem });
   const formSubmitResolve = ref(null);
 

@@ -1,0 +1,23 @@
+meta {
+  name: GetAll
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}api/communications
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-Auth-Token: JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+vars:pre-request {
+  baseUrl: http://localhost:60101/
+}

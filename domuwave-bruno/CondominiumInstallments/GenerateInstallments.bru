@@ -1,0 +1,22 @@
+meta {
+  name: GenerateInstallments
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/condominiuminstallments/condominium/1/generate
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "year": 2024,
+    "count": 12
+  }
+}

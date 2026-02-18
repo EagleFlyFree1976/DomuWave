@@ -40,7 +40,7 @@
       </div>
     </div>
   </div>
-  <div v-if="categoryStore.edititem == null && !DomuWaveStore.loading">
+  <div v-if="categoryStore.edititem == null && !bizlioStore.loading">
     <Error404 :backaction="/Categories/"></Error404>
   </div>
 </template>
@@ -51,7 +51,7 @@
 
   
   import { useMessageStore } from '@/stores/messageStore'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
     import { useCategoryStore } from '@/stores/categoryStore'
   import Button from 'primevue/button';
   import Error404 from '@/components/Error404.vue'
@@ -61,7 +61,7 @@
   var saving = ref(false);
   const categoryStore = useCategoryStore()
   const messageStore = useMessageStore()
-  const DomuWaveStore = useDomuWaveStore()
+  const bizlioStore = useBizlioStore()
   var editEntity = ref({ ...categoryStore.edititem });
   const formSubmitResolve = ref(null);
 

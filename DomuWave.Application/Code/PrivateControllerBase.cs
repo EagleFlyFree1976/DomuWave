@@ -9,7 +9,7 @@ namespace DomuWave.Application.Code
     [ServiceFilter(typeof(TenantHeaderFilter))]
     public class PrivateControllerBase : OxCoreTokenAuthorizeControllerBase
     {
-        protected long BookId
+        protected long TenantId
         {
             get
             {

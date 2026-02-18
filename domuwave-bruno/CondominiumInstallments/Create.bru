@@ -1,0 +1,25 @@
+meta {
+  name: Create
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/condominiuminstallments
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "condominiumId": 1,
+    "year": 2024,
+    "number": 1,
+    "dueDate": "2024-01-31",
+    "totalAmount": 1500.00
+  }
+}

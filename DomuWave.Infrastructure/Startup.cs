@@ -48,11 +48,37 @@ public static class Startup
          
         _initClient(services,_coreSettings);
         
-       // services.AddScoped<IMenuService, MenuService>();
-        services.AddScoped<IExchangeRateClient, ExchangeRateApiClient>();
-        
+        services.AddScoped<IMenuService, MenuService>();
+       
 
- 
+
+        // Tenant Management Services
+        services.AddScoped<ITenantService, TenantService>();
+        services.AddScoped<IUnitTenantService, UnitTenantService>();
+
+        // Document Management Services
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IDocumentAccessService, DocumentAccessService>();
+
+        // Communication Services
+        services.AddScoped<ICommunicationService, CommunicationService>();
+        services.AddScoped<ICommunicationReadService, CommunicationReadService>();
+
+        // Financial Services
+        services.AddScoped<IReceiptService, ReceiptService>();
+        services.AddScoped<IExpenseService, ExpenseService>();
+
+        // Condominium Management Services
+        services.AddScoped<ICondominiumService, CondominiumService>();
+        services.AddScoped<ICondominiumCadastralDataService, CondominiumCadastralDataService>();
+        services.AddScoped<IUnitMillesimalService, UnitMillesimalService>();
+
+        // Supplier Services
+        services.AddScoped<ISupplierService, SupplierService>();
+
+        // External Clients
+        services.AddScoped<IExchangeRateClient, ExchangeRateApiClient>();
+
 
         return services;
     }

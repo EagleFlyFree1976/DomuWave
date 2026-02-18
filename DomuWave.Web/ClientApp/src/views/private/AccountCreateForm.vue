@@ -57,7 +57,7 @@
                 <div class="row mb-3">
                   <label for="openDate" class="col-sm-3 col-form-label">Data apertura</label>
                   <div class="col-sm-9">
-                    <DatePicker name="openDate" fluid v-model="editEntity.openDate" :dateFormat="DomuWaveStore.options.dateFormat" id="opendate"
+                    <DatePicker name="openDate" fluid v-model="editEntity.openDate" :dateFormat="bizlioStore.options.dateFormat" id="opendate"
                                 placeholder="Inserisci la data di apertura" />
                     <Message v-if="$form.openDate?.invalid" severity="error" size="small" variant="simple">{{ $form.openDate.error?.message }}</Message>
                   </div>
@@ -65,7 +65,7 @@
                 <div class="row mb-3">
                   <label for="closedDate" class="col-sm-3 col-form-label">Data chiusura</label>
                   <div class="col-sm-9">
-                    <DatePicker name="closedDate" fluid v-model="editEntity.closedDate" :dateFormat="DomuWaveStore.options.dateFormat" id="closedDate"
+                    <DatePicker name="closedDate" fluid v-model="editEntity.closedDate" :dateFormat="bizlioStore.options.dateFormat" id="closedDate"
                                 placeholder="Inserisci la data di chiusura" />
                     <Message v-if="$form.closedDate?.invalid" severity="error" size="small" variant="simple">{{ $form.closedDate.error?.message }}</Message>
                   </div>
@@ -98,7 +98,7 @@
       </div>
     </div>
   </div>
-  <div v-if="accountStore.createitem == null && !DomuWaveStore.loading">
+  <div v-if="accountStore.createitem == null && !bizlioStore.loading">
     <Error404 :backaction="/accounts/"></Error404>
   </div>
 </template>
@@ -109,7 +109,7 @@
   
   import { useAccountStore } from '@/stores/accountStore'
   import { useMessageStore } from '@/stores/messageStore'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import InputNumber from 'primevue/inputnumber';
   import Button from 'primevue/button';
   import Error404 from '../../components/Error404.vue'
@@ -121,7 +121,7 @@
     var saving = ref(false);
   const accountStore = useAccountStore()
   const messageStore = useMessageStore()
-  const DomuWaveStore = useDomuWaveStore()
+  const bizlioStore = useBizlioStore()
   var editEntity = ref({ ...accountStore.createitem });
   const formSubmitResolve = ref(null);
   const currencies = ref([]);
@@ -188,9 +188,9 @@
   console.log("onFormSubmit after");
 
   async function refresh() {
-    DomuWaveStore.startLoading();
-    accounttypes.value = await DomuWaveStore.loadAccountTypes();
-    DomuWaveStore.stopLoading();
+    bizlioStore.startLoading();
+    accounttypes.value = await bizlioStore.loadAccountTypes();
+    bizlioStore.stopLoading();
   }
 
   function undoNew() {
@@ -207,7 +207,7 @@
  
   const findCurrencies = async  (event) => {
     console.log("Carico le valute", event.query);
-    currencies.value = await DomuWaveStore.loadCurrencies(event.query);
+    currencies.value = await bizlioStore.loadCurrencies(event.query);
     console.log("Ho caricato le valute:", currencies);
   };
    

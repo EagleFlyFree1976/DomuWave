@@ -7,7 +7,7 @@
       <div class="sidebar-brand-icon rotate-n-15">
         <i class="fas fa-laugh-wink"></i>
       </div>
-      <div class="sidebar-brand-text mx-3">DomuWave <sup>X</sup></div>
+      <div class="sidebar-brand-text mx-3">Bizlio <sup>X</sup></div>
     </a>
     <!-- Divider -->
     <hr class="sidebar-divider my-0">
@@ -23,9 +23,9 @@
 
 <script setup>
   import { computed } from 'vue'
-  import { useDomuWaveStore } from '../../stores/DomuWaveStore'
+  import { useBizlioStore } from '../../stores/BizlioStore'
   import MenuItem from './MenuItem.vue'
-  const DomuWave = useDomuWaveStore()
+  const Bizlio = useBizlioStore()
   const props = defineProps({
     menuItems: {
       type: Array,
@@ -56,5 +56,5 @@
     return roots
   }
 
-  const tree = computed(() => buildTree(DomuWave.itemMenues))
+  const tree = computed(() => buildTree(Bizlio.itemMenues))
 </script>

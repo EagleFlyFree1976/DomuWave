@@ -1,0 +1,15 @@
+meta {
+  name: GetUnread
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/communications/condominium/1/unread/100
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

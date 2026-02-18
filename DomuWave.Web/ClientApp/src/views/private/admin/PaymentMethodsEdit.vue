@@ -70,7 +70,7 @@
       </div>
     </Dialog>
   </div>
-  <div v-if="paymentMethodStore.edititem == null && !DomuWaveStore.loading">
+  <div v-if="paymentMethodStore.edititem == null && !bizlioStore.loading">
     <Error404 :backaction="/PaymentMethods/"></Error404>
   </div>
 
@@ -82,7 +82,7 @@
   
   import { usePaymentMethodStore } from '@/stores/paymentMethodStore'
   import { useMessageStore } from '@/stores/messageStore'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import Toolbar from 'primevue/toolbar';
   import Button from 'primevue/button';
  
@@ -97,7 +97,7 @@
   import Dialog from 'primevue/dialog';
   const paymentMethodStore = usePaymentMethodStore()
   const messageStore = useMessageStore()
-  const DomuWaveStore = useDomuWaveStore()
+  const bizlioStore = useBizlioStore()
   const props = defineProps({
     paymentmethodid: Number
   });
@@ -177,11 +177,11 @@
     (newId) => {
       if (newId != null) {
         if (newId != 0) {
-          DomuWaveStore.startLoading();
+          bizlioStore.startLoading();
           console.log("Call paymentMethodStore.edit");
           paymentMethodStore.edit(newId);
            console.log("paymentMethodStore.edit called");
-          DomuWaveStore.stopLoading();
+          bizlioStore.stopLoading();
         }
         else {
           paymentMethodStore.newEntity();

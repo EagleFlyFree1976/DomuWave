@@ -52,7 +52,7 @@
 
   import { useAccountStore } from '@/stores/accountStore'
   import { useMessageStore } from '@/stores/messageStore'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import Toolbar from 'primevue/toolbar';
   import Button from 'primevue/button';
 
@@ -69,7 +69,7 @@
   const value = ref('0');
   const accountStore = useAccountStore()
   const messageStore = useMessageStore()
-  const DomuWaveStore = useDomuWaveStore()
+  const bizlioStore = useBizlioStore()
   const props = defineProps({
     accountid: Number
   });
@@ -78,9 +78,9 @@
 
 
   async function refresh() {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
 
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
 
 
@@ -95,9 +95,9 @@
     (newId) => {
       if (newId != null) {
         if (newId != 0) {
-          DomuWaveStore.startLoading();
+          bizlioStore.startLoading();
 
-          DomuWaveStore.stopLoading();
+          bizlioStore.stopLoading();
         }
         else {
 

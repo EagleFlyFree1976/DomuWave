@@ -1,0 +1,27 @@
+meta {
+  name: Update
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/api/expenses/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "condominiumId": 1,
+    "supplierId": 1,
+    "description": "Manutenzione ascensore aggiornata",
+    "amount": 600.00,
+    "type": "Maintenance",
+    "date": "2024-06-01",
+    "isPaid": false
+  }
+}

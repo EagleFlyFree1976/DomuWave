@@ -34,7 +34,7 @@
                     <DatePicker name="validFrom" fluid
                                 v-model="editEntity.validFrom"
                                 :disabled="!exchangeRateHistoryStore.createmode"
-                                :dateFormat="DomuWaveStore.options.dateFormat"
+                                :dateFormat="bizlioStore.options.dateFormat"
                                 placeholder="Seleziona la data" />
                     <Message v-if="$form.validFrom?.invalid" severity="error" size="small" variant="simple">{{ $form.validFrom.error?.message }}</Message>
                   </div>
@@ -57,7 +57,7 @@
       </div>
     </div>
   </div>
-  <div v-if="exchangeRateHistoryStore.edititem == null && !DomuWaveStore.loading">
+  <div v-if="exchangeRateHistoryStore.edititem == null && !bizlioStore.loading">
     <Error404 :backaction="/PaymentMethods/"></Error404>
   </div>
 </template>
@@ -68,7 +68,7 @@
 
 
   import { useMessageStore } from '@/stores/messageStore'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import { useExchangeRateHistoryStore } from '@/stores/exchangeRateHistoryStore'
   import AutoComplete from 'primevue/autocomplete';
   import Button from 'primevue/button';
@@ -81,12 +81,12 @@
   const currencies = ref([]);
   const findCurrencies = async (event) => {
     console.log("Carico le valute", event.query);
-    currencies.value = await DomuWaveStore.loadCurrencies(event.query);
+    currencies.value = await bizlioStore.loadCurrencies(event.query);
     console.log("Ho caricato le valute:", currencies);
   };
   const exchangeRateHistoryStore = useExchangeRateHistoryStore()
   const messageStore = useMessageStore()
-  const DomuWaveStore = useDomuWaveStore()
+  const bizlioStore = useBizlioStore()
   var editEntity = ref({ ...exchangeRateHistoryStore.edititem });
   const formSubmitResolve = ref(null);
 

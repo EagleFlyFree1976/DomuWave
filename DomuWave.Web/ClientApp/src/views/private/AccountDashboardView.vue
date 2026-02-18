@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="accountid != null && accountStore.dashboarddata != null && !DomuWaveStore.loading">
+    <div v-if="accountid != null && accountStore.dashboarddata != null && !bizlioStore.loading">
 
 
       <!-- Page Heading -->
@@ -134,7 +134,7 @@
 
        
        
-    <div v-if="accountStore.dashboarddata == null && !DomuWaveStore.loading">
+    <div v-if="accountStore.dashboarddata == null && !bizlioStore.loading">
         <Error404 :backaction="/accounts/"></Error404>
     </div>
   </div>
@@ -144,7 +144,7 @@
   
   import { onMounted,watch, ref } from 'vue'
   import { useAccountStore } from '@/stores/accountStore'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import PageHeader from './../../components/PageHeader.vue'
   import AccountTabber from './components/AccountTabber.vue'
   import Box from './../../components/dashboard/Box.vue'
@@ -152,7 +152,7 @@
   import Toolbar from 'primevue/toolbar';
   import Button from 'primevue/button';
   const accountStore = useAccountStore()
-  const DomuWaveStore = useDomuWaveStore()
+  const bizlioStore = useBizlioStore()
   function getFirstTotalByMovementType(data, movementType, period) {
     if (!data || !Array.isArray(data.totals)) return {
       "amount": 0, period: { "firstDay": 0, "lastDay": 0 } };
@@ -166,9 +166,9 @@
   })
 
   async function refresh() {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await accountStore.loadDashboard(props.accountid);
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
 
 
@@ -176,9 +176,9 @@
     () => props.accountid,
     async (newId) => {
       if (newId != null) {
-        DomuWaveStore.startLoading();
+        bizlioStore.startLoading();
         await accountStore.loadDashboard(newId);
-        DomuWaveStore.stopLoading();
+        bizlioStore.stopLoading();
         
       }
     },

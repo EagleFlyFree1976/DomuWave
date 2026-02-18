@@ -1,0 +1,15 @@
+meta {
+  name: GetByCode
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/tenants/code/TENANT001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

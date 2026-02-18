@@ -1,0 +1,15 @@
+meta {
+  name: GetTotal
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/expenses/condominium/1/total?from=2024-01-01&to=2024-12-31
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

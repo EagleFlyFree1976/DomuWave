@@ -1,0 +1,26 @@
+meta {
+  name: Create
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/suppliers
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "Rossi Impianti Srl",
+    "vatNumber": "IT12345678901",
+    "type": "Electrician",
+    "email": "info@rossiimpianti.it",
+    "phone": "0212345678",
+    "address": "Via Industria 5, Milano"
+  }
+}

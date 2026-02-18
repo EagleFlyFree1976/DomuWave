@@ -1,0 +1,23 @@
+meta {
+  name: MarkAsPaid
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/api/expenses/1/pay
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "amount": 500.00,
+    "paymentDate": "2024-06-15",
+    "notes": "Pagato con bonifico"
+  }
+}

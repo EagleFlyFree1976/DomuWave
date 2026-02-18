@@ -321,7 +321,7 @@
   import { useRoute, useRouter } from 'vue-router'
 
   import { onMounted, ref, watch, computed } from 'vue'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import { useAccountStore } from '@/stores/accountStore'
   import { useTransactionStore } from '@/stores/transactionStore'
   import { useConfirm } from "primevue/useconfirm";
@@ -355,7 +355,7 @@
   const sortState = ref({ field: "ValidFrom", direction: 'asc' });
 
   const editForm = ref(null)
-  const DomuWaveStore = useDomuWaveStore();
+  const bizlioStore = useBizlioStore();
   const confirm = useConfirm();
   const props = defineProps({
     Transactionid: Number
@@ -453,14 +453,14 @@
   })
 
   async function deleteTransaction(id) {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     console.log("e", transactionStore);
     await transactionStore.deleteTransaction(id);
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   const findCurrencies = async (event) => {
     console.log("Carico le valute", event.query);
-    currencies.value = await DomuWaveStore.loadCurrencies(event.query);
+    currencies.value = await bizlioStore.loadCurrencies(event.query);
     console.log("Ho caricato le valute:", currencies);
   };
   const confirmRemove = (event, id) => {
@@ -531,7 +531,7 @@
   };
   async function filter() {
 
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
 
     await  setFilterOnRouting();
     var filterAccountId = transactionStore.currentFilter.accountId != null ? transactionStore.currentFilter.accountId : null;
@@ -546,7 +546,7 @@
     await transactionStore.filterAlltransaction(null, filterAccountId, filterCategoryId, filterFromDateValue, filterToDateValue, filterTransactionTypeId, filterFlowDirectionId, filterStatusId, filterNote,
       sortState.value.field, sortState.value.direction, transactionStore.page)
 
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
 
   async function onSortChanged(newSort) {
@@ -560,7 +560,7 @@
   }
 
   async function refresh() {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await transactionStore.loadFilterLookups();
     await accountStore.loadLookups();
 

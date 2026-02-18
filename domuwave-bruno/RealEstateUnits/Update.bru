@@ -1,0 +1,27 @@
+meta {
+  name: Update
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/api/realestateunits/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "condominiumId": 1,
+    "code": "INT001",
+    "type": "Apartment",
+    "staircase": "A",
+    "floor": 2,
+    "surface": 90.0,
+    "millesimalValue": 155.0
+  }
+}

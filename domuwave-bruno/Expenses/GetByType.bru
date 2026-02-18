@@ -1,0 +1,15 @@
+meta {
+  name: GetByType
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/expenses/condominium/1/type/Maintenance
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

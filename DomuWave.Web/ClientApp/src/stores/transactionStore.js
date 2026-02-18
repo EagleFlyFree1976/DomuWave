@@ -6,7 +6,7 @@ import { filterToDateString, filterToString } from '../code/utils/apiUtils'
 import axios from 'axios'
 //import { processApiResponse, handleApiError } from '@/code/utils/apiUtils'
 import { useMessageStore } from './messageStore'
-import { useDomuWaveStore } from './domuWaveStore'
+import { useBizlioStore } from './bizLioStore'
  
 import { MESSAGES, TYPES } from '@/code/messages'
 import router from '@/router'
@@ -81,7 +81,7 @@ export const useTransactionStore = defineStore('transactionStore', {
     },
     async updateEntity(transaction) {
       const messageStore = useMessageStore();
-      const DomuWaveStore = useDomuWaveStore();
+      const bizlioStore = useBizlioStore();
       this.loading = true
       this.error = null
 

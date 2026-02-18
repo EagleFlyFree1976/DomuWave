@@ -1,23 +1,24 @@
 {
-  "name": "DomuWave-frontend",
+  "name": "Bizlio-frontend",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "vite build --mode development",
-        "build:prod": "vite build --mode production",
-        "build:dev": "vite build --mode development",
-        "postbuild": "npm run copy-dist",
-        "copy-dist": "copyfiles -u 1 dist/**/* ../../DomuWave.Web/wwwroot/",
-        "preview": "vite preview",
-        "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
-        "lint:eslint": "eslint . --fix",
-        "lint": "run-s lint:*",
-        "format": "prettier --write src/"
-    },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --mode development",
+    "build:prod": "vite build --mode production",
+    "build:dev": "vite build --mode development",
+    "postbuild": "npm run copy-dist",
+    "copy-dist": "copyfiles -u 1 dist/**/* ../../Bizlio.Web/wwwroot/",
+    "preview": "vite preview",
+    "lint:oxlint": "oxlint . --fix -D correctness --ignore-path .gitignore",
+    "lint:eslint": "eslint . --fix",
+    "lint": "run-s lint:*",
+    "format": "prettier --write src/"
+  },
   "dependencies": {
     "@primeuix/themes": "^1.2.1",
+    "@primevue/forms": "^4.5.4",
     "animate.css": "^4.1.1",
     "axios": "^1.10.0",
     "pinia": "^3.0.1",

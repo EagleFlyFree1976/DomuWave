@@ -1,0 +1,15 @@
+meta {
+  name: GetByType
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/communications/condominium/1/type/General
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

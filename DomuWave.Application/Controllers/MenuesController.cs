@@ -57,7 +57,7 @@ public class MenuesController(
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(IList<MenuItemDto>))]
     public async Task<IActionResult> GetAllMenues(CancellationToken cancellationToken)
     {
-        var allMenuesItems = await _menuService.GetAllMenuItems(this.CurrentUser, BookId, cancellationToken).ConfigureAwait(false);
+        var allMenuesItems = await _menuService.GetAllMenuItems(this.CurrentUser, TenantId, cancellationToken).ConfigureAwait(false);
 
         if (allMenuesItems == null)
             return NotFound();
@@ -83,7 +83,7 @@ public class MenuesController(
                     PopulateMenuEventCommand istanza = Activator.CreateInstance(type) as PopulateMenuEventCommand;
                     if (istanza != null)
                     {
-                        istanza.BookId = BookId;
+                        istanza.BookId = TenantId;
                         istanza.CurrentUserId = CurrentUser.Id;
 
                         var menuToAdd = await _mediator.GetResponse(istanza, cancellationToken).ConfigureAwait(false);

@@ -1,0 +1,25 @@
+meta {
+  name: Update
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/millesimaltables/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "condominiumId": 1,
+    "code": "GENERALE",
+    "name": "Tabella Generale Aggiornata",
+    "description": "Tabella millesimale generale aggiornata",
+    "isActive": true
+  }
+}

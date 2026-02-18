@@ -1,0 +1,15 @@
+meta {
+  name: GetPaged
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/condominiums/paged?page=1&pageSize=10&activeOnly=true
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

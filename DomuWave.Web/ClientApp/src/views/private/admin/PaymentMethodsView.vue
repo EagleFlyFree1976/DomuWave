@@ -86,7 +86,7 @@
 </template>
 <script setup>
   import { onMounted, ref, watch } from 'vue'
-  import { useDomuWaveStore } from '@/stores/DomuWaveStore'
+  import { useBizlioStore } from '@/stores/bizLioStore'
   import { usePaymentMethodStore } from '@/stores/paymentMethodStore'
   import { useConfirm } from "primevue/useconfirm";
   import Toolbar from 'primevue/toolbar';
@@ -97,26 +97,26 @@
   const paymentMethodStore = usePaymentMethodStore();
   var modalEditVisible = ref(false);
   const editForm = ref(null)
-  const DomuWaveStore = useDomuWaveStore();
+  const bizlioStore = useBizlioStore();
   const confirm = useConfirm();
   const props = defineProps({
     paymentmethodid:Number
   })
 
   async function deletePaymentMethod(id) {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await paymentMethodStore.deletePaymentMethod(id);
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   const disable = async (id) => {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await paymentMethodStore.disablePaymentMethod(id);
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   const enable = async (id) => {
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await paymentMethodStore.enablePaymentMethod(id);
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   const confirmRemove = (event, id) => {
     confirm.require({
@@ -146,9 +146,9 @@
 };
 
   async function refresh(){
-    DomuWaveStore.startLoading();
+    bizlioStore.startLoading();
     await paymentMethodStore.loadAllPaymentMethods();
-    DomuWaveStore.stopLoading();
+    bizlioStore.stopLoading();
   }
   onMounted(async () => {
 

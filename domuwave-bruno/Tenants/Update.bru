@@ -1,0 +1,24 @@
+meta {
+  name: Update
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/api/tenants/00000000-0000-0000-0000-000000000001
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "code": "TENANT001",
+    "name": "Amministrazione Aggiornata Srl",
+    "email": "nuovo@esempio.it",
+    "phone": "0212345678"
+  }
+}

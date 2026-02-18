@@ -4,7 +4,7 @@ import { toUtcDate } from '@/code/utils/dateUtils'
 import axios from 'axios'
 //import { processApiResponse, handleApiError } from '@/code/utils/apiUtils'
 import { useMessageStore } from './messageStore'
-import { useDomuWaveStore } from './domuWaveStore'
+import { useBizlioStore } from './bizLioStore'
 import { MESSAGES, TYPES } from '@/code/messages'
 import router from '@/router'
 export const useAccountStore = defineStore('accountStore', {
@@ -42,7 +42,7 @@ export const useAccountStore = defineStore('accountStore', {
     },
     async updateEntity(account) {
       const messageStore = useMessageStore();
-      const DomuWaveStore = useDomuWaveStore();
+      const bizlioStore = useBizlioStore();
       this.loading = true
       this.error = null
 
@@ -79,7 +79,7 @@ export const useAccountStore = defineStore('accountStore', {
           this.createmode = false;
         }
         
-        await DomuWaveStore.loadMenu();
+        await bizlioStore.loadMenu();
 
         this.edititem = { ...account }
         this.createmode = false;
@@ -144,7 +144,7 @@ export const useAccountStore = defineStore('accountStore', {
     },
     async deleteAccount(accountId) {
       const messageStore = useMessageStore();
-      const DomuWaveStore = useDomuWaveStore();
+      const bizlioStore = useBizlioStore();
       this.loading = true
       this.error = null
       try {
@@ -152,7 +152,7 @@ export const useAccountStore = defineStore('accountStore', {
 
         await this.loadAllAccounts();
 
-        await DomuWaveStore.loadMenu();
+        await bizlioStore.loadMenu();
       } catch (err) {
         console.log("Error", err);
         messageStore.setMessages(err.response.data.Errors, TYPES.error);

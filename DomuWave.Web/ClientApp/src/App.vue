@@ -97,7 +97,7 @@
       <!-- Begin Page Content -->
       <div class="container-fluid">
 
-        <BlockUI :blocked="DomuWaveStore.loading" fullScreen>  </BlockUI>
+        <BlockUI :blocked="bizlioStore.loading" fullScreen>  </BlockUI>
         <Messages></Messages>
         <RouterView />
 
@@ -125,7 +125,7 @@
   import Toolbar from 'primevue/toolbar';
   import Menu from 'primevue/menu';
   import Button from 'primevue/button';
-  import { useDomuWaveStore } from './stores/DomuWaveStore'
+  import { useBizlioStore } from './stores/BizlioStore'
   import Messages from './components/Messages.vue'
   import { ref, onMounted, computed } from 'vue'
   import BlockUI from 'primevue/blockui';
@@ -134,11 +134,11 @@
   import { useMessageStore } from '@/stores/messageStore'
     import { MESSAGES, TYPES } from '@/code/messages'
   const auth = useAuthStore();
-  const DomuWaveStore = useDomuWaveStore();
+  const bizlioStore = useBizlioStore();
   const messageStore = useMessageStore();
   const router = useRouter();
   const menu = ref();
-  //DomuWaveStore.setUser(  { Name: "Orazio", Surname: "Greco", FullName: "Orazio Greco" });
+  //bizlioStore.setUser(  { Name: "Orazio", Surname: "Greco", FullName: "Orazio Greco" });
   
   const items = computed(() => {
     return [
@@ -174,7 +174,7 @@
 
   onMounted(() => {
     eventBus.on('unauthorized', () => {
-      DomuWaveStore.stopLoading();
+      bizlioStore.stopLoading();
       messageStore.setMessages('Sessione scaduta. Effettua nuovamente il login.', TYPES.error);
    
       router.push('/login');

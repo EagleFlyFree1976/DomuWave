@@ -1,0 +1,15 @@
+meta {
+  name: GetTotalDue
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/api/condominiumfees/user/100/totaldue
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

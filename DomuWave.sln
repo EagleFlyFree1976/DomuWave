@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomuWave.Application", "Dom
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomuWave.Services", "DomuWave.Infrastructure\DomuWave.Services.csproj", "{251AB05D-8809-4273-8B6B-64889FF6973F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomuWave.Tests", "DomuWave.UnitTest\DomuWave.Tests.csproj", "{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{251AB05D-8809-4273-8B6B-64889FF6973F}.Release|x64.Build.0 = Release|Any CPU
 		{251AB05D-8809-4273-8B6B-64889FF6973F}.Release|x86.ActiveCfg = Release|Any CPU
 		{251AB05D-8809-4273-8B6B-64889FF6973F}.Release|x86.Build.0 = Release|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Debug|x64.Build.0 = Debug|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Debug|x86.Build.0 = Debug|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Release|x64.ActiveCfg = Release|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Release|x64.Build.0 = Release|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Release|x86.ActiveCfg = Release|Any CPU
+		{21F7CF9C-EC96-9962-61BE-4A2B6172A3BD}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

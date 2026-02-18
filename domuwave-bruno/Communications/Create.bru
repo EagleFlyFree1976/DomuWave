@@ -1,0 +1,25 @@
+meta {
+  name: Create
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/communications
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "condominiumId": 1,
+    "title": "Comunicazione di test",
+    "content": "Contenuto della comunicazione",
+    "type": "General",
+    "priority": "Normal"
+  }
+}

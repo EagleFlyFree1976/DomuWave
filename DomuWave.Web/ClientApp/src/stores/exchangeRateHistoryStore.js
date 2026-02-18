@@ -4,7 +4,7 @@ import { toUtcDate } from '@/code/utils/dateUtils'
 import axios from 'axios'
 //import { processApiResponse, handleApiError } from '@/code/utils/apiUtils'
 import { useMessageStore } from './messageStore'
-import { useDomuWaveStore } from './domuWaveStore'
+import { useBizlioStore } from './bizLioStore'
 import { MESSAGES, TYPES } from '@/code/messages'
 import router from '@/router'
 export const useExchangeRateHistoryStore = defineStore('exchangeRateHistoryStore', {
@@ -33,7 +33,7 @@ export const useExchangeRateHistoryStore = defineStore('exchangeRateHistoryStore
     },
     async updateEntity(exchangeRateHistory) {
       const messageStore = useMessageStore();
-      const DomuWaveStore = useDomuWaveStore();
+      const bizlioStore = useBizlioStore();
       this.loading = true
       this.error = null
 

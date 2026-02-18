@@ -1,0 +1,15 @@
+meta {
+  name: GetByFloor
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/realestateunits/condominium/1/floor/2
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

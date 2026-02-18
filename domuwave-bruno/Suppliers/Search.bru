@@ -1,0 +1,15 @@
+meta {
+  name: Search
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/suppliers/search?query=mario
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}

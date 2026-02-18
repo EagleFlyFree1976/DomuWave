@@ -9,7 +9,6 @@ using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using DomuWave.Domain.Models;
 using NHibernate.Linq;
-using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 
 namespace DomuWave.Services.Implementations
@@ -187,7 +186,8 @@ namespace DomuWave.Services.Implementations
                 .SumAsync(x => x.GrossAmount, cancellationToken);
         }
 
-        public async Task<bool> MarkAsPaidAsync(long expenseId, DateTime paymentDate, string paymentMethod, long userId, IUser currentUser,
+        public async Task<bool> MarkAsPaidAsync(long expenseId, DateTime paymentDate, string paymentMethod,
+            IUser currentUser,
             CancellationToken cancellationToken)
         {
             

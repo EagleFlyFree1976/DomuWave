@@ -1,0 +1,15 @@
+meta {
+  name: GetByInstallment
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/condominiumfees/installment/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
