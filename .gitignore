@@ -55,3 +55,6 @@
 /DomuWave.Application/obj
 /DomuWave.Infrastructure/bin/Debug/net8.0
 /DomuWave.Web/bin/Debug/net9.0
+/DomuWave.Infrastructure/obj/Debug/net8.0
+/DomuWave.Web/obj/Debug/net9.0
+/DomuWave.UnitTest/obj/Debug/net8.0
