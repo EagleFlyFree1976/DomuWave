@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.CondominiumCadastralData, DomuWave.Services" table="CondominiumCadastralData" lazy="true">
+  <class name="DomuWave.Domain.Models.CondominiumCadastralData, Bizlio.Services" table="CondominiumCadastralData" lazy="true">
 
     <id name="Id" column="CadastralDataId" type="Int32">
       <generator class="hilo">
@@ -14,8 +14,8 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Condominium" class="DomuWave.Domain.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Condominium" class="DomuWave.Domain.Models.Condominium, Bizlio.Services" column="CondominiumId" not-null="true" />
 
     <property name="Name" column="CadastralMunicipality" type="String" length="100" />
     <property name="Description" column="Sheet" type="String" length="10" />

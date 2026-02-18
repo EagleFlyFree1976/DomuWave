@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DocumentAccess" table="DocumentAccess" lazy="true">
+  <class name="DomuWave.Domain.Models.DocumentAccess, DomuWave.Services" table="DocumentAccess" lazy="true">
 
     <id name="Id" column="AccessId" type="Int64">
       <generator class="hilo">
@@ -14,8 +14,8 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
-    <many-to-one name="Document" class="Document" column="DocumentId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Document" class="DomuWave.Domain.Models.Document, DomuWave.Services" column="DocumentId" not-null="true" />
 
     <property name="UserId" column="UserId" type="Int64" not-null="true" />
     <property name="AccessDate" column="AccessDate" type="DateTime" not-null="true" />

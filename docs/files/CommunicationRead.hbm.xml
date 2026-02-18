@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.CommunicationRead, DomuWave.Services" table="CommunicationRead" lazy="true">
+  <class name="DomuWave.Domain.Models.CommunicationRead, Bizlio.Services" table="CommunicationRead" lazy="true">
 
     <id name="Id" column="ReadId" type="Int32">
       <generator class="hilo">
@@ -14,8 +14,8 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Communication" class="DomuWave.Domain.Models.Communication, DomuWave.Services" column="CommunicationId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Communication" class="DomuWave.Domain.Models.Communication, Bizlio.Services" column="CommunicationId" not-null="true" />
 
     <property name="UserId" column="UserId" type="Int64" not-null="true" />
     <property name="ReadDate" column="ReadDate" type="DateTime" not-null="true" />

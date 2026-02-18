@@ -3,22 +3,26 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.CommunicationRead, DomuWave.Services" table="CommunicationRead" lazy="true">
+  <class name="DomuWave.Domain.Models.DocumentAccess, Bizlio.Services" table="DocumentAccess" lazy="true">
 
-    <id name="Id" column="ReadId" type="Int32">
+    <id name="Id" column="AccessId" type="Int64">
       <generator class="hilo">
         <param name="table">hibernate_unique_key</param>
         <param name="column">next_hi</param>
         <param name="max_lo">10</param>
-        <param name="where">entity_type='CommunicationRead'</param>
+        <param name="where">entity_type='DocumentAccess'</param>
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Communication" class="DomuWave.Domain.Models.Communication, DomuWave.Services" column="CommunicationId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Document" class="DomuWave.Domain.Models.Document, Bizlio.Services" column="DocumentId" not-null="true" />
 
     <property name="UserId" column="UserId" type="Int64" not-null="true" />
-    <property name="ReadDate" column="ReadDate" type="DateTime" not-null="true" />
+    <property name="AccessDate" column="AccessDate" type="DateTime" not-null="true" />
+    <property name="AccessType" column="AccessType" type="String" length="50" not-null="true" />
+    <property name="IpAddress" column="IpAddress" type="String" length="50" />
+    <property name="Name" column="AccessType" type="String" length="50" insert="false" update="false" />
+    <property name="Description" column="IpAddress" type="String" length="50" insert="false" update="false" />
 
     <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />

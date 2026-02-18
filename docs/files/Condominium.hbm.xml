@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.Condominium, DomuWave.Services" table="Condominium" lazy="true">
+  <class name="DomuWave.Domain.Models.Condominium, Bizlio.Services" table="Condominium" lazy="true">
 
     <id name="Id" column="CondominiumId" type="Int32">
       <generator class="hilo">
@@ -14,7 +14,7 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
 
     <property name="Name" column="Name" type="String" length="200" not-null="true" />
     <property name="Description" column="Notes" type="String" length="2000" />
@@ -48,62 +48,62 @@
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
     <property name="IsEnabled" column="IsActive" type="Boolean" insert="false" update="false" />
 
-    <one-to-one name="Address" class="DomuWave.Domain.Models.CondominiumAddress, DomuWave.Services" property-ref="Condominium" cascade="all-delete-orphan" />
-    <one-to-one name="CadastralData" class="DomuWave.Domain.Models.CondominiumCadastralData, DomuWave.Services" property-ref="Condominium" cascade="all-delete-orphan" />
+    <one-to-one name="Address" class="DomuWave.Domain.Models.CondominiumAddress, Bizlio.Services" property-ref="Condominium" cascade="all-delete-orphan" />
+    <one-to-one name="CadastralData" class="DomuWave.Domain.Models.CondominiumCadastralData, Bizlio.Services" property-ref="Condominium" cascade="all-delete-orphan" />
 
     <bag name="Units" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.RealEstateUnit, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.RealEstateUnit, Bizlio.Services" />
     </bag>
 
     <bag name="MillesimalTables" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.MillesimalTable, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.MillesimalTable, Bizlio.Services" />
     </bag>
 
     <bag name="Accounts" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.ChartOfAccounts, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.ChartOfAccounts, Bizlio.Services" />
     </bag>
 
     <bag name="Budgets" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.Budget, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Budget, Bizlio.Services" />
     </bag>
 
     <bag name="Expenses" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.Expense, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Expense, Bizlio.Services" />
     </bag>
 
     <bag name="Installments" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.CondominiumInstallment, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.CondominiumInstallment, Bizlio.Services" />
     </bag>
 
     <bag name="Receipts" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.Receipt, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Receipt, Bizlio.Services" />
     </bag>
 
     <bag name="SupplierContracts" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.SupplierContract, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.SupplierContract, Bizlio.Services" />
     </bag>
 
     <bag name="Documents" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.Document, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Document, Bizlio.Services" />
     </bag>
 
     <bag name="Communications" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.Communication, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Communication, Bizlio.Services" />
     </bag>
 
     <bag name="Messages" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
-      <one-to-many class="DomuWave.Domain.Models.Message, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Message, Bizlio.Services" />
     </bag>
 
   </class>

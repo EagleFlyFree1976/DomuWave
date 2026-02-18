@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.BudgetItem, DomuWave.Services" table="BudgetItem" lazy="true">
+  <class name="DomuWave.Domain.Models.BudgetItem, Bizlio.Services" table="BudgetItem" lazy="true">
 
     <id name="Id" column="BudgetItemId" type="Int32">
       <generator class="hilo">
@@ -14,9 +14,9 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Budget" class="DomuWave.Domain.Models.Budget, DomuWave.Services" column="BudgetId" not-null="true" />
-    <many-to-one name="Account" class="DomuWave.Domain.Models.ChartOfAccounts, DomuWave.Services" column="AccountId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Budget" class="DomuWave.Domain.Models.Budget, Bizlio.Services" column="BudgetId" not-null="true" />
+    <many-to-one name="Account" class="DomuWave.Domain.Models.ChartOfAccounts, Bizlio.Services" column="AccountId" not-null="true" />
 
     <property name="Name" column="Description" type="String" length="500" />
     <property name="Description" column="Description" type="String" length="500" insert="false" update="false" />

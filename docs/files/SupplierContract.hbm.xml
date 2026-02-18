@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.SupplierContract, DomuWave.Services" table="SupplierContract" lazy="true">
+  <class name="DomuWave.Domain.Models.SupplierContract, Bizlio.Services" table="SupplierContract" lazy="true">
 
     <id name="Id" column="ContractId" type="Int32">
       <generator class="hilo">
@@ -14,9 +14,9 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Condominium" class="DomuWave.Domain.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
-    <many-to-one name="Supplier" class="DomuWave.Domain.Models.Supplier, DomuWave.Services" column="SupplierId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Condominium" class="DomuWave.Domain.Models.Condominium, Bizlio.Services" column="CondominiumId" not-null="true" />
+    <many-to-one name="Supplier" class="DomuWave.Domain.Models.Supplier, Bizlio.Services" column="SupplierId" not-null="true" />
 
     <property name="Name" column="Subject" type="String" length="200" not-null="true" />
     <property name="Description" column="Notes" type="String" length="1000" />

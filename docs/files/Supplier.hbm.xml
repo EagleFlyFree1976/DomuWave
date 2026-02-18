@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.Supplier, DomuWave.Services" table="Supplier" lazy="true">
+  <class name="DomuWave.Domain.Models.Supplier, Bizlio.Services" table="Supplier" lazy="true">
 
     <id name="Id" column="SupplierId" type="Int32">
       <generator class="hilo">
@@ -14,7 +14,7 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
 
     <property name="Name" column="CompanyName" type="String" length="200" not-null="true" />
     <property name="Description" column="Notes" type="String" length="1000" />
@@ -44,12 +44,12 @@
 
     <bag name="Contracts" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="SupplierId" />
-      <one-to-many class="DomuWave.Domain.Models.SupplierContract, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.SupplierContract, Bizlio.Services" />
     </bag>
 
     <bag name="Expenses" inverse="true" lazy="true">
       <key column="SupplierId" />
-      <one-to-many class="DomuWave.Domain.Models.Expense, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Expense, Bizlio.Services" />
     </bag>
 
   </class>

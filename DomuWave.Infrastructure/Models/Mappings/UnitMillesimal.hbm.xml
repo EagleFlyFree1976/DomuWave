@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="UnitMillesimal" table="UnitMillesimal" lazy="true">
+  <class name="DomuWave.Domain.Models.UnitMillesimal, DomuWave.Services" table="UnitMillesimal" lazy="true">
 
     <id name="Id" column="UnitMillesimalId" type="Int32">
       <generator class="hilo">
@@ -14,9 +14,9 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
-    <many-to-one name="MillesimalTable" class="MillesimalTable" column="MillesimalTableId" not-null="true" />
-    <many-to-one name="Unit" class="RealEstateUnit" column="UnitId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
+    <many-to-one name="MillesimalTable" class="DomuWave.Domain.Models.MillesimalTable, DomuWave.Services" column="MillesimalTableId" not-null="true" />
+    <many-to-one name="Unit" class="DomuWave.Domain.Models.RealEstateUnit, DomuWave.Services" column="UnitId" not-null="true" />
 
     <property name="Millesimal" column="Millesimal" type="Decimal" not-null="true" />
     <property name="Name" column="Notes" type="String" length="500" />

@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.ChartOfAccounts, DomuWave.Services" table="ChartOfAccounts" lazy="true">
+  <class name="DomuWave.Domain.Models.ChartOfAccounts, Bizlio.Services" table="ChartOfAccounts" lazy="true">
 
     <id name="Id" column="AccountId" type="Int32">
       <generator class="hilo">
@@ -14,9 +14,9 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Condominium" class="DomuWave.Domain.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
-    <many-to-one name="ParentAccount" class="DomuWave.Domain.Models.ChartOfAccounts, DomuWave.Services" column="ParentAccountId" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Condominium" class="DomuWave.Domain.Models.Condominium, Bizlio.Services" column="CondominiumId" not-null="true" />
+    <many-to-one name="ParentAccount" class="DomuWave.Domain.Models.ChartOfAccounts, Bizlio.Services" column="ParentAccountId" />
 
     <property name="Name" column="Name" type="String" length="200" not-null="true" />
     <property name="Description" column="Description" type="String" length="500" />
@@ -35,17 +35,17 @@
 
     <bag name="ChildAccounts" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="ParentAccountId" />
-      <one-to-many class="DomuWave.Domain.Models.ChartOfAccounts, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.ChartOfAccounts, Bizlio.Services" />
     </bag>
 
     <bag name="BudgetItems" inverse="true" lazy="true">
       <key column="AccountId" />
-      <one-to-many class="DomuWave.Domain.Models.BudgetItem, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.BudgetItem, Bizlio.Services" />
     </bag>
 
     <bag name="Expenses" inverse="true" lazy="true">
       <key column="AccountId" />
-      <one-to-many class="DomuWave.Domain.Models.Expense, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Expense, Bizlio.Services" />
     </bag>
 
   </class>

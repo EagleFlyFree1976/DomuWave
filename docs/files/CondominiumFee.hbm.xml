@@ -3,7 +3,7 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-  <class name="DomuWave.Domain.Models.CondominiumFee, DomuWave.Services" table="CondominiumFee" lazy="true">
+  <class name="DomuWave.Domain.Models.CondominiumFee, Bizlio.Services" table="CondominiumFee" lazy="true">
 
     <id name="Id" column="FeeId" type="Int64">
       <generator class="hilo">
@@ -14,9 +14,9 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Installment" class="DomuWave.Domain.Models.CondominiumInstallment, DomuWave.Services" column="InstallmentId" not-null="true" />
-    <many-to-one name="Unit" class="DomuWave.Domain.Models.RealEstateUnit, DomuWave.Services" column="UnitId" not-null="true" />
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, Bizlio.Services" column="TenantId" not-null="true" />
+    <many-to-one name="Installment" class="DomuWave.Domain.Models.CondominiumInstallment, Bizlio.Services" column="InstallmentId" not-null="true" />
+    <many-to-one name="Unit" class="DomuWave.Domain.Models.RealEstateUnit, Bizlio.Services" column="UnitId" not-null="true" />
 
     <property name="UserId" column="UserId" type="Int64" not-null="true" />
     <property name="AmountDue" column="AmountDue" type="Decimal" not-null="true" />
@@ -37,7 +37,7 @@
 
     <bag name="Receipts" inverse="true" lazy="true">
       <key column="FeeId" />
-      <one-to-many class="DomuWave.Domain.Models.Receipt, DomuWave.Services" />
+      <one-to-many class="DomuWave.Domain.Models.Receipt, Bizlio.Services" />
     </bag>
 
   </class>
