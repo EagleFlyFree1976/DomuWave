@@ -1,35 +1,25 @@
 using System;
-namespace DomuWave.Services.Models
+using System.Collections.Generic;
+using DomuWave.Services.Models;
+
+namespace DomuWave.Domain.Models
 {
-    public class ChartOfAccounts
+    public class ChartOfAccounts : TenantEntity<int>
     {
-        public virtual int AccountId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual int CondominiumId { get; set; }
+        public virtual Condominium Condominium { get; set; }
         public virtual string Code { get; set; }
-        public virtual string Name { get; set; }
         public virtual string Type { get; set; }
         public virtual string Category { get; set; }
-        public virtual int? ParentAccountId { get; set; }
-        public virtual int Level { get; set; }
-        public virtual string Description { get; set; }
-        public virtual bool IsActive { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        public virtual Tenant Tenant { get; set; }
-        public virtual Condominium Condominium { get; set; }
         public virtual ChartOfAccounts ParentAccount { get; set; }
-        public ChartOfAccounts()
+        public virtual int Level { get; set; }
+        public virtual bool IsActive { get; set; }
+
+        public virtual IList<ChartOfAccounts> ChildAccounts { get; set; } = new List<ChartOfAccounts>();
+        public virtual IList<BudgetItem> BudgetItems { get; set; } = new List<BudgetItem>();
+        public virtual IList<Expense> Expenses { get; set; } = new List<Expense>();
+        public override int GetHashCode()
         {
-            Level = 1;
-            IsActive = true;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

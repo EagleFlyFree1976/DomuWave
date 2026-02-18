@@ -1,12 +1,14 @@
 using System;
+using System.Collections.Generic;
+using DomuWave.Services.Models;
 
-namespace DomuWave.Services.Models
+namespace DomuWave.Domain.Models
 {
-    public class Condominium
+    public class Condominium : TenantEntity<int>
     {
-        public virtual int CondominiumId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual string Name { get; set; }
+        // Name → from GenericEntity, maps to [Name]
+        // Description → from GenericEntity, maps to [Notes]
+
         public virtual string Code { get; set; }
         public virtual string TaxCode { get; set; }
         public virtual string VatNumber { get; set; }
@@ -28,33 +30,24 @@ namespace DomuWave.Services.Models
         public virtual DateTime? LastAssemblyDate { get; set; }
         public virtual string InstallmentFrequency { get; set; }
         public virtual int InstallmentDueDay { get; set; }
-        public virtual string Notes { get; set; }
         public virtual bool IsActive { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        
 
-        public virtual Tenant Tenant { get; set; }
-
-        public Condominium()
+        public virtual CondominiumAddress Address { get; set; }
+        public virtual CondominiumCadastralData CadastralData { get; set; }
+        public virtual IList<RealEstateUnit> Units { get; set; } = new List<RealEstateUnit>();
+        public virtual IList<MillesimalTable> MillesimalTables { get; set; } = new List<MillesimalTable>();
+        public virtual IList<ChartOfAccounts> Accounts { get; set; } = new List<ChartOfAccounts>();
+        public virtual IList<Budget> Budgets { get; set; } = new List<Budget>();
+        public virtual IList<Expense> Expenses { get; set; } = new List<Expense>();
+        public virtual IList<CondominiumInstallment> Installments { get; set; } = new List<CondominiumInstallment>();
+        public virtual IList<Receipt> Receipts { get; set; } = new List<Receipt>();
+        public virtual IList<SupplierContract> SupplierContracts { get; set; } = new List<SupplierContract>();
+        public virtual IList<Document> Documents { get; set; } = new List<Document>();
+        public virtual IList<Communication> Communications { get; set; } = new List<Communication>();
+        public virtual IList<Message> Messages { get; set; } = new List<Message>();
+        public override int GetHashCode()
         {
-            NumberOfUnits = 0;
-            NumberOfStaircases = 1;
-            TotalMillesimal = 1000.0000M;
-            HasElevator = false;
-            NumberOfElevators = 0;
-            HasCentralHeating = false;
-            HasConcierge = false;
-            InstallmentFrequency = "Monthly";
-            InstallmentDueDay = 10;
-            IsActive = true;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

@@ -2,7 +2,7 @@
 using CPQ.Core;
 using CPQ.Core.Memberships;
 
-namespace DomuWave.Services.Extensions;
+namespace DomuWave.Services.Interfaces.Extensions;
 
 public static class QueryExtensions
 {

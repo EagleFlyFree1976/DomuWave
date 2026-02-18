@@ -1,28 +1,18 @@
 using System;
+using CPQ.Core;
 
 namespace DomuWave.Services.Models
 {
-    public class Tenant
+    public class Tenant : TraceEntity<Guid>
     {
-        public virtual Guid Id { get; set; }
+  
         public virtual string Name { get; set; }
         public virtual string Code { get; set; }
         public virtual bool IsActive { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        
 
-        public Tenant()
+        public override int GetHashCode()
         {
-            Id = Guid.NewGuid();
-            IsActive = true;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.GetHashCode();
         }
     }
 }

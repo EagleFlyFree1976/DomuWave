@@ -1,12 +1,11 @@
 using System;
+using DomuWave.Services.Models;
 
-namespace DomuWave.Services.Models
+namespace DomuWave.Domain.Models
 {
-    public class UnitOwner
+    public class UnitOwner : TenantEntity<int>
     {
-        public virtual int UnitOwnerId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual int UnitId { get; set; }
+        public virtual RealEstateUnit Unit { get; set; }
         public virtual long UserId { get; set; }
         public virtual string OwnerType { get; set; }
         public virtual decimal OwnershipQuota { get; set; }
@@ -15,26 +14,9 @@ namespace DomuWave.Services.Models
         public virtual bool IsResident { get; set; }
         public virtual bool IsActive { get; set; }
         public virtual string Notes { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        
-
-        public virtual Tenant Tenant { get; set; }
-        public virtual RealEstateUnit RealEstateUnit { get; set; }
-
-        public UnitOwner()
+        public override int GetHashCode()
         {
-            OwnerType = "Owner";
-            OwnershipQuota = 100.00M;
-            IsResident = true;
-            IsActive = true;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

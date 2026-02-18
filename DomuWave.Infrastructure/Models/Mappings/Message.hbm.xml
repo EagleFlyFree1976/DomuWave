@@ -1,28 +1,44 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
-  <class name="Message" table="Messaggio" schema="dbo">
-    <id name="MessageId" column="MessaggioId" type="Int64">
-      <generator class="identity" />
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Domain"
+                   namespace="DomuWave.Domain.Models">
+
+  <class name="Message" table="Message" lazy="true">
+
+    <id name="Id" column="MessageId" type="Int64">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='Message'</param>
+      </generator>
     </id>
-    <property name="Id" column="Id" type="Guid" not-null="true" />
-    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
-    <property name="SenderId" column="MittenteId" type="Int64" not-null="true" />
-    <property name="RecipientId" column="DestinatarioId" type="Int64" not-null="true" />
-    <property name="Subject" column="Oggetto" type="String" length="200" not-null="true" />
-    <property name="Content" column="Contenuto" type="StringClob" not-null="true" />
-    <property name="ParentMessageId" column="MessaggioParentId" type="Int64" />
-    <property name="IsRead" column="IsLetto" type="Boolean" not-null="true" />
-    <property name="ReadDate" column="DataLettura" type="DateTime" />
-    <property name="AttachmentPath" column="AllegatoPath" type="String" length="500" />
-    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+
+    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominiumId" not-null="true" />
+    <many-to-one name="ParentMessage" class="Message" column="ParentMessageId" />
+
+    <property name="Name" column="Subject" type="String" length="200" not-null="true" />
+    <property name="Description" column="Content" type="StringClob" not-null="true" />
+    <property name="SenderId" column="SenderId" type="Int64" not-null="true" />
+    <property name="RecipientId" column="RecipientId" type="Int64" not-null="true" />
+    <property name="Subject" column="Subject" type="String" length="200" not-null="true" insert="false" update="false" />
+    <property name="Content" column="Content" type="StringClob" not-null="true" insert="false" update="false" />
+    <property name="IsRead" column="IsRead" type="Boolean" not-null="true" />
+    <property name="ReadDate" column="ReadDate" type="DateTime" />
+    <property name="AttachmentPath" column="AttachmentPath" type="String" length="500" />
+
+    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
-    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
-    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
-    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
-    <many-to-one name="ParentMessage" class="Message" column="MessaggioParentId" insert="false" update="false" />
+
+    <bag name="Replies" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="ParentMessageId" />
+      <one-to-many class="Message" />
+    </bag>
+
   </class>
+
 </hibernate-mapping>

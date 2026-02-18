@@ -1,26 +1,48 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
-  <class name="Budget" table="Bilancio" schema="dbo">
-    <id name="BudgetId" column="BilancioId" type="Int32">
-      <generator class="identity" />
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Domain"
+                   namespace="DomuWave.Domain.Models">
+
+  <class name="Budget" table="Budget" lazy="true">
+
+    <id name="Id" column="BudgetId" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='Budget'</param>
+      </generator>
     </id>
-    <property name="Id" column="Id" type="Guid" not-null="true" />
-    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
-    <property name="Year" column="Anno" type="Int32" not-null="true" />
-    <property name="Type" column="Tipo" type="String" length="50" not-null="true" />
-    <property name="ApprovalDate" column="DataApprovazione" type="DateTime" />
-    <property name="Status" column="Stato" type="String" length="50" not-null="true" />
-    <property name="TotalIncome" column="TotaleEntrate" type="Decimal" precision="15" scale="2" not-null="true" />
-    <property name="TotalExpenses" column="TotaleUscite" type="Decimal" precision="15" scale="2" not-null="true" />
-    <property name="Notes" column="Note" type="String" length="1000" />
-    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+
+    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominiumId" not-null="true" />
+
+    <property name="Name" column="Type" type="String" length="50" not-null="true" />
+    <property name="Description" column="Notes" type="String" length="1000" />
+    <property name="Year" column="Year" type="Int32" not-null="true" />
+    <property name="Type" column="Type" type="String" length="50" not-null="true" insert="false" update="false" />
+    <property name="ApprovalDate" column="ApprovalDate" type="DateTime" />
+    <property name="Status" column="Status" type="String" length="50" not-null="true" />
+    <property name="TotalIncome" column="TotalIncome" type="Decimal" not-null="true" />
+    <property name="TotalExpenses" column="TotalExpenses" type="Decimal" not-null="true" />
+    <property name="Notes" column="Notes" type="String" length="1000" insert="false" update="false" />
+
+    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
-    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
-    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
-    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
+
+    <bag name="Items" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="BudgetId" />
+      <one-to-many class="BudgetItem" />
+    </bag>
+
+    <bag name="Installments" inverse="true" lazy="true">
+      <key column="BudgetId" />
+      <one-to-many class="CondominiumInstallment" />
+    </bag>
+
   </class>
+
 </hibernate-mapping>

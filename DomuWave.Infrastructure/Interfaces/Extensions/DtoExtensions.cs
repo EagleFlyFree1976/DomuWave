@@ -19,7 +19,7 @@ using NHibernate.Engine.Query;
 using NHibernate.Proxy;
 
 
-namespace DomuWave.Services.Extensions;
+namespace DomuWave.Services.Interfaces.Extensions;
 
 public static class DtoExtensions
 {

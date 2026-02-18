@@ -1,31 +1,74 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
-  <class name="RealEstateUnit" table="UnitaImmobiliare" schema="dbo">
-    <id name="UnitId" column="UnitaId" type="Int32">
-      <generator class="identity" />
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Domain"
+                   namespace="DomuWave.Domain.Models">
+
+  <class name="RealEstateUnit" table="RealEstateUnit" lazy="true">
+
+    <id name="Id" column="UnitId" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='RealEstateUnit'</param>
+      </generator>
     </id>
-    <property name="Id" column="Id" type="Guid" not-null="true" />
-    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
-    <property name="Staircase" column="Scala" type="String" length="10" />
-    <property name="Floor" column="Piano" type="Int32" not-null="true" />
-    <property name="InternalNumber" column="Interno" type="String" length="20" not-null="true" />
-    <property name="Subordinate" column="Subalterno" type="String" length="10" />
-    <property name="Category" column="Categoria" type="String" length="10" />
-    <property name="CadastralIncome" column="RenditaCatastale" type="Decimal" precision="10" scale="2" />
-    <property name="AreaSqm" column="SuperficieMq" type="Decimal" precision="10" scale="2" />
-    <property name="Rooms" column="Vani" type="Decimal" precision="4" scale="1" />
-    <property name="UnitType" column="TipoUnita" type="String" length="50" not-null="true" />
-    <property name="OccupancyStatus" column="StatoOccupazione" type="String" length="50" not-null="true" />
-    <property name="Notes" column="Note" type="String" length="1000" />
+
+    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominiumId" not-null="true" />
+
+    <property name="Name" column="InternalNumber" type="String" length="20" not-null="true" />
+    <property name="Description" column="Notes" type="String" length="1000" />
+    <property name="Staircase" column="Staircase" type="String" length="10" />
+    <property name="Floor" column="Floor" type="Int32" not-null="true" />
+    <property name="InternalNumber" column="InternalNumber" type="String" length="20" not-null="true" insert="false" update="false" />
+    <property name="Subordinate" column="Subordinate" type="String" length="10" />
+    <property name="Category" column="Category" type="String" length="10" />
+    <property name="CadastralIncome" column="CadastralIncome" type="Decimal" />
+    <property name="AreaSqm" column="AreaSqm" type="Decimal" />
+    <property name="Rooms" column="Rooms" type="Decimal" />
+    <property name="UnitType" column="UnitType" type="String" length="50" not-null="true" />
+    <property name="OccupancyStatus" column="OccupancyStatus" type="String" length="50" not-null="true" />
+    <property name="Notes" column="Notes" type="String" length="1000" insert="false" update="false" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
-    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+
+    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
-    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
-    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
-    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
+    <property name="IsEnabled" column="IsActive" type="Boolean" insert="false" update="false" />
+
+    <bag name="Owners" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="UnitId" />
+      <one-to-many class="UnitOwner" />
+    </bag>
+
+    <bag name="Tenants" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="UnitId" />
+      <one-to-many class="UnitTenant" />
+    </bag>
+
+    <bag name="Millesimals" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="UnitId" />
+      <one-to-many class="UnitMillesimal" />
+    </bag>
+
+    <bag name="ExpenseAllocations" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="UnitId" />
+      <one-to-many class="ExpenseAllocation" />
+    </bag>
+
+    <bag name="Fees" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="UnitId" />
+      <one-to-many class="CondominiumFee" />
+    </bag>
+
+    <bag name="Receipts" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="UnitId" />
+      <one-to-many class="Receipt" />
+    </bag>
+
   </class>
+
 </hibernate-mapping>

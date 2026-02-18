@@ -1,12 +1,11 @@
 using System;
+using DomuWave.Services.Models;
 
-namespace DomuWave.Services.Models
+namespace DomuWave.Domain.Models
 {
-    public class UnitTenant
+    public class UnitTenant : TenantEntity<int>
     {
-        public virtual int TenantId { get; set; }
-        public virtual Guid OwnerTenantId { get; set; }
-        public virtual int UnitId { get; set; }
+        public virtual RealEstateUnit Unit { get; set; }
         public virtual string FirstName { get; set; }
         public virtual string LastName { get; set; }
         public virtual string TaxCode { get; set; }
@@ -18,24 +17,10 @@ namespace DomuWave.Services.Models
         public virtual string ExpensePayer { get; set; }
         public virtual bool IsActive { get; set; }
         public virtual string Notes { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        
 
-        public virtual Tenant OwnerTenant { get; set; }
-        public virtual RealEstateUnit RealEstateUnit { get; set; }
-
-        public UnitTenant()
+        public override int GetHashCode()
         {
-            ExpensePayer = "Owner";
-            IsActive = true;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

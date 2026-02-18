@@ -19,3 +19,7 @@ C:\Projects\Works\DomuWave\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Ser
 C:\Projects\Works\DomuWave\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.dll
 C:\Projects\Works\DomuWave\DomuWave.Infrastructure\obj\Debug\net8.0\refint\DomuWave.Services.dll
 C:\Projects\Works\DomuWave\DomuWave.Infrastructure\obj\Debug\net8.0\DomuWave.Services.pdb
+C:\Projects\Works\DomuWave\DomuWave.Infrastructure\bin\Debug\net8.0\DomuWave.Services.deps.json
+C:\Projects\Works\DomuWave\DomuWave.Infrastructure\bin\Debug\net8.0\DomuWave.Services.dll
+C:\Projects\Works\DomuWave\DomuWave.Infrastructure\bin\Debug\net8.0\DomuWave.Services.pdb
+C:\Projects\Works\DomuWave\DomuWave.Infrastructure\obj\Debug\net8.0\ref\DomuWave.Services.dll

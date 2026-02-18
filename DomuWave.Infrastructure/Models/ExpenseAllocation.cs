@@ -1,30 +1,19 @@
 using System;
-namespace DomuWave.Services.Models
+using DomuWave.Services.Models;
+
+namespace DomuWave.Domain.Models
 {
-    public class ExpenseAllocation
+    public class ExpenseAllocation : TenantEntity<long>
     {
-        public virtual long ExpenseAllocationId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual long ExpenseId { get; set; }
-        public virtual int UnitId { get; set; }
+        public virtual Expense Expense { get; set; }
+        public virtual RealEstateUnit Unit { get; set; }
         public virtual decimal Millesimal { get; set; }
         public virtual decimal AllocatedAmount { get; set; }
         public virtual decimal AllocationPercentage { get; set; }
         public virtual string Notes { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        public virtual Tenant Tenant { get; set; }
-        public virtual Expense Expense { get; set; }
-        public virtual RealEstateUnit RealEstateUnit { get; set; }
-        public ExpenseAllocation()
+        public override int GetHashCode()
         {
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

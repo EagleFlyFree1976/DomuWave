@@ -1,29 +1,45 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
-  <class name="CondominiumFee" table="QuotaCondominiale" schema="dbo">
-    <id name="FeeId" column="QuotaId" type="Int64">
-      <generator class="identity" />
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Domain"
+                   namespace="DomuWave.Domain.Models">
+
+  <class name="CondominiumFee" table="CondominiumFee" lazy="true">
+
+    <id name="Id" column="FeeId" type="Int64">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='CondominiumFee'</param>
+      </generator>
     </id>
-    <property name="Id" column="Id" type="Guid" not-null="true" />
-    <property name="InstallmentId" column="RataId" type="Int32" not-null="true" />
-    <property name="UnitId" column="UnitaId" type="Int32" not-null="true" />
+
+    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
+    <many-to-one name="Installment" class="CondominiumInstallment" column="InstallmentId" not-null="true" />
+    <many-to-one name="Unit" class="RealEstateUnit" column="UnitId" not-null="true" />
+
     <property name="UserId" column="UserId" type="Int64" not-null="true" />
-    <property name="AmountDue" column="ImportoDovuto" type="Decimal" precision="15" scale="2" not-null="true" />
-    <property name="AmountPaid" column="ImportoPagato" type="Decimal" precision="15" scale="2" not-null="true" />
-    <property name="Balance" column="Saldo" type="Decimal" precision="15" scale="2" not-null="true" />
-    <property name="PaymentStatus" column="StatoPagamento" type="String" length="50" not-null="true" />
-    <property name="PaymentDate" column="DataPagamento" type="DateTime" />
-    <property name="PaymentMethod" column="ModalitaPagamento" type="String" length="50" />
-    <property name="Notes" column="Note" type="String" length="500" />
-    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="AmountDue" column="AmountDue" type="Decimal" not-null="true" />
+    <property name="AmountPaid" column="AmountPaid" type="Decimal" not-null="true" />
+    <property name="Balance" column="Balance" type="Decimal" not-null="true" />
+    <property name="PaymentStatus" column="PaymentStatus" type="String" length="50" not-null="true" />
+    <property name="PaymentDate" column="PaymentDate" type="DateTime" />
+    <property name="PaymentMethod" column="PaymentMethod" type="String" length="50" />
+    <property name="Name" column="PaymentStatus" type="String" length="50" insert="false" update="false" />
+    <property name="Description" column="Notes" type="String" length="500" />
+    <property name="Notes" column="Notes" type="String" length="500" insert="false" update="false" />
+
+    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
-    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
-    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
-    <many-to-one name="CondominiumInstallment" class="CondominiumInstallment" column="RataId" insert="false" update="false" />
-    <many-to-one name="RealEstateUnit" class="RealEstateUnit" column="UnitaId" insert="false" update="false" />
+
+    <bag name="Receipts" inverse="true" lazy="true">
+      <key column="FeeId" />
+      <one-to-many class="Receipt" />
+    </bag>
+
   </class>
+
 </hibernate-mapping>

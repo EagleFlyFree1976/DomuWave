@@ -1,34 +1,25 @@
 using System;
-namespace DomuWave.Services.Models
+using System.Collections.Generic;
+using DomuWave.Services.Models;
+
+namespace DomuWave.Domain.Models
 {
-    public class Message
+    public class Message : TenantEntity<long>
     {
-        public virtual long MessageId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual int CondominiumId { get; set; }
+        public virtual Condominium Condominium { get; set; }
         public virtual long SenderId { get; set; }
         public virtual long RecipientId { get; set; }
         public virtual string Subject { get; set; }
         public virtual string Content { get; set; }
-        public virtual long? ParentMessageId { get; set; }
+        public virtual Message ParentMessage { get; set; }
         public virtual bool IsRead { get; set; }
         public virtual DateTime? ReadDate { get; set; }
         public virtual string AttachmentPath { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        public virtual Tenant Tenant { get; set; }
-        public virtual Condominium Condominium { get; set; }
-        public virtual Message ParentMessage { get; set; }
-        public Message()
+
+        public virtual IList<Message> Replies { get; set; } = new List<Message>();
+        public override int GetHashCode()
         {
-            IsRead = false;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

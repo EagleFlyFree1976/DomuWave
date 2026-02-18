@@ -1,28 +1,43 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
-  <class name="CondominiumInstallment" table="RataCondominiale" schema="dbo">
-    <id name="InstallmentId" column="RataId" type="Int32">
-      <generator class="identity" />
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Domain"
+                   namespace="DomuWave.Domain.Models">
+
+  <class name="CondominiumInstallment" table="CondominiumInstallment" lazy="true">
+
+    <id name="Id" column="InstallmentId" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='CondominiumInstallment'</param>
+      </generator>
     </id>
-    <property name="Id" column="Id" type="Guid" not-null="true" />
-    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
-    <property name="BudgetId" column="BilancioId" type="Int32" />
-    <property name="Year" column="Anno" type="Int32" not-null="true" />
-    <property name="InstallmentNumber" column="NumeroRata" type="Int32" not-null="true" />
-    <property name="Description" column="Descrizione" type="String" length="200" not-null="true" />
-    <property name="DueDate" column="DataScadenza" type="DateTime" not-null="true" />
-    <property name="TotalAmount" column="ImportoTotale" type="Decimal" precision="15" scale="2" not-null="true" />
-    <property name="Status" column="Stato" type="String" length="50" not-null="true" />
-    <property name="Notes" column="Note" type="String" length="500" />
-    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+
+    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominiumId" not-null="true" />
+    <many-to-one name="Budget" class="Budget" column="BudgetId" />
+
+    <property name="Name" column="Description" type="String" length="200" not-null="true" />
+    <property name="Description" column="Notes" type="String" length="500" />
+    <property name="Year" column="Year" type="Int32" not-null="true" />
+    <property name="InstallmentNumber" column="InstallmentNumber" type="Int32" not-null="true" />
+    <property name="DueDate" column="DueDate" type="DateTime" not-null="true" />
+    <property name="TotalAmount" column="TotalAmount" type="Decimal" not-null="true" />
+    <property name="Status" column="Status" type="String" length="50" not-null="true" />
+    <property name="Notes" column="Notes" type="String" length="500" insert="false" update="false" />
+
+    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
-    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
-    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
-    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
-    <many-to-one name="Budget" class="Budget" column="BilancioId" insert="false" update="false" />
+
+    <bag name="Fees" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="InstallmentId" />
+      <one-to-many class="CondominiumFee" />
+    </bag>
+
   </class>
+
 </hibernate-mapping>

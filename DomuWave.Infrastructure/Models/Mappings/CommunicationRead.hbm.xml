@@ -1,21 +1,31 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
-  <class name="CommunicationRead" table="LetturaComunicazione" schema="dbo">
-    <id name="ReadId" column="LetturaId" type="Int32">
-      <generator class="identity" />
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Domain"
+                   namespace="DomuWave.Domain.Models">
+
+  <class name="CommunicationRead" table="CommunicationRead" lazy="true">
+
+    <id name="Id" column="ReadId" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='CommunicationRead'</param>
+      </generator>
     </id>
-    <property name="Id" column="Id" type="Guid" not-null="true" />
-    <property name="CommunicationId" column="ComunicazioneId" type="Int32" not-null="true" />
+
+    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
+    <many-to-one name="Communication" class="Communication" column="CommunicationId" not-null="true" />
+
     <property name="UserId" column="UserId" type="Int64" not-null="true" />
-    <property name="ReadDate" column="DataLettura" type="DateTime" not-null="true" />
-    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+    <property name="ReadDate" column="ReadDate" type="DateTime" not-null="true" />
+
+    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
-    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
-    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
-    <many-to-one name="Communication" class="Communication" column="ComunicazioneId" insert="false" update="false" />
+
   </class>
+
 </hibernate-mapping>

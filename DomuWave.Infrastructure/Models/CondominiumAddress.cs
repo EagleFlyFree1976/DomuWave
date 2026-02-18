@@ -1,12 +1,11 @@
 using System;
+using DomuWave.Services.Models;
 
-namespace DomuWave.Services.Models
+namespace DomuWave.Domain.Models
 {
-    public class CondominiumAddress
+    public class CondominiumAddress : TenantEntity<int>
     {
-        public virtual int AddressId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual int CondominiumId { get; set; }
+        public virtual Condominium Condominium { get; set; }
         public virtual string Street { get; set; }
         public virtual string StreetNumber { get; set; }
         public virtual string PostalCode { get; set; }
@@ -15,23 +14,9 @@ namespace DomuWave.Services.Models
         public virtual string Country { get; set; }
         public virtual decimal? Latitude { get; set; }
         public virtual decimal? Longitude { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        
-
-        public virtual Tenant Tenant { get; set; }
-        public virtual Condominium Condominium { get; set; }
-
-        public CondominiumAddress()
+        public override int GetHashCode()
         {
-            Country = "IT";
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

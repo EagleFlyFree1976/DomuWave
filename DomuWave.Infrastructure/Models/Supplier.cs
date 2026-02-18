@@ -1,10 +1,11 @@
 using System;
-namespace DomuWave.Services.Models
+using System.Collections.Generic;
+using DomuWave.Services.Models;
+
+namespace DomuWave.Domain.Models
 {
-    public class Supplier
+    public class Supplier : TenantEntity<int>
     {
-        public virtual int SupplierId { get; set; }
-        public virtual Guid TenantId { get; set; }
         public virtual string CompanyName { get; set; }
         public virtual string VatNumber { get; set; }
         public virtual string TaxCode { get; set; }
@@ -21,19 +22,12 @@ namespace DomuWave.Services.Models
         public virtual string IbanAccount { get; set; }
         public virtual string Notes { get; set; }
         public virtual bool IsActive { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        public virtual Tenant Tenant { get; set; }
-        public Supplier()
+
+        public virtual IList<SupplierContract> Contracts { get; set; } = new List<SupplierContract>();
+        public virtual IList<Expense> Expenses { get; set; } = new List<Expense>();
+        public override int GetHashCode()
         {
-            IsActive = true;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

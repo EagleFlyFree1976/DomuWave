@@ -1,13 +1,13 @@
 using System;
-namespace DomuWave.Services.Models
+using System.Collections.Generic;
+using DomuWave.Services.Models;
+
+namespace DomuWave.Domain.Models
 {
-    public class Document
+    public class Document : TenantEntity<int>
     {
-        public virtual int DocumentId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual int CondominiumId { get; set; }
+        public virtual Condominium Condominium { get; set; }
         public virtual string Title { get; set; }
-        public virtual string Description { get; set; }
         public virtual string Category { get; set; }
         public virtual string FileName { get; set; }
         public virtual string FilePath { get; set; }
@@ -17,21 +17,11 @@ namespace DomuWave.Services.Models
         public virtual bool IsVisibleToOwners { get; set; }
         public virtual bool IsArchived { get; set; }
         public virtual string Tags { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        public virtual Tenant Tenant { get; set; }
-        public virtual Condominium Condominium { get; set; }
-        public Document()
+
+        public virtual IList<DocumentAccess> Accesses { get; set; } = new List<DocumentAccess>();
+        public override int GetHashCode()
         {
-            IsVisibleToOwners = false;
-            IsArchived = false;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

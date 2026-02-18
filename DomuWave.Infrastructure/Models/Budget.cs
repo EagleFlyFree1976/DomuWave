@@ -1,11 +1,12 @@
 using System;
-namespace DomuWave.Services.Models
+using System.Collections.Generic;
+using DomuWave.Services.Models;
+
+namespace DomuWave.Domain.Models
 {
-    public class Budget
+    public class Budget : TenantEntity<int>
     {
-        public virtual int BudgetId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual int CondominiumId { get; set; }
+        public virtual Condominium Condominium { get; set; }
         public virtual int Year { get; set; }
         public virtual string Type { get; set; }
         public virtual DateTime? ApprovalDate { get; set; }
@@ -13,22 +14,12 @@ namespace DomuWave.Services.Models
         public virtual decimal TotalIncome { get; set; }
         public virtual decimal TotalExpenses { get; set; }
         public virtual string Notes { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        public virtual Tenant Tenant { get; set; }
-        public virtual Condominium Condominium { get; set; }
-        public Budget()
+
+        public virtual IList<BudgetItem> Items { get; set; } = new List<BudgetItem>();
+        public virtual IList<CondominiumInstallment> Installments { get; set; } = new List<CondominiumInstallment>();
+        public override int GetHashCode()
         {
-            Status = "Draft";
-            TotalIncome = 0;
-            TotalExpenses = 0;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

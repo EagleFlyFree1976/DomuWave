@@ -47,21 +47,10 @@ public static class Startup
     {
          
         _initClient(services,_coreSettings);
-        services.AddScoped<IBookService, BookService>();
-        services.AddScoped<ICategoryService, CategoryService>();
-        services.AddScoped<IBeneficiaryService, BeneficiaryService>();
-        services.AddScoped<ITransactionStatusService, TransactionStatusService>();
-        services.AddScoped<ITransactionService, TransactionService>();
-        services.AddScoped<IPaymentMethodService, PaymentMethodService>();
-        services.AddScoped<ICurrencyService, CurrencyService>();
-        services.AddScoped<IExchangeRateHistoryService, ExchangeRateHistoryService>();
-        services.AddScoped<IAccountTypeService, AccountTypeService>();
-        services.AddScoped<IAccountService, AccountService>();
-        services.AddScoped<IMenuService, MenuService>();
+        
+       // services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<IExchangeRateClient, ExchangeRateApiClient>();
-        services.AddScoped<ITagService, TagService>();
-        services.AddScoped<IImportService, ImportService>();
-        services.AddScoped<ServiceJob, ServiceJob>();
+        
 
  
 

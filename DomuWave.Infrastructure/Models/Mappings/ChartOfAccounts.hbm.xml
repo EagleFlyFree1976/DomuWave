@@ -1,28 +1,53 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
-  <class name="ChartOfAccounts" table="PianoDeiConti" schema="dbo">
-    <id name="AccountId" column="ContoId" type="Int32">
-      <generator class="identity" />
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Domain"
+                   namespace="DomuWave.Domain.Models">
+
+  <class name="ChartOfAccounts" table="ChartOfAccounts" lazy="true">
+
+    <id name="Id" column="AccountId" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='ChartOfAccounts'</param>
+      </generator>
     </id>
-    <property name="Id" column="Id" type="Guid" not-null="true" />
-    <property name="CondominiumId" column="CondominioId" type="Int32" not-null="true" />
-    <property name="Code" column="Codice" type="String" length="50" not-null="true" />
-    <property name="Name" column="Nome" type="String" length="200" not-null="true" />
-    <property name="Type" column="Tipo" type="String" length="50" not-null="true" />
-    <property name="Category" column="Categoria" type="String" length="100" />
-    <property name="ParentAccountId" column="ContoParentId" type="Int32" />
-    <property name="Level" column="Livello" type="Int32" not-null="true" />
-    <property name="Description" column="Descrizione" type="String" length="500" />
+
+    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
+    <many-to-one name="Condominium" class="Condominium" column="CondominiumId" not-null="true" />
+    <many-to-one name="ParentAccount" class="ChartOfAccounts" column="ParentAccountId" />
+
+    <property name="Name" column="Name" type="String" length="200" not-null="true" />
+    <property name="Description" column="Description" type="String" length="500" />
+    <property name="Code" column="Code" type="String" length="50" not-null="true" />
+    <property name="Type" column="Type" type="String" length="50" not-null="true" />
+    <property name="Category" column="Category" type="String" length="100" />
+    <property name="Level" column="Level" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
-    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+
+    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
-    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
-    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
-    <many-to-one name="Condominium" class="Condominium" column="CondominioId" insert="false" update="false" />
-    <many-to-one name="ParentAccount" class="ChartOfAccounts" column="ContoParentId" insert="false" update="false" />
+    <property name="IsEnabled" column="IsActive" type="Boolean" insert="false" update="false" />
+
+    <bag name="ChildAccounts" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="ParentAccountId" />
+      <one-to-many class="ChartOfAccounts" />
+    </bag>
+
+    <bag name="BudgetItems" inverse="true" lazy="true">
+      <key column="AccountId" />
+      <one-to-many class="BudgetItem" />
+    </bag>
+
+    <bag name="Expenses" inverse="true" lazy="true">
+      <key column="AccountId" />
+      <one-to-many class="Expense" />
+    </bag>
+
   </class>
+
 </hibernate-mapping>

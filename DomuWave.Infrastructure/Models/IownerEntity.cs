@@ -1,4 +1,6 @@
-﻿namespace DomuWave.Services.Models;
+﻿using DomuWave.Domain.Models;
+
+namespace DomuWave.Services.Models;
 
 public interface IownerEntity
 {
@@ -9,5 +11,9 @@ public interface IownerEntity
 public abstract class TenantEntity<T> : GenericEntity<T>
 {
     public virtual Tenant Tenant { get; set; } 
+}
+public abstract class CondominiumEntity<T> : TenantEntity<T>
+{
+    public virtual Condominium Condominium { get; set; } 
 }
 

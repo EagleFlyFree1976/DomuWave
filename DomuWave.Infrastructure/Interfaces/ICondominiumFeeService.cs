@@ -1,19 +1,22 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using CPQ.Core.Memberships;
+using DomuWave.Domain.Models;
 using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Interfaces
 {
     public interface ICondominiumFeeService : IBaseService<CondominiumFee, long>
     {
-        Task<IList<CondominiumFee>> GetByInstallmentIdAsync(int installmentId);
-        Task<IList<CondominiumFee>> GetByUnitIdAsync(int unitId);
-        Task<IList<CondominiumFee>> GetByUserIdAsync(long userId);
-        Task<IList<CondominiumFee>> GetUnpaidFeesAsync(int condominiumId);
-        Task<IList<CondominiumFee>> GetOverdueFeesAsync(int condominiumId);
-        Task<decimal> GetTotalDueAsync(long userId);
-        Task<decimal> GetTotalBalanceAsync(long userId);
-        Task<bool> RecordPaymentAsync(long feeId, decimal amount, DateTime paymentDate, string paymentMethod, long userId);
+            Task<IList<CondominiumFee>> GetByInstallmentIdAsync(int installmentId, IUser currentUser, CancellationToken cancellationToken);
+        Task<IList<CondominiumFee>> GetByUnitIdAsync(int unitId, IUser currentUser, CancellationToken cancellationToken);
+        Task<IList<CondominiumFee>> GetByUserIdAsync(long userId, IUser currentUser, CancellationToken cancellationToken);
+        Task<IList<CondominiumFee>> GetUnpaidFeesAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);
+        Task<IList<CondominiumFee>> GetOverdueFeesAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);
+        Task<decimal> GetTotalDueAsync(long userId, IUser currentUser, CancellationToken cancellationToken);
+        Task<decimal> GetTotalBalanceAsync(long userId, IUser currentUser, CancellationToken cancellationToken);
+        Task<bool> RecordPaymentAsync(long feeId, decimal amount, DateTime paymentDate, string paymentMethod, long userId, IUser currentUser, CancellationToken cancellationToken);
     }
 }

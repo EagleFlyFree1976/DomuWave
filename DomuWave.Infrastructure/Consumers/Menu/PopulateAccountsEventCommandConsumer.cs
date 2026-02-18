@@ -2,7 +2,6 @@
 using DomuWave.Services.Command;
 
 using DomuWave.Services.Command.Menu;
-using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using DomuWave.Services.Models;

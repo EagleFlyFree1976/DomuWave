@@ -1,6 +1,6 @@
 ﻿using DomuWave.Services.Models;
 
-namespace DomuWave.Services.Extensions;
+namespace DomuWave.Services.Interfaces.Extensions;
 
 public static class Extensions
 {

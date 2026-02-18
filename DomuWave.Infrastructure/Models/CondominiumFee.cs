@@ -1,12 +1,13 @@
 using System;
-namespace DomuWave.Services.Models
+using System.Collections.Generic;
+using DomuWave.Services.Models;
+
+namespace DomuWave.Domain.Models
 {
-    public class CondominiumFee
+    public class CondominiumFee : TenantEntity<long>
     {
-        public virtual long FeeId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual int InstallmentId { get; set; }
-        public virtual int UnitId { get; set; }
+        public virtual CondominiumInstallment Installment { get; set; }
+        public virtual RealEstateUnit Unit { get; set; }
         public virtual long UserId { get; set; }
         public virtual decimal AmountDue { get; set; }
         public virtual decimal AmountPaid { get; set; }
@@ -15,22 +16,11 @@ namespace DomuWave.Services.Models
         public virtual DateTime? PaymentDate { get; set; }
         public virtual string PaymentMethod { get; set; }
         public virtual string Notes { get; set; }
-        
-        
-        
-        
-        
-        
-        
-        public virtual Tenant Tenant { get; set; }
-        public virtual CondominiumInstallment CondominiumInstallment { get; set; }
-        public virtual RealEstateUnit RealEstateUnit { get; set; }
-        public CondominiumFee()
+
+        public virtual IList<Receipt> Receipts { get; set; } = new List<Receipt>();
+        public override int GetHashCode()
         {
-            AmountPaid = 0;
-            PaymentStatus = "ToPay";
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

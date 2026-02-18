@@ -1,31 +1,22 @@
 using System;
-namespace DomuWave.Services.Models
+using System.Collections.Generic;
+using DomuWave.Services.Models;
+
+namespace DomuWave.Domain.Models
 {
-    public class MillesimalTable
+    public class MillesimalTable : TenantEntity<int>
     {
-        public virtual int MillesimalTableId { get; set; }
-        public virtual Guid TenantId { get; set; }
-        public virtual int CondominiumId { get; set; }
+        public virtual Condominium Condominium { get; set; }
         public virtual string Code { get; set; }
-        public virtual string Name { get; set; }
-        public virtual string Description { get; set; }
         public virtual decimal TotalMillesimal { get; set; }
         public virtual bool IsActive { get; set; }
+
+        public virtual IList<UnitMillesimal> UnitMillesimals { get; set; } = new List<UnitMillesimal>();
+        public virtual IList<Expense> Expenses { get; set; } = new List<Expense>(); 
         
-        
-        
-        
-        
-        
-        
-        public virtual Tenant Tenant { get; set; }
-        public virtual Condominium Condominium { get; set; }
-        public MillesimalTable()
+        public override int GetHashCode()
         {
-            TotalMillesimal = 1000.0000M;
-            IsActive = true;
-            IsDeleted = false;
-            CreationDate = DateTime.UtcNow;
+            return this.Id.GetHashCode();
         }
     }
 }

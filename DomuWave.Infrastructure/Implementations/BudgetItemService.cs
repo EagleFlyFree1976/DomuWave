@@ -4,9 +4,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using CPQ.Core.Extensions;
+using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
+using DomuWave.Domain.Models;
 using NHibernate.Linq;
- 
+
 using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 
@@ -20,78 +23,149 @@ namespace DomuWave.Services.Implementations
         }
         
         public override string CacheRegion => "BudgetItems";
-        
-        // Implement all interface methods using async NHibernate methods
-        // Example methods follow the same pattern as above services
-        public Task<BudgetItem> GetByIdAsync(int id)
+                
+        public async Task<BudgetItem> GetByIdAsync(int id, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>()
+                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
         }
 
-        public Task<IList<BudgetItem>> GetAllAsync()
+        public async Task<IList<BudgetItem>> GetAllAsync(IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>()
+                .ToListAsync(cancellationToken);
         }
 
-        public Task<IList<BudgetItem>> GetByTenantIdAsync(Guid tenantId)
+        public async Task<IList<BudgetItem>> GetByTenantIdAsync(Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>()
+                .Where(x => x.Tenant.Id == tenantId)
+                .ToListAsync(cancellationToken);
         }
 
-        public Task<IList<BudgetItem>> FindAsync(Expression<Func<BudgetItem, bool>> predicate)
+        public async Task<IList<BudgetItem>> FindAsync(Expression<Func<BudgetItem, bool>> predicate, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>()
+                .Where(predicate)
+                .ToListAsync(cancellationToken);
         }
 
-        public Task<BudgetItem> CreateAsync(BudgetItem entity)
+        public async Task<BudgetItem> CreateAsync(BudgetItem entity, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            entity.Trace(currentUser);
+            
+            await session.SaveOrUpdateAsync(entity, cancellationToken);
+            await session.FlushAsync(cancellationToken);
+            return entity;
         }
 
-        public Task<BudgetItem> UpdateAsync(BudgetItem entity)
+        public async Task<BudgetItem> UpdateAsync(BudgetItem entity, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            entity.Trace(currentUser);
+            
+            await session.SaveOrUpdateAsync(entity, cancellationToken);
+            await session.FlushAsync(cancellationToken);
+            return entity;
         }
 
-        public Task<bool> DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            var item = await session.Query<BudgetItem>()
+                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+            if (item == null)
+                return false;
+
+            item.Trace(currentUser);
+            item.IsDeleted = true;
+            await session.SaveOrUpdateAsync(item, cancellationToken);
+            await session.FlushAsync(cancellationToken);
+            return true;
         }
 
-        public Task<bool> HardDeleteAsync(int id)
+        public async Task<bool> HardDeleteAsync(int id, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            var item = await session.Query<BudgetItem>()
+                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+            if (item == null)
+                return false;
+
+            await session.DeleteAsync(item, cancellationToken);
+            await session.FlushAsync(cancellationToken);
+            return true;
         }
 
-        public Task<int> CountAsync(Expression<Func<BudgetItem, bool>> predicate = null)
+        public async Task<int> CountAsync(Expression<Func<BudgetItem, bool>> predicate, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>()
+                .CountAsync(predicate, cancellationToken);
         }
 
-        public Task<bool> ExistsAsync(int id)
+        public async Task<bool> ExistsAsync(int id, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>().AnyAsync(x => x.Id == id, cancellationToken);
         }
 
-        public Task<(IList<BudgetItem> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize, Expression<Func<BudgetItem, bool>> filter = null, Expression<Func<BudgetItem, object>> orderBy = null,
-            bool ascending = true)
+        public async Task<(IList<BudgetItem> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize, Expression<Func<BudgetItem, bool>> filter, Expression<Func<BudgetItem, object>> orderBy, bool ascending,
+            IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            var query = session.Query<BudgetItem>().Where(filter);
+
+            var totalCount = await query.CountAsync(cancellationToken);
+
+
+            if (ascending)
+            {
+                query = query.OrderBy(orderBy);
+            }
+            else
+            {
+                query = query.OrderByDescending(orderBy);
+
+            }
+            
+            query = query
+
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize);
+
+                var items = await query.ToListAsync(cancellationToken);
+
+            return (items, totalCount);
         }
 
-        public Task<IList<BudgetItem>> GetByBudgetIdAsync(int budgetId)
+        public async Task<IList<BudgetItem>> GetByBudgetIdAsync(int budgetId, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>()
+                .Where(x => x.Budget.Id == budgetId)
+                .ToListAsync(cancellationToken);
         }
 
-        public Task<IList<BudgetItem>> GetByAccountIdAsync(int accountId)
+        public async Task<IList<BudgetItem>> GetByAccountIdAsync(int accountId, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>()
+                .Where(x => x.Account.Id == accountId)
+                .ToListAsync(cancellationToken);
         }
 
-        public Task<decimal> GetTotalAmountAsync(int budgetId)
+        public async Task<decimal> GetTotalAmountAsync(int budgetId, IUser currentUser, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            
+            return await session.Query<BudgetItem>()
+                .Where(x => x.Budget.Id == budgetId && !x.IsDeleted)
+                .SumAsync(x => x.Amount, cancellationToken);
         }
     }
 }

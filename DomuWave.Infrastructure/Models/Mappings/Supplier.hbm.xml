@@ -1,33 +1,57 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="DomuWave" namespace="DomuWave.Services.Models">
-  <class name="Supplier" table="Fornitore" schema="dbo">
-    <id name="SupplierId" column="FornitoreId" type="Int32">
-      <generator class="identity" />
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Domain"
+                   namespace="DomuWave.Domain.Models">
+
+  <class name="Supplier" table="Supplier" lazy="true">
+
+    <id name="Id" column="SupplierId" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='Supplier'</param>
+      </generator>
     </id>
-    <property name="Id" column="Id" type="Guid" not-null="true" />
-    <property name="CompanyName" column="RagioneSociale" type="String" length="200" not-null="true" />
-    <property name="VatNumber" column="PartitaIva" type="String" length="11" />
-    <property name="TaxCode" column="CodiceFiscale" type="String" length="16" />
-    <property name="Address" column="Indirizzo" type="String" length="300" />
-    <property name="City" column="Citta" type="String" length="100" />
-    <property name="Province" column="Provincia" type="String" length="2" />
-    <property name="PostalCode" column="Cap" type="String" length="10" />
+
+    <many-to-one name="Tenant" class="Tenant" column="TenantId" not-null="true" />
+
+    <property name="Name" column="CompanyName" type="String" length="200" not-null="true" />
+    <property name="Description" column="Notes" type="String" length="1000" />
+    <property name="CompanyName" column="CompanyName" type="String" length="200" not-null="true" insert="false" update="false" />
+    <property name="VatNumber" column="VatNumber" type="String" length="11" />
+    <property name="TaxCode" column="TaxCode" type="String" length="16" />
+    <property name="Address" column="Address" type="String" length="300" />
+    <property name="City" column="City" type="String" length="100" />
+    <property name="Province" column="Province" type="String" length="2" />
+    <property name="PostalCode" column="PostalCode" type="String" length="10" />
     <property name="Email" column="Email" type="String" length="255" />
-    <property name="Phone" column="Telefono" type="String" length="20" />
+    <property name="Phone" column="Phone" type="String" length="20" />
     <property name="Pec" column="Pec" type="String" length="255" />
-    <property name="ContactPerson" column="Referente" type="String" length="200" />
-    <property name="SupplierType" column="TipoFornitore" type="String" length="100" />
-    <property name="PaymentTerms" column="CondizioniPagamento" type="String" length="100" />
-    <property name="IbanAccount" column="IbanAccredito" type="String" length="34" />
-    <property name="Notes" column="Note" type="String" length="1000" />
+    <property name="ContactPerson" column="ContactPerson" type="String" length="200" />
+    <property name="SupplierType" column="SupplierType" type="String" length="100" />
+    <property name="PaymentTerms" column="PaymentTerms" type="String" length="100" />
+    <property name="IbanAccount" column="IbanAccount" type="String" length="34" />
+    <property name="Notes" column="Notes" type="String" length="1000" insert="false" update="false" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
-    <property name="CreatedById" column="CreatedById" type="Int64" not-null="true" />
+
+    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="CreationDate" column="CreationDate" type="DateTime" not-null="true" />
-    <property name="LastUpdatedById" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-    <property name="LastUpdateDate" column="LastUpdateDate" type="DateTime" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
-    <many-to-one name="Tenant" class="Tenant" column="Id" insert="false" update="false" />
+    <property name="IsEnabled" column="IsActive" type="Boolean" insert="false" update="false" />
+
+    <bag name="Contracts" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="SupplierId" />
+      <one-to-many class="SupplierContract" />
+    </bag>
+
+    <bag name="Expenses" inverse="true" lazy="true">
+      <key column="SupplierId" />
+      <one-to-many class="Expense" />
+    </bag>
+
   </class>
+
 </hibernate-mapping>
