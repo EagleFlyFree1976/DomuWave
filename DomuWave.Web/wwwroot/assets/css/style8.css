@@ -1,1 +1,1 @@
-.sortable[data-v-5f65ab7f]{cursor:pointer;-webkit-user-select:none;user-select:none}
+.toolbar[data-v-45df93c4]{display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;align-items:center}.search-input[data-v-45df93c4]{flex:1;min-width:200px;max-width:320px}.row-actions[data-v-45df93c4]{display:flex;gap:.4rem;justify-content:flex-end}.btn-active[data-v-45df93c4]{background:var(--accent-glow)!important;color:var(--accent)!important;border-color:var(--border-active)!important}

@@ -1,1 +1,0 @@
-import{aw as a}from"./app.js";const o=a.create({baseURL:"http://localhost:60101/api",timeout:1e4});o.interceptors.request.use(t=>{const e=localStorage.getItem("auth_token");return e&&(t.headers["X-Auth-Token"]=e),t});export{o as a};
