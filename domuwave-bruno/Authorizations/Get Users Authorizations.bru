@@ -1,0 +1,15 @@
+meta {
+  name: Get Users Authorizations
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_auth_url}}/api/authorization/users/-653/authorizations
+  body: none
+  auth: inherit
+}
+
+headers {
+  X-Auth-Token: JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+}

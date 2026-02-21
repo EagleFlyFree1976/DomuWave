@@ -61,3 +61,4 @@
 /DomuWave.Application/Logs/auth.log
 /DomuWave.Application/Logs
 /DomuWave.Web/domuwave/node_modules
+/AuthService

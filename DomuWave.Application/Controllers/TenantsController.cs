@@ -74,7 +74,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("active")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.Admin)]
+            AuthorizationKeys.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Tenant>))]
         public async Task<IActionResult> GetActive(CancellationToken cancellationToken)
         {
@@ -89,7 +89,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("{id:guid}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.Admin)]
+            AuthorizationKeys.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Tenant))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
