@@ -9,7 +9,6 @@ using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using NHibernate.Linq;
 using DomuWave.Domain.Models;
-using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 
 namespace DomuWave.Services.Implementations
@@ -107,7 +106,9 @@ namespace DomuWave.Services.Implementations
                 .AnyAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
         }
 
-        public async Task<(IList<UnitTenant> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize, Expression<Func<UnitTenant, bool>> filter, Expression<Func<UnitTenant, object>> orderBy, bool ascending,
+        public async Task<(IList<UnitTenant> Items, int TotalCount)> GetPagedAsync(
+            Expression<Func<UnitTenant, bool>> filter, int pageNumber, int pageSize,
+            Expression<Func<UnitTenant, object>> orderBy, bool ascending,
             IUser currentUser, CancellationToken cancellationToken)
         {
             var query = session.Query<UnitTenant>()

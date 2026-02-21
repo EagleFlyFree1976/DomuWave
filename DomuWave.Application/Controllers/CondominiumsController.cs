@@ -90,13 +90,11 @@ public class CondominiumsController(
         [FromQuery] bool ascending = true,
         CancellationToken cancellationToken = default)
     {
-        var (items, total) = await condominiumService.GetPagedAsync(
-            page, pageSize,
-            x => !x.IsDeleted,
+        var (items, total) = await condominiumService.GetPagedAsync(x => !x.IsDeleted,
+            page,
+            pageSize,
             x => x.Name!,
-            ascending,
-            CurrentUser,
-            cancellationToken);
+            ascending, CurrentUser, cancellationToken);
 
         return Ok(new { items, total, page, pageSize });
     }

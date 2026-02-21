@@ -21,10 +21,9 @@ namespace DomuWave.Services.Interfaces
         Task<bool> HardDeleteAsync(TKey id, IUser currentUser, CancellationToken cancellationToken);
         Task<int> CountAsync(Expression<Func<T, bool>> predicate, IUser currentUser, CancellationToken cancellationToken);
         Task<bool> ExistsAsync(TKey id, IUser currentUser, CancellationToken cancellationToken);
-        Task<(IList<T> Items, int TotalCount)> GetPagedAsync(
-            int pageNumber, 
-            int pageSize, 
-            Expression<Func<T, bool>> filter,
+        Task<(IList<T> Items, int TotalCount)> GetPagedAsync(Expression<Func<T, bool>> filter,
+            int pageNumber,
+            int pageSize,
             Expression<Func<T, object>> orderBy,
             bool ascending,
             IUser currentUser,

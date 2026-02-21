@@ -115,7 +115,9 @@ namespace DomuWave.Services.Implementations
             return await session.Query<BudgetItem>().AnyAsync(x => x.Id == id, cancellationToken);
         }
 
-        public async Task<(IList<BudgetItem> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize, Expression<Func<BudgetItem, bool>> filter, Expression<Func<BudgetItem, object>> orderBy, bool ascending,
+        public async Task<(IList<BudgetItem> Items, int TotalCount)> GetPagedAsync(
+            Expression<Func<BudgetItem, bool>> filter, int pageNumber, int pageSize,
+            Expression<Func<BudgetItem, object>> orderBy, bool ascending,
             IUser currentUser, CancellationToken cancellationToken)
         {
             

@@ -107,7 +107,9 @@ namespace DomuWave.Services.Implementations
                 .AnyAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
         }
 
-        public async Task<(IList<SupplierContract> Items, int TotalCount)> GetPagedAsync(int pageNumber, int pageSize, Expression<Func<SupplierContract, bool>> filter, Expression<Func<SupplierContract, object>> orderBy, bool ascending,
+        public async Task<(IList<SupplierContract> Items, int TotalCount)> GetPagedAsync(
+            Expression<Func<SupplierContract, bool>> filter, int pageNumber, int pageSize,
+            Expression<Func<SupplierContract, object>> orderBy, bool ascending,
             IUser currentUser, CancellationToken cancellationToken)
         {
             var query = session.Query<SupplierContract>()

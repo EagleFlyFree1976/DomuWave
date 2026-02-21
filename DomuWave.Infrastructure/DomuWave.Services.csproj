@@ -53,6 +53,7 @@
     <EmbeddedResource Include="Models\Mappings\Tenant.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UnitMillesimal.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UnitOwner.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\UserTenant.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UnitTenant.hbm.xml" />
   </ItemGroup>
 
@@ -67,7 +68,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Clients\Request\" />
     <Folder Include="Dto\Comunicazioni\" />
     <Folder Include="Dto\Condominio\" />
     <Folder Include="Dto\Contabilita\" />
@@ -77,6 +77,7 @@
     <Folder Include="Dto\Rate\" />
     <Folder Include="Dto\Spese\" />
     <Folder Include="Dto\Unita\" />
+    <Folder Include="Dto\UserTenant\" />
     <Folder Include="Orchestators\" />
   </ItemGroup>
 

@@ -99,7 +99,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Controllers\Admin\" />
-    <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
     <None Update="config\sessionfactory-DomuWave.cfg.xml">

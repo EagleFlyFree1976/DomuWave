@@ -15,9 +15,6 @@ using Microsoft.Extensions.Options;
 
 namespace DomuWave.Microservice.Controllers
 {
-    /// <summary>
-    /// Gestione tenant (organizzazioni/studi di amministrazione)
-    /// </summary>
     [Route("api/[controller]")]
     public class TenantsController(
         ILogger<TenantsController> logger,

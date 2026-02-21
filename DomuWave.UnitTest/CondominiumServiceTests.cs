@@ -192,18 +192,14 @@ public class CondominiumServiceTests : TestBase
                               .Select(i => new Condominium { Id = i })
                               .ToList();
 
-        _serviceMock.Setup(s => s.GetPagedAsync(
-                        1, 5,
-                        It.IsAny<System.Linq.Expressions.Expression<Func<Condominium, bool>>>(),
-                        It.IsAny<System.Linq.Expressions.Expression<Func<Condominium, object>>>(),
-                        true, _currentUser, _ct))
+        _serviceMock.Setup(s => s.GetPagedAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Condominium, bool>>>(),
+                        1,
+                        5, It.IsAny<System.Linq.Expressions.Expression<Func<Condominium, object>>>(), true, _currentUser, _ct))
                     .ReturnsAsync(((IList<Condominium>)items, 20));
 
-        var (resultItems, total) = await _serviceMock.Object.GetPagedAsync(
-            1, 5,
-            x => !x.IsDeleted,
-            x => x.Name!,
-            true, _currentUser, _ct);
+        var (resultItems, total) = await _serviceMock.Object.GetPagedAsync(x => !x.IsDeleted,
+            1,
+            5, x => x.Name!, true, _currentUser, _ct);
 
         resultItems.Should().HaveCount(5);
         total.Should().Be(20);

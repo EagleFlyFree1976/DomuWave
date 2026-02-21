@@ -8,6 +8,7 @@ public interface ICacheManager
     void Clear(string region);
 }
 
+
 public class CacheManager : ICacheManager
 {
     private readonly IMemoryCache _cache;
