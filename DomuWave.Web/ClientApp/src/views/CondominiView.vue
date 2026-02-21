@@ -134,7 +134,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useAppStore } from '@/store/app'
+import { useAppStore } from '@/stores/app'
 import { condominiumApi } from '@/services/api'
 
 const store = useAppStore()

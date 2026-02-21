@@ -1,0 +1,22 @@
+meta {
+  name: Login
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_auth_url}}/api/PublicUser/login
+  body: json
+  auth: inherit
+}
+
+headers {
+  X-Auth-Token: vCxAWhIoVsLzERsMNrkzMMQoZ8diXik6
+}
+
+body:json {
+  {
+    "email": "oraziogr@gmail.com",
+    "password": "729805"
+  }
+}

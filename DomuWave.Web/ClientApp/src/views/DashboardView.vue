@@ -83,7 +83,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useAppStore } from '@/store/app'
+import { useAppStore } from '@/stores/app'
 import { unitApi, installmentApi, expenseApi } from '@/services/api'
 
 const store = useAppStore()

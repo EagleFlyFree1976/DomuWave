@@ -107,7 +107,7 @@ public class MenuesController(
             }
         }
 
-        int max = itemToReturn.Max(k => k.Id);
+        int max = itemToReturn.Any()?itemToReturn.Max(k => k.Id):0;
         foreach (MenuItemDto dto in itemToReturn.Where(k => k.Id == 0))
         {
             max++;

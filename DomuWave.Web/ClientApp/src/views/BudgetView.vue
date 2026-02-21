@@ -213,7 +213,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { useAppStore } from '@/store/app'
+import { useAppStore } from '@/stores/app'
 import { budgetApi, expenseApi } from '@/services/api'
 
 const store = useAppStore()

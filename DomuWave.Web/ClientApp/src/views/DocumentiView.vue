@@ -120,7 +120,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useAppStore } from '@/store/app'
+import { useAppStore } from '@/stores/app'
 import { documentApi } from '@/services/api'
 
 const store = useAppStore()

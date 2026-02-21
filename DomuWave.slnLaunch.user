@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "DomuWave.Web\\DomuWave.Web.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "DomuWave.Application\\DomuWave.Application.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

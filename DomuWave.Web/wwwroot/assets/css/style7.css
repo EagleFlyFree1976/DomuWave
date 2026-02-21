@@ -1,1 +1,1 @@
-.tab-toolbar[data-v-d45d989d]{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap}.btn-active[data-v-d45d989d]{background:var(--accent-glow)!important;color:var(--accent)!important;border-color:var(--border-active)!important}.row-actions[data-v-d45d989d]{display:flex;gap:.4rem;justify-content:flex-end}
+.toolbar[data-v-5a7660e2]{display:flex;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap}.search-input[data-v-5a7660e2]{flex:1;min-width:200px;max-width:320px}.row-actions[data-v-5a7660e2]{display:flex;gap:.4rem;justify-content:flex-end}

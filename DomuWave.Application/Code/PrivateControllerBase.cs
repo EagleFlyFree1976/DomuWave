@@ -9,11 +9,16 @@ namespace DomuWave.Application.Code
  //   [ServiceFilter(typeof(TenantHeaderFilter))]
     public class PrivateControllerBase : OxCoreTokenAuthorizeControllerBase
     {
-        protected long TenantId
+        protected long? TenantId
         {
             get
+
             {
-                return (long)HttpContext.Items["TenantId"];
+                if (HttpContext.Items.ContainsKey("TenantId"))
+                {
+                    return (long)HttpContext.Items["TenantId"];
+                }
+                return null;
             }
         }
 

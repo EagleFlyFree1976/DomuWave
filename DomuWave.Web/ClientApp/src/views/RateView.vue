@@ -164,7 +164,7 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { useAppStore } from '@/store/app'
+import { useAppStore } from '@/stores/app'
 import { installmentApi, feeApi } from '@/services/api'
 
 const store = useAppStore()
