@@ -2,7 +2,9 @@
   <div class="app-layout">
     <AppSidebar />
     <div class="app-main">
-      <RouterView />
+      <div class="app-content">
+        <RouterView />
+      </div>
     </div>
   </div>
 </template>
@@ -15,14 +17,20 @@
   .app-layout {
     display: flex;
     min-height: 100vh;
-    background: var(--p-surface-ground);
+    background: var(--bg-base);
   }
 
   .app-main {
     flex: 1;
     min-width: 0;
-    overflow: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
+  }
+
+  .app-content {
+    flex: 1;
+    padding: 1.75rem 2rem;
+    max-width: 1400px;
   }
 </style>

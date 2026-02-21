@@ -6,7 +6,7 @@ public class AuthorizationKeys
     public const string Authorizations = "AUTH";
     public const string System = "IsSystem";
     public const string Users = "users";
-    public const string Books = "Books";
+    public const string Tenants = "TNNT";
     public const string Accounts = "Accounts";
     public const string AccountType = "AccountType";
     public const string Currencies = "Currencies";
@@ -14,6 +14,11 @@ public class AuthorizationKeys
 }
 
 
+public class Modules
+{
+    public const string Bizlio = "BIZLIO";
+}
+    
 public class Keys
 {
     

@@ -18,7 +18,7 @@
     </div>
 
     <!-- ── Nav ── -->
-    <nav class="sidebar-nav">
+    <nav class="sidebar-nav" :class="{ 'nav-ready': initialized }" :style="!initialized ? { visibility: 'hidden' } : {}">
       <ul class="menu-list">
         <li v-for="item in visibleMenu" :key="item.path">
 
@@ -86,6 +86,7 @@
 
   const collapsed = ref(false)
   const openGroups = ref([])
+  const initialized = ref(false)  // blocca render menu finché non è pronto
 
   // Menu statico di fallback (corrisponde alle route reali del progetto)
   const staticMenu = [
@@ -114,6 +115,8 @@
       await menuStore.fetchMenu().catch(() => { })
       autoOpenCurrentGroup()
     }
+    // Menu pronto (da API o fallback): sblocca il render
+    initialized.value = true
   })
 
   function autoOpenCurrentGroup() {
@@ -405,4 +408,38 @@
       color: #f87171;
       background: rgba(248,113,113,0.08);
     }
+
+  /* Skeleton pre-inizializzazione */
+  .menu-skeleton-item {
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #1e293b 25%, #243044 50%, #1e293b 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    margin-bottom: 3px;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .nav-ready {
+    animation: nav-fade-in 0.15s ease;
+  }
+
+  @keyframes nav-fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
 </style>

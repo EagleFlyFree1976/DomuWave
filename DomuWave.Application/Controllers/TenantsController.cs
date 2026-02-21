@@ -129,8 +129,7 @@ namespace DomuWave.Microservice.Controllers
         /// Crea un nuovo tenant
         /// </summary>
         [HttpPost("")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.Admin)]
+        [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Tenants, Modules.Bizlio)]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Tenant))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateTenantRequest request, CancellationToken cancellationToken)
