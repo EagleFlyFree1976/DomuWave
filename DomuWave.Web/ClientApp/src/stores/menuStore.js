@@ -7,20 +7,14 @@ export const useMenuStore = defineStore('menu', () => {
   const loading = ref(false)
   const error = ref(null)
 
-  /**
-   * Fetches menu items from GET /api/menues
-   * The backend already filters items based on current user's role/permissions.
-   */
   async function fetchMenu() {
-    if (menuItems.value.length > 0) return // already loaded
     loading.value = true
     error.value = null
     try {
       const response = await apiClient.get('/menues')
-      menuItems.value = mapMenuItems(response.data)
+      menuItems.value = buildTree(response.data)
     } catch (err) {
       if (err.response?.status === 404) {
-        // No menu items configured for this user
         menuItems.value = []
       } else {
         error.value = 'Impossibile caricare il menu.'
@@ -37,81 +31,89 @@ export const useMenuStore = defineStore('menu', () => {
   }
 
   /**
-   * Maps backend MenuItemDto to PrimeVue sidebar-compatible format.
-   * Expected dto shape:
-   * { id, label, icon, route, parentId, order, children? }
+   * Converte la lista piatta con parentMenuId in un albero gerarchico.
+   * Struttura attesa dal backend:
+   * { id, parentMenuId, icon, description, shortDescription, action, authorizationCode }
    */
-  function mapMenuItems(items) {
-    if (!Array.isArray(items)) return []
+  function buildTree(flat) {
+    if (!Array.isArray(flat) || flat.length === 0) return []
 
-    // Build flat → tree if backend returns flat list with parentId
-    const roots = []
+    // Mappa id → nodo
     const map = {}
-
-    items.forEach((item) => {
+    flat.forEach((item) => {
       map[item.id] = {
         key: String(item.id),
-        label: item.label ?? item.Label,
-        icon: resolveIcon(item.icon ?? item.Icon),
-        to: item.route ?? item.Route ?? null,
-        order: item.order ?? item.Order ?? 0,
-        items: [],
+        label: item.description ?? item.shortDescription ?? '',
+        path: item.action ?? '/',
+        icon: resolveIcon(item.icon, item.action, item.description),
+        order: item.id, // usa id come ordine se non c'è un campo order
+        children: [],
       }
     })
 
-    items.forEach((item) => {
-      const parentId = item.parentId ?? item.ParentId
-      if (parentId && map[parentId]) {
-        map[parentId].items.push(map[item.id])
+    // Costruisce l'albero
+    const roots = []
+    flat.forEach((item) => {
+      const node = map[item.id]
+      const parent = item.parentMenuId ? map[item.parentMenuId] : null
+      if (parent) {
+        parent.children.push(node)
       } else {
-        roots.push(map[item.id])
+        roots.push(node)
       }
     })
 
-    // Remove empty children arrays and sort
-    return roots
-      .sort((a, b) => a.order - b.order)
-      .map((item) => {
-        if (item.items.length === 0) delete item.items
-        else item.items.sort((a, b) => a.order - b.order)
-        return item
-      })
+    // Rimuove array children vuoti e ordina
+    function clean(nodes) {
+      return nodes
+        .sort((a, b) => a.order - b.order)
+        .map((n) => {
+          if (n.children.length === 0) delete n.children
+          else n.children = clean(n.children)
+          return n
+        })
+    }
+
+    return clean(roots)
   }
 
   /**
-   * Maps icon strings to PrimeIcons class names.
-   * Backend may send names like "dashboard", "settings", "building", etc.
+   * Assegna un'icona PrimeIcons in base all'action o alla description.
+   * Il backend non manda icone, quindi le deduciamo dal contesto.
    */
-  function resolveIcon(iconName) {
-    if (!iconName) return 'pi pi-circle'
-    if (iconName.startsWith('pi ')) return iconName
-    const iconMap = {
-      dashboard: 'pi pi-home',
-      home: 'pi pi-home',
-      condomini: 'pi pi-building',
-      building: 'pi pi-building',
-      condominio: 'pi pi-building',
-      anagrafica: 'pi pi-id-card',
-      users: 'pi pi-users',
-      utenti: 'pi pi-users',
-      finance: 'pi pi-wallet',
-      contabilita: 'pi pi-wallet',
-      budget: 'pi pi-chart-bar',
-      spese: 'pi pi-shopping-bag',
-      rate: 'pi pi-calendar',
-      pagamenti: 'pi pi-credit-card',
-      rendiconto: 'pi pi-file',
-      documenti: 'pi pi-folder',
-      comunicazioni: 'pi pi-envelope',
-      settings: 'pi pi-cog',
-      impostazioni: 'pi pi-cog',
-      report: 'pi pi-chart-line',
-      assemblea: 'pi pi-microphone',
-      fornitori: 'pi pi-truck',
-      manutenzione: 'pi pi-wrench',
-    }
-    const key = iconName.toLowerCase().trim()
-    return iconMap[key] ?? 'pi pi-circle'
+  function resolveIcon(iconField, action, description) {
+    // Se il backend manda già un'icona valida, usala
+    if (iconField && iconField.trim()) return iconField
+
+    const key = ((action ?? '') + ' ' + (description ?? '')).toLowerCase()
+
+    if (key.includes('dashboard') || key.includes('home') || action === '/')
+      return 'pi-home'
+    if (key.includes('account')) return 'pi-id-card'
+    if (key.includes('user') || key.includes('utent'))
+      return 'pi-users'
+    if (key.includes('setting') || key.includes('impostaz'))
+      return 'pi-cog'
+    if (key.includes('condomin')) return 'pi-building'
+    if (key.includes('unita') || key.includes('unit'))
+      return 'pi-th-large'
+    if (key.includes('budget')) return 'pi-chart-bar'
+    if (key.includes('spesa') || key.includes('spese'))
+      return 'pi-shopping-bag'
+    if (key.includes('rata') || key.includes('rate') || key.includes('quota'))
+      return 'pi-calendar'
+    if (key.includes('pagament')) return 'pi-credit-card'
+    if (key.includes('fornitor')) return 'pi-truck'
+    if (key.includes('document')) return 'pi-folder'
+    if (key.includes('comunicaz') || key.includes('messag'))
+      return 'pi-envelope'
+    if (key.includes('assembl')) return 'pi-microphone'
+    if (key.includes('report') || key.includes('rendicont'))
+      return 'pi-chart-line'
+    if (key.includes('anagrafi')) return 'pi-address-book'
+    if (key.includes('manutenzi')) return 'pi-wrench'
+
+    return 'pi-circle'
   }
 
   return { menuItems, loading, error, fetchMenu, clearMenu }

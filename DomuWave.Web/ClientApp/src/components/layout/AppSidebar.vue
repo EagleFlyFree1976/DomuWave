@@ -1,119 +1,75 @@
 <template>
-  <aside class="app-sidebar" :class="{ collapsed: sidebarCollapsed }">
-    <!-- Logo area -->
+  <aside class="app-sidebar" :class="{ collapsed }">
+
+    <!-- ── Header ── -->
     <div class="sidebar-header">
       <div class="sidebar-logo">
         <div class="logo-icon">
           <i class="pi pi-building"></i>
         </div>
-        <Transition name="fade-slide">
-          <div class="logo-text" v-if="!sidebarCollapsed">
-            <span class="logo-name">DomuWave</span>
-            <span class="logo-sub">Gestione Condomini</span>
-          </div>
-        </Transition>
+        <div class="logo-text" v-show="!collapsed">
+          <span class="logo-name">DomuWave</span>
+          <span class="logo-sub">Gestione Condomini</span>
+        </div>
       </div>
-      <Button :icon="sidebarCollapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'"
-              text
-              rounded
-              class="collapse-btn"
-              @click="toggleSidebar"
-              v-tooltip.right="sidebarCollapsed ? 'Espandi' : 'Comprimi'" />
+      <button class="icon-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Espandi' : 'Comprimi'">
+        <i class="pi" :class="collapsed ? 'pi-angle-right' : 'pi-angle-left'"></i>
+      </button>
     </div>
 
-    <!-- Navigation -->
+    <!-- ── Nav ── -->
     <nav class="sidebar-nav">
-      <!-- Loading skeleton -->
-      <template v-if="menuStore.loading">
-        <div class="menu-skeleton" v-for="i in 5" :key="i">
-          <Skeleton height="2.5rem" border-radius="10px" />
-        </div>
-      </template>
+      <ul class="menu-list">
+        <li v-for="item in visibleMenu" :key="item.path">
 
-      <!-- Error state -->
-      <div class="menu-error" v-else-if="menuStore.error">
-        <i class="pi pi-exclamation-triangle"></i>
-        <span v-if="!sidebarCollapsed">{{ menuStore.error }}</span>
-      </div>
+          <!-- Gruppo con figli -->
+          <template v-if="item.children">
+            <button class="menu-link group-toggle"
+                    :class="{ active: isGroupActive(item) }"
+                    @click="toggleGroup(item.path)"
+                    :title="collapsed ? item.label : ''">
+              <i class="pi menu-icon" :class="item.icon"></i>
+              <span class="menu-label" v-show="!collapsed">{{ item.label }}</span>
+              <i class="pi menu-chevron" v-show="!collapsed"
+                 :class="openGroups.includes(item.path) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+            </button>
+            <ul v-show="!collapsed && openGroups.includes(item.path)" class="submenu-list">
+              <li v-for="child in item.children" :key="child.path">
+                <RouterLink :to="child.path" class="menu-link submenu-link"
+                            :class="{ active: route.path === child.path }">
+                  <i class="pi menu-icon submenu-icon" :class="child.icon"></i>
+                  <span class="menu-label">{{ child.label }}</span>
+                </RouterLink>
+              </li>
+            </ul>
+          </template>
 
-      <!-- Menu items -->
-      <template v-else>
-        <ul class="menu-list">
-          <li v-for="item in menuStore.menuItems"
-              :key="item.key"
-              class="menu-item"
-              :class="{ 'has-children': item.items?.length }">
-            <!-- Item with children (group) -->
-            <template v-if="item.items?.length">
-              <button class="menu-link menu-group-toggle"
-                      :class="{ active: isGroupActive(item), open: openGroups.includes(item.key) }"
-                      @click="toggleGroup(item.key)"
-                      v-tooltip.right="sidebarCollapsed ? item.label : undefined">
-                <i :class="[item.icon, 'menu-icon']"></i>
-                <Transition name="fade-slide">
-                  <span class="menu-label" v-if="!sidebarCollapsed">{{ item.label }}</span>
-                </Transition>
-                <Transition name="fade-slide">
-                  <i class="pi menu-chevron"
-                     :class="openGroups.includes(item.key) ? 'pi-chevron-down' : 'pi-chevron-right'"
-                     v-if="!sidebarCollapsed"></i>
-                </Transition>
-              </button>
+          <!-- Link semplice -->
+          <RouterLink v-else :to="item.path" class="menu-link"
+                      :class="{ active: route.path === item.path }"
+                      :title="collapsed ? item.label : ''">
+            <i class="pi menu-icon" :class="item.icon"></i>
+            <span class="menu-label" v-show="!collapsed">{{ item.label }}</span>
+          </RouterLink>
 
-              <!-- Sub-items -->
-              <Transition name="submenu">
-                <ul v-if="!sidebarCollapsed && openGroups.includes(item.key)"
-                    class="submenu-list">
-                  <li v-for="child in item.items" :key="child.key" class="submenu-item">
-                    <RouterLink :to="child.to ?? '#'"
-                                class="menu-link submenu-link"
-                                :class="{ active: route.path === child.to }">
-                      <i :class="[child.icon, 'menu-icon submenu-icon']"></i>
-                      <span class="menu-label">{{ child.label }}</span>
-                    </RouterLink>
-                  </li>
-                </ul>
-              </Transition>
-            </template>
-
-            <!-- Simple link -->
-            <RouterLink v-else
-                        :to="item.to ?? '#'"
-                        class="menu-link"
-                        :class="{ active: route.path === item.to }"
-                        v-tooltip.right="sidebarCollapsed ? item.label : undefined">
-              <i :class="[item.icon, 'menu-icon']"></i>
-              <Transition name="fade-slide">
-                <span class="menu-label" v-if="!sidebarCollapsed">{{ item.label }}</span>
-              </Transition>
-            </RouterLink>
-          </li>
-        </ul>
-      </template>
+        </li>
+      </ul>
     </nav>
 
-    <!-- Bottom: user info + logout -->
+    <!-- ── Footer ── -->
     <div class="sidebar-footer">
-      <div class="user-info" v-tooltip.right="sidebarCollapsed ? authStore.currentUser?.displayName : undefined">
-        <Avatar :label="userInitials"
-                shape="circle"
-                class="user-avatar" />
-        <Transition name="fade-slide">
-          <div class="user-details" v-if="!sidebarCollapsed">
-            <span class="user-name">{{ authStore.currentUser?.displayName }}</span>
-            <span class="user-role">{{ authStore.currentUser?.role }}</span>
-          </div>
-        </Transition>
+      <div class="user-chip">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-details" v-show="!collapsed">
+          <span class="user-name">{{ authStore.currentUser?.displayName ?? authStore.currentUser?.username }}</span>
+          <span class="user-role">{{ authStore.currentUser?.role ?? 'Utente' }}</span>
+        </div>
       </div>
-
-      <Button icon="pi pi-sign-out"
-              text
-              rounded
-              severity="secondary"
-              class="logout-btn"
-              v-tooltip.right="'Esci'"
-              @click="handleLogout" />
+      <button class="icon-btn logout-btn" @click="handleLogout" title="Esci">
+        <i class="pi pi-sign-out"></i>
+      </button>
     </div>
+
   </aside>
 </template>
 
@@ -122,239 +78,231 @@
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
   import { useMenuStore } from '@/stores/menuStore'
-  import Button from 'primevue/button'
-  import Avatar from 'primevue/avatar'
-  import Skeleton from 'primevue/skeleton'
 
   const route = useRoute()
   const router = useRouter()
   const authStore = useAuthStore()
   const menuStore = useMenuStore()
 
-  const sidebarCollapsed = ref(false)
+  const collapsed = ref(false)
   const openGroups = ref([])
 
-  // Load menu on mount if not already loaded
+  // Menu statico di fallback (corrisponde alle route reali del progetto)
+  const staticMenu = [
+    { path: '/dashboard', label: 'Dashboard', icon: 'pi-home' },
+    { path: '/condomini', label: 'Condomini', icon: 'pi-building' },
+    { path: '/unita', label: 'Unità Immobiliari', icon: 'pi-th-large' },
+    {
+      path: '/contabilita', label: 'Contabilità', icon: 'pi-wallet',
+      children: [
+        { path: '/budget', label: 'Budget & Spese', icon: 'pi-chart-bar' },
+        { path: '/rate', label: 'Rate & Quote', icon: 'pi-calendar' },
+      ],
+    },
+    { path: '/fornitori', label: 'Fornitori', icon: 'pi-truck' },
+    { path: '/documenti', label: 'Documenti', icon: 'pi-folder' },
+    { path: '/comunicazioni', label: 'Comunicazioni', icon: 'pi-envelope' },
+  ]
+
+  // Usa menu dall'API se disponibile, altrimenti il fallback statico
+  const visibleMenu = computed(() =>
+    menuStore.menuItems.length > 0 ? menuStore.menuItems : staticMenu
+  )
+
   onMounted(async () => {
-    if (authStore.isAuthenticated && menuStore.menuItems.length === 0) {
-      await menuStore.fetchMenu()
-      // Auto-open the group containing the current route
+    if (authStore.isAuthenticated) {
+      await menuStore.fetchMenu().catch(() => { })
       autoOpenCurrentGroup()
     }
   })
 
   function autoOpenCurrentGroup() {
-    menuStore.menuItems.forEach((item) => {
-      if (item.items?.some((child) => child.to === route.path)) {
-        if (!openGroups.value.includes(item.key)) {
-          openGroups.value.push(item.key)
-        }
+    visibleMenu.value.forEach((item) => {
+      if (item.children?.some((c) => c.path === route.path)) {
+        if (!openGroups.value.includes(item.path)) openGroups.value.push(item.path)
       }
     })
   }
 
-  function toggleSidebar() {
-    sidebarCollapsed.value = !sidebarCollapsed.value
-  }
-
-  function toggleGroup(key) {
-    const idx = openGroups.value.indexOf(key)
-    if (idx > -1) {
-      openGroups.value.splice(idx, 1)
-    } else {
-      openGroups.value.push(key)
-    }
+  function toggleGroup(path) {
+    const idx = openGroups.value.indexOf(path)
+    idx > -1 ? openGroups.value.splice(idx, 1) : openGroups.value.push(path)
   }
 
   function isGroupActive(item) {
-    return item.items?.some((child) => child.to === route.path)
+    return item.children?.some((c) => c.path === route.path)
   }
 
   function handleLogout() {
     authStore.logout()
     menuStore.clearMenu()
-    router.push({ name: 'Login' })
+    router.push('/login')
   }
 
   const userInitials = computed(() => {
     const name = authStore.currentUser?.displayName ?? authStore.currentUser?.username ?? '?'
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
+    return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
   })
 </script>
 
 <style scoped>
-  /* ── Sidebar ─────────────────────────────────────────────────────────────── */
   .app-sidebar {
-    width: 260px;
+    width: 248px;
     min-height: 100vh;
-    background: var(--p-surface-card);
-    border-right: 1px solid var(--p-surface-border);
+    background: #0f172a;
+    border-right: 1px solid #1e293b;
     display: flex;
     flex-direction: column;
-    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    z-index: 10;
+    transition: width 0.25s ease;
     flex-shrink: 0;
+    overflow: hidden;
   }
 
     .app-sidebar.collapsed {
-      width: 68px;
+      width: 64px;
     }
 
-  /* ── Header ──────────────────────────────────────────────────────────────── */
+  /* Header */
   .sidebar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1.25rem 1rem 1.25rem 1.25rem;
-    border-bottom: 1px solid var(--p-surface-border);
-    min-height: 72px;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid #1e293b;
+    min-height: 64px;
     gap: 0.5rem;
   }
 
   .sidebar-logo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    overflow: hidden;
+    gap: 0.65rem;
     flex: 1;
     min-width: 0;
+    overflow: hidden;
   }
 
   .logo-icon {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     flex-shrink: 0;
-    border-radius: 10px;
-    background: linear-gradient(135deg, var(--p-primary-400), var(--p-primary-600));
+    border-radius: 9px;
+    background: linear-gradient(135deg, #34d399, #059669);
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-    .logo-icon i {
+    .logo-icon .pi {
       color: #fff;
-      font-size: 1.1rem;
+      font-size: 1rem;
     }
 
   .logo-text {
     display: flex;
     flex-direction: column;
-    white-space: nowrap;
     overflow: hidden;
+    white-space: nowrap;
   }
 
   .logo-name {
     font-weight: 700;
-    font-size: 1rem;
-    color: var(--p-text-color);
+    font-size: 0.95rem;
+    color: #f1f5f9;
     line-height: 1.2;
   }
 
   .logo-sub {
-    font-size: 0.68rem;
-    color: var(--p-text-muted-color);
-    letter-spacing: 0.4px;
+    font-size: 0.62rem;
+    color: #475569;
+    letter-spacing: 0.6px;
     text-transform: uppercase;
   }
 
-  .collapse-btn {
+  /* Icon buttons */
+  .icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    color: #475569;
+    font-size: 0.85rem;
     flex-shrink: 0;
-    width: 28px !important;
-    height: 28px !important;
-    color: var(--p-text-muted-color) !important;
+    transition: background 0.12s, color 0.12s;
   }
 
-  /* ── Nav ─────────────────────────────────────────────────────────────────── */
+    .icon-btn:hover {
+      background: #1e293b;
+      color: #cbd5e1;
+    }
+
+  /* Nav */
   .sidebar-nav {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 1rem 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    padding: 0.75rem 0.5rem;
     scrollbar-width: thin;
-    scrollbar-color: var(--p-surface-border) transparent;
+    scrollbar-color: #1e293b transparent;
   }
 
-  /* ── Menu skeleton ───────────────────────────────────────────────────────── */
-  .menu-skeleton {
-    padding: 0.25rem 0;
-  }
-
-  /* ── Menu error ──────────────────────────────────────────────────────────── */
-  .menu-error {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    color: var(--orange-400);
-    font-size: 0.82rem;
-  }
-
-  /* ── Menu list ───────────────────────────────────────────────────────────── */
+  /* Menu list */
   .menu-list {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 2px;
   }
 
-  /* ── Menu link ───────────────────────────────────────────────────────────── */
+  /* Menu link */
   .menu-link {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.65rem 0.85rem;
-    border-radius: 10px;
-    color: var(--p-text-muted-color);
+    gap: 0.65rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    color: #64748b;
     text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
     background: transparent;
     border: none;
     width: 100%;
     text-align: left;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: background 0.15s, color 0.15s;
-    position: relative;
     white-space: nowrap;
     overflow: hidden;
+    transition: background 0.12s, color 0.12s;
+    font-family: inherit;
   }
 
     .menu-link:hover {
-      background: var(--p-surface-hover);
-      color: var(--p-text-color);
+      background: #1e293b;
+      color: #e2e8f0;
     }
 
     .menu-link.active {
-      background: var(--primary-900, rgba(99, 102, 241, 0.15));
-      color: var(--p-primary-400);
+      background: rgba(52,211,153,0.1);
+      color: #34d399;
       font-weight: 600;
     }
 
       .menu-link.active .menu-icon {
-        color: var(--p-primary-400);
+        color: #34d399;
       }
 
-  /* ── Group toggle active ─────────────────────────────────────────────────── */
-  .menu-group-toggle.active {
-    color: var(--p-primary-400);
-  }
-
-  /* ── Icons ───────────────────────────────────────────────────────────────── */
+  /* Icon */
   .menu-icon {
-    font-size: 1rem;
+    font-size: 0.95rem;
     flex-shrink: 0;
-    width: 20px;
+    width: 18px;
     text-align: center;
   }
 
@@ -362,66 +310,69 @@
     font-size: 0.8rem;
   }
 
-  /* ── Label ───────────────────────────────────────────────────────────────── */
+  /* Label */
   .menu-label {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  /* ── Chevron ─────────────────────────────────────────────────────────────── */
+  /* Chevron */
   .menu-chevron {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     margin-left: auto;
     flex-shrink: 0;
-    transition: transform 0.2s;
+    color: #334155;
   }
 
-  /* ── Submenu ─────────────────────────────────────────────────────────────── */
+  /* Submenu */
   .submenu-list {
     list-style: none;
-    margin: 0.2rem 0 0 1rem;
-    padding: 0;
+    margin: 2px 0 2px 0.75rem;
+    padding: 0 0 0 0.75rem;
+    border-left: 1px solid #1e293b;
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
-    border-left: 2px solid var(--p-surface-border);
-    padding-left: 0.5rem;
+    gap: 1px;
   }
 
   .submenu-link {
     font-size: 0.83rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.45rem 0.65rem;
   }
 
-  /* ── Footer ──────────────────────────────────────────────────────────────── */
+  /* Footer */
   .sidebar-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    padding: 1rem 0.75rem;
-    border-top: 1px solid var(--p-surface-border);
-    min-height: 68px;
+    padding: 0.75rem;
+    border-top: 1px solid #1e293b;
+    min-height: 60px;
   }
 
-  .user-info {
+  .user-chip {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.6rem;
     overflow: hidden;
     flex: 1;
     min-width: 0;
-    cursor: default;
   }
 
   .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #34d399, #059669);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     flex-shrink: 0;
-    width: 34px !important;
-    height: 34px !important;
-    font-size: 0.75rem !important;
-    background: var(--p-primary-700);
-    color: var(--p-primary-100);
   }
 
   .user-details {
@@ -432,54 +383,26 @@
   }
 
   .user-name {
-    font-size: 0.83rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--p-text-color);
+    color: #f1f5f9;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .user-role {
-    font-size: 0.72rem;
-    color: var(--p-text-muted-color);
+    font-size: 0.68rem;
+    color: #475569;
     overflow: hidden;
     text-overflow: ellipsis;
-    text-transform: capitalize;
   }
 
   .logout-btn {
-    flex-shrink: 0;
-    width: 32px !important;
-    height: 32px !important;
+    color: #475569;
   }
 
-  /* ── Transitions ─────────────────────────────────────────────────────────── */
-  .fade-slide-enter-active,
-  .fade-slide-leave-active {
-    transition: opacity 0.18s ease, transform 0.18s ease;
-  }
-
-  .fade-slide-enter-from,
-  .fade-slide-leave-to {
-    opacity: 0;
-    transform: translateX(-6px);
-  }
-
-  .submenu-enter-active,
-  .submenu-leave-active {
-    transition: all 0.22s ease;
-    overflow: hidden;
-  }
-
-  .submenu-enter-from,
-  .submenu-leave-to {
-    max-height: 0;
-    opacity: 0;
-  }
-
-  .submenu-enter-to,
-  .submenu-leave-from {
-    max-height: 300px;
-    opacity: 1;
-  }
+    .logout-btn:hover {
+      color: #f87171;
+      background: rgba(248,113,113,0.08);
+    }
 </style>
