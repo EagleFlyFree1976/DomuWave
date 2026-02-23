@@ -7,7 +7,7 @@ using CPQ.Core.DTO;
 
 namespace DomuWave.Services.Dto.Tenant
 {
-    public class TenantReadDto : TraceEntityDTO<long>
+    public class TenantReadDto : TraceEntityDTO<Guid>
     {
 
         public string Name { get; set; }
@@ -16,6 +16,6 @@ namespace DomuWave.Services.Dto.Tenant
         public bool IsPrimary { get; set; }
         public long OwnerId { get; set; }
 
-        public int CurrencyId { get; set; }
+        
     }
 }

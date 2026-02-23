@@ -77,7 +77,6 @@
     <Folder Include="Dto\Rate\" />
     <Folder Include="Dto\Spese\" />
     <Folder Include="Dto\Unita\" />
-    <Folder Include="Dto\UserTenant\" />
     <Folder Include="Orchestators\" />
   </ItemGroup>
 

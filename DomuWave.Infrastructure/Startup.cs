@@ -78,6 +78,7 @@ public static class Startup
 
         // External Clients
         services.AddScoped<IExchangeRateClient, ExchangeRateApiClient>();
+        services.AddScoped<IUserTenantService, UserTenantService>();
 
 
         return services;

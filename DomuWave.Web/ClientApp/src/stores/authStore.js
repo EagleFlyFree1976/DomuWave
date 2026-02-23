@@ -16,7 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     console.log("[AuthStore] Attempting login for user:", username);
     try {
-      const response = await authApiClient.post('/PublicUser/login', {
+      const response = await authApiClient.post('api/PublicUser/login', {
         "Email": username,
         "Password": password
 

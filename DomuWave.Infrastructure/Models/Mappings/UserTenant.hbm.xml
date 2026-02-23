@@ -3,8 +3,8 @@
                    assembly="DomuWave.Domain"
                    namespace="DomuWave.Domain.Models">
 
-	<class name="UserTenant" table="UserTenant" lazy="true">
-
+	
+		<class name="DomuWave.Domain.Models.UserTenant, DomuWave.Services" table="UserTenant" lazy="true">
 		<id name="Id" column="Id" type="Int32">
 			<generator class="hilo">
 				<param name="table">hibernate_unique_key</param>
