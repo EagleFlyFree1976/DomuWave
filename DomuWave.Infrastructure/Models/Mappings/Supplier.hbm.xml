@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
-                   assembly="DomuWave.Domain"
-                   namespace="DomuWave.Domain.Models">
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
 
-  <class name="DomuWave.Domain.Models.Supplier, DomuWave.Services" table="Supplier" lazy="true">
+  <class name="DomuWave.Services.Models.Supplier, DomuWave.Services" table="Supplier" lazy="true">
 
     <id name="Id" column="Id" type="Int32">
       <generator class="hilo">
@@ -44,12 +44,12 @@
 
     <bag name="Contracts" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="SupplierId" />
-      <one-to-many class="DomuWave.Domain.Models.SupplierContract, DomuWave.Services" />
+      <one-to-many class="DomuWave.Services.Models.SupplierContract, DomuWave.Services" />
     </bag>
 
     <bag name="Expenses" inverse="true" lazy="true">
       <key column="SupplierId" />
-      <one-to-many class="DomuWave.Domain.Models.Expense, DomuWave.Services" />
+      <one-to-many class="DomuWave.Services.Models.Expense, DomuWave.Services" />
     </bag>
 
   </class>

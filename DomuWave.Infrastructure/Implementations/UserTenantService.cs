@@ -2,7 +2,7 @@
 using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using NHibernate.Linq;

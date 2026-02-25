@@ -1,5 +1,5 @@
-using DomuWave.Domain.Models;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Models;
 using DomuWave.Tests.Helpers;
 using FluentAssertions;
 using Moq;
@@ -143,14 +143,14 @@ public class CondominiumInstallmentServiceTests : TestBase
     [Fact]
     public async Task GetByYearAndNumberAsync_ReturnsCorrectInstallment()
     {
-        var installment = new CondominiumInstallment { Id = 1, Year = 2024, InstallmentNumber = 3 };
+        var installment = new CondominiumInstallment { Id = 1, FiscalYear = new FiscalYear(){StartDate = new DateTime(2024,1,1)}, InstallmentNumber = 3 };
         _serviceMock.Setup(s => s.GetByYearAndNumberAsync(CondominiumId, 2024, 3, _currentUser, _ct))
                     .ReturnsAsync(installment);
 
         var result = await _serviceMock.Object.GetByYearAndNumberAsync(CondominiumId, 2024, 3, _currentUser, _ct);
 
         result.Should().NotBeNull();
-        result!.Year.Should().Be(2024);
+        result!.FiscalYear.StartDate.Year.Should().Be(2024);
         result.InstallmentNumber.Should().Be(3);
     }
 

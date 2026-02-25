@@ -8,7 +8,7 @@ using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using NHibernate.Linq;
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 
 namespace DomuWave.Services.Implementations

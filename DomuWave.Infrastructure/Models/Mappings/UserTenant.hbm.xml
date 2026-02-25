@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
-                   assembly="DomuWave.Domain"
-                   namespace="DomuWave.Domain.Models">
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
 
 	
-		<class name="DomuWave.Domain.Models.UserTenant, DomuWave.Services" table="UserTenant" lazy="true">
+		<class name="DomuWave.Services.Models.UserTenant, DomuWave.Services" table="UserTenant" lazy="true">
 		<id name="Id" column="Id" type="Int32">
 			<generator class="hilo">
 				<param name="table">hibernate_unique_key</param>

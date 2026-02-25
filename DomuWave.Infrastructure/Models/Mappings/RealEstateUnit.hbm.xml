@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
-                   assembly="DomuWave.Domain"
-                   namespace="DomuWave.Domain.Models">
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
 
-  <class name="DomuWave.Domain.Models.RealEstateUnit, DomuWave.Services" table="RealEstateUnit" lazy="true">
+  <class name="DomuWave.Services.Models.RealEstateUnit, DomuWave.Services" table="RealEstateUnit" lazy="true">
 
     <id name="Id" column="Id" type="Int32">
       <generator class="hilo">
@@ -15,7 +15,7 @@
     </id>
 
     <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Condominium" class="DomuWave.Domain.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
+    <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
 
     <property name="Name" column="InternalNumber" type="String" length="20" not-null="true" />
     <property name="Description" column="Notes" type="String" length="1000" />
@@ -41,32 +41,32 @@
 
     <bag name="Owners" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="UnitId" />
-      <one-to-many class="DomuWave.Domain.Models.UnitOwner, DomuWave.Services" />
+      <one-to-many class="DomuWave.Services.Models.UnitOwner, DomuWave.Services" />
     </bag>
 
     <bag name="Tenants" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="UnitId" />
-      <one-to-many class="DomuWave.Domain.Models.UnitTenant, DomuWave.Services" />
+      <one-to-many class="DomuWave.Services.Models.UnitTenant, DomuWave.Services" />
     </bag>
 
     <bag name="Millesimals" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="UnitId" />
-      <one-to-many class="DomuWave.Domain.Models.UnitMillesimal, DomuWave.Services" />
+      <one-to-many class="DomuWave.Services.Models.UnitMillesimal, DomuWave.Services" />
     </bag>
 
     <bag name="ExpenseAllocations" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="UnitId" />
-      <one-to-many class="DomuWave.Domain.Models.ExpenseAllocation, DomuWave.Services" />
+      <one-to-many class="DomuWave.Services.Models.ExpenseAllocation, DomuWave.Services" />
     </bag>
 
     <bag name="Fees" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="UnitId" />
-      <one-to-many class="DomuWave.Domain.Models.CondominiumFee, DomuWave.Services" />
+      <one-to-many class="DomuWave.Services.Models.CondominiumFee, DomuWave.Services" />
     </bag>
 
     <bag name="Receipts" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="UnitId" />
-      <one-to-many class="DomuWave.Domain.Models.Receipt, DomuWave.Services" />
+      <one-to-many class="DomuWave.Services.Models.Receipt, DomuWave.Services" />
     </bag>
 
   </class>

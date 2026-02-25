@@ -1,6 +1,6 @@
 using DomuWave.Services.Models;
 
-namespace DomuWave.Domain.Models;
+namespace DomuWave.Services.Models;
 
 /// <summary>
 /// Associazione tra un utente del sistema e un tenant (azienda/studio).

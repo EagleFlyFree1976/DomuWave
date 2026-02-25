@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using DomuWave.Services.Models;
 
-namespace DomuWave.Domain.Models
+namespace DomuWave.Services.Models
 {
     public class Expense : TenantEntity<long>
     {
@@ -16,6 +16,8 @@ namespace DomuWave.Domain.Models
         public virtual decimal VatAmount { get; set; }
         public virtual decimal NetAmount { get; set; }
         public virtual string ExpenseType { get; set; }
+
+        public virtual FiscalYear FiscalYear { get; set; }
         public virtual MillesimalTable MillesimalTable { get; set; }
         public virtual string PaymentStatus { get; set; }
         public virtual DateTime? PaymentDate { get; set; }

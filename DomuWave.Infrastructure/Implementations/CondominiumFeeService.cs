@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using NHibernate.Linq;
  
 using DomuWave.Services.Models;
@@ -149,7 +149,7 @@ namespace DomuWave.Services.Implementations
         {
             return await session.Query<CondominiumFee>()
                 .Where(x => x.Unit.Id == unitId && !x.IsDeleted)
-                .OrderByDescending(x => x.Installment.Year)
+                .OrderByDescending(x => x.Installment.FiscalYear.StartDate.Year)
                 .ThenByDescending(x => x.Installment.InstallmentNumber)
                 .ToListAsync(cancellationToken);
         }
@@ -158,7 +158,7 @@ namespace DomuWave.Services.Implementations
         {
             return await session.Query<CondominiumFee>()
                 .Where(x => x.UserId == userId && !x.IsDeleted)
-                .OrderByDescending(x => x.Installment.Year)
+                .OrderByDescending(x => x.Installment.FiscalYear.StartDate.Year)
                 .ThenByDescending(x => x.Installment.InstallmentNumber)
                 .ToListAsync(cancellationToken);
         }
@@ -169,7 +169,7 @@ namespace DomuWave.Services.Implementations
                 .Where(x => x.Installment.Condominium.Id == condominiumId 
                     && x.PaymentStatus != "Paid" 
                     && !x.IsDeleted)
-                .OrderByDescending(x => x.Installment.Year)
+                .OrderByDescending(x => x.Installment.FiscalYear.StartDate.Year)
                 .ThenByDescending(x => x.Installment.InstallmentNumber)
                 .ToListAsync(cancellationToken);
         }
@@ -182,7 +182,7 @@ namespace DomuWave.Services.Implementations
                     && x.Installment.DueDate < today 
                     && x.PaymentStatus != "Paid" 
                     && !x.IsDeleted)
-                .OrderByDescending(x => x.Installment.Year)
+                .OrderByDescending(x => x.Installment.FiscalYear.StartDate.Year)
                 .ThenByDescending(x => x.Installment.InstallmentNumber)
                 .ToListAsync(cancellationToken);
         }

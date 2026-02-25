@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using DomuWave.Application.Code;
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using CPQ.Core.ActionFilters;

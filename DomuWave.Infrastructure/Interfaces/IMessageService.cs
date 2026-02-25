@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CPQ.Core.Memberships;
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using DomuWave.Services.Models;
 using DomuWave.Services.Models;
 

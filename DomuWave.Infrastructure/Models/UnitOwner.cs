@@ -1,7 +1,7 @@
 using System;
 using DomuWave.Services.Models;
 
-namespace DomuWave.Domain.Models
+namespace DomuWave.Services.Models
 {
     public class UnitOwner : TenantEntity<int>
     {

@@ -1,4 +1,4 @@
-﻿using DomuWave.Domain.Models;
+﻿using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Models;
 

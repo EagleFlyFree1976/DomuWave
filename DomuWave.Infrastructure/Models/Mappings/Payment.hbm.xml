@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+	<class name="DomuWave.Services.Models.Payment,DomuWave.Services" table="Payment" lazy="true">
+
+		<id name="Id" column="PaymentId" type="Int64">
+			<generator class="hilo">
+				<param name="table">hibernate_unique_key</param>
+				<param name="column">next_hi</param>
+				<param name="max_lo">10</param>
+				<param name="where">entity_type='Payment'</param>
+			</generator>
+		</id>
+
+		<many-to-one name="Tenant"      class="DomuWave.Services.Models.Tenant,DomuWave.Services"         column="TenantId"      not-null="true" />
+		<many-to-one name="FiscalYear"  class="DomuWave.Services.Models.FiscalYear,DomuWave.Services"     column="FiscalYearId"  not-null="true" />
+		<many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium,DomuWave.Services"    column="CondominiumId" not-null="true" />
+		<many-to-one name="Unit"        class="DomuWave.Services.Models.RealEstateUnit,DomuWave.Services" column="UnitId"        not-null="true" />
+		<many-to-one name="Fee"         class="DomuWave.Services.Models.CondominiumFee,DomuWave.Services" column="FeeId" />
+
+		<property name="UserId"                column="UserId"                type="Int64"   not-null="true" />
+		<property name="PaymentDate"           column="PaymentDate"           type="DateTime" not-null="true" />
+		<property name="RegistrationDate"      column="RegistrationDate"      type="DateTime" not-null="true" />
+		<property name="Amount"               column="Amount"                type="Decimal"  not-null="true" />
+		<property name="PaymentMethod"         column="PaymentMethod"         type="String"   length="50"  not-null="true" />
+		<property name="BankReference"         column="BankReference"         type="String"   length="100" />
+		<property name="ReconciliationStatus"  column="ReconciliationStatus"  type="String"   length="50"  not-null="true" />
+		<property name="Notes"                 column="Notes"                 type="String"   length="500" />
+
+		<property name="Name"        column="ReconciliationStatus" type="String" length="50"  insert="false" update="false" />
+		<property name="Description" column="Notes"                type="String" length="500" insert="false" update="false" />
+
+		<property name="CreatedBy"             column="CreatedById"           type="Int64"  not-null="true" />
+		<property name="CreatedByFullName"     column="CreatedByFullName"     type="String" length="200" />
+		<property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int64" />
+		<property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
+		<property name="IsDeleted"             column="IsDeleted"             type="Boolean" not-null="true" />
+
+	</class>
+
+</hibernate-mapping>

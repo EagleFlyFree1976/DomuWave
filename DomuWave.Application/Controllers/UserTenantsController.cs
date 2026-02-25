@@ -4,6 +4,7 @@ using DomuWave.Application.Code;
 using DomuWave.Services.Dto.UserTenants;
 using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -190,7 +191,7 @@ public class UserTenantsController : PrivateControllerBase
 
     // ── Mapper privato ────────────────────────────────────────────────────────
 
-    private static UserTenantReadDto MapToDto(Domain.Models.UserTenant x) => new()
+    private static UserTenantReadDto MapToDto(UserTenant x) => new()
     {
         UserTenantId = x.Id,
         UserId = x.UserId,

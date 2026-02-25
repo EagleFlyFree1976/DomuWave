@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Dto.UserTenants;
 using DomuWave.Services.Models;

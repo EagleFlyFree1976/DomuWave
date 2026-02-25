@@ -1,5 +1,5 @@
 using DomuWave.Application.Code;
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 using CPQ.Core.Settings;
 using Microsoft.AspNetCore.Mvc;

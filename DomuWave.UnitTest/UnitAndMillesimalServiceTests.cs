@@ -1,5 +1,5 @@
-using DomuWave.Domain.Models;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Models;
 using DomuWave.Tests.Helpers;
 using FluentAssertions;
 using Moq;

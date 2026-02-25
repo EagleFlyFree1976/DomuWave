@@ -9,7 +9,7 @@ using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using NHibernate.Linq;
 
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 
@@ -147,7 +147,7 @@ namespace DomuWave.Services.Implementations
         {
             return await session.Query<Budget>()
                 .FirstOrDefaultAsync(x => x.Condominium.Id == condominiumId 
-                    && x.Year == year 
+                    && x.FiscalYear.StartDate.Year == year 
                     && x.Type == type 
                     && !x.IsDeleted);
         }
@@ -156,7 +156,7 @@ namespace DomuWave.Services.Implementations
         {
             return await session.Query<Budget>()
                 .Where(x => x.Condominium.Id == condominiumId 
-                    && x.Year == year 
+                    && x.FiscalYear.StartDate.Year == year 
                     && !x.IsDeleted)
                 .ToListAsync();
         }
@@ -166,7 +166,7 @@ namespace DomuWave.Services.Implementations
             var currentYear = DateTime.Now.Year;
             return await session.Query<Budget>()
                 .Where(x => x.Condominium.Id == condominiumId 
-                    && x.Year == currentYear 
+                    && x.FiscalYear.StartDate.Year == currentYear 
                     && !x.IsDeleted)
                 .OrderByDescending(x => x.Id)
                 .FirstOrDefaultAsync();

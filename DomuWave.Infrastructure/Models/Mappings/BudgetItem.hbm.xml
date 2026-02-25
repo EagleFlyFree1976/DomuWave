@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
-                   assembly="DomuWave.Domain"
-                   namespace="DomuWave.Domain.Models">
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
 
-  <class name="DomuWave.Domain.Models.BudgetItem, DomuWave.Services" table="BudgetItem" lazy="true">
+  <class name="DomuWave.Services.Models.BudgetItem, DomuWave.Services" table="BudgetItem" lazy="true">
 
     <id name="Id" column="Id" type="Int32">
       <generator class="hilo">
@@ -15,8 +15,8 @@
     </id>
 
     <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Budget" class="DomuWave.Domain.Models.Budget, DomuWave.Services" column="BudgetId" not-null="true" />
-    <many-to-one name="Account" class="DomuWave.Domain.Models.ChartOfAccounts, DomuWave.Services" column="AccountId" not-null="true" />
+    <many-to-one name="Budget" class="DomuWave.Services.Models.Budget, DomuWave.Services" column="BudgetId" not-null="true" />
+    <many-to-one name="Account" class="DomuWave.Services.Models.ChartOfAccounts, DomuWave.Services" column="AccountId" not-null="true" />
 
     <property name="Name" column="Description" type="String" length="500" />
     <property name="Description" column="Description" type="String" length="500" insert="false" update="false" />

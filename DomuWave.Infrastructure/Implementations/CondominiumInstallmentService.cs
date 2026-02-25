@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
-using DomuWave.Domain.Models;
+using DomuWave.Services.Models;
 using NHibernate.Linq;
 
 using DomuWave.Services.Models;
@@ -148,7 +148,7 @@ namespace DomuWave.Services.Implementations
         {
             return await session.Query<CondominiumInstallment>()
                 .Where(x => x.Condominium.Id == condominiumId 
-                    && x.Year == year 
+                    && x.FiscalYear.StartDate.Year == year 
                     && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
@@ -158,7 +158,7 @@ namespace DomuWave.Services.Implementations
         {
             return await session.Query<CondominiumInstallment>()
                 .FirstOrDefaultAsync(x => x.Condominium.Id == condominiumId 
-                    && x.Year == year 
+                    && x.FiscalYear.StartDate.Year == year 
                     && x.InstallmentNumber == installmentNumber 
                     && !x.IsDeleted, cancellationToken);
         }
@@ -200,7 +200,7 @@ namespace DomuWave.Services.Implementations
 
             // Verifica se le rate sono già state generate
             var existingInstallments = await session.Query<CondominiumInstallment>()
-                .Where(x => x.Condominium.Id == condominiumId && x.Year == year && !x.IsDeleted)
+                .Where(x => x.Condominium.Id == condominiumId && x.FiscalYear.StartDate.Year == year && !x.IsDeleted)
                 .CountAsync(cancellationToken);
 
             if (existingInstallments > 0)
@@ -218,7 +218,7 @@ namespace DomuWave.Services.Implementations
                 {
                     Condominium = condominium,
                     Budget = budget,
-                    Year = year,
+                     
                     InstallmentNumber = i,
                     DueDate = dueDate,
                     TotalAmount = amountPerInstallment,

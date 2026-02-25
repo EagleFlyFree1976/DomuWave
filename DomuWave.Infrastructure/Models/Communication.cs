@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using DomuWave.Services.Models;
 
-namespace DomuWave.Domain.Models
+namespace DomuWave.Services.Models
 {
     public class Communication : TenantEntity<int>
     {

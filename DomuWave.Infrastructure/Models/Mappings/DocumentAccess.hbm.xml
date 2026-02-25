@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
-                   assembly="DomuWave.Domain"
-                   namespace="DomuWave.Domain.Models">
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
 
-  <class name="DomuWave.Domain.Models.DocumentAccess, DomuWave.Services" table="DocumentAccess" lazy="true">
+  <class name="DomuWave.Services.Models.DocumentAccess, DomuWave.Services" table="DocumentAccess" lazy="true">
 
     <id name="Id" column="Id" type="Int64">
       <generator class="hilo">
@@ -15,7 +15,7 @@
     </id>
 
     <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
-    <many-to-one name="Document" class="DomuWave.Domain.Models.Document, DomuWave.Services" column="DocumentId" not-null="true" />
+    <many-to-one name="Document" class="DomuWave.Services.Models.Document, DomuWave.Services" column="DocumentId" not-null="true" />
 
     <property name="UserId" column="UserId" type="Int64" not-null="true" />
     <property name="AccessDate" column="AccessDate" type="DateTime" not-null="true" />

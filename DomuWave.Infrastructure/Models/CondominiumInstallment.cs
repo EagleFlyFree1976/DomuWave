@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using DomuWave.Services.Models;
 
-namespace DomuWave.Domain.Models
+namespace DomuWave.Services.Models
 {
     public class CondominiumInstallment : TenantEntity<int>
     {
         public virtual Condominium Condominium { get; set; }
         public virtual Budget Budget { get; set; }
-        public virtual int Year { get; set; }
+        public virtual FiscalYear FiscalYear { get; set; }
         public virtual int InstallmentNumber { get; set; }
         public virtual DateTime DueDate { get; set; }
         public virtual decimal TotalAmount { get; set; }
