@@ -38,27 +38,36 @@ public class PublicUserController(
 
         var systemUser = await _userService.GetByTokenAsync(CommonKeys.SystemUserToken, cancellationToken)
             .ConfigureAwait(false);
-        var user = await _authorizationClient.Login(CommonKeys.SystemUserToken, logininfo, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var user = await _authorizationClient.Login(CommonKeys.SystemUserToken, logininfo, cancellationToken)
+                .ConfigureAwait(false);
 
-        if (user == null)
+
+           
+
+
+            UserDto returnDto = new UserDto();
+            returnDto.FullName = user.FullName;
+            returnDto.Id = user.Id;
+            returnDto.LastName = user.LastName;
+            returnDto.Name = user.Name;
+            returnDto.Token = user.Token;
+            returnDto.Role = user.Role;
+            returnDto.Path = user.Path;
+
+            var tenants = await _userTenantService.GetByUserIdAsync(user.Id, systemUser, cancellationToken)
+                .ConfigureAwait(false);
+
+            var tenantsDto = tenants.ToList().Select(j => j.ToDto());
+
+            returnDto.AvailableTenants = tenantsDto.ToList();
+            returnDto.Tenant = tenantsDto.FirstOrDefault(j => j.IsPrimary);
+            return Ok(returnDto);
+        }
+        catch (Exception exc)
+        {
             return NotFound();
-
-
-        UserDto returnDto = new UserDto();
-        returnDto.FullName = user.FullName;
-        returnDto.Id = user.Id;
-        returnDto.LastName = user.LastName;
-        returnDto.Name = user.Name;
-        returnDto.Token = user.Token;
-        returnDto.Role = user.Role;
-        returnDto.Path= user.Path;
-
-        var tenants = await _userTenantService.GetByUserIdAsync(user.Id, systemUser, cancellationToken).ConfigureAwait(false);
-
-        var tenantsDto = tenants.ToList().Select(j => j.ToDto());
-        
-        returnDto.AvailableTenants = tenantsDto.ToList();
-        returnDto.Tenant = tenantsDto.FirstOrDefault(j => j.IsPrimary);
-        return Ok(returnDto);
+        }
     }
 }
