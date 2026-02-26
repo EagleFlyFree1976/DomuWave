@@ -22,5 +22,12 @@ namespace DomuWave.Services.Models
         public virtual string PopulateEvent { get; set; }
 
         public virtual int OrderKey { get; set; }
+
+        /// <summary>
+        /// Condizione di visibilità: null/"Always" = sempre visibile,
+        /// "TenantRequired" = solo se BookId != null,
+        /// "NoTenant" = solo se BookId == null
+        /// </summary>
+        public virtual string VisibilityCondition { get; set; }
     }
 }

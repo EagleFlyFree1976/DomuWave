@@ -26,9 +26,9 @@
     <property name="Level" column="Level" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
 
-    <property name="CreatedBy" column="CreatedById" type="Int64" not-null="true" />
+    <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
-    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int64" />
+    <property name="LastUpdatedBy" column="LastUpdatedById" type="Int32" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
     <property name="IsEnabled" column="IsActive" type="Boolean" insert="false" update="false" />

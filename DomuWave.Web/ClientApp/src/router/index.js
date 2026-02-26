@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
-
+ 
 const routes = [
   // ── Pubblica ────────────────────────────────────────────────────────────
   {
@@ -25,6 +25,24 @@ const routes = [
       { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori' } },
       { path: 'documenti', component: () => import('@/views/DocumentiView.vue'), meta: { title: 'Documenti' } },
       { path: 'comunicazioni', component: () => import('@/views/ComunicazioniView.vue'), meta: { title: 'Comunicazioni' } },
+
+
+      { path: 'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
+      {
+        path: 'tenants/new', name: 'tenant-new', component: () => import('@/views/tenants/TenantDetail.vue'), meta: {
+          title: 'Nuovo Tenant',
+          requiresAuth: true,
+          requiredRole: 'SuperAdmin',
+        }
+      },
+      {
+        path: 'tenants/:id', name: 'tenant-detail', component: import('@/views/tenants/TenantDetail.vue'), props: true,
+        meta: {
+          title: 'Modifica Tenant',
+          requiresAuth: true,
+          requiredRole: 'SuperAdmin',
+        }
+      },
     ],
   },
 ]

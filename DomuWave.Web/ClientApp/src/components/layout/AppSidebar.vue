@@ -107,7 +107,7 @@
 
   // Usa menu dall'API se disponibile, altrimenti il fallback statico
   const visibleMenu = computed(() =>
-    menuStore.menuItems.length > 0 ? menuStore.menuItems : staticMenu
+    menuStore.menuItems.length > 0 ? menuStore.menuItems : []// staticMenu
   )
 
   onMounted(async () => {

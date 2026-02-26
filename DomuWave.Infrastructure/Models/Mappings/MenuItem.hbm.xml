@@ -20,6 +20,6 @@
     <property name="ParentMenuId"  column="ParentMenuId" not-null="false"></property>
     <property name="PopulateEvent"  column="PopulateEvent" not-null="false"></property>
     <property name="OrderKey"  column="OrderKey" not-null="true"></property>
-
+    <property name="VisibilityCondition" column="VisibilityCondition" not-null="false" />
   </class>
 </hibernate-mapping>

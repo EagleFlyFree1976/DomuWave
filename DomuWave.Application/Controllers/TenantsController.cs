@@ -6,6 +6,7 @@ using CPQ.Core.ActionFilters;
 using CPQ.Core.Controllers;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Implementations;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Http;
@@ -119,7 +120,25 @@ namespace DomuWave.Microservice.Controllers
 
             return Ok(item);
         }
+        /// <summary>
+        /// Lista paginata dei tenants.
+        /// </summary>
+        [HttpGet("paged")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetPaged(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] bool ascending = true,
+            CancellationToken cancellationToken = default)
+        {
+            var (items, total) = await _tenantService.GetPagedAsync(x => !x.IsDeleted,
+                page,
+                pageSize,
+                x => x.Name!,
+                ascending, CurrentUser, cancellationToken).ConfigureAwait(false);
 
+            return Ok(new { items, total, page, pageSize });
+        }
         // ─── POST /api/tenants ────────────────────────────────────────────────────
 
         /// <summary>
@@ -157,8 +176,7 @@ namespace DomuWave.Microservice.Controllers
         /// Aggiorna un tenant esistente
         /// </summary>
         [HttpPut("{id:guid}")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.Admin)]
+        [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Tenants, Modules.Bizlio)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Tenant))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

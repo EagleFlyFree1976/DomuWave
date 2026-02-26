@@ -1,6 +1,7 @@
 using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using DomuWave.Services.Clients;
+using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using NHibernate.Linq;
@@ -24,7 +25,8 @@ public class MenuService : BaseService, IMenuService
         _mediator = mediator;
     }
 
-    public async Task<IList<MenuItem>> GetAllMenuItems(IUser currentUser, long? bookId, CancellationToken cancellationToken)
+    public async Task<IList<MenuItem>> GetAllMenuItems(IUser currentUser, long? tenantId,
+        CancellationToken cancellationToken)
     {
         var allMenuItems = await session.Query<MenuItem>().OrderBy(k => k.OrderKey).ToListAsync(cancellationToken).ConfigureAwait(false);
 
@@ -37,7 +39,7 @@ public class MenuService : BaseService, IMenuService
             .Where(item => authCodes.Contains(item.AuthorizationCode) || string.IsNullOrEmpty(item.AuthorizationCode))
             .ToList();
 
-
+        authorizedMenuItems = authorizedMenuItems.Where(item => item.MatchesVisibility(tenantId)).ToList();
         return authorizedMenuItems;
     }
 
