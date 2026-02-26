@@ -275,7 +275,7 @@ async function handleSave() {
 }
 
 function goBack() {
-  router.push({ name: 'tenant-list' })
+  router.push({ name: 'tenants' })
 }
 </script>
 

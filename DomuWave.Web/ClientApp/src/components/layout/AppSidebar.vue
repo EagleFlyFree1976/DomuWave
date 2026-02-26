@@ -58,6 +58,13 @@
 
     <!-- ── Footer ── -->
     <div class="sidebar-footer">
+
+      
+        <TenantSelectorWidget />   <!-- sopra il profilo -->
+ 
+      
+
+
       <div class="user-chip">
         <div class="user-avatar">{{ userInitials }}</div>
         <div class="user-details" v-show="!collapsed">

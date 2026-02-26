@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import authApiClient from '@/services/authApiClient'
+import { useSessionStore } from '@/stores/sessionStore'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('domuwave_token') || null)
@@ -33,6 +34,9 @@ export const useAuthStore = defineStore('auth', () => {
         displayName: data.displayName ?? data.DisplayName ?? username,
         role: data.role ?? data.Role,
       }
+
+      const session = useSessionStore()
+      session.initFromAuth(user.role) 
       localStorage.setItem('domuwave_token', token.value)
       localStorage.setItem('domuwave_user', JSON.stringify(user.value))
       return { success: true }

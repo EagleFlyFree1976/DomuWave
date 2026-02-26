@@ -27,7 +27,7 @@ const routes = [
       { path: 'comunicazioni', component: () => import('@/views/ComunicazioniView.vue'), meta: { title: 'Comunicazioni' } },
 
 
-      { path: 'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
+      { path: 'tenants', name:'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
       {
         path: 'tenants/new', name: 'tenant-new', component: () => import('@/views/tenants/TenantDetail.vue'), meta: {
           title: 'Nuovo Tenant',
@@ -36,7 +36,7 @@ const routes = [
         }
       },
       {
-        path: 'tenants/:id', name: 'tenant-detail', component: import('@/views/tenants/TenantDetail.vue'), props: true,
+        path: 'tenants/:id', name: 'tenant-detail', component: () => import('@/views/tenants/TenantDetail.vue'), props: true,
         meta: {
           title: 'Modifica Tenant',
           requiresAuth: true,
