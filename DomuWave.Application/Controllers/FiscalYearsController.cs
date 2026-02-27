@@ -39,7 +39,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// <param name="condominiumId">ID del condominio.</param>
     [HttpGet("by-condominium/{condominiumId:int}")]
     
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<FiscalYearListItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
@@ -55,7 +55,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// </summary>
     /// <param name="condominiumId">ID del condominio.</param>
     [HttpGet("active/{condominiumId:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FiscalYearReadDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetActive(int condominiumId, CancellationToken ct)
@@ -70,7 +70,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// </summary>
     /// <param name="id">ID dell'esercizio.</param>
     [HttpGet("{id:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FiscalYearReadDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
@@ -88,7 +88,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// <param name="id">ID dell'esercizio selezionato dall'utente.</param>
     /// <param name="documentDate">Data del documento (fattura, bolletta).</param>
     [HttpGet("{id:int}/check-document-date")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DocumentDateWarningDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CheckDocumentDate(
@@ -112,7 +112,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// non si sovrappongano con esercizi esistenti.
     /// </summary>
     [HttpPost]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FiscalYearReadDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -136,7 +136,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// Non è consentito modificare esercizi in stato Closed o Locked.
     /// </summary>
     [HttpPut("{id:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FiscalYearReadDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -162,7 +162,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// L'esercizio rimane aperto a registrazioni in rettifica (es. fatture in ritardo).
     /// </summary>
     [HttpPost("{id:int}/start-closing")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -183,7 +183,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// Prerequisito: nessuna spesa in stato provvisorio pendente.
     /// </summary>
     [HttpPost("{id:int}/close")]
-    [AuthorizationApiFactory(CPQ.Core.ActionFilters.AuthorizationFilterType.CanModify, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(CPQ.Core.ActionFilters.AuthorizationFilterType.CanModify, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -204,7 +204,7 @@ public class FiscalYearsController : PrivateAdminControllerBase
     /// Tipicamente invocato dopo l'approvazione del consuntivo in assemblea.
     /// </summary>
     [HttpPost("{id:int}/lock")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.Bizlio)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

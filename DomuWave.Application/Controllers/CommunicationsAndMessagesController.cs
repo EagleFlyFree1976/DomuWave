@@ -63,7 +63,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Communication>))]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
         {
@@ -78,7 +78,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("{id:int}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Communication))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
@@ -97,7 +97,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("condominium/{condominiumId:int}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Communication>))]
         public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken cancellationToken)
         {
@@ -115,7 +115,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("condominium/{condominiumId:int}/visible")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Communication>))]
         public async Task<IActionResult> GetVisible(int condominiumId, CancellationToken cancellationToken)
         {
@@ -133,7 +133,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("condominium/{condominiumId:int}/unread/{userId:long}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Communication>))]
         public async Task<IActionResult> GetUnread(int condominiumId, long userId, CancellationToken cancellationToken)
         {
@@ -151,7 +151,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("condominium/{condominiumId:int}/type/{type}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Communication>))]
         public async Task<IActionResult> GetByType(int condominiumId, string type, CancellationToken cancellationToken)
         {
@@ -169,7 +169,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("condominium/{condominiumId:int}/priority/{priority}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Communication>))]
         public async Task<IActionResult> GetByPriority(int condominiumId, string priority, CancellationToken cancellationToken)
         {
@@ -187,7 +187,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpPost("")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Communication))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateCommunicationRequest request, CancellationToken cancellationToken)
@@ -228,7 +228,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpPut("{id:int}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Communication))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -262,7 +262,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpPost("{id:int}/publish")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Publish(int id, CancellationToken cancellationToken)
@@ -284,7 +284,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpDelete("{id:int}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)

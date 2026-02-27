@@ -147,11 +147,6 @@
 
       </div>
 
-      <!-- ── BANNER ERRORE API ─────────────────────────────────────────── -->
-      <Message v-if="store.error" severity="error" :closable="false" class="api-error-msg">
-        {{ store.error }}
-      </Message>
-
     </template>
 
     <!-- ── ERRORE CARICAMENTO ─────────────────────────────────────────── -->
@@ -161,8 +156,6 @@
       <Button label="Riprova" icon="pi pi-refresh" class="btn-ghost" size="small" @click="loadData" />
     </div>
 
-    <!-- ── TOAST ──────────────────────────────────────────────────────── -->
-    <Toast position="bottom-right" />
   </div>
 </template>
 
@@ -178,7 +171,6 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Message from 'primevue/message'
-import Toast from 'primevue/toast'
 
 // ─── PROPS (route props: true) ────────────────────────────────────────────────
 // Con props: true il router inietta i params come props del componente.
@@ -240,9 +232,6 @@ async function loadData() {
     store.initNew()
   } else {
     await store.fetchById(tenantId.value)
-    if (store.error) {
-      toast.add({ severity: 'error', summary: 'Errore caricamento', detail: store.error, life: 5000 })
-    }
   }
 }
 
@@ -264,13 +253,8 @@ async function handleSave() {
     if (isNew.value) {
       router.replace({ name: 'tenant-detail', params: { id: saved.id } })
     }
-  } catch (err) {
-    toast.add({
-      severity: 'error',
-      summary: 'Errore salvataggio',
-      detail: err.message || store.error,
-      life: 6000,
-    })
+  } catch {
+    // Il toast di errore è già mostrato dall'interceptor API
   }
 }
 
@@ -500,9 +484,6 @@ function goBack() {
 }
 
 /* ── API ERROR ───────────────────────────────────────────────────────────── */
-.api-error-msg {
-  margin-top: 8px;
-}
 
 /* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {

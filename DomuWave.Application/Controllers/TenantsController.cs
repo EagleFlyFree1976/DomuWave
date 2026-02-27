@@ -58,6 +58,8 @@ namespace DomuWave.Microservice.Controllers
         /// Restituisce tutti i tenant non eliminati
         /// </summary>
         [HttpGet("")]
+        [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
+            Modules.DomuWaveModule)]
         //[AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, AuthorizationKeys.Admin)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Tenant>))]
         public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
@@ -73,7 +75,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("active")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Tenant>))]
         public async Task<IActionResult> GetActive(CancellationToken cancellationToken)
         {
@@ -88,7 +90,7 @@ namespace DomuWave.Microservice.Controllers
         /// </summary>
         [HttpGet("{id:guid}")]
         [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.DomuWaveModule)]
+            Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Tenant))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -106,8 +108,7 @@ namespace DomuWave.Microservice.Controllers
         /// Restituisce un tenant per codice univoco
         /// </summary>
         [HttpGet("code/{code}")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.Admin)]
+        [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Tenant))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetByCode(string code, CancellationToken cancellationToken)
@@ -155,7 +156,7 @@ namespace DomuWave.Microservice.Controllers
         /// Crea un nuovo tenant
         /// </summary>
         [HttpPost("")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Tenants, Modules.Bizlio)]
+        [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Tenant))]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateTenantRequest request, CancellationToken cancellationToken)
@@ -186,7 +187,7 @@ namespace DomuWave.Microservice.Controllers
         /// Aggiorna un tenant esistente
         /// </summary>
         [HttpPut("{id:guid}")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Tenants, Modules.Bizlio)]
+        [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Tenant))]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -213,8 +214,7 @@ namespace DomuWave.Microservice.Controllers
         /// Soft-delete di un tenant
         /// </summary>
         [HttpDelete("{id:guid}")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Authorizations,
-            AuthorizationKeys.Admin)]
+        [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)

@@ -2,7 +2,7 @@
 
 public class AuthorizationKeys
 {
-    public const string DomuWaveModule = "BIZLIO";
+    
     public const string Authorizations = "AUTH";
     public const string System = "IsSystem";
     public const string Users = "users";
@@ -16,7 +16,7 @@ public class AuthorizationKeys
 
 public class Modules
 {
-    public const string Bizlio = "BIZLIO";
+    public const string DomuWaveModule = "BIZLIO";
 }
     
 public class Keys

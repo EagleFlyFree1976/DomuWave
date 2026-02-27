@@ -101,8 +101,8 @@ export const useSessionStore = defineStore('session', () => {
           clearTenant()
         }
       }
-    } catch (err) {
-      console.error('[sessionStore] Errore caricamento tenant:', err)
+    } catch {
+      // Errore già gestito dall'interceptor in api.js → toast in App.vue
       availableTenants.value = []
     } finally {
       loadingTenants.value = false

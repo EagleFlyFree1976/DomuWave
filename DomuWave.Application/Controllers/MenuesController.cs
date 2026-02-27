@@ -53,7 +53,7 @@ public class MenuesController(
 
     [HttpGet("")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-        AuthorizationKeys.DomuWaveModule)]
+        Modules.DomuWaveModule)]
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(IList<MenuItemDto>))]
     public async Task<IActionResult> GetAllMenues(CancellationToken cancellationToken)
     {

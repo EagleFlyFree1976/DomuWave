@@ -17,16 +17,80 @@ api.interceptors.request.use(config => {
   return config
 })
 
+/**
+ * Estrae un messaggio leggibile dall'errore axios.
+ * Priorità: messaggio del backend → messaggio HTTP → fallback generico.
+ */
+function extractErrorMessage(err) {
+  const data = err.response?.data
+  if (typeof data === 'string' && data.length > 0) return data
+  if (data?.message) return data.message
+  if (data?.title) return data.title
+  if (data?.detail) return data.detail
+  if (err.message) return err.message
+  return 'Si è verificato un errore imprevisto'
+}
+
 api.interceptors.response.use(
   res => res,
   err => {
-    //if (err.response?.status === 401) {
-    //  localStorage.removeItem('token')
-    //  window.location.href = '/login'
-    //}
-    if (err.response?.status === 401) {
-      window.dispatchEvent(new CustomEvent('api:unauthorized'))
+    const status  = err.response?.status
+    const message = extractErrorMessage(err)
+
+    // Errori di rete / timeout (nessuna risposta dal server)
+    if (!err.response) {
+      window.dispatchEvent(new CustomEvent('api:error', {
+        detail: { status: null, message: 'Impossibile raggiungere il server. Controlla la connessione.' }
+      }))
+      return Promise.reject(err)
     }
+
+    // 401 — non autorizzato
+    if (status === 401) {
+      window.dispatchEvent(new CustomEvent('api:error', {
+        detail: { status: 401, message: 'Operazione non autorizzata' }
+      }))
+      return Promise.reject(err)
+    }
+
+    // 403 — accesso vietato
+    if (status === 403) {
+      window.dispatchEvent(new CustomEvent('api:error', {
+        detail: { status: 403, message: 'Non hai i permessi per eseguire questa operazione' }
+      }))
+      return Promise.reject(err)
+    }
+
+    // 404 — risorsa non trovata (spesso non va mostrato come toast, si lascia gestire al chiamante)
+    // Se vuoi mostrarlo comunque, decommenta:
+    // if (status === 404) {
+    //   window.dispatchEvent(new CustomEvent('api:error', {
+    //     detail: { status: 404, message: message || 'Risorsa non trovata' }
+    //   }))
+    //   return Promise.reject(err)
+    // }
+
+    // 422 / 400 — errori di validazione o bad request
+    if (status === 422 || status === 400) {
+      window.dispatchEvent(new CustomEvent('api:error', {
+        detail: { status, message }
+      }))
+      return Promise.reject(err)
+    }
+
+    // 5xx — errori server
+    if (status >= 500) {
+      window.dispatchEvent(new CustomEvent('api:error', {
+        detail: { status, message: 'Errore del server. Riprova più tardi.' }
+      }))
+      return Promise.reject(err)
+    }
+
+    // Tutti gli altri errori HTTP
+    window.dispatchEvent(new CustomEvent('api:error', {
+      detail: { status, message }
+    }))
+
     return Promise.reject(err)
   }
 )
