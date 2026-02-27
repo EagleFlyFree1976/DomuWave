@@ -27,7 +27,7 @@ public class UserTenantsController(
     {
         var items = await _mediator.GetResponse(new GetUserTenantsByUserCommand(CurrentUser.Id, userId), ct);
         if (!items.Any()) return NotFound($"Nessun tenant trovato per l'utente {userId}.");
-        return Ok(items.Select(MapToDto));
+        return Ok(items.Select(k => k.ToDto()));
     }
 
     [HttpGet("user/{userId:long}/default")]
@@ -36,16 +36,16 @@ public class UserTenantsController(
     {
         var item = await _mediator.GetResponse(new GetDefaultUserTenantCommand(CurrentUser.Id, userId), ct);
         if (item == null) return NotFound($"Nessun tenant di default configurato per l'utente {userId}.");
-        return Ok(MapToDto(item));
+        return Ok(item.ToDto());
     }
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(UserTenantReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var item = await _mediator.GetResponse(new GetUserTenantByIdCommand(CurrentUser.Id, id), ct);
+        UserTenant item = await _mediator.GetResponse(new GetUserTenantByIdCommand(CurrentUser.Id, id), ct);
         if (item == null) return NotFound($"UserTenant {id} non trovato.");
-        return Ok(MapToDto(item));
+        return Ok(item.ToDto());
     }
 
     [HttpPost]
@@ -54,7 +54,7 @@ public class UserTenantsController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var entity = await _mediator.GetResponse(new CreateUserTenantCommand(CurrentUser.Id, dto.ToEntity()), ct);
-        return CreatedAtAction(nameof(GetById), new { id = entity.Id }, MapToDto(entity));
+        return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity.ToDto());
     }
 
     [HttpPut("{id:int}")]
@@ -66,7 +66,7 @@ public class UserTenantsController(
         if (existing == null) return NotFound($"UserTenant {id} non trovato.");
         dto.FillEntity(existing);
         var entity = await _mediator.GetResponse(new UpdateUserTenantCommand(CurrentUser.Id, id, existing), ct);
-        return Ok(MapToDto(entity));
+        return Ok(entity.ToDto());
     }
 
     [HttpPatch("user/{userId:long}/set-default")]
@@ -76,7 +76,7 @@ public class UserTenantsController(
         var entity = await _mediator.GetResponse(
             new SetDefaultUserTenantCommand(CurrentUser.Id, userId, dto.UserTenantId), ct);
         if (entity == null) return NotFound();
-        return Ok(MapToDto(entity));
+        return Ok(entity.ToDto());
     }
 
     [HttpDelete("{id:int}")]
@@ -86,14 +86,5 @@ public class UserTenantsController(
         return deleted ? NoContent() : NotFound($"UserTenant {id} non trovato.");
     }
 
-    private static UserTenantReadDto MapToDto(UserTenant x) => new()
-    {
-        UserTenantId = x.Id,
-        UserId       = x.UserId,
-        TenantId     = x.Tenant.Id,
-        TenantName   = x.Tenant.Name,
-        TenantCode   = x.Tenant.Code,
-        IsDefault    = x.IsDefault,
-        IsActive     = x.IsActive,
-    };
+     
 }

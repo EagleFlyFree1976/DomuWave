@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "jKW1OaJPy0o=",
+  "dgSpecHash": "vUGnGfFmfuI=",
   "success": true,
   "projectFilePath": "C:\\Projects\\Works\\DomuWave\\DomuWave.UnitTest\\DomuWave.Tests.csproj",
   "expectedPackageFiles": [
@@ -14,7 +14,7 @@
     "C:\\Users\\orazi\\.nuget\\packages\\bogus\\35.6.3\\bogus.35.6.3.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\coverlet.collector\\6.0.2\\coverlet.collector.6.0.2.nupkg.sha512",
-    "C:\\Users\\orazi\\.nuget\\packages\\cpq.core\\1.3.2\\cpq.core.1.3.2.nupkg.sha512",
+    "C:\\Users\\orazi\\.nuget\\packages\\cpq.core\\1.3.3\\cpq.core.1.3.3.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\cpq.core.eventsource\\1.0.0\\cpq.core.eventsource.1.0.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\csvhelper\\33.1.0\\csvhelper.33.1.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\documentformat.openxml\\3.3.0\\documentformat.openxml.3.3.0.nupkg.sha512",

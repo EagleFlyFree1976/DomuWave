@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CPQ.Core.Extensions;
 using DomuWave.Services.Models;
 using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Dto.UserTenants;
@@ -13,15 +14,16 @@ namespace DomuWave.Services.Extensions
     public static class DtoExtensions
     {
 
-        public static TenantReadDto ToDto(this UserTenant sorce)
+        public static UserTenantReadDto ToDto(this UserTenant souce)
         {
-            TenantReadDto dto = new TenantReadDto();
-            dto.Id = sorce.Tenant.Id;
-            dto.Name = sorce.Tenant.Name;
-            
-            dto.IsPrimary = sorce.IsDefault;
-            dto.OwnerId = sorce.UserId;
 
+            UserTenantReadDto dto = new UserTenantReadDto();
+            dto.UserId = souce.UserId;
+            dto.TenantId = souce.Tenant.Id;
+            dto.TenantName = souce.Tenant.Name;
+            dto.IsActive = souce.IsActive;
+            dto.IsDefault = souce.IsDefault;
+            dto.SetTraceInfo(souce);
             return dto;
         }
 

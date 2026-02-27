@@ -1,11 +1,13 @@
 ﻿ 
 
+using CPQ.Core.DTO;
+
 namespace DomuWave.Services.Dto.UserTenants;
 
 // ── Read ──────────────────────────────────────────────────────────────────────
 
 /// <summary>Dati restituiti per un'associazione utente-tenant.</summary>
-public class UserTenantReadDto
+public class UserTenantReadDto : TraceEntityDTO<int>
 {
     public int UserTenantId { get; set; }
     public long UserId { get; set; }

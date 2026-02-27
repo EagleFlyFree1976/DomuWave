@@ -136,10 +136,14 @@
               <div class="audit-item">
                 <span class="audit-item__label">Creato da</span>
                 <span class="audit-item__value">{{ store.currentTenant.createdByFullName || '—' }}</span>
+                <span class="audit-item__label">Il</span>
+                <span class="audit-item__value">{{ store.currentTenant.creationDate || '—' }}</span>
               </div>
               <div class="audit-item">
                 <span class="audit-item__label">Ultima modifica</span>
                 <span class="audit-item__value">{{ store.currentTenant.lastUpdatedByFullName || '—' }}</span>
+                <span class="audit-item__label">Il</span>
+                <span class="audit-item__value">{{ store.currentTenant.lastUpdateDate || '—' }}</span>
               </div>
             </div>
           </div>

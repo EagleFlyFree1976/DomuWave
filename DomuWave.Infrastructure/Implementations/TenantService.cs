@@ -61,6 +61,7 @@ namespace DomuWave.Services.Implementations
         public async Task<Tenant> UpdateAsync(Tenant entity, IUser currentUser, CancellationToken cancellationToken)
         {
             entity.Trace(currentUser);
+            entity.CreatedByFullName = currentUser.FullName;
             await session.SaveOrUpdateAsync(entity, cancellationToken);
             await session.FlushAsync(cancellationToken);
             return entity;

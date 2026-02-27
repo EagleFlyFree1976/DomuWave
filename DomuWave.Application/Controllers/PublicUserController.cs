@@ -7,6 +7,7 @@ using DomuWave.Application.Code;
 using DomuWave.Application.Models;
 using DomuWave.Services.Clients;
 using DomuWave.Services.Clients.Request;
+using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
@@ -61,8 +62,8 @@ public class PublicUserController(
 
             var tenantsDto = tenants.ToList().Select(j => j.ToDto());
 
-            returnDto.AvailableTenants = tenantsDto.ToList();
-            returnDto.Tenant = tenantsDto.FirstOrDefault(j => j.IsPrimary);
+            returnDto.AvailableTenants = tenantsDto.Select(k=> new TenantReadDto(){Code = k.TenantCode, Name = k.TenantName, Id = k.TenantId, IsPrimary = k.IsDefault}).ToList();
+            returnDto.Tenant = returnDto.AvailableTenants.FirstOrDefault(j => j.IsPrimary);
             return Ok(returnDto);
         }
         catch (Exception exc)

@@ -109,7 +109,7 @@
           }
         }
       },
-      "CPQ.Core/1.3.2": {
+      "CPQ.Core/1.3.3": {
         "type": "package",
         "dependencies": {
           "AspNetCore.HealthChecks.Rabbitmq": "8.0.2",
@@ -3546,13 +3546,13 @@
         "lib/netstandard2.0/Bogus.xml"
       ]
     },
-    "CPQ.Core/1.3.2": {
-      "sha512": "O0g4zSmkHN19FmhWFbe5GtBopYtJqUlCcygqemX3gYlXymbZnZR54pEO5rvJwjKH5HxVy/ggk9hC5w+iWIxxlA==",
+    "CPQ.Core/1.3.3": {
+      "sha512": "kq/85K9qm8wGUmWnwATl2TUmJFQI+VHG+xHVoBszI6Aa2uOKVw+kqV/Sc4tfk8QzMBPLc8u+2wWxalHmSSSk8A==",
       "type": "package",
-      "path": "cpq.core/1.3.2",
+      "path": "cpq.core/1.3.3",
       "files": [
         ".nupkg.metadata",
-        "cpq.core.1.3.2.nupkg.sha512",
+        "cpq.core.1.3.3.nupkg.sha512",
         "cpq.core.nuspec",
         "lib/net8.0/CPQ.Core.dll"
       ]
@@ -9960,7 +9960,7 @@
   "projectFileDependencyGroups": {
     "net8.0": [
       "Bogus >= 35.6.3",
-      "CPQ.Core >= 1.3.2",
+      "CPQ.Core >= 1.3.3",
       "CPQ.Core.EventSource >= 1.0.0",
       "CsvHelper >= 33.1.0",
       "Hangfire.Core >= 1.8.18",
@@ -10025,7 +10025,7 @@
           },
           "CPQ.Core": {
             "target": "Package",
-            "version": "[1.3.2, )"
+            "version": "[1.3.3, )"
           },
           "CPQ.Core.EventSource": {
             "target": "Package",

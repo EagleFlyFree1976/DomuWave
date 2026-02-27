@@ -1,3 +1,4 @@
+using CPQ.Core.Extensions;
 using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Models;
 
@@ -23,9 +24,7 @@ public static class TenantMappingExtensions
             IsActive = tenant.IsActive,
         };
 
-        // Audit fields (da TraceEntityDTO tramite DtoExtensions)
-        dto.fillTraceData(tenant);
-
+        dto.SetTraceInfo(tenant);
         return dto;
     }
 }

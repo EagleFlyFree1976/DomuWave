@@ -57,7 +57,6 @@ public class UpdateTenantCommandConsumer
         existing.Name     = command.Name;
         existing.Code     = command.Code;
         existing.IsActive = command.IsActive;
-
         var updated = await _tenantService
             .UpdateAsync(existing, currentUser, cancellationToken)
             .ConfigureAwait(false);

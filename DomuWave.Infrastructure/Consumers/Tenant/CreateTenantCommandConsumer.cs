@@ -1,5 +1,6 @@
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
+using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Tenant;
@@ -49,6 +50,8 @@ public class CreateTenantCommandConsumer
             Code     = command.Code,
             IsActive = command.IsActive,
         };
+
+        entity.Trace(currentUser);
 
         var created = await _tenantService
             .CreateAsync(entity, currentUser, cancellationToken)

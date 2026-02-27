@@ -23,28 +23,17 @@ namespace DomuWave.Services.Interfaces.Extensions;
 
 public static class DtoExtensions
 {
-    public static BookEntityDto<T> fillBookEntityData<T>(this BookEntityDto<T> bookEntityDto, TenantEntity<T> tenantEntity)
+    public static BookEntityDto<T> fillBookEntityData<T>(this BookEntityDto<T> bookEntityDto,
+        TenantEntity<T> tenantEntity)
     {
         bookEntityDto.Id = tenantEntity.Id;
         bookEntityDto.Name = tenantEntity.Name;
-        bookEntityDto.Description= tenantEntity.Description;
-        bookEntityDto.fillTraceData(tenantEntity);
+        bookEntityDto.Description = tenantEntity.Description;
+        bookEntityDto.SetTraceInfo(tenantEntity);
 
         return bookEntityDto;
     }
-    public static TraceEntityDTO<T> fillTraceData<T>(this TraceEntityDTO<T> traceEntityDto, TraceEntity<T> traceEntity)
-    {
-        
 
-        traceEntityDto.LastUpdatedByFullName = traceEntity.LastUpdatedByFullName;
-        traceEntityDto.CreatedByFullName = traceEntity.CreatedByFullName;
-        traceEntityDto.CreatedById = traceEntity.CreatedBy;
-        traceEntityDto.LastUpdatedById= traceEntity.LastUpdatedBy;
-        traceEntityDto.CreationDate = traceEntity.CreationDate.ToUniversalTime();
-        traceEntityDto.LastUpdateDate = traceEntity.LastUpdateDate.ToUniversalTime();
-
-        return traceEntityDto;
-    }
     public static MenuItemDto ToDto(this MenuItem item)
     {
         if (item == null) return null;
