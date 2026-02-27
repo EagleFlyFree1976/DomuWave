@@ -1,276 +1,157 @@
-using DomuWave.Application.Code;
-using DomuWave.Services.Models;
-using DomuWave.Services.Interfaces;
 using CPQ.Core.Settings;
+using DomuWave.Application.Code;
+using DomuWave.Services.Command.CondominiumFee;
+using DomuWave.Services.Command.CondominiumInstallment;
+using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-
+using SimpleMediator.Core;
+using CPQ.Core.Extensions;
 namespace DomuWave.Microservice.Controllers;
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Rate (CondominiumFees)
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── CondominiumFees ─────────────────────────────────────────────────────────
 
-/// <summary>
-/// Gestione Rate Condominiali per unità e condominio.
-/// </summary>
-[Route("api/[controller]")]
+[Route("api/condominium-fees")]
 [Produces("application/json")]
 public class CondominiumFeesController(
     ILogger<CondominiumFeesController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
-    ICondominiumFeeService feeService)
+    IMediator mediator)
     : PrivateControllerBase(logger, configuration)
 {
-    /// <summary>
-    /// Restituisce tutte le rate di una bolletta/rata condominiale.
-    /// </summary>
+    private readonly IMediator _mediator = mediator;
+
     [HttpGet("by-installment/{installmentId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumFee>))]
-    public async Task<IActionResult> GetByInstallment(int installmentId, CancellationToken cancellationToken)
-    {
-        var result = await feeService.GetByInstallmentIdAsync(installmentId, CurrentUser, cancellationToken);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetByInstallment(int installmentId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetFeesByInstallmentCommand(CurrentUser.Id, installmentId), ct));
 
-    /// <summary>
-    /// Restituisce le rate di una specifica unità immobiliare.
-    /// </summary>
     [HttpGet("by-unit/{unitId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumFee>))]
-    public async Task<IActionResult> GetByUnit(int unitId, CancellationToken cancellationToken)
-    {
-        var result = await feeService.GetByUnitIdAsync(unitId, CurrentUser, cancellationToken);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetByUnit(int unitId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetFeesByUnitCommand(CurrentUser.Id, unitId), ct));
 
-    /// <summary>
-    /// Restituisce le rate associate a un utente (proprietario/inquilino).
-    /// </summary>
     [HttpGet("by-user/{userId:long}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumFee>))]
-    public async Task<IActionResult> GetByUser(long userId, CancellationToken cancellationToken)
-    {
-        var result = await feeService.GetByUserIdAsync(userId, CurrentUser, cancellationToken);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetByUser(long userId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetFeesByUserCommand(CurrentUser.Id, userId), ct));
 
-    /// <summary>
-    /// Restituisce le rate non pagate del condominio.
-    /// </summary>
     [HttpGet("by-condominium/{condominiumId:int}/unpaid")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumFee>))]
-    public async Task<IActionResult> GetUnpaid(int condominiumId, CancellationToken cancellationToken)
-    {
-        var result = await feeService.GetUnpaidFeesAsync(condominiumId, CurrentUser, cancellationToken);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetUnpaid(int condominiumId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetUnpaidFeesCommand(CurrentUser.Id, condominiumId), ct));
 
-    /// <summary>
-    /// Restituisce le rate scadute del condominio.
-    /// </summary>
     [HttpGet("by-condominium/{condominiumId:int}/overdue")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumFee>))]
-    public async Task<IActionResult> GetOverdue(int condominiumId, CancellationToken cancellationToken)
-    {
-        var result = await feeService.GetOverdueFeesAsync(condominiumId, CurrentUser, cancellationToken);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetOverdue(int condominiumId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetOverdueFeesCommand(CurrentUser.Id, condominiumId), ct));
 
-    /// <summary>
-    /// Calcola il totale dovuto da un utente.
-    /// </summary>
     [HttpGet("total-due/{userId:long}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTotalDue(long userId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetTotalDue(long userId, CancellationToken ct)
     {
-        var total = await feeService.GetTotalDueAsync(userId, CurrentUser, cancellationToken);
+        var total = await _mediator.GetResponse(new GetFeesTotalDueCommand(CurrentUser.Id, userId), ct);
         return Ok(new { userId, totalDue = total });
     }
 
-    /// <summary>
-    /// Restituisce il saldo (pagamenti effettuati) di un utente.
-    /// </summary>
     [HttpGet("balance/{userId:long}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetBalance(long userId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetBalance(long userId, CancellationToken ct)
     {
-        var balance = await feeService.GetTotalBalanceAsync(userId, CurrentUser, cancellationToken);
+        var balance = await _mediator.GetResponse(new GetFeesTotalBalanceCommand(CurrentUser.Id, userId), ct);
         return Ok(new { userId, balance });
     }
 
-    /// <summary>
-    /// Crea una nuova rata condominiale.
-    /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(CondominiumFee))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CondominiumFee fee, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CondominiumFee fee, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await feeService.CreateAsync(fee, CurrentUser, cancellationToken);
+        var result = await _mediator.GetResponse(new CreateCondominiumFeeCommand(CurrentUser.Id, fee), ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
-    /// <summary>
-    /// Registra il pagamento di una rata.
-    /// </summary>
     [HttpPatch("{feeId:long}/pay")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RecordPayment(
-        long feeId,
-        [FromBody] RecordFeePaymentRequest request,
-        CancellationToken cancellationToken)
+        long feeId, [FromBody] RecordFeePaymentRequest request, CancellationToken ct)
     {
-        var success = await feeService.RecordPaymentAsync(
-            feeId, request.Amount, request.PaymentDate,
-            request.PaymentMethod, CurrentUser.Id, CurrentUser, cancellationToken);
-
+        var success = await _mediator.GetResponse(
+            new RecordFeePaymentCommand(CurrentUser.Id, feeId, request.Amount, request.PaymentDate, request.PaymentMethod), ct);
         if (!success) return NotFound();
         return Ok(new { feeId, paid = true });
     }
 
-    /// <summary>
-    /// Soft-delete di una rata.
-    /// </summary>
     [HttpDelete("{id:long}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(long id, CancellationToken ct)
     {
-        var deleted = await feeService.DeleteAsync(id, CurrentUser, cancellationToken);
+        var deleted = await _mediator.GetResponse(new DeleteCondominiumFeeCommand(CurrentUser.Id, id), ct);
         if (!deleted) return NotFound();
         return NoContent();
     }
 }
 
-/// <summary>Request body per la registrazione di un pagamento rata.</summary>
 public record RecordFeePaymentRequest(decimal Amount, DateTime PaymentDate, string PaymentMethod);
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Bollette/Periodi (CondominiumInstallments)
-// ═══════════════════════════════════════════════════════════════════════════
+// ─── CondominiumInstallments ──────────────────────────────────────────────────
 
-/// <summary>
-/// Gestione Periodi (bollette) del condominio.
-/// </summary>
-[Route("api/[controller]")]
+[Route("api/condominium-installments")]
 [Produces("application/json")]
 public class CondominiumInstallmentsController(
     ILogger<CondominiumInstallmentsController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
-    ICondominiumInstallmentService installmentService)
+    IMediator mediator)
     : PrivateControllerBase(logger, configuration)
 {
-    /// <summary>
-    /// Restituisce tutti i periodi di un condominio.
-    /// </summary>
-    [HttpGet("by-condominium/{condominiumId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumInstallment>))]
-    public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken cancellationToken)
-    {
-        var result = await installmentService.GetByCondominiumIdAsync(condominiumId, CurrentUser, cancellationToken);
-        return Ok(result);
-    }
+    private readonly IMediator _mediator = mediator;
 
-    /// <summary>
-    /// Restituisce un periodo specifico per anno e numero.
-    /// </summary>
+    [HttpGet("by-condominium/{condominiumId:int}")]
+    public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetInstallmentsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
+
     [HttpGet("by-condominium/{condominiumId:int}/year/{year:int}/number/{number:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumInstallment))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetByYearAndNumber(
-        int condominiumId, int year, int number, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetByYearAndNumber(int condominiumId, int year, int number, CancellationToken ct)
     {
-        var result = await installmentService.GetByYearAndNumberAsync(condominiumId, year, number, CurrentUser, cancellationToken);
+        var result = await _mediator.GetResponse(
+            new GetInstallmentByYearAndNumberCommand(CurrentUser.Id, condominiumId, year, number), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
 
-    /// <summary>
-    /// Restituisce i periodi aperti del condominio.
-    /// </summary>
     [HttpGet("by-condominium/{condominiumId:int}/open")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumInstallment>))]
-    public async Task<IActionResult> GetOpen(int condominiumId, CancellationToken cancellationToken)
-    {
-        var result = await installmentService.GetOpenInstallmentsAsync(condominiumId, CurrentUser, cancellationToken);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetOpen(int condominiumId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetOpenInstallmentsCommand(CurrentUser.Id, condominiumId), ct));
 
-    /// <summary>
-    /// Restituisce i periodi scaduti del condominio.
-    /// </summary>
     [HttpGet("by-condominium/{condominiumId:int}/overdue")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumInstallment>))]
-    public async Task<IActionResult> GetOverdue(int condominiumId, CancellationToken cancellationToken)
-    {
-        var result = await installmentService.GetOverdueInstallmentsAsync(condominiumId, CurrentUser, cancellationToken);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetOverdue(int condominiumId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetOverdueInstallmentsCommand(CurrentUser.Id, condominiumId), ct));
 
-    /// <summary>
-    /// Genera automaticamente i periodi di un anno a partire da un budget.
-    /// </summary>
     [HttpPost("by-condominium/{condominiumId:int}/generate")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GenerateInstallments(
-        int condominiumId,
-        [FromBody] GenerateInstallmentsRequest request,
-        CancellationToken cancellationToken)
+        int condominiumId, [FromBody] GenerateInstallmentsRequest request, CancellationToken ct)
     {
-        var success = await installmentService.GenerateInstallmentsAsync(
-            condominiumId, request.Year, request.BudgetId,
-            CurrentUser.Id, CurrentUser, cancellationToken);
-
+        var success = await _mediator.GetResponse(
+            new GenerateInstallmentsCommand(CurrentUser.Id, condominiumId, request.Year, request.BudgetId), ct);
         if (!success) return BadRequest(new { error = "Impossibile generare le rate per i parametri forniti." });
         return Ok(new { condominiumId, year = request.Year, generated = true });
     }
 
-    /// <summary>
-    /// Crea un nuovo periodo condominiale.
-    /// </summary>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(CondominiumInstallment))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] CondominiumInstallment installment, CancellationToken cancellationToken)
+    public async Task<IActionResult> Create([FromBody] CondominiumInstallment installment, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await installmentService.CreateAsync(installment, CurrentUser, cancellationToken);
+        var result = await _mediator.GetResponse(new CreateCondominiumInstallmentCommand(CurrentUser.Id, installment), ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
-    /// <summary>
-    /// Aggiorna un periodo esistente.
-    /// </summary>
     [HttpPut("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumInstallment))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(int id, [FromBody] CondominiumInstallment installment, CancellationToken cancellationToken)
+    public async Task<IActionResult> Update(int id, [FromBody] CondominiumInstallment installment, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var exists = await installmentService.ExistsAsync(id, CurrentUser, cancellationToken);
-        if (!exists) return NotFound();
-        installment.Id = id;
-        var result = await installmentService.UpdateAsync(installment, CurrentUser, cancellationToken);
+        var result = await _mediator.GetResponse(
+            new UpdateCondominiumInstallmentCommand(CurrentUser.Id, id, installment), ct);
+        if (result == null) return NotFound();
         return Ok(result);
     }
 
-    /// <summary>
-    /// Soft-delete di un periodo.
-    /// </summary>
     [HttpDelete("{id:int}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var deleted = await installmentService.DeleteAsync(id, CurrentUser, cancellationToken);
+        var deleted = await _mediator.GetResponse(new DeleteCondominiumInstallmentCommand(CurrentUser.Id, id), ct);
         if (!deleted) return NotFound();
         return NoContent();
     }
 }
 
-/// <summary>Request body per la generazione automatica delle rate.</summary>
 public record GenerateInstallmentsRequest(int Year, int BudgetId);

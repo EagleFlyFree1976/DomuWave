@@ -135,7 +135,7 @@
         }
       },
       "coverlet.collector/6.0.2": {},
-      "CPQ.Core/1.2.1": {
+      "CPQ.Core/1.3.2": {
         "dependencies": {
           "AspNetCore.HealthChecks.Rabbitmq": "8.0.2",
           "AspNetCore.HealthChecks.SqlServer": "8.0.2",
@@ -168,8 +168,8 @@
         },
         "runtime": {
           "lib/net8.0/CPQ.Core.dll": {
-            "assemblyVersion": "1.2.0.0",
-            "fileVersion": "1.2.0.0"
+            "assemblyVersion": "1.3.2.0",
+            "fileVersion": "1.3.2.0"
           }
         }
       },
@@ -2420,7 +2420,7 @@
       "DomuWave.Services/1.0.0": {
         "dependencies": {
           "Bogus": "35.6.3",
-          "CPQ.Core": "1.2.1",
+          "CPQ.Core": "1.3.2",
           "CPQ.Core.EventSource": "1.0.0",
           "CsvHelper": "33.1.0",
           "Hangfire.Core": "1.8.18",
@@ -2512,12 +2512,12 @@
       "path": "coverlet.collector/6.0.2",
       "hashPath": "coverlet.collector.6.0.2.nupkg.sha512"
     },
-    "CPQ.Core/1.2.1": {
+    "CPQ.Core/1.3.2": {
       "type": "package",
       "serviceable": true,
-      "sha512": "sha512-+yMMFWMagQT880SUQW3OGN4qNk7f9z931Qb69FT7xEhkE9Wan6bNVOav2N3dmLXLPtEiMAADTIgrx7IMlrj0Zg==",
-      "path": "cpq.core/1.2.1",
-      "hashPath": "cpq.core.1.2.1.nupkg.sha512"
+      "sha512": "sha512-O0g4zSmkHN19FmhWFbe5GtBopYtJqUlCcygqemX3gYlXymbZnZR54pEO5rvJwjKH5HxVy/ggk9hC5w+iWIxxlA==",
+      "path": "cpq.core/1.3.2",
+      "hashPath": "cpq.core.1.3.2.nupkg.sha512"
     },
     "CPQ.Core.EventSource/1.0.0": {
       "type": "package",

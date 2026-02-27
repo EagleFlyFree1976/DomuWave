@@ -1,4 +1,5 @@
 using CPQ.Core.Consumers;
+using CPQ.Core.Exceptions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Tenant;
@@ -33,12 +34,25 @@ public class UpdateTenantCommandConsumer
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
+        var existingByCode = await _tenantService
+            .GetByCodeAsync(command.Code, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (existingByCode != null && existingByCode.Id != command.TenantId)
+            throw new ValidatorException($"Esiste già un tenant con il codice '{command.Code}'.");
+
+
         var existing = await _tenantService
             .GetByIdAsync(command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         // Restituisce null → il controller risponderà 404
         if (existing == null) return null;
+
+
+
+
+
 
         existing.Name     = command.Name;
         existing.Code     = command.Code;
