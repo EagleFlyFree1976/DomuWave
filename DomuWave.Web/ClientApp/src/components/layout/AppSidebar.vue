@@ -55,18 +55,21 @@
         </li>
       </ul>
     </nav>
-
+    <TenantSelectorWidget />
     <!-- ── Footer ── -->
     <div class="sidebar-footer">
 
-      
-        <TenantSelectorWidget />   <!-- sopra il profilo -->
- 
-      
+
+      <!-- sopra il profilo -->
+
+
 
 
       <div class="user-chip">
-        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-avatar">
+
+          {{ userInitials }}
+        </div>
         <div class="user-details" v-show="!collapsed">
           <span class="user-name">{{ authStore.currentUser?.displayName ?? authStore.currentUser?.username }}</span>
           <span class="user-role">{{ authStore.currentUser?.role ?? 'Utente' }}</span>
@@ -85,7 +88,7 @@
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
   import { useMenuStore } from '@/stores/menuStore'
-
+  import  TenantSelectorWidget  from '@/components/layout/TenantSelectorWidget.vue'
   const route = useRoute()
   const router = useRouter()
   const authStore = useAuthStore()

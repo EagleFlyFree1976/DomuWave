@@ -57,8 +57,19 @@ public class PublicUserController(
             returnDto.Role = user.Role;
             returnDto.Path = user.Path;
 
-            var tenants = await _userTenantService.GetByUserIdAsync(user.Id, systemUser, cancellationToken)
-                .ConfigureAwait(false);
+
+            var _user = await _userService.GetByIdAsync(user.Id, cancellationToken).ConfigureAwait(false);
+            if (_user.IsSystemUser)
+            {
+                returnDto.Profile = UserProfile.SuperAdmin;
+            }
+            else
+            {
+                returnDto.Profile = UserProfile.TenantAdministrator;
+            }
+
+                var tenants = await _userTenantService.GetByUserIdAsync(user.Id, systemUser, cancellationToken)
+                    .ConfigureAwait(false);
 
             var tenantsDto = tenants.ToList().Select(j => j.ToDto());
 

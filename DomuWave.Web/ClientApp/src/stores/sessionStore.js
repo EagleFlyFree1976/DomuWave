@@ -23,6 +23,7 @@ import { tenantApi } from '@/services/tenantService'
 
 const STORAGE_KEY = 'tenantId'
 const STORAGE_TENANT_NAME_KEY = 'tenantName'
+const UserProfile = 'domuwave_userprofile'
 
 export const useSessionStore = defineStore('session', () => {
   // ─── STATE ─────────────────────────────────────────────────────────────────
@@ -45,8 +46,15 @@ export const useSessionStore = defineStore('session', () => {
 
   // ─── GETTERS ───────────────────────────────────────────────────────────────
 
-  const isSuperAdmin = computed(() =>
-    currentUserRole.value === 'SuperAdmin'
+  const isSuperAdmin = computed(() => {
+    var localStor = localStorage.getItem(UserProfile);
+    console.log("localStor", localStor);
+    console.log("currentUserRole.value", currentUserRole.value);
+    var profile = currentUserRole.value != null ? currentUserRole.value : localStor;
+    console.log("CXX", profile);
+    console.log("CXX1", profile == 1);
+    return profile == 1 
+    }
   )
 
   const hasTenantSelected = computed(() => !!activeTenant.value)
@@ -60,8 +68,9 @@ export const useSessionStore = defineStore('session', () => {
    *
    * @param {string} role - Ruolo dell'utente ('SuperAdmin', 'Admin', ecc.)
    */
-  function initFromAuth(role) {
-    currentUserRole.value = role
+  function initFromAuth(user) {
+    console.log("initFromAuth", user.value); 
+    currentUserRole.value = user.value.profile;
 
     // Ripristina il tenant salvato in localStorage
     const savedId   = localStorage.getItem(STORAGE_KEY)
@@ -80,11 +89,13 @@ export const useSessionStore = defineStore('session', () => {
    * questo metodo è no-op.
    */
   async function loadTenants() {
+    console.log("loadTenants", isSuperAdmin.value);
     if (!isSuperAdmin.value) return
 
     loadingTenants.value = true
-    try {
-      const { data } = await tenantApi.getAll()
+    try
+    {
+      const { data } = await tenantApi.getAll();
       // Filtra solo gli attivi e ordina per nome
       availableTenants.value = (data ?? [])
         .filter(t => t.isActive)
@@ -101,7 +112,9 @@ export const useSessionStore = defineStore('session', () => {
           clearTenant()
         }
       }
-    } catch {
+    }
+    catch
+    {
       // Errore già gestito dall'interceptor in api.js → toast in App.vue
       availableTenants.value = []
     } finally {

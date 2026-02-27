@@ -28,6 +28,7 @@ authApiClient.interceptors.response.use(
       // Token expired or invalid → clear storage and redirect to login
       localStorage.removeItem('domuwave_token')
       localStorage.removeItem('domuwave_user')
+      localStorage.removeItem('domuwave_userprofile')
       // Avoid circular import: use window.location for hard redirect
       if (window.location.pathname !== '/login') {
         window.location.href = '/login'

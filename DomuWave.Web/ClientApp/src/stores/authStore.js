@@ -33,12 +33,14 @@ export const useAuthStore = defineStore('auth', () => {
         username: data.username ?? data.Username ?? username,
         displayName: data.displayName ?? data.DisplayName ?? username,
         role: data.role ?? data.Role,
+        profile: data.profile
       }
 
       const session = useSessionStore()
-      session.initFromAuth(user.role) 
+      session.initFromAuth(user) 
       localStorage.setItem('domuwave_token', token.value)
       localStorage.setItem('domuwave_user', JSON.stringify(user.value))
+      localStorage.setItem('domuwave_userprofile', user.value.profile)
       return { success: true }
     } catch (err) {
       const msg =

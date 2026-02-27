@@ -87,6 +87,7 @@ watch(
 // ─── LIFECYCLE ───────────────────────────────────────────────────────────────
 onMounted(async () => {
   // Carica i tenant disponibili (no-op se non superadmin)
+  console.log("tenant selector call loadtenants");
   await session.loadTenants()
 })
 
