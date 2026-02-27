@@ -1,229 +1,165 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Controllers;
+using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
-using DomuWave.Application.Models;
-using DomuWave.Services.Implementations;
-using DomuWave.Services.Interfaces;
+using DomuWave.Services.Command.Tenant;
+using DomuWave.Services.Dto.Tenant;
+using DomuWave.Services.Helper;
 using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SimpleMediator.Core;
 
-namespace DomuWave.Microservice.Controllers
+namespace DomuWave.Microservice.Controllers;
+
+/// <summary>
+/// Gestione dei Tenant della piattaforma.
+/// Il controller si occupa esclusivamente del contratto HTTP:
+/// traduce la request in un Command e la response dal risultato del mediator.
+/// Tutta la logica di business risiede nei Consumer del progetto Services.
+/// </summary>
+[Route("api/[controller]")]
+public class TenantsController(
+    ILogger<TenantsController> logger,
+    IOptionsMonitor<OxCoreSettings> configuration,
+    IMediator mediator)
+    : PrivateAdminControllerBase(logger, configuration)
 {
-    [Route("api/[controller]")]
-    public class TenantsController(
-        ILogger<TenantsController> logger,
-        IOptionsMonitor<OxCoreSettings> configuration,
-        ITenantService tenantService)
-        : PrivateAdminControllerBase(logger, configuration)
+    private readonly IMediator _mediator = mediator;
+
+    // ─── GET /api/tenants ─────────────────────────────────────────────────────
+
+    /// <summary>Restituisce tutti i tenant non eliminati.</summary>
+    [HttpGet("")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<TenantReadDto>))]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        private readonly ITenantService _tenantService = tenantService;
+        var result = await _mediator.GetResponse(
+            new GetAllTenantsCommand(CurrentUser.Id),
+            cancellationToken);
 
-        // ─── REQUEST DTO ──────────────────────────────────────────────────────────
+        return Ok(result);
+    }
 
-        public class CreateTenantRequest
-        {
-            /// <summary>Nome del tenant</summary>
-            public string Name { get; set; }
+    // ─── GET /api/tenants/active ──────────────────────────────────────────────
 
-            /// <summary>Codice univoco del tenant</summary>
-            public string Code { get; set; }
+    /// <summary>Restituisce solo i tenant attivi.</summary>
+    [HttpGet("active")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<TenantReadDto>))]
+    public async Task<IActionResult> GetActive(CancellationToken cancellationToken)
+    {
+        var result = await _mediator.GetResponse(
+            new GetActiveTenantsCommand(CurrentUser.Id),
+            cancellationToken);
 
-            /// <summary>Indica se il tenant è attivo</summary>
-            public bool IsActive { get; set; } = true;
-        }
+        return Ok(result);
+    }
 
-        public class UpdateTenantRequest
-        {
-            /// <summary>Nome del tenant</summary>
-            public string Name { get; set; }
+    // ─── GET /api/tenants/{id} ────────────────────────────────────────────────
 
-            /// <summary>Codice univoco del tenant</summary>
-            public string Code { get; set; }
+    /// <summary>Restituisce un tenant per ID.</summary>
+    [HttpGet("{id:guid}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TenantReadDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.GetResponse(
+            new GetTenantByIdCommand(CurrentUser.Id, id),
+            cancellationToken);
 
-            /// <summary>Indica se il tenant è attivo</summary>
-            public bool IsActive { get; set; }
-        }
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
 
-        // ─── GET /api/tenants ─────────────────────────────────────────────────────
+    // ─── GET /api/tenants/paged ───────────────────────────────────────────────
 
-        /// <summary>
-        /// Restituisce tutti i tenant non eliminati
-        /// </summary>
-        [HttpGet("")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            Modules.DomuWaveModule)]
-        //[AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, AuthorizationKeys.Admin)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Tenant>))]
-        public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
-        {
-            var items = await _tenantService.GetAllAsync(CurrentUser, cancellationToken).ConfigureAwait(false);
-            return Ok(items);
-        }
-
-        // ─── GET /api/tenants/active ──────────────────────────────────────────────
-
-        /// <summary>
-        /// Restituisce solo i tenant attivi
-        /// </summary>
-        [HttpGet("active")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            Modules.DomuWaveModule)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Tenant>))]
-        public async Task<IActionResult> GetActive(CancellationToken cancellationToken)
-        {
-            var items = await _tenantService.GetActiveTenantsAsync(CurrentUser, cancellationToken).ConfigureAwait(false);
-            return Ok(items);
-        }
-
-        // ─── GET /api/tenants/{id} ────────────────────────────────────────────────
-
-        /// <summary>
-        /// Restituisce un tenant per ID (Guid)
-        /// </summary>
-        [HttpGet("{id:guid}")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-            Modules.DomuWaveModule)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Tenant))]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
-        {
-            var item = await _tenantService.GetByIdAsync(id, CurrentUser, cancellationToken).ConfigureAwait(false);
-            if (item == null)
-                return NotFound();
-
-            return Ok(item);
-        }
-
-        // ─── GET /api/tenants/code/{code} ─────────────────────────────────────────
-
-        /// <summary>
-        /// Restituisce un tenant per codice univoco
-        /// </summary>
-        [HttpGet("code/{code}")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Tenant))]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetByCode(string code, CancellationToken cancellationToken)
-        {
-            if (string.IsNullOrWhiteSpace(code))
-                return BadRequest("Il codice è obbligatorio.");
-
-            var item = await _tenantService.GetByCodeAsync(code, CurrentUser, cancellationToken).ConfigureAwait(false);
-            if (item == null)
-                return NotFound();
-
-            return Ok(item);
-        }
-        
-
-        [HttpGet("paged")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetPaged(
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20,
-            [FromQuery] string sortField = "name",
-            [FromQuery] bool sortOrder = true,
-            [FromQuery] string search = null,
-            [FromQuery] bool? isActive = null,
-            CancellationToken cancellationToken = default)
-        {
-
-            var (items, total) = await _tenantService.GetPagedAsync(x => !x.IsDeleted 
-                                                                         && (string.IsNullOrEmpty(search) || x.Name.Contains(search))
-                                                                         && (!isActive.HasValue || x.IsActive == isActive),
-                page,
-                pageSize,
-                x => x.Name!,
-                sortOrder, CurrentUser, cancellationToken).ConfigureAwait(false);
-
-            return Ok(new { items, total, page, pageSize });
-
-
- 
-        }
-
-        // ─── POST /api/tenants ────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Crea un nuovo tenant
-        /// </summary>
-        [HttpPost("")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
-        [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Tenant))]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Create([FromBody] CreateTenantRequest request, CancellationToken cancellationToken)
-        {
-            if (request == null)
-                return BadRequest("Il corpo della richiesta è obbligatorio.");
-
-            if (string.IsNullOrWhiteSpace(request.Name))
-                return BadRequest("Il campo Name è obbligatorio.");
-
-            if (string.IsNullOrWhiteSpace(request.Code))
-                return BadRequest("Il campo Code è obbligatorio.");
-
-            var entity = new Tenant
+    /// <summary>Restituisce i tenant con paginazione e filtri.</summary>
+    [HttpGet("paged")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResult<TenantReadDto>))]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] int    page      = 1,
+        [FromQuery] int    pageSize  = 20,
+        [FromQuery] string sortField = "name",
+        [FromQuery] bool   sortOrder = true,
+        [FromQuery] string search    = null,
+        [FromQuery] bool?  isActive  = null,
+        CancellationToken  cancellationToken = default)
+    {
+        var result = await _mediator.GetResponse(
+            new GetPagedTenantsCommand(CurrentUser.Id)
             {
-                Name = request.Name,
-                Code = request.Code,
-                IsActive = request.IsActive
-            };
+                PageNumber = page,
+                PageSize   = pageSize,
+                SortField  = sortField,
+                Asc        = sortOrder,
+                Search     = search,
+                IsActive   = isActive,
+            },
+            cancellationToken);
 
-            var created = await _tenantService.CreateAsync(entity, CurrentUser, cancellationToken).ConfigureAwait(false);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
-        }
+        return Ok(result);
+    }
 
-        // ─── PUT /api/tenants/{id} ────────────────────────────────────────────────
+    // ─── POST /api/tenants ────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Aggiorna un tenant esistente
-        /// </summary>
-        [HttpPut("{id:guid}")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
-        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Tenant))]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTenantRequest request, CancellationToken cancellationToken)
-        {
-            if (request == null)
-                return BadRequest("Il corpo della richiesta è obbligatorio.");
+    /// <summary>Crea un nuovo tenant.</summary>
+    [HttpPost("")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(TenantReadDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Create([FromBody] CreateTenantDto dto, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var existing = await _tenantService.GetByIdAsync(id, CurrentUser, cancellationToken).ConfigureAwait(false);
-            if (existing == null)
-                return NotFound();
+        var result = await _mediator.GetResponse(
+            new CreateTenantCommand(CurrentUser.Id, dto),
+            cancellationToken);
 
-            existing.Name = request.Name;
-            existing.Code = request.Code;
-            existing.IsActive = request.IsActive;
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
 
-            var updated = await _tenantService.UpdateAsync(existing, CurrentUser, cancellationToken).ConfigureAwait(false);
-            return Ok(updated);
-        }
+    // ─── PUT /api/tenants/{id} ────────────────────────────────────────────────
 
-        // ─── DELETE /api/tenants/{id} ─────────────────────────────────────────────
+    /// <summary>Aggiorna un tenant esistente.</summary>
+    [HttpPut("{id:guid}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TenantReadDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTenantDto dto, CancellationToken cancellationToken)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        /// <summary>
-        /// Soft-delete di un tenant
-        /// </summary>
-        [HttpDelete("{id:guid}")]
-        [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
-        {
-            var result = await _tenantService.DeleteAsync(id, CurrentUser, cancellationToken).ConfigureAwait(false);
-            if (!result)
-                return NotFound();
+        var result = await _mediator.GetResponse(
+            new UpdateTenantCommand(CurrentUser.Id, id, dto),
+            cancellationToken);
 
-            return NoContent();
-        }
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    // ─── DELETE /api/tenants/{id} ─────────────────────────────────────────────
+
+    /// <summary>Soft-delete di un tenant.</summary>
+    [HttpDelete("{id:guid}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        var deleted = await _mediator.GetResponse(
+            new DeleteTenantCommand(CurrentUser.Id, id),
+            cancellationToken);
+
+        if (!deleted) return NotFound();
+        return NoContent();
     }
 }

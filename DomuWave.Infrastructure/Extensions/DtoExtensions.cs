@@ -18,7 +18,7 @@ namespace DomuWave.Services.Extensions
             TenantReadDto dto = new TenantReadDto();
             dto.Id = sorce.Tenant.Id;
             dto.Name = sorce.Tenant.Name;
-            dto.Description = sorce.Name;
+            
             dto.IsPrimary = sorce.IsDefault;
             dto.OwnerId = sorce.UserId;
 

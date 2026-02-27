@@ -1,21 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DomuWave.Services.Dto.Tenant;
 using SimpleMediator.Queries;
 
-namespace DomuWave.Services.Command.Tenant
-{
-    public class GetTenantByIdCommand : BaseTenantRelatedCommand, IQuery<TenantReadDto>
-    {
-        public GetTenantByIdCommand()
-        {
-        }
+namespace DomuWave.Services.Command.Tenant;
 
-        public GetTenantByIdCommand(int currentUserId, Guid tenantId) : base(currentUserId, tenantId)
-        {
-        }
+/// <summary>
+/// Recupera un singolo tenant per ID (Guid).
+/// </summary>
+public class GetTenantByIdCommand : BaseCommand, IQuery<TenantReadDto>
+{
+    /// <summary>ID del tenant da recuperare.</summary>
+    public Guid TenantId { get; set; }
+
+    public GetTenantByIdCommand() { }
+
+    public GetTenantByIdCommand(int currentUserId, Guid tenantId) : base(currentUserId)
+    {
+        TenantId = tenantId;
     }
 }

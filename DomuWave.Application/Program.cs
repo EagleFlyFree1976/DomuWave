@@ -6,6 +6,7 @@ using CPQ.Core.Settings;
 using CPQ.Core.Startups;
 using DomuWave.Application.Filters;
 using DomuWave.Services;
+using DomuWave.Services.Consumers.Tenant;
 using DomuWave.Services.Settings;
 using Hangfire;
 using Microsoft.OpenApi.Models;
