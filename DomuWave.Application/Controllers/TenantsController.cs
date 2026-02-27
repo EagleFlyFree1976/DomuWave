@@ -6,6 +6,7 @@ using CPQ.Core.ActionFilters;
 using CPQ.Core.Controllers;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Application.Models;
 using DomuWave.Services.Implementations;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
@@ -120,25 +121,34 @@ namespace DomuWave.Microservice.Controllers
 
             return Ok(item);
         }
-        /// <summary>
-        /// Lista paginata dei tenants.
-        /// </summary>
+        
+
         [HttpGet("paged")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<IActionResult> GetPaged(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20,
-            [FromQuery] bool ascending = true,
+            [FromQuery] string sortField = "name",
+            [FromQuery] bool sortOrder = true,
+            [FromQuery] string search = null,
+            [FromQuery] bool? isActive = null,
             CancellationToken cancellationToken = default)
         {
-            var (items, total) = await _tenantService.GetPagedAsync(x => !x.IsDeleted,
+
+            var (items, total) = await _tenantService.GetPagedAsync(x => !x.IsDeleted 
+                                                                         && (string.IsNullOrEmpty(search) || x.Name.Contains(search))
+                                                                         && (!isActive.HasValue || x.IsActive == isActive),
                 page,
                 pageSize,
                 x => x.Name!,
-                ascending, CurrentUser, cancellationToken).ConfigureAwait(false);
+                sortOrder, CurrentUser, cancellationToken).ConfigureAwait(false);
 
             return Ok(new { items, total, page, pageSize });
+
+
+ 
         }
+
         // ─── POST /api/tenants ────────────────────────────────────────────────────
 
         /// <summary>

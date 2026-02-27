@@ -1,0 +1,39 @@
+meta {
+  name: Get Paged
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/api/tenants/paged?page=1&pageSize=20&sortOrder=false&sortField=name
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 1
+  pageSize: 20
+  sortOrder: false
+  sortField: name
+}
+
+headers {
+  Accept: application/json, text/plain, */*
+  Accept-Language: it,en-US;q=0.9,en;q=0.8
+  Authorization: Bearer JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+  Connection: keep-alive
+  Origin: https://localhost:7221
+  Sec-Fetch-Dest: empty
+  Sec-Fetch-Mode: cors
+  Sec-Fetch-Site: cross-site
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+  X-Auth-Token: JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+  sec-ch-ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-platform: "Windows"
+}
+
+settings {
+  encodeUrl: false
+  timeout: 0
+}
