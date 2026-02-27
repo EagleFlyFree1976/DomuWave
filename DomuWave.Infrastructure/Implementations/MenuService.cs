@@ -39,7 +39,7 @@ public class MenuService : BaseService, IMenuService
             .Where(item => authCodes.Contains(item.AuthorizationCode) || string.IsNullOrEmpty(item.AuthorizationCode))
             .ToList();
 
-        authorizedMenuItems = authorizedMenuItems.Where(item => item.MatchesVisibility(tenantId)).ToList();
+        //authorizedMenuItems = authorizedMenuItems.Where(item => item.MatchesVisibility(tenantId)).ToList();
         return authorizedMenuItems;
     }
 

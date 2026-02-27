@@ -45,7 +45,8 @@ public static class DtoExtensions
             ParentMenuId = item.ParentMenuId,
             Action = item.Action,
             AuthorizationCode = item.AuthorizationCode,
-            Description = item.Description
+            Description = item.Description,
+            Tags = item.Tags
         };
         return dto;
     }

@@ -12,4 +12,6 @@ public class MenuItemDto
     public string Action { get; set; }
 
     public string AuthorizationCode { get; set; }
+
+    public string Tags { get; set; }
 }

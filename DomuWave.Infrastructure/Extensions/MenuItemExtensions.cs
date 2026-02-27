@@ -6,7 +6,7 @@ public static class MenuItemExtensions
 {
     public static bool MatchesVisibility(this MenuItem item, long? tenantId)
     {
-        return item.VisibilityCondition switch
+        return item.Tags switch
         {
             "TenantRequired" => tenantId != null,
             "NoTenant" => tenantId == null,

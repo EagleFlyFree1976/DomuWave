@@ -170,6 +170,7 @@ import { useVuelidate } from '@vuelidate/core'
 import { required, minLength, maxLength, helpers } from '@vuelidate/validators'
 import { useToast } from 'primevue/usetoast'
 import { useTenantStore } from '@/stores/tenantStore'
+import { useSessionStore } from '@/stores/sessionStore'
 
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
@@ -187,7 +188,8 @@ const props = defineProps({
 const router = useRouter()
 const route  = useRoute()
 const toast  = useToast()
-const store  = useTenantStore()
+const store   = useTenantStore()
+const session = useSessionStore()
 
 // ─── COMPUTED ────────────────────────────────────────────────────────────────
 // Legge prima dalla prop (props: true), poi da route.params come fallback
@@ -252,8 +254,12 @@ async function handleSave() {
       detail: `Tenant "${saved.name}" salvato con successo.`,
       life: 3000,
     })
+
+    // Aggiorna la lista dei tenant disponibili nel selector (visibile ai superadmin)
+    // in modo che il widget TenantSelectorWidget mostri subito il nome aggiornato
+    await session.loadTenants()
+
     // Dopo la creazione, naviga al dettaglio (aggiorna URL con il nuovo ID)
-    // Usa lo stesso name della route corrente per essere coerente con il progetto
     if (isNew.value) {
       router.replace({ name: 'tenant-detail', params: { id: saved.id } })
     }

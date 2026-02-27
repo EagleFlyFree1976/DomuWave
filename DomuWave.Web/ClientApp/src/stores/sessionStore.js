@@ -48,11 +48,8 @@ export const useSessionStore = defineStore('session', () => {
 
   const isSuperAdmin = computed(() => {
     var localStor = localStorage.getItem(UserProfile);
-    console.log("localStor", localStor);
-    console.log("currentUserRole.value", currentUserRole.value);
     var profile = currentUserRole.value != null ? currentUserRole.value : localStor;
-    console.log("CXX", profile);
-    console.log("CXX1", profile == 1);
+ 
     return profile == 1 
     }
   )

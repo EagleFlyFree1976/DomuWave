@@ -23,11 +23,11 @@ namespace DomuWave.Services.Models
 
         public virtual int OrderKey { get; set; }
 
+ 
+
         /// <summary>
-        /// Condizione di visibilità: null/"Always" = sempre visibile,
-        /// "TenantRequired" = solo se BookId != null,
-        /// "NoTenant" = solo se BookId == null
+        /// Etichette aggiuntive separate da virgola (es. "admin,report,beta")
         /// </summary>
-        public virtual string VisibilityCondition { get; set; }
+        public virtual string Tags { get; set; }
     }
 }

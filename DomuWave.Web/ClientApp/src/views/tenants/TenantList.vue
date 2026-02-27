@@ -280,6 +280,7 @@
     try {
       await store.remove(tenant.id)
       toast.add({ severity: 'success', summary: 'Eliminato', detail: `Tenant "${tenant.name}" eliminato.`, life: 3000 })
+      await session.loadTenants()  // ← aggiornamento selettore
     } catch (_) {
       // Il toast di errore è già mostrato dall'interceptor API
     }

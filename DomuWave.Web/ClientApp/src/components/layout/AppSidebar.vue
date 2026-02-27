@@ -54,22 +54,25 @@
 
         </li>
       </ul>
+
+      <!-- Hint voci nascoste: visibile solo per superadmin senza tenant -->
+      <Transition name="fade">
+        <div
+          v-if="session.isSuperAdmin && !session.hasTenantSelected && hiddenCount > 0 && !collapsed"
+          class="tenant-required-hint"
+        >
+          <i class="pi pi-lock"></i>
+          <span>{{ hiddenCount }} voci disponibili dopo la selezione del tenant</span>
+        </div>
+      </Transition>
     </nav>
+
     <TenantSelectorWidget />
+
     <!-- ── Footer ── -->
     <div class="sidebar-footer">
-
-
-      <!-- sopra il profilo -->
-
-
-
-
       <div class="user-chip">
-        <div class="user-avatar">
-
-          {{ userInitials }}
-        </div>
+        <div class="user-avatar">{{ userInitials }}</div>
         <div class="user-details" v-show="!collapsed">
           <span class="user-name">{{ authStore.currentUser?.displayName ?? authStore.currentUser?.username }}</span>
           <span class="user-role">{{ authStore.currentUser?.role ?? 'Utente' }}</span>
@@ -88,44 +91,62 @@
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
   import { useMenuStore } from '@/stores/menuStore'
-  import  TenantSelectorWidget  from '@/components/layout/TenantSelectorWidget.vue'
-  const route = useRoute()
-  const router = useRouter()
+  import { useSessionStore } from '@/stores/sessionStore'
+  import TenantSelectorWidget from '@/components/layout/TenantSelectorWidget.vue'
+
+  const route    = useRoute()
+  const router   = useRouter()
   const authStore = useAuthStore()
   const menuStore = useMenuStore()
+  const session   = useSessionStore()
 
-  const collapsed = ref(false)
-  const openGroups = ref([])
-  const initialized = ref(false)  // blocca render menu finché non è pronto
+  const collapsed   = ref(false)
+  const openGroups  = ref([])
+  const initialized = ref(false)
 
-  // Menu statico di fallback (corrisponde alle route reali del progetto)
-  const staticMenu = [
-    { path: '/dashboard', label: 'Dashboard', icon: 'pi-home' },
-    { path: '/condomini', label: 'Condomini', icon: 'pi-building' },
-    { path: '/unita', label: 'Unità Immobiliari', icon: 'pi-th-large' },
-    {
-      path: '/contabilita', label: 'Contabilità', icon: 'pi-wallet',
-      children: [
-        { path: '/budget', label: 'Budget & Spese', icon: 'pi-chart-bar' },
-        { path: '/rate', label: 'Rate & Quote', icon: 'pi-calendar' },
-      ],
-    },
-    { path: '/fornitori', label: 'Fornitori', icon: 'pi-truck' },
-    { path: '/documenti', label: 'Documenti', icon: 'pi-folder' },
-    { path: '/comunicazioni', label: 'Comunicazioni', icon: 'pi-envelope' },
-  ]
+  /**
+   * Prefissi di percorso che devono essere sempre visibili
+   * indipendentemente dal tenant selezionato.
+   * Tutto il resto richiede un tenant attivo (per i superadmin).
+   */
+  const ALWAYS_VISIBLE = ['/dashboard', '/tenants']
 
-  // Usa menu dall'API se disponibile, altrimenti il fallback statico
-  const visibleMenu = computed(() =>
-    menuStore.menuItems.length > 0 ? menuStore.menuItems : []// staticMenu
+  function isAlwaysVisible(item) {
+    const path = item.tags ?? ''
+    if (path == null || path == "") return true
+    // Un gruppo è always-visible se almeno un figlio lo è
+    if (item.children?.some(c => c.tags == null || c.tags == '')) return true
+    return false
+  }
+
+  /** Tutti i menu items disponibili (API o vuoto se non ancora caricato) */
+  const allMenuItems = computed(() =>
+    menuStore.menuItems.length > 0 ? menuStore.menuItems : []
   )
+
+  /**
+   * Menu filtrato:
+   * - Se superadmin senza tenant → solo voci always-visible
+   * - Altrimenti → tutto il menu
+   */
+  const visibleMenu = computed(() => {
+    if (session.isSuperAdmin && !session.hasTenantSelected) {
+      return allMenuItems.value.filter(isAlwaysVisible)
+    }
+    return allMenuItems.value
+  })
+
+  /** Quante voci sono nascoste per mancanza di tenant */
+  const hiddenCount = computed(() => {
+    if (!session.isSuperAdmin || session.hasTenantSelected) return 0
+    return allMenuItems.value.filter(item => !isAlwaysVisible(item)).length
+  })
 
   onMounted(async () => {
     if (authStore.isAuthenticated) {
-      await menuStore.fetchMenu().catch(() => { })
+      await menuStore.fetchMenu().catch(() => {})
       autoOpenCurrentGroup()
     }
-    // Menu pronto (da API o fallback): sblocca il render
     initialized.value = true
   })
 
@@ -149,6 +170,7 @@
   function handleLogout() {
     authStore.logout()
     menuStore.clearMenu()
+    session.reset()
     router.push('/login')
   }
 
@@ -262,6 +284,9 @@
     padding: 0.75rem 0.5rem;
     scrollbar-width: thin;
     scrollbar-color: #1e293b transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
   /* Menu list */
@@ -354,6 +379,27 @@
     padding: 0.45rem 0.65rem;
   }
 
+  /* Hint tenant required */
+  .tenant-required-hint {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 10px 4px 0;
+    padding: 7px 10px;
+    border-radius: 7px;
+    background: rgba(71, 85, 105, 0.15);
+    border: 1px dashed #334155;
+    font-size: 11px;
+    color: #475569;
+    line-height: 1.35;
+  }
+
+  .tenant-required-hint .pi {
+    font-size: 12px;
+    flex-shrink: 0;
+    color: #475569;
+  }
+
   /* Footer */
   .sidebar-footer {
     display: flex;
@@ -419,37 +465,18 @@
       background: rgba(248,113,113,0.08);
     }
 
-  /* Skeleton pre-inizializzazione */
-  .menu-skeleton-item {
-    height: 36px;
-    border-radius: 8px;
-    background: linear-gradient(90deg, #1e293b 25%, #243044 50%, #1e293b 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.4s infinite;
-    margin-bottom: 3px;
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: 200% 0;
-    }
-
-    100% {
-      background-position: -200% 0;
-    }
-  }
-
+  /* Animazioni */
   .nav-ready {
     animation: nav-fade-in 0.15s ease;
   }
 
   @keyframes nav-fade-in {
-    from {
-      opacity: 0;
-    }
-
-    to {
-      opacity: 1;
-    }
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
+
+  .fade-enter-active,
+  .fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
+  .fade-enter-from,
+  .fade-leave-to     { opacity: 0; transform: translateY(-4px); }
 </style>
