@@ -42,37 +42,41 @@ public static class Startup
 
         // ─── Services (repository layer) ──────────────────────────────────────
 
-        services.AddScoped<IMenuService, MenuService>();
-
-        // Tenant
-        services.AddScoped<ITenantService, TenantService>();
-        services.AddScoped<IUnitTenantService, UnitTenantService>();
-
-        // Document
-        services.AddScoped<IDocumentService, DocumentService>();
-        services.AddScoped<IDocumentAccessService, DocumentAccessService>();
-
-        // Communications
-        services.AddScoped<ICommunicationService, CommunicationService>();
-        services.AddScoped<ICommunicationReadService, CommunicationReadService>();
-
-        // Financial
-        services.AddScoped<IReceiptService, ReceiptService>();
-        services.AddScoped<IExpenseService, ExpenseService>();
-
-        // Condominium
-        services.AddScoped<ICondominiumService, CondominiumService>();
-        services.AddScoped<ICondominiumCadastralDataService, CondominiumCadastralDataService>();
-        services.AddScoped<IUnitMillesimalService, UnitMillesimalService>();
-
-        // Supplier
-        services.AddScoped<ISupplierService, SupplierService>();
+    
+ 
 
         // External clients
         services.AddScoped<IExchangeRateClient, ExchangeRateApiClient>();
+        
+
+
+        services.AddScoped<IBudgetItemService, BudgetItemService>();
+        services.AddScoped<IBudgetService, BudgetService>();
+        services.AddScoped<IChartOfAccountsService, ChartOfAccountsService>();
+        services.AddScoped<ICommunicationReadService, CommunicationReadService>();
+        services.AddScoped<ICommunicationService, CommunicationService>();
+        services.AddScoped<ICondominiumAddressService, CondominiumAddressService>();
+        services.AddScoped<ICondominiumCadastralDataService, CondominiumCadastralDataService>();
+        services.AddScoped<ICondominiumFeeService, CondominiumFeeService>();
+        services.AddScoped<ICondominiumInstallmentService, CondominiumInstallmentService>();
+        services.AddScoped<ICondominiumService, CondominiumService>();
+        services.AddScoped<IDocumentAccessService, DocumentAccessService>();
+        services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IExpenseAllocationService, ExpenseAllocationService>();
+        services.AddScoped<IExpenseService, ExpenseService>();
+        services.AddScoped<IFiscalYearService, FiscalYearService>();
+        services.AddScoped<IMenuService, MenuService>();
+        services.AddScoped<IMessageService, MessageService>();
+        services.AddScoped<IMillesimalTableService, MillesimalTableService>();
+        services.AddScoped<IRealEstateUnitService, RealEstateUnitService>();
+        services.AddScoped<IReceiptService, ReceiptService>();
+        services.AddScoped<ISupplierContractService, SupplierContractService>();
+        services.AddScoped<ISupplierService, SupplierService>();
+        services.AddScoped<ITenantService, TenantService>();
+        services.AddScoped<IUnitMillesimalService, UnitMillesimalService>();
+        services.AddScoped<IUnitOwnerService, UnitOwnerService>();
+        services.AddScoped<IUnitTenantService, UnitTenantService>();
         services.AddScoped<IUserTenantService, UserTenantService>();
-
-
         return services;
     }
 }
