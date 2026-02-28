@@ -1,17 +1,18 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.RealEstateUnit;
+using DomuWave.Services.Dto.RealEstateUnit;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class GetRealEstateUnitsByCondominiumCommandConsumer : InMemoryConsumerBase<GetRealEstateUnitsByCondominiumCommand, IList<RealEstateUnit>>
+public class GetRealEstateUnitsByCondominiumCommandConsumer : InMemoryConsumerBase<GetRealEstateUnitsByCondominiumCommand, IList<RealEstateUnitReadDto>>
 {
     private readonly IRealEstateUnitService _realEstateUnitService;
-    private readonly IUserService _userService;
+    private readonly IUserService           _userService;
 
     public GetRealEstateUnitsByCondominiumCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
@@ -19,10 +20,10 @@ public class GetRealEstateUnitsByCondominiumCommandConsumer : InMemoryConsumerBa
         IUserService userService) : base(sessionFactoryProvider)
     {
         _realEstateUnitService = realEstateUnitService;
-        _userService = userService;
+        _userService           = userService;
     }
 
-    protected override async Task<IList<RealEstateUnit>> Consume(
+    protected override async Task<IList<RealEstateUnitReadDto>> Consume(
         GetRealEstateUnitsByCondominiumCommand command,
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
@@ -31,8 +32,10 @@ public class GetRealEstateUnitsByCondominiumCommandConsumer : InMemoryConsumerBa
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        return await _realEstateUnitService
+        var units = await _realEstateUnitService
             .GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        return units.Select(u => u.ToReadDto()).ToList();
     }
 }

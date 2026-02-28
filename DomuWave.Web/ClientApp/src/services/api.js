@@ -110,13 +110,28 @@ export const condominiumApi = {
 
 // ─── Unità immobiliari ────────────────────────────────────────
 export const unitApi = {
-  getAll:             ()              => api.get('/realestate-units'),
-  getById:            (id)            => api.get(`/realestate-units/${id}`),
-  getByCondominium:   (condId)        => api.get(`/realestate-units/condominium/${condId}`),
-  getByType:          (condId, type)  => api.get(`/realestate-units/condominium/${condId}/type/${type}`),
-  create:             (data)          => api.post('/realestate-units', data),
-  update:             (id, data)      => api.put(`/realestate-units/${id}`, data),
-  delete:             (id)            => api.delete(`/realestate-units/${id}`),
+  getById:            (id)            => api.get(`/real-estate-units/${id}`),
+  getByCondominium:   (condId)        => api.get(`/real-estate-units/by-condominium/${condId}`),
+  getByType:          (condId, type)  => api.get(`/real-estate-units/by-condominium/${condId}/type/${type}`),
+  create:             (data)          => api.post('/real-estate-units', data),
+  update:             (id, data)      => api.put(`/real-estate-units/${id}`, data),
+  delete:             (id)            => api.delete(`/real-estate-units/${id}`),
+}
+
+// ─── Proprietari unità ────────────────────────────────────────
+export const unitOwnerApi = {
+  getByUnit:  (unitId)      => api.get(`/unit-owners/by-unit/${unitId}`),
+  create:     (data)        => api.post('/unit-owners', data),
+  update:     (id, data)    => api.put(`/unit-owners/${id}`, data),
+  delete:     (id)          => api.delete(`/unit-owners/${id}`),
+}
+
+// ─── Inquilini unità ──────────────────────────────────────────
+export const unitTenantApi = {
+  getByUnit:  (unitId)      => api.get(`/unit-tenants/by-unit/${unitId}`),
+  create:     (data)        => api.post('/unit-tenants', data),
+  update:     (id, data)    => api.put(`/unit-tenants/${id}`, data),
+  delete:     (id)          => api.delete(`/unit-tenants/${id}`),
 }
 
 // ─── Budget ───────────────────────────────────────────────────

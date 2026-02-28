@@ -6,6 +6,7 @@ namespace DomuWave.Services.Models
     public class UnitTenant : TenantEntity<int>
     {
         public virtual RealEstateUnit Unit { get; set; }
+        public virtual long UserId { get; set; }
         public virtual string FirstName { get; set; }
         public virtual string LastName { get; set; }
         public virtual string TaxCode { get; set; }

@@ -1,11 +1,12 @@
+using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.RealEstateUnit;
-using DomuWave.Services.Models;
+using DomuWave.Services.Dto.RealEstateUnit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
-using CPQ.Core.Extensions;
+
 namespace DomuWave.Microservice.Controllers;
 
 [Route("api/real-estate-units")]
@@ -19,10 +20,12 @@ public class RealEstateUnitsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [ProducesResponseType(typeof(IList<RealEstateUnitReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(RealEstateUnitReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(new GetRealEstateUnitByIdCommand(CurrentUser.Id, id), ct);
@@ -31,14 +34,17 @@ public class RealEstateUnitsController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/staircase/{staircase}")]
+    [ProducesResponseType(typeof(IList<RealEstateUnitReadDto>), 200)]
     public async Task<IActionResult> GetByStaircase(int condominiumId, string staircase, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByStaircaseCommand(CurrentUser.Id, condominiumId, staircase), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/floor/{floor:int}")]
+    [ProducesResponseType(typeof(IList<RealEstateUnitReadDto>), 200)]
     public async Task<IActionResult> GetByFloor(int condominiumId, int floor, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByFloorCommand(CurrentUser.Id, condominiumId, floor), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/type/{unitType}")]
+    [ProducesResponseType(typeof(IList<RealEstateUnitReadDto>), 200)]
     public async Task<IActionResult> GetByType(int condominiumId, string unitType, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByTypeCommand(CurrentUser.Id, condominiumId, unitType), ct));
 
@@ -50,18 +56,20 @@ public class RealEstateUnitsController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] RealEstateUnit unit, CancellationToken ct)
+    [ProducesResponseType(typeof(RealEstateUnitReadDto), 201)]
+    public async Task<IActionResult> Create([FromBody] CreateRealEstateUnitDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new CreateRealEstateUnitCommand(CurrentUser.Id, unit), ct);
+        var result = await _mediator.GetResponse(new CreateRealEstateUnitCommand(CurrentUser.Id, dto), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] RealEstateUnit unit, CancellationToken ct)
+    [ProducesResponseType(typeof(RealEstateUnitReadDto), 200)]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateRealEstateUnitDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new UpdateRealEstateUnitCommand(CurrentUser.Id, id, unit), ct);
+        var result = await _mediator.GetResponse(new UpdateRealEstateUnitCommand(CurrentUser.Id, id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }

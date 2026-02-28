@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.RealEstateUnit;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.RealEstateUnit;
 
-public class GetRealEstateUnitByIdCommand : BaseCommand, IQuery<Models.RealEstateUnit>
+public class GetRealEstateUnitByIdCommand : BaseCommand, IQuery<RealEstateUnitReadDto>
 {
     public int UnitId { get; set; }
 

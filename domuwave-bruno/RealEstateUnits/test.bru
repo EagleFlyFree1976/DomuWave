@@ -1,0 +1,51 @@
+meta {
+  name: test
+  type: http
+  seq: 10
+}
+
+post {
+  url: http://localhost:40101/api/real-estate-units
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json, text/plain, */*
+  Accept-Language: it,en-US;q=0.9,en;q=0.8
+  Authorization: Bearer JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+  Connection: keep-alive
+  Content-Type: application/json
+  Origin: https://localhost:7221
+  Sec-Fetch-Dest: empty
+  Sec-Fetch-Mode: cors
+  Sec-Fetch-Site: cross-site
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36
+  X-Auth-Token: JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+  X-Tenant-Id: 5a3fb41f-7fc0-49f4-9ea3-b3ff00838bd7
+  sec-ch-ua: "Not:A-Brand";v="99", "Google Chrome";v="145", "Chromium";v="145"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-platform: "Windows"
+}
+
+body:json {
+  {
+    "condominiumId": 77,
+    "internalNumber": "1",
+    "subordinate": "1",
+    "staircase": "1",
+    "floor": 0,
+    "unitType": "Residenziale",
+    "category": "A/2",
+    "occupancyStatus": "Occupata proprietario",
+    "areaSqm": 95,
+    "rooms": 3,
+    "cadastralIncome": 500,
+    "notes": "test",
+    "isActive": true
+  }
+}
+
+settings {
+  encodeUrl: false
+}

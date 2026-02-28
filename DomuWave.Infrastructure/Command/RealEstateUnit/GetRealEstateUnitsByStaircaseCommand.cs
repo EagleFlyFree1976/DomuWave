@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.RealEstateUnit;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.RealEstateUnit;
 
-public class GetRealEstateUnitsByStaircaseCommand : BaseCommand, IQuery<IList<Models.RealEstateUnit>>
+public class GetRealEstateUnitsByStaircaseCommand : BaseCommand, IQuery<IList<RealEstateUnitReadDto>>
 {
     public int CondominiumId { get; set; }
     public string Staircase { get; set; }
@@ -13,6 +14,6 @@ public class GetRealEstateUnitsByStaircaseCommand : BaseCommand, IQuery<IList<Mo
     public GetRealEstateUnitsByStaircaseCommand(int currentUserId, int condominiumId, string staircase) : base(currentUserId)
     {
         CondominiumId = condominiumId;
-        Staircase = staircase;
+        Staircase     = staircase;
     }
 }

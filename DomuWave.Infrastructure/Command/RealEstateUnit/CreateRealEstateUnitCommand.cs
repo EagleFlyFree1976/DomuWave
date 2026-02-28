@@ -1,16 +1,17 @@
+using DomuWave.Services.Dto.RealEstateUnit;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.RealEstateUnit;
 
-public class CreateRealEstateUnitCommand : BaseCommand, IQuery<Models.RealEstateUnit>
+public class CreateRealEstateUnitCommand : BaseCommand, IQuery<RealEstateUnitReadDto>
 {
-    public Models.RealEstateUnit Entity { get; set; }
+    public CreateRealEstateUnitDto Dto { get; set; }
 
     public CreateRealEstateUnitCommand() { }
 
     public CreateRealEstateUnitCommand(int currentUserId) : base(currentUserId) { }
-    public CreateRealEstateUnitCommand(int currentUserId, Models.RealEstateUnit entity) : base(currentUserId)
+    public CreateRealEstateUnitCommand(int currentUserId, CreateRealEstateUnitDto dto) : base(currentUserId)
     {
-        Entity = entity;
+        Dto = dto;
     }
 }

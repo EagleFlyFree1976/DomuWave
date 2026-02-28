@@ -106,7 +106,7 @@
               </div>
             </dl>
           </template>
-          <p v-else class="text-muted" style="font-size:0.875rem">Nessun indirizzo registrato</p>
+          <p v-else class="text-muted" style="font-size:0.875rem;padding:0.5rem 1rem 1rem">Nessun indirizzo registrato</p>
         </div>
       </div>
     </div>
@@ -393,7 +393,7 @@ async function save() {
 }
 
 const quickNav = [
-  { path: '/unita',         icon: '⊞', label: 'Unità' },
+  { path: '/unita', icon: '⊞', label: 'Unità' },
   { path: '/budget',        icon: '◎', label: 'Budget' },
   { path: '/rate',          icon: '◷', label: 'Rate' },
   { path: '/fornitori',     icon: '◈', label: 'Fornitori' },
@@ -422,7 +422,7 @@ onMounted(async () => {
 
 .detail-col { display: flex; flex-direction: column; gap: 1rem; }
 
-.info-list { display: flex; flex-direction: column; }
+.info-list { display: flex; flex-direction: column; padding: 0 1rem; }
 .info-row {
   display: flex;
   justify-content: space-between;
@@ -435,7 +435,7 @@ onMounted(async () => {
 dt { font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0; }
 dd { font-size: 0.875rem; color: var(--text-primary); text-align: right; }
 .text-muted { color: var(--text-muted); }
-.notes-text { font-size: 0.875rem; line-height: 1.7; white-space: pre-wrap; color: var(--text-secondary); }
+.notes-text { font-size: 0.875rem; line-height: 1.7; white-space: pre-wrap; color: var(--text-secondary); padding: 0 1rem 1rem; }
 
 .quick-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .qnav-chip {
