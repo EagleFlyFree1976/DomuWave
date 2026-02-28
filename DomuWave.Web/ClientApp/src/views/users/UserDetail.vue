@@ -120,13 +120,23 @@
           </div>
           <div class="form-card__body">
 
-            <!-- Ruolo (sola lettura in modifica) -->
-            <div v-if="!isNew" class="field">
-              <label class="field__label">Ruolo</label>
-              <div class="role-display">
-                <Tag :value="formatRole(store.currentUser.roleCode)"
-                     :severity="roleSeverity(store.currentUser.roleCode)" />
-              </div>
+            <!-- Ruolo -->
+            <div class="field" :class="{ 'field--error': v$.roleCode.$error }">
+              <label class="field__label" for="roleCode">
+                Ruolo <span class="required">*</span>
+              </label>
+              <Select id="roleCode"
+                      v-model="store.currentUser.roleCode"
+                      :options="availableRoles"
+                      optionLabel="description"
+                      optionValue="code"
+                      placeholder="Seleziona un ruolo..."
+                      class="field__input"
+                      :loading="loadingRoles"
+                      @blur="v$.roleCode.$touch()" />
+              <small v-if="v$.roleCode.$error" class="field__error">
+                {{ v$.roleCode.$errors[0].$message }}
+              </small>
             </div>
 
             <!-- Stato (sola lettura in creazione, editabile successivamente) -->
@@ -303,12 +313,13 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useUserStore } from '@/stores/userStore'
 import { useSessionStore } from '@/stores/sessionStore'
-import { userTenantApi } from '@/services/userService'
+import { userTenantApi, rolesApi } from '@/services/userService'
 import { tenantApi } from '@/services/tenantService'
 
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
+import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
@@ -347,6 +358,9 @@ const rules = computed(() => ({
     email:     helpers.withMessage('Formato email non valido', emailValidator),
     maxLength: helpers.withMessage('Massimo 200 caratteri', maxLength(200)),
   },
+  roleCode: {
+    required: helpers.withMessage('Il ruolo è obbligatorio', required),
+  },
   // Password obbligatoria solo in creazione
   ...(isNew.value ? {
     password: {
@@ -361,9 +375,14 @@ const formState = computed(() => ({
   lastName:  store.currentUser?.lastName  ?? '',
   email:     store.currentUser?.email     ?? '',
   password:  store.currentUser?.password  ?? '',
+  roleCode:  store.currentUser?.roleCode  ?? '',
 }))
 
 const v$ = useVuelidate(rules, formState)
+
+// ─── ROLES STATE ─────────────────────────────────────────────────────────────
+const availableRoles  = ref([])
+const loadingRoles    = ref(false)
 
 // ─── TENANT STATE ────────────────────────────────────────────────────────────
 const userTenants           = ref([])
@@ -386,11 +405,24 @@ watch(userId, (newId, oldId) => { if (newId !== oldId) loadData() })
 // ─── METHODS ────────────────────────────────────────────────────────────────
 
 async function loadData() {
+  await loadRoles()
   if (isNew.value) {
     store.initNew()
   } else {
     await store.fetchById(userId.value)
     await loadUserTenants()
+  }
+}
+
+async function loadRoles() {
+  loadingRoles.value = true
+  try {
+    const { data } = await rolesApi.getByModule('DomuWeb')
+    availableRoles.value = Array.isArray(data) ? data : []
+  } catch {
+    availableRoles.value = []
+  } finally {
+    loadingRoles.value = false
   }
 }
 

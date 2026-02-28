@@ -53,11 +53,11 @@ public class MenuesController(
 
     [HttpGet("")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-        Modules.DomuWaveModule)]
+        Modules.AuthModule)]
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(IList<MenuItemDto>))]
     public async Task<IActionResult> GetAllMenues(CancellationToken cancellationToken)
     {
-        var allMenuesItems = await _menuService.GetAllMenuItems(this.CurrentUser, TenantId, cancellationToken).ConfigureAwait(false);
+        var allMenuesItems = await _menuService.GetAllMenuItems(this.CurrentUser, this.TenantId, cancellationToken).ConfigureAwait(false);
 
         if (allMenuesItems == null)
             return NotFound();
@@ -83,7 +83,7 @@ public class MenuesController(
                     PopulateMenuEventCommand istanza = Activator.CreateInstance(type) as PopulateMenuEventCommand;
                     if (istanza != null)
                     {
-                        istanza.BookId = TenantId;
+                        istanza.TenantId = TenantId;
                         istanza.CurrentUserId = CurrentUser.Id;
 
                         var menuToAdd = await _mediator.GetResponse(istanza, cancellationToken).ConfigureAwait(false);

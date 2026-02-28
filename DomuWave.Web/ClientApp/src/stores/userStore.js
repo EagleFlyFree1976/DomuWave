@@ -81,7 +81,10 @@ export const useUserStore = defineStore('user', () => {
         email:    u.email,
         name:     u.firstName,
         surName:  u.lastName,
-        ...(u.id ? {} : { password: u.password }),
+        roleCode: u.roleCode,
+        ...(u.id
+          ? {}
+          : { password: u.password, moduleCode: 'DomuWeb' }),
       }
       const { data } = u.id
         ? await userApi.update(u.id, payload)

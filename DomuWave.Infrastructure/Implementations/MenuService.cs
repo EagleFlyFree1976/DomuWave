@@ -25,7 +25,7 @@ public class MenuService : BaseService, IMenuService
         _mediator = mediator;
     }
 
-    public async Task<IList<MenuItem>> GetAllMenuItems(IUser currentUser, long? tenantId,
+    public async Task<IList<MenuItem>> GetAllMenuItems(IUser currentUser, Guid? tenantId,
         CancellationToken cancellationToken)
     {
         var allMenuItems = await session.Query<MenuItem>().OrderBy(k => k.OrderKey).ToListAsync(cancellationToken).ConfigureAwait(false);

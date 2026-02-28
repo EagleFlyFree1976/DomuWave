@@ -21,6 +21,14 @@ namespace DomuWave.Services.Implementations
 
         public override string CacheRegion => "Tenants";
 
+        public async Task<bool> CanAccess(Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
+        {
+            var exists = await session.Query<UserTenant>()
+                .Where(k => k.IsActive && k.IsEnabled && k.UserId == currentUser.Id && k.Tenant.Id == tenantId)
+                .AnyAsync(cancellationToken).ConfigureAwait(false);
+            return exists;
+        }
+
         public async Task<Tenant> GetByIdAsync(Guid id, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<Tenant>()

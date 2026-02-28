@@ -14,7 +14,7 @@ public class CondominiumsController(
     ILogger<CondominiumsController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
     IMediator mediator)
-    : PrivateControllerBase(logger, configuration)
+    : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
     private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantGuid"]?.ToString() ?? Guid.Empty.ToString());
@@ -83,7 +83,7 @@ public class CondominiumsController(
 
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Condominium))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    
     public async Task<IActionResult> Create([FromBody] Condominium condominium, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -94,7 +94,6 @@ public class CondominiumsController(
 
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Condominium))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] Condominium condominium, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -106,7 +105,7 @@ public class CondominiumsController(
 
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+ 
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(

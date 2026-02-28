@@ -19,6 +19,6 @@ namespace DomuWave.Services.Command.Menu
         {
         }
 
-        public long? BookId { get; set; }
+        public Guid? TenantId { get; set; }
     }
 }

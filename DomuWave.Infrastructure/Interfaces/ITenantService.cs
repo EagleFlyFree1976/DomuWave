@@ -10,5 +10,7 @@ namespace DomuWave.Services.Interfaces
     {
         Task<Tenant> GetByCodeAsync(string code, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<Tenant>> GetActiveTenantsAsync(IUser currentUser, CancellationToken cancellationToken);
+
+        Task<bool> CanAccess(Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
     }
 }

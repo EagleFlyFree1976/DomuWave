@@ -10,7 +10,7 @@ namespace DomuWave.Services.Interfaces
 {
     public interface IMenuService 
     {
-        Task<IList<MenuItem>> GetAllMenuItems(IUser currentUser, long? tenantId,
+        Task<IList<MenuItem>> GetAllMenuItems(IUser currentUser, Guid? tenantId,
             CancellationToken cancellationToken = default);
     }
 }

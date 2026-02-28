@@ -16,7 +16,8 @@ public class AuthorizationKeys
 
 public class Modules
 {
-    public const string DomuWaveModule = "BIZLIO";
+    public const string DomuWaveModule = "DomuWeb";
+    public const string AuthModule = "AUTH";
 }
     
 public class Keys

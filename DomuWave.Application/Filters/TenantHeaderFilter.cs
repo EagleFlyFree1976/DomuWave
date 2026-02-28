@@ -1,4 +1,5 @@
-﻿using CPQ.Core.Extensions;
+﻿using CPQ.Core.Exceptions;
+using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Tenant;
@@ -48,17 +49,22 @@ public class TenantHeaderFilter : IAsyncActionFilter
             if (user != null)
             {
                 Guid tenantId = new Guid(context.HttpContext.Request.Headers["TenantId"].ToString());
-                
-                
-               
-                    GetTenantByIdCommand getBookById = 
-                        new GetTenantByIdCommand(user.Id, tenantId) ;
-                    var book = await _mediator.GetResponse(getBookById, CancellationToken.None)
+                GetTenantByIdCommand getTenantByIdCommand = new GetTenantByIdCommand(user.Id, tenantId) ;
+                    var tenant = await _mediator.GetResponse(getTenantByIdCommand, CancellationToken.None)
                         .ConfigureAwait(false);
 
-                    if (book != null)
+                    if (tenant != null)
                     {
-                        context.HttpContext.Items["TenantId"] = book.Id;
+                        CanUserAccessToTenantCommand accessToTenantCommand =
+                            new CanUserAccessToTenantCommand(user.Id, tenantId);
+                        bool canAccess = await _mediator.GetResponse(accessToTenantCommand, CancellationToken.None)
+                            .ConfigureAwait(false);
+                        if (!canAccess)
+                        {
+                            throw new UserNotAuthorizedException($"Non hai accesso alla risorsa richiesta");
+                        }
+
+                    context.HttpContext.Items["TenantId"] = tenant.Id;
 
                     }
                  

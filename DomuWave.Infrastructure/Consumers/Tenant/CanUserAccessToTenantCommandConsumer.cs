@@ -2,20 +2,18 @@ using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Tenant;
-using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Interfaces;
-using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers.Tenant;
 
-public class GetTenantByIdCommandConsumer
-    : InMemoryConsumerBase<GetTenantByIdCommand, TenantReadDto>
+public class CanUserAccessToTenantCommandConsumer
+    : InMemoryConsumerBase<CanUserAccessToTenantCommand, bool>
 {
     private readonly ITenantService _tenantService;
     private readonly IUserService _userService;
 
-    public GetTenantByIdCommandConsumer(
+    public CanUserAccessToTenantCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         ITenantService tenantService,
         IUserService userService) : base(sessionFactoryProvider)
@@ -24,19 +22,15 @@ public class GetTenantByIdCommandConsumer
         _userService   = userService;
     }
 
-    protected override async Task<TenantReadDto> Consume(
-        GetTenantByIdCommand command,
-        IMediationContext mediationContext,
-        CancellationToken cancellationToken)
+    protected override async Task<bool> Consume(CanUserAccessToTenantCommand command, IMediationContext mediationContext, CancellationToken cancellationToken)
     {
         var currentUser = await _userService
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        var tenant = await _tenantService
-            .GetByIdAsync(command.TenantId, currentUser, cancellationToken)
-            .ConfigureAwait(false);
-
-        return tenant?.ToReadDto();
+        return await _tenantService.CanAccess(command.TenantId, currentUser, cancellationToken).ConfigureAwait(false);
     }
+
+    
+    
 }

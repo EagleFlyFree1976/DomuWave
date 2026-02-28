@@ -14,6 +14,6 @@ public class GetMenuItemsCommand : BaseTenantRelatedCommand, IQuery<IList<MenuIt
     {
     }
 
-    public long? BookId { get; set; }
+    public Guid? TenantId { get; set; }
     public int OwnerId { get; set; }
 }

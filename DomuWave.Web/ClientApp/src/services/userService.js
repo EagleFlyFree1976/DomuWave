@@ -13,6 +13,13 @@ export const userApi = {
   resetPassword: (id) => authApiClient.post(`/users/${id}/reset-password`),
 }
 
+// ─── Ruoli per modulo ────────────────────────────────────────────────────────
+export const rolesApi = {
+  /** Ruoli afferenti a un modulo: [{ id, code, description }] */
+  getByModule: (moduleCode) =>
+    authApiClient.get('/authorization/roles/bymodule', { params: { moduleCode } }),
+}
+
 // ─── Associazioni Utente-Tenant ───────────────────────────────────────────────
 export const userTenantApi = {
   /** Tutti i tenant di un utente */

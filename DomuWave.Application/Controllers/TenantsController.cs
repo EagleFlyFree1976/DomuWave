@@ -34,7 +34,7 @@ public class TenantsController(
 
     /// <summary>Restituisce tutti i tenant non eliminati.</summary>
     [HttpGet("")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<TenantReadDto>))]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -49,7 +49,7 @@ public class TenantsController(
 
     /// <summary>Restituisce solo i tenant attivi.</summary>
     [HttpGet("active")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<TenantReadDto>))]
     public async Task<IActionResult> GetActive(CancellationToken cancellationToken)
     {
@@ -64,7 +64,7 @@ public class TenantsController(
 
     /// <summary>Restituisce un tenant per ID.</summary>
     [HttpGet("{id:guid}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TenantReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
@@ -81,7 +81,7 @@ public class TenantsController(
 
     /// <summary>Restituisce i tenant con paginazione e filtri.</summary>
     [HttpGet("paged")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Tenants, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResult<TenantReadDto>))]
     public async Task<IActionResult> GetPaged(
         [FromQuery] int    page      = 1,

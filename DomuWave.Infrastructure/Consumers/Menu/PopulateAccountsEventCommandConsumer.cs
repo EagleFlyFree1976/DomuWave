@@ -28,7 +28,7 @@ public class PopulateAccountsEventCommandConsumer : InMemoryConsumerBase<Populat
     protected override async Task<IList<DomuWave.Services.Models.MenuItemDto>> Consume(PopulateAccountsEventCommand evt, IMediationContext mediationContext, CancellationToken cancellationToken)
     {
         GetMenuItemsCommand allAccountsCommand = new GetMenuItemsCommand(evt.CurrentUserId, ((BaseTenantRelatedCommand)evt).TenantId)
-            { BookId = evt.BookId, CurrentUserId = evt.CurrentUserId, OwnerId = evt.CurrentUserId };
+            { TenantId = evt.TenantId, CurrentUserId = evt.CurrentUserId, OwnerId = evt.CurrentUserId };
 
 
         IList<MenuItemDto>? allAccounts = await _mediator.GetResponse(allAccountsCommand, cancellationToken).ConfigureAwait(false);
