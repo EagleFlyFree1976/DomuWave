@@ -30,6 +30,14 @@ public class UserTenantsController(
         return Ok(items.Select(k => k.ToDto()));
     }
 
+    [HttpGet("tenant/{tenantId:guid}")]
+    [ProducesResponseType(typeof(IList<UserTenantReadDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByTenantId(Guid tenantId, CancellationToken ct)
+    {
+        var items = await _mediator.GetResponse(new GetUserTenantsByTenantCommand(CurrentUser.Id, tenantId), ct);
+        return Ok(items.Select(k => k.ToDto()));
+    }
+
     [HttpGet("user/{userId:long}/default")]
     [ProducesResponseType(typeof(UserTenantReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDefault(long userId, CancellationToken ct)

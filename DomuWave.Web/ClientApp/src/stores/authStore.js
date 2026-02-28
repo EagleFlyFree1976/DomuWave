@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import authApiClient from '@/services/authApiClient'
+
+import api from '@/services/api'
 import { useSessionStore } from '@/stores/sessionStore'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -17,7 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     console.log("[AuthStore] Attempting login for user:", username);
     try {
-      const response = await authApiClient.post('api/PublicUser/login', {
+      const response = await api.post('PublicUser/login', {
         "Email": username,
         "Password": password
 

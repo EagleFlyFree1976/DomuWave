@@ -9,7 +9,7 @@ namespace DomuWave.Services.Models;
 public class UserTenant : TenantEntity<int>
 {
     /// <summary>ID dell'utente nel sistema di autenticazione.</summary>
-    public virtual long UserId { get; set; }
+    public virtual int UserId { get; set; }
 
     /// <summary>Tenant associato.</summary>
     public virtual Tenant Tenant { get; set; } = null!;

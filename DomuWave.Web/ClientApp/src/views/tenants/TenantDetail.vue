@@ -151,6 +151,77 @@
 
       </div>
 
+      <!-- ── CARD: Utenti del Tenant ─────────────────────────────────────── -->
+      <div v-if="!isNew" class="form-card form-card--users">
+        <div class="form-card__header">
+          <i class="pi pi-users" />
+          <span>Utenti del Tenant</span>
+          <Button icon="pi pi-plus"
+                  label="Aggiungi Utente"
+                  class="btn-ghost btn-ghost--small ml-auto"
+                  @click="openAddUserDialog" />
+        </div>
+        <div class="form-card__body">
+
+          <div v-if="loadingUsers" class="tu-loading">
+            <i class="pi pi-spinner pi-spin" /> Caricamento utenti...
+          </div>
+
+          <div v-else-if="tenantUsers.length === 0" class="tu-empty">
+            <i class="pi pi-users" />
+            <span>Nessun utente associato a questo tenant.</span>
+          </div>
+
+          <div v-else class="tu-list">
+            <div v-for="ut in tenantUsers" :key="ut.userTenantId"
+                 class="tu-item"
+                 :class="{ 'tu-item--default': ut.isDefault }">
+
+              <div class="tu-avatar">
+                {{ userInitials(resolvedUser(ut.userId)) }}
+              </div>
+
+              <div class="tu-info">
+                <span class="tu-name">{{ resolvedUserName(ut.userId) }}</span>
+                <span class="tu-email">{{ resolvedUserEmail(ut.userId) }}</span>
+              </div>
+
+              <div class="tu-tags">
+                <Tag v-if="ut.isDefault"
+                     value="Amministratore di Condominio"
+                     severity="success"
+                     class="tu-default-tag" />
+                <Tag v-if="!ut.isActive"
+                     value="Inattivo"
+                     severity="secondary"
+                     class="tu-inactive-tag" />
+              </div>
+
+              <div class="tu-role">
+                <Tag :value="formatRole(resolvedUser(ut.userId)?.roleCode)"
+                     :severity="roleSeverity(resolvedUser(ut.userId)?.roleCode)"
+                     class="tu-role-tag" />
+              </div>
+
+              <div class="tu-actions">
+                <Button v-if="!ut.isDefault"
+                        icon="pi pi-star"
+                        class="btn-icon-sm"
+                        v-tooltip="'Imposta come Amministratore di Condominio'"
+                        @click="setDefaultUser(ut)" />
+                <Button v-if="!ut.isDefault"
+                        icon="pi pi-trash"
+                        class="btn-icon-sm btn-icon-sm--danger"
+                        v-tooltip="'Rimuovi dal tenant'"
+                        @click="confirmRemoveUser(ut)" />
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </template>
 
     <!-- ── ERRORE CARICAMENTO ─────────────────────────────────────────── -->
@@ -160,22 +231,85 @@
       <Button label="Riprova" icon="pi pi-refresh" class="btn-ghost" size="small" @click="loadData" />
     </div>
 
+    <!-- ── DIALOG: Aggiungi Utente al Tenant ──────────────────────────── -->
+    <Dialog v-model:visible="showAddUserDialog"
+            header="Associa Utente al Tenant"
+            :modal="true"
+            :draggable="false"
+            style="width: 480px">
+
+      <div class="dialog-body">
+        <div class="field">
+          <label class="field__label">Cerca Utente</label>
+          <InputText v-model="userSearch"
+                     class="field__input"
+                     placeholder="Nome, cognome o email..."
+                     @input="filterUsers" />
+        </div>
+
+        <div class="user-search-results">
+          <div v-for="u in filteredAvailableUsers" :key="u.id"
+               class="user-search-item"
+               :class="{ 'user-search-item--selected': selectedUserToAdd?.id === u.id }"
+               @click="selectedUserToAdd = u">
+            <div class="user-search-avatar">{{ userInitials(u) }}</div>
+            <div class="user-search-item__info">
+              <span class="user-search-item__name">{{ fullName(u) }}</span>
+              <span class="user-search-item__email">{{ u.email }}</span>
+            </div>
+            <i v-if="selectedUserToAdd?.id === u.id" class="pi pi-check check-icon" />
+          </div>
+          <div v-if="filteredAvailableUsers.length === 0" class="user-search-empty">
+            Nessun utente disponibile
+          </div>
+        </div>
+
+        <div class="field field--inline">
+          <label class="field__label" for="addAsAdmin">Amministratore di Condominio</label>
+          <div class="toggle-wrapper">
+            <ToggleSwitch id="addAsAdmin" v-model="addAsDefault" />
+            <span class="toggle-label" :class="addAsDefault ? 'toggle-label--on' : 'toggle-label--off'">
+              {{ addAsDefault ? 'Sì' : 'No' }}
+            </span>
+          </div>
+          <small class="field__hint">
+            Imposta questo utente come amministratore predefinito per questo tenant.
+          </small>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="Annulla" icon="pi pi-times" class="btn-ghost"
+                @click="showAddUserDialog = false" />
+        <Button label="Associa" icon="pi pi-check" class="btn-primary"
+                :disabled="!selectedUserToAdd"
+                :loading="addingUser"
+                @click="doAddUser" />
+      </template>
+    </Dialog>
+
+    <ConfirmDialog class="domu-confirm" />
+
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useVuelidate } from '@vuelidate/core'
 import { required, minLength, maxLength, helpers } from '@vuelidate/validators'
 import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import { useTenantStore } from '@/stores/tenantStore'
 import { useSessionStore } from '@/stores/sessionStore'
+import { userTenantApi, userApi } from '@/services/userService'
 
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
-import Message from 'primevue/message'
+import Tag from 'primevue/tag'
+import Dialog from 'primevue/dialog'
+import ConfirmDialog from 'primevue/confirmdialog'
 
 // ─── PROPS (route props: true) ────────────────────────────────────────────────
 // Con props: true il router inietta i params come props del componente.
@@ -185,9 +319,10 @@ const props = defineProps({
 })
 
 // ─── COMPOSABLES ────────────────────────────────────────────────────────────
-const router = useRouter()
-const route  = useRoute()
-const toast  = useToast()
+const router  = useRouter()
+const route   = useRoute()
+const toast   = useToast()
+const confirm = useConfirm()
 const store   = useTenantStore()
 const session = useSessionStore()
 
@@ -222,6 +357,22 @@ const formState = computed(() => ({
 
 const v$ = useVuelidate(rules, formState)
 
+// ─── TENANT USERS STATE ───────────────────────────────────────────────────────
+/** Associazioni utente-tenant per il tenant corrente */
+const tenantUsers          = ref([])
+/** Mappa userId → utente (AuthFlatUser) per la visualizzazione */
+const usersMap             = ref({})
+const loadingUsers         = ref(false)
+
+// Dialog: Aggiungi Utente
+const showAddUserDialog    = ref(false)
+const userSearch           = ref('')
+const allAvailableUsers    = ref([])
+const filteredAvailableUsers = ref([])
+const selectedUserToAdd    = ref(null)
+const addAsDefault         = ref(false)
+const addingUser           = ref(false)
+
 // ─── LIFECYCLE ───────────────────────────────────────────────────────────────
 onMounted(() => loadData())
 
@@ -238,6 +389,26 @@ async function loadData() {
     store.initNew()
   } else {
     await store.fetchById(tenantId.value)
+    await loadTenantUsers()
+  }
+}
+
+async function loadTenantUsers() {
+  loadingUsers.value = true
+  try {
+    const { data } = await userTenantApi.getByTenantId(tenantId.value)
+    tenantUsers.value = Array.isArray(data) ? data : []
+
+    // Recupera i dettagli utente per ogni userId trovato
+    if (tenantUsers.value.length > 0) {
+      const { data: allUsers } = await userApi.search({})
+      const users = Array.isArray(allUsers) ? allUsers : (allUsers?.items ?? [])
+      usersMap.value = Object.fromEntries(users.map(u => [String(u.id), u]))
+    }
+  } catch {
+    tenantUsers.value = []
+  } finally {
+    loadingUsers.value = false
   }
 }
 
@@ -270,6 +441,133 @@ async function handleSave() {
 
 function goBack() {
   router.push({ name: 'tenants' })
+}
+
+// ── Helpers utente ───────────────────────────────────────────────────────────
+
+function resolvedUser(userId) {
+  return usersMap.value[String(userId)] ?? null
+}
+function resolvedUserName(userId) {
+  const u = resolvedUser(userId)
+  if (!u) return `Utente #${userId}`
+  return [u.firstName, u.lastName].filter(Boolean).join(' ') || u.name || `#${userId}`
+}
+function resolvedUserEmail(userId) {
+  return resolvedUser(userId)?.email ?? ''
+}
+function userInitials(user) {
+  if (!user) return '?'
+  const fn = user.firstName?.[0] ?? ''
+  const ln = user.lastName?.[0] ?? ''
+  return (fn + ln).toUpperCase() || (user.name?.[0] ?? '?').toUpperCase()
+}
+function fullName(user) {
+  return [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.name || '—'
+}
+function formatRole(roleCode) {
+  const map = { SuperAdmin: 'Super Admin', TenantAdministrator: 'Amministratore', Admin: 'Admin', User: 'Utente' }
+  return map[roleCode] ?? roleCode ?? '—'
+}
+function roleSeverity(roleCode) {
+  if (roleCode === 'SuperAdmin') return 'danger'
+  if (roleCode === 'TenantAdministrator' || roleCode === 'Admin') return 'warn'
+  return 'secondary'
+}
+
+// ── Dialog Aggiungi Utente ───────────────────────────────────────────────────
+
+async function openAddUserDialog() {
+  userSearch.value        = ''
+  selectedUserToAdd.value = null
+  addAsDefault.value      = false
+
+  try {
+    const { data } = await userApi.search({ isActive: true })
+    const users = Array.isArray(data) ? data : (data?.items ?? [])
+    const assigned = new Set(tenantUsers.value.map(ut => String(ut.userId)))
+    allAvailableUsers.value     = users.filter(u => !assigned.has(String(u.id)))
+    filteredAvailableUsers.value = allAvailableUsers.value
+  } catch {
+    allAvailableUsers.value      = []
+    filteredAvailableUsers.value = []
+  }
+
+  showAddUserDialog.value = true
+}
+
+function filterUsers() {
+  const q = userSearch.value.toLowerCase()
+  filteredAvailableUsers.value = allAvailableUsers.value.filter(u =>
+    fullName(u).toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
+  )
+}
+
+async function doAddUser() {
+  if (!selectedUserToAdd.value) return
+  addingUser.value = true
+  try {
+    await userTenantApi.create({
+      userId:    selectedUserToAdd.value.id,
+      tenantId:  store.currentTenant.id,
+      isDefault: addAsDefault.value,
+      isActive:  true,
+    })
+    toast.add({
+      severity: 'success',
+      summary: 'Utente associato',
+      detail: `"${fullName(selectedUserToAdd.value)}" associato al tenant.`,
+      life: 3000,
+    })
+    showAddUserDialog.value = false
+    await loadTenantUsers()
+  } catch {
+    // Gestito dall'interceptor
+  } finally {
+    addingUser.value = false
+  }
+}
+
+async function setDefaultUser(ut) {
+  try {
+    await userTenantApi.setDefault(ut.userId, ut.userTenantId)
+    toast.add({
+      severity: 'success',
+      summary: 'Amministratore impostato',
+      detail: `"${resolvedUserName(ut.userId)}" impostato come Amministratore di Condominio.`,
+      life: 3000,
+    })
+    await loadTenantUsers()
+  } catch {
+    // Gestito dall'interceptor
+  }
+}
+
+function confirmRemoveUser(ut) {
+  confirm.require({
+    message: `Rimuovere "${resolvedUserName(ut.userId)}" dal tenant?`,
+    header: 'Conferma rimozione',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Rimuovi',
+    rejectLabel: 'Annulla',
+    acceptClass: 'p-button-danger',
+    accept: () => doRemoveUser(ut),
+  })
+}
+
+async function doRemoveUser(ut) {
+  try {
+    await userTenantApi.delete(ut.userTenantId)
+    toast.add({
+      severity: 'success',
+      summary: 'Rimosso',
+      detail: `Utente rimosso dal tenant.`,
+      life: 3000,
+    })
+    await loadTenantUsers()
+  } catch {
+    // Gestito dall'interceptor
+  }
 }
 </script>
 
@@ -493,7 +791,148 @@ function goBack() {
   color: #ff6b6b;
 }
 
-/* ── API ERROR ───────────────────────────────────────────────────────────── */
+/* ── USERS SECTION ───────────────────────────────────────────────────────── */
+.form-card--users { grid-column: 1 / -1; }
+
+.btn-ghost--small {
+  font-size: 12px !important;
+  padding: 5px 10px !important;
+}
+.ml-auto { margin-left: auto; }
+
+.tu-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.tu-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 0;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+.tu-empty .pi { font-size: 28px; opacity: 0.4; }
+
+.tu-list { display: flex; flex-direction: column; gap: 8px; }
+
+.tu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.tu-item--default {
+  border-color: rgba(52, 211, 153, 0.4);
+  background: rgba(52, 211, 153, 0.04);
+}
+.tu-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #059669);
+  color: #000;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tu-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.tu-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.tu-email {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.tu-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.tu-default-tag { font-size: 10px !important; }
+.tu-inactive-tag { font-size: 10px !important; }
+.tu-role { display: flex; }
+.tu-role-tag { font-size: 10px !important; }
+.tu-actions { display: flex; gap: 4px; }
+
+.btn-icon-sm {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-dim) !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  border-radius: 5px !important;
+}
+  .btn-icon-sm:hover {
+    background: var(--surface2) !important;
+    color: var(--accent) !important;
+  }
+.btn-icon-sm--danger:hover {
+  background: rgba(255, 80, 80, 0.1) !important;
+  color: #ff5555 !important;
+}
+
+/* ── DIALOG ──────────────────────────────────────────────────────────────── */
+.dialog-body { display: flex; flex-direction: column; gap: 16px; padding: 4px 0; }
+
+.user-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+}
+.user-search-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+  color: var(--text);
+}
+  .user-search-item:hover { background: var(--surface); }
+  .user-search-item--selected {
+    background: rgba(52, 211, 153, 0.08);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+  }
+.user-search-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #059669);
+  color: #000;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.user-search-item__info { display: flex; flex-direction: column; flex: 1; }
+.user-search-item__name { font-size: 13px; font-weight: 500; }
+.user-search-item__email { font-size: 11px; color: var(--text-faint); }
+.check-icon { color: var(--accent); margin-left: auto; }
+.user-search-empty { padding: 20px; text-align: center; color: var(--text-faint); font-size: 13px; }
 
 /* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {

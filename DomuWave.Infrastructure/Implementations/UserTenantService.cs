@@ -85,9 +85,9 @@ public class UserTenantService : BaseService, IUserTenantService
             throw new InvalidOperationException(
                 $"L'utente {entity.UserId} è già associato al tenant {entity.Tenant.Id}.");
 
-        // Se il nuovo è default, azzera gli altri
+        // Se il nuovo è default, azzera gli altri utenti default sullo stesso tenant
         if (entity.IsDefault)
-            await ClearDefaultFlagAsync(entity.UserId, null, cancellationToken);
+            await ClearDefaultFlagAsync(entity.Tenant.Id, null, cancellationToken);
 
         var tenant = await session.GetAsync<Tenant>(entity.Tenant.Id, cancellationToken).ConfigureAwait(false)
                      ?? throw new KeyNotFoundException($"Tenant {entity.Tenant.Id} non trovato.");
@@ -106,7 +106,7 @@ public class UserTenantService : BaseService, IUserTenantService
 
         // Se si sta impostando come default, azzera gli altri
         if (input.IsDefault && !entity.IsDefault)
-            await ClearDefaultFlagAsync(entity.UserId, input.Id, cancellationToken);
+            await ClearDefaultFlagAsync(entity.Tenant.Id, input.Id, cancellationToken);
  
 
         entity.Trace(currentUser);
@@ -129,7 +129,7 @@ public class UserTenantService : BaseService, IUserTenantService
                 "Il UserTenant specificato non appartiene all'utente indicato.");
 
         // Rimuove il default dagli altri e imposta questo
-        await ClearDefaultFlagAsync(userId, userTenantId, ct);
+        await ClearDefaultFlagAsync(entity.Tenant.Id, userTenantId, ct);
 
         entity.IsDefault = true;
         entity.Trace(currentUser);
@@ -187,11 +187,11 @@ public class UserTenantService : BaseService, IUserTenantService
     /// escludendo opzionalmente un record specifico (quello che diventerà default).
     /// </summary>
     private async Task ClearDefaultFlagAsync(
-        long userId, int? excludeUserTenantId, CancellationToken ct)
+        Guid tenantId, int? excludeUserTenantId, CancellationToken ct)
     {
         var currentDefaults = await session.Query<UserTenant>()
             .Where(x =>
-                x.UserId == userId &&
+                x.Tenant.Id == tenantId &&
                 x.IsDefault &&
                 !x.IsDeleted &&
                 (excludeUserTenantId == null || x.Id != excludeUserTenantId))

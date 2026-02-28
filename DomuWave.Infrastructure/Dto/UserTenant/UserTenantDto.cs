@@ -10,7 +10,7 @@ namespace DomuWave.Services.Dto.UserTenants;
 public class UserTenantReadDto : TraceEntityDTO<int>
 {
     public int UserTenantId { get; set; }
-    public long UserId { get; set; }
+    public int UserId { get; set; }
     public Guid TenantId { get; set; }
     public string TenantName { get; set; } = string.Empty;
     public string TenantCode { get; set; } = string.Empty;
@@ -24,7 +24,7 @@ public class UserTenantReadDto : TraceEntityDTO<int>
 public class UserTenantCreateDto
 {
     /// <summary>ID dell'utente a cui assegnare il tenant.</summary>
-    public long UserId { get; set; }
+    public int UserId { get; set; }
 
     /// <summary>Tenant da assegnare.</summary>
     public Guid TenantId { get; set; }

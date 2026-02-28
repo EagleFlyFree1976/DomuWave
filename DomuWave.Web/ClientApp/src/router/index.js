@@ -44,6 +44,24 @@ const routes = [
           requiredRole: 'SuperAdmin',
         }
       },
+
+      // ── Utenti (SuperAdmin) ────────────────────────────────────────────────
+      {
+        path: 'users', name: 'users',
+        component: () => import('@/views/users/UserList.vue'),
+        meta: { title: 'Gestione Utenti', requiresAuth: true, requiredRole: 'SuperAdmin' },
+      },
+      {
+        path: 'users/new', name: 'user-new',
+        component: () => import('@/views/users/UserDetail.vue'),
+        meta: { title: 'Nuovo Utente', requiresAuth: true, requiredRole: 'SuperAdmin' },
+      },
+      {
+        path: 'users/:id', name: 'user-detail',
+        component: () => import('@/views/users/UserDetail.vue'),
+        props: true,
+        meta: { title: 'Modifica Utente', requiresAuth: true, requiredRole: 'SuperAdmin' },
+      },
     ],
   },
 ]

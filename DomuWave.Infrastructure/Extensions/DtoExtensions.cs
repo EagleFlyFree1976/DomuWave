@@ -18,9 +18,11 @@ namespace DomuWave.Services.Extensions
         {
 
             UserTenantReadDto dto = new UserTenantReadDto();
+            dto.UserTenantId = souce.Id;
             dto.UserId = souce.UserId;
             dto.TenantId = souce.Tenant.Id;
             dto.TenantName = souce.Tenant.Name;
+            dto.TenantCode = souce.Tenant.Code;
             dto.IsActive = souce.IsActive;
             dto.IsDefault = souce.IsDefault;
             dto.SetTraceInfo(souce);

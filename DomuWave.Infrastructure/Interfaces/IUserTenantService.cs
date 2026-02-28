@@ -5,13 +5,17 @@ namespace DomuWave.Services.Interfaces;
 
 /// <summary>
 /// Gestione delle associazioni utente-tenant.
-/// Permette di assegnare più tenant a un utente e definirne uno come default.
+/// Permette di assegnare piï¿½ tenant a un utente e definirne uno come default.
 /// </summary>
 public interface IUserTenantService : IBaseService<UserTenant, int>
 {
     /// <summary>Restituisce tutti i tenant assegnati a un utente.</summary>
     Task<IList<UserTenant>> GetByUserIdAsync(
         long userId, IUser currentUser, CancellationToken ct);
+
+    /// <summary>Restituisce tutte le associazioni utente per un determinato tenant.</summary>
+    Task<IList<UserTenant>> GetByTenantIdAsync(
+        Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
 
     /// <summary>Restituisce il tenant di default per un utente. Null se non configurato.</summary>
     Task<UserTenant?> GetDefaultByUserIdAsync(
