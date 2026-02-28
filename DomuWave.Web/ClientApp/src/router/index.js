@@ -45,6 +45,13 @@ const routes = [
         }
       },
 
+      // ── Autorizzazioni (SuperAdmin) ───────────────────────────────────────
+      {
+        path: 'autorizzazioni', name: 'autorizzazioni',
+        component: () => import('@/views/authorizations/AuthorizationsView.vue'),
+        meta: { title: 'Autorizzazioni', requiresAuth: true, requiredRole: 'SuperAdmin' },
+      },
+
       // ── Utenti (SuperAdmin) ────────────────────────────────────────────────
       {
         path: 'users', name: 'users',

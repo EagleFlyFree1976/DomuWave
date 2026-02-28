@@ -119,10 +119,23 @@
     return false
   }
 
+  /**
+   * Voci di menu riservate ai SuperAdmin che non dipendono dal backend.
+   * Vengono iniettate solo se non già presenti nel menu dell'API.
+   */
+  const superAdminItems = computed(() => {
+    if (!session.isSuperAdmin) return []
+    const existing = menuStore.menuItems
+    return [
+      { key: 'sa-auth', label: 'Autorizzazioni', path: '/autorizzazioni', icon: 'pi-shield', order: 998, tags: [] },
+    ].filter(item => !existing.some(m => m.path === item.path))
+  })
+
   /** Tutti i menu items disponibili (API o vuoto se non ancora caricato) */
-  const allMenuItems = computed(() =>
-    menuStore.menuItems.length > 0 ? menuStore.menuItems : []
-  )
+  const allMenuItems = computed(() => {
+    const base = menuStore.menuItems.length > 0 ? menuStore.menuItems : []
+    return [...base, ...superAdminItems.value]
+  })
 
   /**
    * Menu filtrato:

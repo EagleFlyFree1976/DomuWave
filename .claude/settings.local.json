@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Projects/Blizio/**)",
+      "Bash(xargs grep -l \"class CanAuthorization\")",
+      "Bash(xargs grep -l \"class AuthorizationKeys\")"
+    ]
+  }
+}

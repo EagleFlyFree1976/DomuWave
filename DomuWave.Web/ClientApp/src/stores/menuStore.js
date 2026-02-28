@@ -113,6 +113,8 @@ export const useMenuStore = defineStore('menu', () => {
       return 'pi-chart-line'
     if (key.includes('anagrafi')) return 'pi-address-book'
     if (key.includes('manutenzi')) return 'pi-wrench'
+    if (key.includes('autorizzaz') || key.includes('permess') || key.includes('auth'))
+      return 'pi-shield'
 
     return 'pi-circle'
   }
