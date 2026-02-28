@@ -6,6 +6,9 @@ using DomuWave.Services.Command.Condominium;
 using DomuWave.Services.Dto.Condominium;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
+using DomuWave.Services.Models;
+using NHibernate.Linq;
+using Remotion.Linq.Parsing;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -44,8 +47,24 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
         
         var entity = command.Dto.ToEntity(tenant);
         
+        /* validazioni */
+        // verifico l'univocità del codice condominio
 
-        var created = await _condominiumService
+        if (string.IsNullOrEmpty(command.Dto.Code.Trim()))
+        {
+            throw new ValidatorException($"Specificare il codice condominio");
+        }
+
+        var existsCode = await session.Query<Condominium>()
+            .Where(k => k.Code == command.Dto.Code.Trim() && k.Tenant.Id == command.TenantId).AnyAsync(cancellationToken).ConfigureAwait(false);
+
+        if (existsCode)
+        {
+            throw new ValidatorException($"Esiste già un condominio con il codice {command.Dto.Code}");
+        }
+
+
+            var created = await _condominiumService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
 

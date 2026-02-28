@@ -24,6 +24,9 @@ api.interceptors.request.use(config => {
 function extractErrorMessage(err) {
   const data = err.response?.data
   if (typeof data === 'string' && data.length > 0) return data
+  // formato { Errors: ["..."] } — ValidatorException, NotFoundException, ecc.
+  const errs = data?.Errors ?? data?.errors
+  if (Array.isArray(errs) && errs.length > 0) return errs.join('\n')
   if (data?.message) return data.message
   if (data?.title) return data.title
   if (data?.detail) return data.detail

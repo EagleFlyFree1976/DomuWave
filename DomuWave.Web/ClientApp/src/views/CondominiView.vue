@@ -58,64 +58,147 @@
 
     <!-- Modal -->
     <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
-      <div class="modal">
+      <div class="modal modal--wide">
         <div class="modal-header">
           <h2>{{ editing ? 'Modifica' : 'Nuovo' }} condominio</h2>
           <button class="btn-icon" @click="showModal=false">✕</button>
         </div>
         <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group" :class="{ 'has-error': errors.name }">
-              <label class="form-label">Nome *</label>
-              <input class="form-input" v-model="form.name" placeholder="Es. Condominio Roma" @input="clearError('name')" />
-              <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
+
+          <!-- Dati anagrafici -->
+          <fieldset class="form-fieldset">
+            <legend class="form-fieldset-legend">Dati anagrafici</legend>
+            <div class="form-grid">
+              <div class="form-group" :class="{ 'has-error': errors.name }">
+                <label class="form-label">Nome *</label>
+                <input class="form-input" v-model="form.name" placeholder="Es. Condominio Roma" @input="clearError('name')" />
+                <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Codice</label>
+                <input class="form-input" v-model="form.code" placeholder="COD-001" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Codice fiscale</label>
+                <input class="form-input" v-model="form.taxCode" maxlength="16" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Partita IVA</label>
+                <input class="form-input" v-model="form.vatNumber" maxlength="11" />
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Codice</label>
-              <input class="form-input" v-model="form.code" placeholder="COD-001" />
+          </fieldset>
+
+          <!-- Contatti -->
+          <fieldset class="form-fieldset">
+            <legend class="form-fieldset-legend">Contatti</legend>
+            <div class="form-grid">
+              <div class="form-group" :class="{ 'has-error': errors.email }">
+                <label class="form-label">Email</label>
+                <input class="form-input" type="email" v-model="form.email" @input="clearError('email')" />
+                <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Telefono</label>
+                <input class="form-input" v-model="form.phone" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">PEC</label>
+                <input class="form-input" type="email" v-model="form.pec" />
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Codice fiscale</label>
-              <input class="form-input" v-model="form.taxCode" />
+          </fieldset>
+
+          <!-- Dati tecnici -->
+          <fieldset class="form-fieldset">
+            <legend class="form-fieldset-legend">Dati tecnici</legend>
+            <div class="form-grid">
+              <div class="form-group" :class="{ 'has-error': errors.numberOfUnits }">
+                <label class="form-label">N° unità *</label>
+                <input class="form-input" type="number" min="1" v-model.number="form.numberOfUnits" @input="clearError('numberOfUnits')" />
+                <span v-if="errors.numberOfUnits" class="field-error">{{ errors.numberOfUnits }}</span>
+              </div>
+              <div class="form-group" :class="{ 'has-error': errors.numberOfStaircases }">
+                <label class="form-label">N° scale *</label>
+                <input class="form-input" type="number" min="1" v-model.number="form.numberOfStaircases" @input="clearError('numberOfStaircases')" />
+                <span v-if="errors.numberOfStaircases" class="field-error">{{ errors.numberOfStaircases }}</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">N° piani</label>
+                <input class="form-input" type="number" min="1" v-model.number="form.numberOfFloors" />
+              </div>
+              <div class="form-group" :class="{ 'has-error': errors.yearOfConstruction }">
+                <label class="form-label">Anno di costruzione</label>
+                <input class="form-input" type="number" min="1700" :max="currentYear" v-model.number="form.yearOfConstruction" @input="clearError('yearOfConstruction')" />
+                <span v-if="errors.yearOfConstruction" class="field-error">{{ errors.yearOfConstruction }}</span>
+              </div>
+              <div class="form-group" :class="{ 'has-error': errors.totalMillesimal }">
+                <label class="form-label">Millesimi totali</label>
+                <input class="form-input" type="number" min="0" step="0.001" v-model.number="form.totalMillesimal" @input="clearError('totalMillesimal')" />
+                <span v-if="errors.totalMillesimal" class="field-error">{{ errors.totalMillesimal }}</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Mq aree comuni</label>
+                <input class="form-input" type="number" min="0" step="0.01" v-model.number="form.commonAreasSqm" />
+              </div>
+              <div class="form-group" style="grid-column:span 2">
+                <div class="check-row">
+                  <label class="check-item">
+                    <input type="checkbox" v-model="form.hasElevator" />
+                    <span>Ascensore</span>
+                  </label>
+                  <label class="check-item">
+                    <input type="checkbox" v-model="form.hasCentralHeating" />
+                    <span>Riscaldamento centralizzato</span>
+                  </label>
+                  <label class="check-item">
+                    <input type="checkbox" v-model="form.hasConcierge" />
+                    <span>Portineria</span>
+                  </label>
+                </div>
+              </div>
+              <div class="form-group" v-if="form.hasElevator">
+                <label class="form-label">N° ascensori</label>
+                <input class="form-input" type="number" min="1" v-model.number="form.numberOfElevators" />
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Partita IVA</label>
-              <input class="form-input" v-model="form.vatNumber" />
+          </fieldset>
+
+          <!-- Gestione amministrativa -->
+          <fieldset class="form-fieldset">
+            <legend class="form-fieldset-legend">Gestione amministrativa</legend>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Frequenza rate</label>
+                <select class="form-select" v-model="form.installmentFrequency">
+                  <option value="Monthly">Mensile</option>
+                  <option value="Quarterly">Trimestrale</option>
+                  <option value="Biannual">Semestrale</option>
+                  <option value="Annual">Annuale</option>
+                </select>
+              </div>
+              <div class="form-group" :class="{ 'has-error': errors.installmentDueDay }">
+                <label class="form-label">Giorno scadenza rata *</label>
+                <input class="form-input" type="number" min="1" max="31" v-model.number="form.installmentDueDay" @input="clearError('installmentDueDay')" />
+                <span v-if="errors.installmentDueDay" class="field-error">{{ errors.installmentDueDay }}</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Inizio mandato</label>
+                <input class="form-input" type="date" v-model="form.mandateStartDate" />
+              </div>
+              <div class="form-group" :class="{ 'has-error': errors.mandateEndDate }">
+                <label class="form-label">Fine mandato</label>
+                <input class="form-input" type="date" v-model="form.mandateEndDate" @input="clearError('mandateEndDate')" />
+                <span v-if="errors.mandateEndDate" class="field-error">{{ errors.mandateEndDate }}</span>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ultima assemblea</label>
+                <input class="form-input" type="date" v-model="form.lastAssemblyDate" />
+              </div>
             </div>
-            <div class="form-group" :class="{ 'has-error': errors.email }">
-              <label class="form-label">Email</label>
-              <input class="form-input" type="email" v-model="form.email" @input="clearError('email')" />
-              <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Telefono</label>
-              <input class="form-input" v-model="form.phone" />
-            </div>
-            <div class="form-group" :class="{ 'has-error': errors.numberOfUnits }">
-              <label class="form-label">N° unità *</label>
-              <input class="form-input" type="number" min="1" v-model.number="form.numberOfUnits" @input="clearError('numberOfUnits')" />
-              <span v-if="errors.numberOfUnits" class="field-error">{{ errors.numberOfUnits }}</span>
-            </div>
-            <div class="form-group" :class="{ 'has-error': errors.numberOfStaircases }">
-              <label class="form-label">N° scale *</label>
-              <input class="form-input" type="number" min="1" v-model.number="form.numberOfStaircases" @input="clearError('numberOfStaircases')" />
-              <span v-if="errors.numberOfStaircases" class="field-error">{{ errors.numberOfStaircases }}</span>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Frequenza rate</label>
-              <select class="form-select" v-model="form.installmentFrequency">
-                <option value="Monthly">Mensile</option>
-                <option value="Quarterly">Trimestrale</option>
-                <option value="Biannual">Semestrale</option>
-                <option value="Annual">Annuale</option>
-              </select>
-            </div>
-            <div class="form-group" :class="{ 'has-error': errors.installmentDueDay }">
-              <label class="form-label">Giorno scadenza rata *</label>
-              <input class="form-input" type="number" min="1" max="31" v-model.number="form.installmentDueDay" @input="clearError('installmentDueDay')" />
-              <span v-if="errors.installmentDueDay" class="field-error">{{ errors.installmentDueDay }}</span>
-            </div>
-          </div>
+          </fieldset>
+
+          <!-- Note e stato -->
           <div class="form-group">
             <label class="form-label">Note</label>
             <textarea class="form-textarea" v-model="form.notes" rows="3"></textarea>
@@ -124,6 +207,8 @@
             <input type="checkbox" id="isActive" v-model="form.isActive" />
             <label for="isActive" style="font-size:0.875rem;cursor:pointer">Condominio attivo</label>
           </div>
+
+          <!-- Indirizzo -->
           <fieldset class="form-fieldset">
             <legend class="form-fieldset-legend">Indirizzo</legend>
             <div class="form-grid">
@@ -137,7 +222,7 @@
               </div>
               <div class="form-group">
                 <label class="form-label">CAP</label>
-                <input class="form-input" v-model="form.address.postalCode" placeholder="00100" />
+                <input class="form-input" v-model="form.address.postalCode" placeholder="00100" maxlength="10" />
               </div>
               <div class="form-group">
                 <label class="form-label">Città</label>
@@ -147,12 +232,13 @@
                 <label class="form-label">Provincia</label>
                 <input class="form-input" v-model="form.address.province" placeholder="RM" maxlength="2" />
               </div>
-              <div class="form-group" style="grid-column:span 2">
-                <label class="form-label">Nazione</label>
-                <input class="form-input" v-model="form.address.country" placeholder="Italia" />
+              <div class="form-group">
+                <label class="form-label">Nazione (cod. ISO)</label>
+                <input class="form-input" v-model="form.address.country" placeholder="IT" maxlength="2" style="text-transform:uppercase" />
               </div>
             </div>
           </fieldset>
+
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" @click="showModal=false">Annulla</button>
@@ -179,13 +265,21 @@ const editing = ref(null)
 const search = ref('')
 const filterActive = ref('')
 const errors = ref({})
+const currentYear = new Date().getFullYear()
 
-const defaultAddress = () => ({ street: '', streetNumber: '', postalCode: '', city: '', province: '', country: '' })
+const defaultAddress = () => ({
+  street: '', streetNumber: '', postalCode: '', city: '', province: '', country: '',
+})
 const defaultForm = () => ({
-  name: '', code: '', taxCode: '', vatNumber: '', email: '', phone: '', pec: '',
-  numberOfUnits: 0, numberOfStaircases: 1, installmentFrequency: 'Monthly',
-  installmentDueDay: 1, notes: '', isActive: true,
-  hasElevator: false, hasCentralHeating: false, hasConcierge: false, totalMillesimal: 1000,
+  name: '', code: '', taxCode: '', vatNumber: '',
+  email: '', phone: '', pec: '',
+  numberOfUnits: 1, numberOfStaircases: 1, numberOfFloors: null,
+  yearOfConstruction: null, totalMillesimal: 1000,
+  hasElevator: false, numberOfElevators: null,
+  hasCentralHeating: false, hasConcierge: false, commonAreasSqm: null,
+  mandateStartDate: null, mandateEndDate: null, lastAssemblyDate: null,
+  installmentFrequency: 'Monthly', installmentDueDay: 1,
+  notes: '', isActive: true,
   address: defaultAddress(),
 })
 const form = ref(defaultForm())
@@ -208,11 +302,24 @@ async function loadData() {
 
 function openModal(item = null) {
   editing.value = item?.id ?? null
-  form.value = item
-    ? { ...item, address: item.address ? { ...item.address } : defaultAddress() }
-    : defaultForm()
+  if (item) {
+    form.value = {
+      ...item,
+      mandateStartDate: toDateInput(item.mandateStartDate),
+      mandateEndDate:   toDateInput(item.mandateEndDate),
+      lastAssemblyDate: toDateInput(item.lastAssemblyDate),
+      address: item.address ? { ...item.address } : defaultAddress(),
+    }
+  } else {
+    form.value = defaultForm()
+  }
   errors.value = {}
   showModal.value = true
+}
+
+function toDateInput(val) {
+  if (!val) return null
+  return new Date(val).toISOString().substring(0, 10)
 }
 
 function clearError(field) {
@@ -221,16 +328,32 @@ function clearError(field) {
 
 function validate() {
   const e = {}
-  if (!form.value.name?.trim())
+  const f = form.value
+
+  if (!f.name?.trim())
     e.name = 'Il nome è obbligatorio'
-  if (form.value.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email))
+
+  if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email))
     e.email = 'Indirizzo email non valido'
-  if (!form.value.numberOfUnits || form.value.numberOfUnits < 1)
+
+  if (!f.numberOfUnits || f.numberOfUnits < 1)
     e.numberOfUnits = 'Deve essere almeno 1'
-  if (!form.value.numberOfStaircases || form.value.numberOfStaircases < 1)
+
+  if (!f.numberOfStaircases || f.numberOfStaircases < 1)
     e.numberOfStaircases = 'Deve essere almeno 1'
-  if (!form.value.installmentDueDay || form.value.installmentDueDay < 1 || form.value.installmentDueDay > 31)
+
+  if (f.yearOfConstruction != null && (f.yearOfConstruction < 1700 || f.yearOfConstruction > currentYear + 1))
+    e.yearOfConstruction = `Deve essere compreso tra 1700 e ${currentYear + 1}`
+
+  if (f.totalMillesimal != null && f.totalMillesimal < 0)
+    e.totalMillesimal = 'Non può essere negativo'
+
+  if (!f.installmentDueDay || f.installmentDueDay < 1 || f.installmentDueDay > 31)
     e.installmentDueDay = 'Deve essere compreso tra 1 e 31'
+
+  if (f.mandateStartDate && f.mandateEndDate && f.mandateEndDate < f.mandateStartDate)
+    e.mandateEndDate = 'Non può essere precedente alla data di inizio mandato'
+
   errors.value = e
   return Object.keys(e).length === 0
 }
@@ -248,8 +371,10 @@ async function save() {
     }
     showModal.value = false
     await loadData()
-  } catch {
-    store.toast('Errore durante il salvataggio', 'error')
+  } catch (err) {
+    // Gli errori HTTP (400, 422, 5xx…) sono già gestiti dall'interceptor via api:error.
+    // Mostriamo un toast solo per errori di rete (nessuna risposta dal server).
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally {
     saving.value = false
   }
@@ -261,8 +386,8 @@ async function deleteItem(id) {
     await condominiumApi.delete(id)
     store.toast('Condominio eliminato', 'success')
     await loadData()
-  } catch {
-    store.toast('Errore durante l\'eliminazione', 'error')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   }
 }
 
@@ -273,16 +398,17 @@ onMounted(loadData)
 .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
 .search-input { flex: 1; max-width: 360px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+
+.modal--wide { width: min(760px, 96vw); }
+
 .form-fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-top: 1rem; }
 .form-fieldset-legend { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); padding: 0 0.4rem; }
 
+.check-row { display: flex; flex-wrap: wrap; gap: 1.25rem; }
+.check-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.875rem; cursor: pointer; }
+.check-item input[type="checkbox"] { cursor: pointer; }
+
 .has-error .form-input,
-.has-error .form-select {
-  border-color: var(--accent-red, #e53e3e);
-}
-.field-error {
-  font-size: 0.78rem;
-  color: var(--accent-red, #e53e3e);
-  margin-top: 0.2rem;
-}
+.has-error .form-select { border-color: var(--accent-red, #e53e3e); }
+.field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; }
 </style>

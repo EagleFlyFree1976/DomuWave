@@ -65,3 +65,9 @@
 /DomuWave.Infrastructure/obj/DomuWave.Services.csproj.nuget.dgspec.json
 /DomuWave.Infrastructure/obj/project.assets.json
 /DomuWave.Infrastructure/obj/project.nuget.cache
+/DomuWave.UnitTest/bin/Debug/net8.0/CPQ.Core.dll
+/DomuWave.UnitTest/bin/Debug/net8.0/DomuWave.Services.dll
+/DomuWave.UnitTest/bin/Debug/net8.0/DomuWave.Services.pdb
+/DomuWave.UnitTest/bin/Debug/net8.0/DomuWave.Tests.deps.json
+/DomuWave.UnitTest/bin/Debug/net8.0/DomuWave.Tests.dll
+/DomuWave.UnitTest/bin/Debug/net8.0/DomuWave.Tests.pdb

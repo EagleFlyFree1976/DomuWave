@@ -1,6 +1,5 @@
 using CPQ.Core.Extensions;
 using DomuWave.Services.Dto.Condominium;
-using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Interfaces.Extensions;
@@ -19,32 +18,32 @@ public static class CondominiumMappingExtensions
 
         var dto = new CondominiumReadDto
         {
-            Id                  = condominium.Id,
-            Name                = condominium.Name,
-            Code                = condominium.Code,
-            TaxCode             = condominium.TaxCode,
-            VatNumber           = condominium.VatNumber,
-            Email               = condominium.Email,
-            Phone               = condominium.Phone,
-            Pec                 = condominium.Pec,
-            NumberOfUnits       = condominium.NumberOfUnits,
-            NumberOfStaircases  = condominium.NumberOfStaircases,
-            NumberOfFloors      = condominium.NumberOfFloors,
-            YearOfConstruction  = condominium.YearOfConstruction,
-            TotalMillesimal     = condominium.TotalMillesimal,
-            HasElevator         = condominium.HasElevator,
-            NumberOfElevators   = condominium.NumberOfElevators,
-            HasCentralHeating   = condominium.HasCentralHeating,
-            HasConcierge        = condominium.HasConcierge,
-            CommonAreasSqm      = condominium.CommonAreasSqm,
-            MandateStartDate    = condominium.MandateStartDate,
-            MandateEndDate      = condominium.MandateEndDate,
-            LastAssemblyDate    = condominium.LastAssemblyDate,
+            Id                   = condominium.Id,
+            Name                 = condominium.Name,
+            Code                 = condominium.Code,
+            TaxCode              = condominium.TaxCode,
+            VatNumber            = condominium.VatNumber,
+            Email                = condominium.Email,
+            Phone                = condominium.Phone,
+            Pec                  = condominium.Pec,
+            NumberOfUnits        = condominium.NumberOfUnits,
+            NumberOfStaircases   = condominium.NumberOfStaircases,
+            NumberOfFloors       = condominium.NumberOfFloors,
+            YearOfConstruction   = condominium.YearOfConstruction,
+            TotalMillesimal      = condominium.TotalMillesimal,
+            HasElevator          = condominium.HasElevator,
+            NumberOfElevators    = condominium.NumberOfElevators,
+            HasCentralHeating    = condominium.HasCentralHeating,
+            HasConcierge         = condominium.HasConcierge,
+            CommonAreasSqm       = condominium.CommonAreasSqm,
+            MandateStartDate     = condominium.MandateStartDate,
+            MandateEndDate       = condominium.MandateEndDate,
+            LastAssemblyDate     = condominium.LastAssemblyDate,
             InstallmentFrequency = condominium.InstallmentFrequency,
-            InstallmentDueDay   = condominium.InstallmentDueDay,
-            IsActive            = condominium.IsActive,
-            Notes               = condominium.Description,
-            Address             = condominium.Address?.ToAddressDto(),
+            InstallmentDueDay    = condominium.InstallmentDueDay,
+            IsActive             = condominium.IsActive,
+            Notes                = condominium.Description,
+            Address              = condominium.Address?.ToAddressDto(),
         };
 
         dto.SetTraceInfo(condominium);
@@ -80,20 +79,31 @@ public static class CondominiumMappingExtensions
 
         var entity = new Condominium
         {
-            Name                = dto.Name,
-            Code                = dto.Code,
-            TaxCode             = dto.TaxCode,
-            VatNumber           = dto.VatNumber,
-            Email               = dto.Email,
-            Phone               = dto.Phone,
-            Pec                 = dto.Pec,
-            NumberOfUnits       = dto.NumberOfUnits,
-            NumberOfStaircases  = dto.NumberOfStaircases,
+            Name                 = dto.Name,
+            Code                 = dto.Code,
+            TaxCode              = dto.TaxCode,
+            VatNumber            = dto.VatNumber,
+            Email                = dto.Email,
+            Phone                = dto.Phone,
+            Pec                  = dto.Pec,
+            NumberOfUnits        = dto.NumberOfUnits,
+            NumberOfStaircases   = dto.NumberOfStaircases,
+            NumberOfFloors       = dto.NumberOfFloors,
+            YearOfConstruction   = dto.YearOfConstruction,
+            TotalMillesimal      = dto.TotalMillesimal,
+            HasElevator          = dto.HasElevator,
+            NumberOfElevators    = dto.NumberOfElevators,
+            HasCentralHeating    = dto.HasCentralHeating,
+            HasConcierge         = dto.HasConcierge,
+            CommonAreasSqm       = dto.CommonAreasSqm,
+            MandateStartDate     = dto.MandateStartDate,
+            MandateEndDate       = dto.MandateEndDate,
+            LastAssemblyDate     = dto.LastAssemblyDate,
             InstallmentFrequency = dto.InstallmentFrequency,
-            InstallmentDueDay   = dto.InstallmentDueDay,
-            Description         = dto.Notes,
-            IsActive            = dto.IsActive,
-            Tenant = tenant
+            InstallmentDueDay    = dto.InstallmentDueDay,
+            Description          = dto.Notes,
+            IsActive             = dto.IsActive,
+            Tenant               = tenant,
         };
 
         if (dto.Address != null)
@@ -108,8 +118,8 @@ public static class CondominiumMappingExtensions
                 Country      = dto.Address.Country,
                 Latitude     = dto.Address.Latitude,
                 Longitude    = dto.Address.Longitude,
-                Tenant = tenant,
-                Condominium = entity
+                Tenant       = tenant,
+                Condominium  = entity,
             };
         }
 
@@ -121,19 +131,30 @@ public static class CondominiumMappingExtensions
     /// </summary>
     public static void ApplyUpdate(this Condominium entity, UpdateCondominiumDto dto)
     {
-        entity.Name                = dto.Name;
-        entity.Code                = dto.Code;
-        entity.TaxCode             = dto.TaxCode;
-        entity.VatNumber           = dto.VatNumber;
-        entity.Email               = dto.Email;
-        entity.Phone               = dto.Phone;
-        entity.Pec                 = dto.Pec;
-        entity.NumberOfUnits       = dto.NumberOfUnits;
-        entity.NumberOfStaircases  = dto.NumberOfStaircases;
+        entity.Name                 = dto.Name;
+        entity.Code                 = dto.Code;
+        entity.TaxCode              = dto.TaxCode;
+        entity.VatNumber            = dto.VatNumber;
+        entity.Email                = dto.Email;
+        entity.Phone                = dto.Phone;
+        entity.Pec                  = dto.Pec;
+        entity.NumberOfUnits        = dto.NumberOfUnits;
+        entity.NumberOfStaircases   = dto.NumberOfStaircases;
+        entity.NumberOfFloors       = dto.NumberOfFloors;
+        entity.YearOfConstruction   = dto.YearOfConstruction;
+        entity.TotalMillesimal      = dto.TotalMillesimal;
+        entity.HasElevator          = dto.HasElevator;
+        entity.NumberOfElevators    = dto.NumberOfElevators;
+        entity.HasCentralHeating    = dto.HasCentralHeating;
+        entity.HasConcierge         = dto.HasConcierge;
+        entity.CommonAreasSqm       = dto.CommonAreasSqm;
+        entity.MandateStartDate     = dto.MandateStartDate;
+        entity.MandateEndDate       = dto.MandateEndDate;
+        entity.LastAssemblyDate     = dto.LastAssemblyDate;
         entity.InstallmentFrequency = dto.InstallmentFrequency;
-        entity.InstallmentDueDay   = dto.InstallmentDueDay;
-        entity.Description         = dto.Notes;
-        entity.IsActive            = dto.IsActive;
+        entity.InstallmentDueDay    = dto.InstallmentDueDay;
+        entity.Description          = dto.Notes;
+        entity.IsActive             = dto.IsActive;
 
         entity.Address ??= new CondominiumAddress();
         entity.Address.Street       = dto.Address?.Street;
