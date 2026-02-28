@@ -16,13 +16,11 @@
 
     <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
     <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
-
-    <property name="Name" column="Street" type="String" length="200" not-null="true" />
-    <property name="Description" column="City" type="String" length="100" not-null="true" />
-    <property name="Street" column="Street" type="String" length="200" not-null="true" insert="false" update="false" />
+ 
+    <property name="Street" column="Street" type="String" length="200" not-null="true"  />
     <property name="StreetNumber" column="StreetNumber" type="String" length="20" not-null="true" />
     <property name="PostalCode" column="PostalCode" type="String" length="10" not-null="true" />
-    <property name="City" column="City" type="String" length="100" not-null="true" insert="false" update="false" />
+    <property name="City" column="City" type="String" length="100" not-null="true"   />
     <property name="Province" column="Province" type="String" length="2" not-null="true" />
     <property name="Country" column="Country" type="String" length="2" not-null="true" />
     <property name="Latitude" column="Latitude" type="Decimal" />

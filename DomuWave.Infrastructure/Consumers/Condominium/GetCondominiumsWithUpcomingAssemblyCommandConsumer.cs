@@ -1,14 +1,15 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Condominium;
+using DomuWave.Services.Dto.Condominium;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class GetCondominiumsWithUpcomingAssemblyCommandConsumer : InMemoryConsumerBase<GetCondominiumsWithUpcomingAssemblyCommand, IList<Condominium>>
+public class GetCondominiumsWithUpcomingAssemblyCommandConsumer : InMemoryConsumerBase<GetCondominiumsWithUpcomingAssemblyCommand, IList<CondominiumReadDto>>
 {
     private readonly ICondominiumService _condominiumService;
     private readonly IUserService _userService;
@@ -22,7 +23,7 @@ public class GetCondominiumsWithUpcomingAssemblyCommandConsumer : InMemoryConsum
         _userService = userService;
     }
 
-    protected override async Task<IList<Condominium>> Consume(
+    protected override async Task<IList<CondominiumReadDto>> Consume(
         GetCondominiumsWithUpcomingAssemblyCommand command,
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
@@ -31,8 +32,10 @@ public class GetCondominiumsWithUpcomingAssemblyCommandConsumer : InMemoryConsum
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        return await _condominiumService
+        var result = await _condominiumService
             .GetCondominiumsWithUpcomingAssemblyAsync(command.TenantId, command.DaysAhead, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        return result.Select(x => x.ToReadDto()).ToList();
     }
 }

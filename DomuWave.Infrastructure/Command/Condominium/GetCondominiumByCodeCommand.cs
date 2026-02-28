@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.Condominium;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Condominium;
 
-public class GetCondominiumByCodeCommand : BaseCommand, IQuery<Models.Condominium>
+public class GetCondominiumByCodeCommand : BaseCommand, IQuery<CondominiumReadDto>
 {
     public Guid TenantId { get; set; }
     public string Code { get; set; }

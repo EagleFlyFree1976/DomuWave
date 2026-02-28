@@ -65,9 +65,10 @@
         </div>
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-group">
+            <div class="form-group" :class="{ 'has-error': errors.name }">
               <label class="form-label">Nome *</label>
-              <input class="form-input" v-model="form.name" placeholder="Es. Condominio Roma" />
+              <input class="form-input" v-model="form.name" placeholder="Es. Condominio Roma" @input="clearError('name')" />
+              <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">Codice</label>
@@ -81,21 +82,24 @@
               <label class="form-label">Partita IVA</label>
               <input class="form-input" v-model="form.vatNumber" />
             </div>
-            <div class="form-group">
+            <div class="form-group" :class="{ 'has-error': errors.email }">
               <label class="form-label">Email</label>
-              <input class="form-input" type="email" v-model="form.email" />
+              <input class="form-input" type="email" v-model="form.email" @input="clearError('email')" />
+              <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">Telefono</label>
               <input class="form-input" v-model="form.phone" />
             </div>
-            <div class="form-group">
-              <label class="form-label">N° unità</label>
-              <input class="form-input" type="number" v-model.number="form.numberOfUnits" />
+            <div class="form-group" :class="{ 'has-error': errors.numberOfUnits }">
+              <label class="form-label">N° unità *</label>
+              <input class="form-input" type="number" min="1" v-model.number="form.numberOfUnits" @input="clearError('numberOfUnits')" />
+              <span v-if="errors.numberOfUnits" class="field-error">{{ errors.numberOfUnits }}</span>
             </div>
-            <div class="form-group">
-              <label class="form-label">N° scale</label>
-              <input class="form-input" type="number" v-model.number="form.numberOfStaircases" />
+            <div class="form-group" :class="{ 'has-error': errors.numberOfStaircases }">
+              <label class="form-label">N° scale *</label>
+              <input class="form-input" type="number" min="1" v-model.number="form.numberOfStaircases" @input="clearError('numberOfStaircases')" />
+              <span v-if="errors.numberOfStaircases" class="field-error">{{ errors.numberOfStaircases }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">Frequenza rate</label>
@@ -106,9 +110,10 @@
                 <option value="Annual">Annuale</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Giorno scadenza rata</label>
-              <input class="form-input" type="number" min="1" max="31" v-model.number="form.installmentDueDay" />
+            <div class="form-group" :class="{ 'has-error': errors.installmentDueDay }">
+              <label class="form-label">Giorno scadenza rata *</label>
+              <input class="form-input" type="number" min="1" max="31" v-model.number="form.installmentDueDay" @input="clearError('installmentDueDay')" />
+              <span v-if="errors.installmentDueDay" class="field-error">{{ errors.installmentDueDay }}</span>
             </div>
           </div>
           <div class="form-group">
@@ -119,6 +124,35 @@
             <input type="checkbox" id="isActive" v-model="form.isActive" />
             <label for="isActive" style="font-size:0.875rem;cursor:pointer">Condominio attivo</label>
           </div>
+          <fieldset class="form-fieldset">
+            <legend class="form-fieldset-legend">Indirizzo</legend>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column:span 2">
+                <label class="form-label">Via / Piazza</label>
+                <input class="form-input" v-model="form.address.street" placeholder="Via Roma" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Civico</label>
+                <input class="form-input" v-model="form.address.streetNumber" placeholder="1/A" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">CAP</label>
+                <input class="form-input" v-model="form.address.postalCode" placeholder="00100" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Città</label>
+                <input class="form-input" v-model="form.address.city" placeholder="Roma" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Provincia</label>
+                <input class="form-input" v-model="form.address.province" placeholder="RM" maxlength="2" />
+              </div>
+              <div class="form-group" style="grid-column:span 2">
+                <label class="form-label">Nazione</label>
+                <input class="form-input" v-model="form.address.country" placeholder="Italia" />
+              </div>
+            </div>
+          </fieldset>
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" @click="showModal=false">Annulla</button>
@@ -144,12 +178,15 @@ const showModal = ref(false)
 const editing = ref(null)
 const search = ref('')
 const filterActive = ref('')
+const errors = ref({})
 
+const defaultAddress = () => ({ street: '', streetNumber: '', postalCode: '', city: '', province: '', country: '' })
 const defaultForm = () => ({
   name: '', code: '', taxCode: '', vatNumber: '', email: '', phone: '', pec: '',
   numberOfUnits: 0, numberOfStaircases: 1, installmentFrequency: 'Monthly',
   installmentDueDay: 1, notes: '', isActive: true,
-  hasElevator: false, hasCentralHeating: false, hasConcierge: false, totalMillesimal: 1000
+  hasElevator: false, hasCentralHeating: false, hasConcierge: false, totalMillesimal: 1000,
+  address: defaultAddress(),
 })
 const form = ref(defaultForm())
 
@@ -171,12 +208,35 @@ async function loadData() {
 
 function openModal(item = null) {
   editing.value = item?.id ?? null
-  form.value = item ? { ...item } : defaultForm()
+  form.value = item
+    ? { ...item, address: item.address ? { ...item.address } : defaultAddress() }
+    : defaultForm()
+  errors.value = {}
   showModal.value = true
 }
 
+function clearError(field) {
+  delete errors.value[field]
+}
+
+function validate() {
+  const e = {}
+  if (!form.value.name?.trim())
+    e.name = 'Il nome è obbligatorio'
+  if (form.value.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email))
+    e.email = 'Indirizzo email non valido'
+  if (!form.value.numberOfUnits || form.value.numberOfUnits < 1)
+    e.numberOfUnits = 'Deve essere almeno 1'
+  if (!form.value.numberOfStaircases || form.value.numberOfStaircases < 1)
+    e.numberOfStaircases = 'Deve essere almeno 1'
+  if (!form.value.installmentDueDay || form.value.installmentDueDay < 1 || form.value.installmentDueDay > 31)
+    e.installmentDueDay = 'Deve essere compreso tra 1 e 31'
+  errors.value = e
+  return Object.keys(e).length === 0
+}
+
 async function save() {
-  if (!form.value.name) return store.toast('Il nome è obbligatorio', 'error')
+  if (!validate()) return
   saving.value = true
   try {
     if (editing.value) {
@@ -213,4 +273,16 @@ onMounted(loadData)
 .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
 .search-input { flex: 1; max-width: 360px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+.form-fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-top: 1rem; }
+.form-fieldset-legend { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); padding: 0 0.4rem; }
+
+.has-error .form-input,
+.has-error .form-select {
+  border-color: var(--accent-red, #e53e3e);
+}
+.field-error {
+  font-size: 0.78rem;
+  color: var(--accent-red, #e53e3e);
+  margin-top: 0.2rem;
+}
 </style>

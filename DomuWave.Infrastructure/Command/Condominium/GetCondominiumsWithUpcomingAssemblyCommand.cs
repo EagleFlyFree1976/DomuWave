@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.Condominium;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Condominium;
 
-public class GetCondominiumsWithUpcomingAssemblyCommand : BaseCommand, IQuery<IList<Models.Condominium>>
+public class GetCondominiumsWithUpcomingAssemblyCommand : BaseCommand, IQuery<IList<CondominiumReadDto>>
 {
     public Guid TenantId { get; set; }
     public int DaysAhead { get; set; }

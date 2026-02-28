@@ -1,4 +1,5 @@
 using System;
+using CPQ.Core;
 using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Models

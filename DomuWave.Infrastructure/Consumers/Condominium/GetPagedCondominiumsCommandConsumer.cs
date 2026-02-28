@@ -1,9 +1,9 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Condominium;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -35,6 +35,8 @@ public class GetPagedCondominiumsCommandConsumer : InMemoryConsumerBase<GetPaged
             .GetPagedAsync(x => !x.IsDeleted, command.Page, command.PageSize,
                 x => x.Name!, command.Ascending, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        return new { items, total, command.Page, command.PageSize };
+
+        var dtos = items.Select(x => x.ToReadDto()).ToList();
+        return new { items = dtos, total, command.Page, command.PageSize };
     }
 }

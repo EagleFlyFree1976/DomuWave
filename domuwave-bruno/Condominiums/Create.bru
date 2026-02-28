@@ -10,20 +10,25 @@ post {
   auth: bearer
 }
 
+headers {
+  x-tenant-id: 5a3fb41f-7fc0-49f4-9ea3-b3ff00838bd7
+  x-auth-token: {{token}}
+}
+
 auth:bearer {
   token: {{token}}
 }
 
 body:json {
   {
-    "name": "test",
-    "code": "c c2",
-    "taxCode": "grcrzo76a07i441x",
-    "vatNumber": "11112112",
-    "email": "test@gmail.com",
+    "name": "Le rose blu",
+    "code": "RSB2",
+    "taxCode": "388378129739821",
+    "vatNumber": "",
+    "email": "oraziogr@gmail.com",
     "phone": "",
     "pec": "",
-    "numberOfUnits": 9,
+    "numberOfUnits": 17,
     "numberOfStaircases": 1,
     "installmentFrequency": "Quarterly",
     "installmentDueDay": 20,
@@ -32,8 +37,14 @@ body:json {
     "hasElevator": false,
     "hasCentralHeating": false,
     "hasConcierge": false,
-    "totalMillesimal": 1000
+    "totalMillesimal": 1000,
+    "address": {
+      "street": "via verra",
+      "streetNumber": "7",
+      "postalCode": "28069",
+      "city": "trecate",
+      "province": "no",
+      "country": "italia"
+    }
   }
-  
-  
 }

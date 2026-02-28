@@ -50,6 +50,25 @@
         </dl>
       </div>
 
+      <!-- Indirizzo card -->
+      <div class="card" v-if="condominio.address">
+        <div class="card-header"><h2>Indirizzo</h2></div>
+        <dl class="info-list">
+          <div class="info-row" v-if="condominio.address.street">
+            <dt>Via / Piazza</dt>
+            <dd>{{ condominio.address.street }} {{ condominio.address.streetNumber }}</dd>
+          </div>
+          <div class="info-row" v-if="condominio.address.city">
+            <dt>Città</dt>
+            <dd>{{ condominio.address.postalCode }} {{ condominio.address.city }} ({{ condominio.address.province }})</dd>
+          </div>
+          <div class="info-row" v-if="condominio.address.country">
+            <dt>Nazione</dt>
+            <dd>{{ condominio.address.country }}</dd>
+          </div>
+        </dl>
+      </div>
+
       <!-- Note card -->
       <div class="card" v-if="condominio.notes">
         <div class="card-header"><h2>Note</h2></div>

@@ -1,14 +1,15 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Condominium;
+using DomuWave.Services.Dto.Condominium;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class UpdateCondominiumCommandConsumer : InMemoryConsumerBase<UpdateCondominiumCommand, Condominium>
+public class UpdateCondominiumCommandConsumer : InMemoryConsumerBase<UpdateCondominiumCommand, CondominiumReadDto>
 {
     private readonly ICondominiumService _condominiumService;
     private readonly IUserService _userService;
@@ -22,7 +23,7 @@ public class UpdateCondominiumCommandConsumer : InMemoryConsumerBase<UpdateCondo
         _userService = userService;
     }
 
-    protected override async Task<Condominium> Consume(
+    protected override async Task<CondominiumReadDto> Consume(
         UpdateCondominiumCommand command,
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
@@ -35,9 +36,17 @@ public class UpdateCondominiumCommandConsumer : InMemoryConsumerBase<UpdateCondo
             .ExistsAsync(command.CondominiumId, currentUser, cancellationToken)
             .ConfigureAwait(false);
         if (!exists) return null;
-        command.Entity.Id = command.CondominiumId;
-        return await _condominiumService
-            .UpdateAsync(command.Entity, currentUser, cancellationToken)
+
+        var existing = await _condominiumService
+            .GetByIdAsync(command.CondominiumId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        existing.ApplyUpdate(command.Dto);
+
+        var updated = await _condominiumService
+            .UpdateAsync(existing, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
+        return updated.ToReadDto();
     }
 }
