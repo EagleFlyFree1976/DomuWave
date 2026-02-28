@@ -109,7 +109,8 @@
                       class="btn-row-action btn-row-action--warning"
                       v-tooltip="'Reset password'"
                       @click="confirmResetPassword(data)" />
-              <Button icon="pi pi-trash"
+              <Button v-if="!isCurrentUser(data)"
+                      icon="pi pi-trash"
                       class="btn-row-action btn-row-action--danger"
                       v-tooltip="'Elimina'"
                       @click="confirmDelete(data)" />
@@ -150,6 +151,7 @@ import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useUserStore } from '@/stores/userStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -164,6 +166,14 @@ const router  = useRouter()
 const confirm = useConfirm()
 const toast   = useToast()
 const store   = useUserStore()
+const auth    = useAuthStore()
+
+// Confronta per email (username = email di login) oppure per id come fallback
+function isCurrentUser(userData) {
+  if (!auth.user || !userData) return false
+  if (auth.user.username && userData.email) return auth.user.username === userData.email
+  return String(auth.user.id) === String(userData.id)
+}
 
 // ─── LOCAL STATE ────────────────────────────────────────────────────────────
 let searchDebounce = null

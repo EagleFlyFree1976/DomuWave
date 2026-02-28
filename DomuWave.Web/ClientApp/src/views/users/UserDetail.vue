@@ -143,7 +143,9 @@
             <div v-if="!isNew" class="field field--inline">
               <label class="field__label" for="isActive">Stato attivo</label>
               <div class="toggle-wrapper">
-                <ToggleSwitch id="isActive" v-model="store.currentUser.isActive" />
+                <ToggleSwitch id="isActive" v-model="store.currentUser.isActive"
+                              :disabled="isSelf"
+                              v-tooltip="isSelf ? 'Non puoi disabilitare il tuo account' : null" />
                 <span class="toggle-label"
                       :class="store.currentUser.isActive ? 'toggle-label--on' : 'toggle-label--off'">
                   {{ store.currentUser.isActive ? 'Attivo' : 'Inattivo' }}
@@ -312,7 +314,7 @@ import { required, minLength, maxLength, email as emailValidator, helpers } from
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useUserStore } from '@/stores/userStore'
-import { useSessionStore } from '@/stores/sessionStore'
+import { useAuthStore } from '@/stores/authStore'
 import { userTenantApi, rolesApi } from '@/services/userService'
 import { tenantApi } from '@/services/tenantService'
 
@@ -335,8 +337,15 @@ const router  = useRouter()
 const route   = useRoute()
 const toast   = useToast()
 const confirm = useConfirm()
-const store   = useUserStore()
-const session = useSessionStore()
+const store  = useUserStore()
+const auth   = useAuthStore()
+
+const isSelf = computed(() => {
+  if (!auth.user || !store.currentUser) return false
+  if (auth.user.username && store.currentUser.email)
+    return auth.user.username === store.currentUser.email
+  return String(auth.user.id) === String(store.currentUser.id)
+})
 
 // ─── COMPUTED ────────────────────────────────────────────────────────────────
 const userId    = computed(() => props.id || route.params.id || null)
