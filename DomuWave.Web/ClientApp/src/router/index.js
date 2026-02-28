@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
- 
+import { useSessionStore } from '@/stores/sessionStore'
+
 const routes = [
   // ── Pubblica ────────────────────────────────────────────────────────────
   {
@@ -17,14 +18,14 @@ const routes = [
     redirect: '/dashboard',
     children: [
       { path: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { title: 'Dashboard' } },
-      { path: 'condomini', component: () => import('@/views/CondominiView.vue'), meta: { title: 'Condomini' } },
-      { path: 'condomini/:id', component: () => import('@/views/CondominioDetailView.vue'), meta: { title: 'Dettaglio Condominio' } },
-      { path: 'unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari' } },
-      { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget & Spese' } },
-      { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote' } },
-      { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori' } },
-      { path: 'documenti', component: () => import('@/views/DocumentiView.vue'), meta: { title: 'Documenti' } },
-      { path: 'comunicazioni', component: () => import('@/views/ComunicazioniView.vue'), meta: { title: 'Comunicazioni' } },
+      { path: 'condomini', component: () => import('@/views/CondominiView.vue'), meta: { title: 'Condomini', requiresTenant: true } },
+      { path: 'condomini/:id', component: () => import('@/views/CondominioDetailView.vue'), meta: { title: 'Dettaglio Condominio', requiresTenant: true } },
+      { path: 'unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari', requiresTenant: true } },
+      { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget & Spese', requiresTenant: true } },
+      { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
+      { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori', requiresTenant: true } },
+      { path: 'documenti', component: () => import('@/views/DocumentiView.vue'), meta: { title: 'Documenti', requiresTenant: true } },
+      { path: 'comunicazioni', component: () => import('@/views/ComunicazioniView.vue'), meta: { title: 'Comunicazioni', requiresTenant: true } },
 
 
       { path: 'tenants', name:'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
@@ -55,8 +56,10 @@ const router = createRouter({
 // ── Navigation guard ────────────────────────────────────────────────────────
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
+  const session = useSessionStore()
 
   const requiresAuth = to.matched.some((r) => r.meta?.requiresAuth)
+  const requiresTenant = to.matched.some((r) => r.meta?.requiresTenant)
 
   if (to.path === '/login' && authStore.isAuthenticated) {
     return next('/dashboard')
@@ -64,6 +67,10 @@ router.beforeEach((to, _from, next) => {
 
   if (requiresAuth && !authStore.isAuthenticated) {
     return next({ path: '/login', query: { redirect: to.fullPath } })
+  }
+
+  if (requiresTenant && session.isSuperAdmin && !session.hasTenantSelected) {
+    return next('/tenants')
   }
 
   next()
