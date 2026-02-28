@@ -47,10 +47,6 @@ public class PublicUserController(
             {
                 return NotFound();
             }
-
-
-
-
             UserDto returnDto = new UserDto();
             returnDto.FullName = user.FullName;
             returnDto.Id = user.Id;
@@ -71,14 +67,30 @@ public class PublicUserController(
                 returnDto.Profile = UserProfile.TenantAdministrator;
             }
 
-                var tenants = await _userTenantService.GetByUserIdAsync(user.Id, systemUser, cancellationToken)
+            var tenants = await _userTenantService.GetByUserIdAsync(user.Id, systemUser, cancellationToken)
                     .ConfigureAwait(false);
 
-            var tenantsDto = tenants.ToList().Select(j => j.ToDto());
+            var tenantsDto = tenants.ToList().Where(k=>k.Tenant.IsActive && k.IsActive).Select(j => j.ToDto());
+            var defaultTenant = tenantsDto.FirstOrDefault(j => j.IsDefault);
+            if (defaultTenant == null)
+            {
+                defaultTenant = tenantsDto.FirstOrDefault();
+            }
+            if (tenants.Any() && defaultTenant != null)
+            {
+                returnDto.AvailableTenants = tenantsDto.Select(k => new TenantReadDto() { Code = k.TenantCode, Name = k.TenantName, Id = k.TenantId, IsPrimary = k.IsDefault }).ToList();
+                returnDto.Tenant = new TenantReadDto()
+                {
+                    Code = defaultTenant.TenantCode, Name = defaultTenant.TenantName, Id = defaultTenant.TenantId,
+                    IsPrimary = defaultTenant.IsDefault
+                };
+            }
+            else
+            {
 
-            returnDto.AvailableTenants = tenantsDto.Select(k=> new TenantReadDto(){Code = k.TenantCode, Name = k.TenantName, Id = k.TenantId, IsPrimary = k.IsDefault}).ToList();
-            returnDto.Tenant = returnDto.AvailableTenants.FirstOrDefault(j => j.IsPrimary);
-            return Ok(returnDto);
+            }
+
+                return Ok(returnDto);
         }
         catch (Exception exc)
         {

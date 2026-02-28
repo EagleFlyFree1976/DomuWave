@@ -40,6 +40,15 @@ export const useAuthStore = defineStore('auth', () => {
         return { success: false, message: msg }
       }
 
+      if (data.tenant == null) {
+                const msg =
+                    'Nessun tenant associato all\'utenza'
+        error.value = msg
+        return { success: false, message: msg }
+      
+      }
+
+
       token.value = data.token ?? data.accessToken ?? data.Token
       user.value = {
         id: data.userId ?? data.UserId,

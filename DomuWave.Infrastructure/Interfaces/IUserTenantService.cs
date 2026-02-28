@@ -10,8 +10,7 @@ namespace DomuWave.Services.Interfaces;
 public interface IUserTenantService : IBaseService<UserTenant, int>
 {
     /// <summary>Restituisce tutti i tenant assegnati a un utente.</summary>
-    Task<IList<UserTenant>> GetByUserIdAsync(
-        long userId, IUser currentUser, CancellationToken ct);
+    Task<IList<UserTenant>> GetByUserIdAsync(long userId, IUser currentUser, CancellationToken ct);
 
     /// <summary>Restituisce tutte le associazioni utente per un determinato tenant.</summary>
     Task<IList<UserTenant>> GetByTenantIdAsync(
