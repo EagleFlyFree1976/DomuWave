@@ -43,9 +43,12 @@ public class PublicUserController(
         {
             var user = await _authorizationClient.Login(CommonKeys.SystemUserToken, logininfo, cancellationToken)
                 .ConfigureAwait(false);
+            if (user == null)
+            {
+                return NotFound();
+            }
 
 
-           
 
 
             UserDto returnDto = new UserDto();
@@ -56,7 +59,7 @@ public class PublicUserController(
             returnDto.Token = user.Token;
             returnDto.Role = user.Role;
             returnDto.Path = user.Path;
-
+            returnDto.IsActive = user.IsActive;
 
             var _user = await _userService.GetByIdAsync(user.Id, cancellationToken).ConfigureAwait(false);
             if (_user.IsSystemUser)

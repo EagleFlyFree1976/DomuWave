@@ -1,5 +1,5 @@
 import axios from 'axios'
-
+const STORAGE_KEY = 'tenantId'
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_DOMUAPP_URL + "/api",
   headers: { 'Content-Type': 'application/json' }
@@ -12,7 +12,7 @@ api.interceptors.request.use(config => {
     config.headers.Authorization = `Bearer ${token}`
     config.headers['X-Auth-Token'] = token;
   }
-  const tenantId = localStorage.getItem('tenantId');
+  const tenantId = localStorage.getItem(STORAGE_KEY);
   if (tenantId) config.headers['X-Tenant-Id'] = tenantId;
   return config
 })

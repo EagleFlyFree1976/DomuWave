@@ -62,3 +62,6 @@
 /DomuWave.Application/Logs
 /DomuWave.Web/domuwave/node_modules
 /AuthService
+/DomuWave.Infrastructure/obj/DomuWave.Services.csproj.nuget.dgspec.json
+/DomuWave.Infrastructure/obj/project.assets.json
+/DomuWave.Infrastructure/obj/project.nuget.cache

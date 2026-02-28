@@ -447,7 +447,7 @@ async function handleSave() {
     toast.add({
       severity: 'success',
       summary: 'Salvato',
-      detail: `Utente "${saved.firstName ?? ''} ${saved.lastName ?? ''}".trim() + ' salvato con successo.'`,
+      detail: `Utente "${saved?.firstName ?? ''} ${saved?.lastName ?? ''}" salvato con successo.`,
       life: 3000,
     })
     if (isNew.value) {

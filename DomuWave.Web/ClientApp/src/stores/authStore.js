@@ -3,6 +3,9 @@ import { ref, computed } from 'vue'
 
 import api from '@/services/api'
 import { useSessionStore } from '@/stores/sessionStore'
+const STORAGE_KEY = 'tenantId'
+const STORAGE_TENANT_NAME_KEY = 'tenantName'
+const UserProfile = 'domuwave_userprofile'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('domuwave_token') || null)
@@ -25,9 +28,18 @@ export const useAuthStore = defineStore('auth', () => {
       });
 
       
+      
 
 
       const data = response.data
+
+      if (data != null && !data.isActive) {
+        const msg =
+                    'Utenza disabilitata'
+        error.value = msg
+        return { success: false, message: msg }
+      }
+
       token.value = data.token ?? data.accessToken ?? data.Token
       user.value = {
         id: data.userId ?? data.UserId,
@@ -36,14 +48,18 @@ export const useAuthStore = defineStore('auth', () => {
         role: data.role ?? data.Role,
         profile: data.profile
       }
+      console.log("DATA", data);
 
       const session = useSessionStore()
       session.initFromAuth(user) 
       localStorage.setItem('domuwave_token', token.value)
+      localStorage.setItem(STORAGE_KEY, data.tenant.id)
+      localStorage.setItem(STORAGE_TENANT_NAME_KEY, data.tenant.Name)
       localStorage.setItem('domuwave_user', JSON.stringify(user.value))
       localStorage.setItem('domuwave_userprofile', user.value.profile)
       return { success: true }
     } catch (err) {
+      console.log("Errr", err);
       const msg =
         err.response?.data?.message ??
         err.response?.data?.Message ??
@@ -59,8 +75,14 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     token.value = null
     user.value = null
+    
     localStorage.removeItem('domuwave_token')
+    localStorage.removeItem(STORAGE_KEY)
+    localStorage.removeItem(STORAGE_TENANT_NAME_KEY)
     localStorage.removeItem('domuwave_user')
+    localStorage.removeItem('domuwave_userprofile')
+
+
   }
 
   return { token, user, loading, error, isAuthenticated, currentUser, login, logout }

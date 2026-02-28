@@ -52,7 +52,17 @@ export const useUserStore = defineStore('user', () => {
     currentUser.value = null
     try {
       const { data } = await userApi.getById(id)
-      currentUser.value = data
+      // Normalizza i campi del DTO verso il modello interno
+      currentUser.value = data ? {
+        id:        data.id,
+        firstName: data.name,
+        lastName:  data.lastName,
+        email:     data.email,
+        fullName:  data.fullName,
+        roleCode:  data.role,
+        isActive:  data.isActive,
+        login:     data.login,
+      } : null
     } catch {
       // Errore già gestito dall'interceptor
     } finally {
@@ -82,16 +92,32 @@ export const useUserStore = defineStore('user', () => {
         name:     u.firstName,
         surName:  u.lastName,
         roleCode: u.roleCode,
+        isActive: u.isActive,
         ...(u.id
           ? {}
           : { password: u.password, moduleCode: 'DomuWeb' }),
       }
-      const { data } = u.id
-        ? await userApi.update(u.id, payload)
-        : await userApi.create(payload)
 
-      currentUser.value = data
-      return data
+      if (u.id) {
+        // UPDATE: il PUT può restituire corpo vuoto (204) — non sovrascrivere
+        // currentUser che è già in formato normalizzato
+        await userApi.update(u.id, payload)
+      } else {
+        // CREATE: normalizza la risposta con gli stessi nomi campi di fetchById
+        const { data } = await userApi.create(payload)
+        currentUser.value = data ? {
+          id:        data.id,
+          firstName: data.name,
+          lastName:  data.lastName,
+          email:     data.email,
+          fullName:  data.fullName,
+          roleCode:  data.role,
+          isActive:  data.isActive ?? true,
+          login:     data.login,
+        } : null
+      }
+
+      return currentUser.value
     } catch (err) {
       throw err
     } finally {

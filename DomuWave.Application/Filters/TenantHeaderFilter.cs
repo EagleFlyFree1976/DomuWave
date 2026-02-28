@@ -48,7 +48,7 @@ public class TenantHeaderFilter : IAsyncActionFilter
             }
             if (user != null)
             {
-                Guid tenantId = new Guid(context.HttpContext.Request.Headers["TenantId"].ToString());
+                Guid tenantId = new Guid(context.HttpContext.Request.Headers["X-Tenant-Id"].ToString());
                 GetTenantByIdCommand getTenantByIdCommand = new GetTenantByIdCommand(user.Id, tenantId) ;
                     var tenant = await _mediator.GetResponse(getTenantByIdCommand, CancellationToken.None)
                         .ConfigureAwait(false);
