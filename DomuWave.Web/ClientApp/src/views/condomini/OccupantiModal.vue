@@ -1,6 +1,6 @@
 <template>
   <div class="modal-overlay" @click.self="$emit('close')">
-    <div class="modal modal-wide">
+    <div class="modal modal-xl">
       <div class="modal-header">
         <h2>Occupanti · {{ unitLabel }}</h2>
         <button class="btn-icon" @click="$emit('close')">✕</button>
@@ -108,7 +108,7 @@
 
   <!-- ══════════ SUB-MODAL: Aggiungi/Modifica Proprietario ══════════ -->
   <div class="modal-overlay" v-if="ownerModal.show" @click.self="ownerModal.show = false">
-    <div class="modal">
+    <div class="modal modal-lg">
       <div class="modal-header">
         <h2>{{ ownerModal.editing ? 'Modifica proprietario' : 'Aggiungi proprietario' }}</h2>
         <button class="btn-icon" @click="ownerModal.show = false">✕</button>
@@ -193,7 +193,7 @@
 
   <!-- ══════════ SUB-MODAL: Aggiungi/Modifica Inquilino ══════════ -->
   <div class="modal-overlay" v-if="tenantModal.show" @click.self="tenantModal.show = false">
-    <div class="modal">
+    <div class="modal modal-lg">
       <div class="modal-header">
         <h2>{{ tenantModal.editing ? 'Modifica inquilino' : 'Aggiungi inquilino' }}</h2>
         <button class="btn-icon" @click="tenantModal.show = false">✕</button>
@@ -640,7 +640,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.modal-wide { width: min(860px, 95vw); }
+/* Sizes: override global max-width: 560px */
+.modal-xl { width: min(1020px, 96vw); max-width: min(1020px, 96vw); min-height: min(640px, 80vh); }
+.modal-lg { width: min(700px, 96vw);  max-width: min(700px, 96vw); }
 
 .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 1.25rem; gap: 0; }
 .tab-btn {

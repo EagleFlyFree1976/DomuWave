@@ -415,7 +415,7 @@ dd { font-size: 0.875rem; color: var(--text-primary); text-align: right; }
 .notes-text { font-size: 0.875rem; line-height: 1.7; white-space: pre-wrap; color: var(--text-secondary); padding: 0 1rem 1rem; }
 
 /* ── Edit modal ─────────────────────────────────────────────────────────────── */
-.modal--wide { width: min(760px, 96vw); }
+.modal--wide { width: min(760px, 96vw); max-width: min(760px, 96vw); }
 .form-fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-top: 1rem; }
 .form-fieldset-legend { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); padding: 0 0.4rem; }
 .check-row { display: flex; flex-wrap: wrap; gap: 1.25rem; }
