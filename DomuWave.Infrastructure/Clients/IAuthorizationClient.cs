@@ -21,7 +21,7 @@ namespace DomuWave.Services.Clients
         [Post("/api/PublicUser/login")]
         Task<CPQ.Core.DTO.UserDto> Login([Header(SettingKey.HTTPHeaderAccessTokenKey)] string token, UserLogin logininfo, CancellationToken cancellationToken);
 
-
-
+        [Put("/api/users/{id}")]
+        Task UpdateUserAsync([Header(SettingKey.HTTPHeaderAccessTokenKey)] string token, int id, [Body] UpdateAuthUserRequest request, CancellationToken cancellationToken);
     }
 }

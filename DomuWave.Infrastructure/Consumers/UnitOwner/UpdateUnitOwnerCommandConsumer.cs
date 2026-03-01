@@ -1,6 +1,8 @@
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
+using DomuWave.Services.Clients;
+using DomuWave.Services.Clients.Request;
 using DomuWave.Services.Command.UnitOwner;
 using DomuWave.Services.Dto.UnitOwner;
 using DomuWave.Services.Interfaces;
@@ -11,16 +13,22 @@ namespace DomuWave.Services.Consumers;
 
 public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwnerCommand, UnitOwnerReadDto>
 {
-    private readonly IUnitOwnerService  _unitOwnerService;
-    private readonly IUserService       _userService;
+    private readonly IUnitOwnerService    _unitOwnerService;
+    private readonly IUserService         _userService;
+    
+    private readonly IAuthorizationClient _authorizationClient;
 
     public UpdateUnitOwnerCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUnitOwnerService unitOwnerService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+    
+        IAuthorizationClient authorizationClient) : base(sessionFactoryProvider)
     {
-        _unitOwnerService = unitOwnerService;
-        _userService      = userService;
+        _unitOwnerService    = unitOwnerService;
+        _userService         = userService;
+    
+        _authorizationClient = authorizationClient;
     }
 
     protected override async Task<UnitOwnerReadDto> Consume(
@@ -42,6 +50,24 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
         var updated = await _unitOwnerService
             .UpdateAsync(existing, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        // Sync name / email back to the auth user record via Refit
+        if (existing.UserId > 0)
+        {
+            
+                await _authorizationClient.UpdateUserAsync(
+                    currentUser.Token,
+                    (int)existing.UserId,
+                    new UpdateAuthUserRequest
+                    {
+                        Name     = command.Dto.FirstName,
+                        SurName  = command.Dto.LastName,
+                        Email    = command.Dto.Email
+                        
+                    },
+                    cancellationToken).ConfigureAwait(false);
+            
+        }
 
         return updated.ToReadDto();
     }

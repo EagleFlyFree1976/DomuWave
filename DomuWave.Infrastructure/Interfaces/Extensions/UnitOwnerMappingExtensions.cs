@@ -14,6 +14,9 @@ public static class UnitOwnerMappingExtensions
         {
             UnitId         = owner.Unit?.Id ?? 0,
             UserId         = owner.UserId,
+            FirstName      = owner.FirstName,
+            LastName       = owner.LastName,
+            Email          = owner.Email,
             OwnerType      = owner.OwnerType,
             OwnershipQuota = owner.OwnershipQuota,
             StartDate      = owner.StartDate,
@@ -37,6 +40,9 @@ public static class UnitOwnerMappingExtensions
             Tenant         = tenant,
             Name           = dto.OwnerType ?? string.Empty,
             UserId         = dto.UserId,
+            FirstName      = dto.FirstName,
+            LastName       = dto.LastName,
+            Email          = dto.Email,
             OwnershipQuota = dto.OwnershipQuota,
             StartDate      = dto.StartDate,
             EndDate        = dto.EndDate,
@@ -61,6 +67,9 @@ public static class UnitOwnerMappingExtensions
 
     public static void ApplyUpdate(this UnitOwner entity, UpdateUnitOwnerDto dto)
     {
+        entity.FirstName      = dto.FirstName;
+        entity.LastName       = dto.LastName;
+        entity.Email          = dto.Email;
         entity.Name           = dto.OwnerType ?? string.Empty;
         entity.OwnershipQuota = dto.OwnershipQuota;
         entity.StartDate      = dto.StartDate;

@@ -29,7 +29,8 @@
             <table>
               <thead>
                 <tr>
-                  <th>Utente</th>
+                  <th>Nome</th>
+                  <th>Email</th>
                   <th>Tipo</th>
                   <th>Quota</th>
                   <th>Dal</th>
@@ -41,7 +42,8 @@
               </thead>
               <tbody>
                 <tr v-for="o in owners" :key="o.id">
-                  <td class="mono">{{ o.userId }}</td>
+                  <td>{{ [o.firstName, o.lastName].filter(Boolean).join(' ') || '—' }}</td>
+                  <td class="text-secondary">{{ o.email || '—' }}</td>
                   <td>{{ o.ownerType || '—' }}</td>
                   <td>{{ o.ownershipQuota }}%</td>
                   <td>{{ formatDate(o.startDate) }}</td>
@@ -142,9 +144,28 @@
           </fieldset>
         </template>
 
-        <!-- Step 2: dettagli proprietà -->
+        <!-- Dati anagrafici (sempre visibili, pre-popolati dalla selezione utente) -->
         <fieldset class="form-fieldset" style="margin-top:1rem">
-          <legend class="form-fieldset-legend">{{ ownerModal.editing ? 'Dettagli' : '2 · Dettagli proprietà' }}</legend>
+          <legend class="form-fieldset-legend">{{ ownerModal.editing ? 'Dati anagrafici' : '2 · Dati anagrafici' }}</legend>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nome</label>
+              <input class="form-input" v-model="ownerModal.form.firstName" placeholder="Es. Mario" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cognome</label>
+              <input class="form-input" v-model="ownerModal.form.lastName" placeholder="Es. Rossi" />
+            </div>
+            <div class="form-group" style="grid-column:span 2">
+              <label class="form-label">Email</label>
+              <input class="form-input" type="email" v-model="ownerModal.form.email" placeholder="Es. mario.rossi@email.it" />
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Step 2/3: dettagli proprietà -->
+        <fieldset class="form-fieldset" style="margin-top:1rem">
+          <legend class="form-fieldset-legend">{{ ownerModal.editing ? 'Dettagli proprietà' : '3 · Dettagli proprietà' }}</legend>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Tipo proprietà</label>
@@ -330,6 +351,9 @@ const ownerModal = reactive({
   selectedUserName: '',
   form: {
     userId:         0,
+    firstName:      '',
+    lastName:       '',
+    email:          '',
     ownerType:      '',
     ownershipQuota: 100,
     startDate:      '',
@@ -425,6 +449,9 @@ function openAddOwner() {
   ownerModal.editing          = null
   ownerModal.selectedUserName = ''
   ownerModal.form.userId         = 0
+  ownerModal.form.firstName      = ''
+  ownerModal.form.lastName       = ''
+  ownerModal.form.email          = ''
   ownerModal.form.ownerType      = ''
   ownerModal.form.ownershipQuota = 100
   ownerModal.form.startDate      = todayIso()
@@ -441,6 +468,9 @@ function openEditOwner(owner) {
   ownerModal.editing          = owner.id
   ownerModal.selectedUserName = ''
   ownerModal.form.userId         = owner.userId
+  ownerModal.form.firstName      = owner.firstName ?? ''
+  ownerModal.form.lastName       = owner.lastName ?? ''
+  ownerModal.form.email          = owner.email ?? ''
   ownerModal.form.ownerType      = owner.ownerType ?? ''
   ownerModal.form.ownershipQuota = owner.ownershipQuota
   ownerModal.form.startDate      = owner.startDate?.split('T')[0] ?? ''
@@ -452,10 +482,13 @@ function openEditOwner(owner) {
 }
 
 function selectOwnerUser(u) {
-  ownerModal.form.userId         = u.id
-  ownerModal.selectedUserName    = `${u.firstName || u.name} ${u.lastName}`.trim()
-  userResults.value              = []
-  userSearch.value               = ''
+  ownerModal.form.userId      = u.id
+  ownerModal.form.firstName   = u.firstName || u.name || ''
+  ownerModal.form.lastName    = u.lastName || ''
+  ownerModal.form.email       = u.email || ''
+  ownerModal.selectedUserName = `${ownerModal.form.firstName} ${ownerModal.form.lastName}`.trim()
+  userResults.value           = []
+  userSearch.value            = ''
 }
 
 async function saveOwner() {
@@ -468,6 +501,9 @@ async function saveOwner() {
   try {
     if (ownerModal.editing) {
       const dto = {
+        firstName:      ownerModal.form.firstName || null,
+        lastName:       ownerModal.form.lastName || null,
+        email:          ownerModal.form.email || null,
         ownerType:      ownerModal.form.ownerType || null,
         ownershipQuota: ownerModal.form.ownershipQuota,
         startDate:      ownerModal.form.startDate,
@@ -482,6 +518,9 @@ async function saveOwner() {
       const dto = {
         unitId:         props.unitId,
         userId:         ownerModal.form.userId,
+        firstName:      ownerModal.form.firstName || null,
+        lastName:       ownerModal.form.lastName || null,
+        email:          ownerModal.form.email || null,
         ownerType:      ownerModal.form.ownerType || null,
         ownershipQuota: ownerModal.form.ownershipQuota,
         startDate:      ownerModal.form.startDate,

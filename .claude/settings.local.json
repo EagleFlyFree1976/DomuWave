@@ -7,7 +7,11 @@
       "Bash(xargs grep -l \"class TraceEntityDTO\")",
       "Bash(xargs grep -l \"UnitOwner\\\\|UnitTenant\")",
       "Bash(xargs grep -l \"GetByTokenAsync\\\\|\\\\.Password\\\\s*=\")",
-      "Bash(grep -n \"class CondominiumFee\" /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Models/*.cs -A 30)"
+      "Bash(grep -n \"class CondominiumFee\" /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Models/*.cs -A 30)",
+      "Bash(xargs grep -l \"UpdateAsync\\\\|Update.*Command\")",
+      "Bash(xargs grep -l \"interface IUserService\")",
+      "Read(//c/Projects/Works/**)",
+      "Read(//c/Projects/**)"
     ]
   }
 }
