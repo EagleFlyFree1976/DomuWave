@@ -1,14 +1,6 @@
 <template>
   <div>
-    <div class="page-header">
-      <div class="header-left">
-        <router-link :to="`/condomini/${condominiumId}`" class="btn btn-ghost btn-sm">← Indietro</router-link>
-        <h1>Unità · {{ condominiumName }}</h1>
-      </div>
-      <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuova unità</button>
-    </div>
-
-    <!-- Search / filter -->
+    <!-- Search / filter toolbar -->
     <div class="toolbar">
       <input class="form-input search-input" v-model="search" placeholder="Cerca per numero interno, scala…" />
       <select class="form-select" v-model="filterType" style="width:180px">
@@ -20,6 +12,7 @@
         <option value="true">Attive</option>
         <option value="false">Inattive</option>
       </select>
+      <button v-if="canCreate" class="btn btn-primary" style="margin-left:auto" @click="openModal()">+ Nuova unità</button>
     </div>
 
     <div class="card">
@@ -173,26 +166,27 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { unitApi, condominiumApi } from '@/services/api'
+import { unitApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 import { usePermissions } from '@/composables/usePermissions'
 
-const route           = useRoute()
-const store           = useAppStore()
+const route  = useRoute()
+const store  = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
-const condominiumId   = Number(route.params.condominiumId)
-const condominiumName = ref('')
 
-const loading        = ref(false)
-const saving         = ref(false)
-const showModal      = ref(false)
-const editing        = ref(null)
-const occupantiUnit  = ref(null)
-const search         = ref('')
-const filterType     = ref('')
-const filterActive = ref('')
-const errors      = ref({})
-const units       = ref([])
+// condominiumId comes from the parent route param :id (via CondominioLayout)
+const condominiumId = Number(route.params.id)
+
+const loading       = ref(false)
+const saving        = ref(false)
+const showModal     = ref(false)
+const editing       = ref(null)
+const occupantiUnit = ref(null)
+const search        = ref('')
+const filterType    = ref('')
+const filterActive  = ref('')
+const errors        = ref({})
+const units         = ref([])
 
 const unitTypes = [
   'Residenziale', 'Commerciale', 'Artigianale', 'Direzionale',
@@ -305,18 +299,11 @@ async function deleteItem(id) {
   }
 }
 
-onMounted(async () => {
-  try {
-    const { data } = await condominiumApi.getById(condominiumId)
-    condominiumName.value = data.name
-  } catch { /* ignored */ }
-  await loadData()
-})
+onMounted(loadData)
 </script>
 
 <style scoped>
-.header-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-.toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
 .search-input { flex: 1; min-width: 200px; max-width: 360px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
 

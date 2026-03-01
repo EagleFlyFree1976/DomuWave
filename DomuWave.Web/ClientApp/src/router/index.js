@@ -29,8 +29,15 @@ const routes = [
     children: [
       { path: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { title: 'Dashboard' } },
       { path: 'condomini', component: () => import('@/views/CondominiView.vue'), meta: { title: 'Condomini', requiresTenant: true } },
-      { path: 'condomini/:id', component: () => import('@/views/CondominioDetailView.vue'), meta: { title: 'Dettaglio Condominio', requiresTenant: true } },
-      { path: 'condomini/:condominiumId/unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari', requiresTenant: true } },
+      {
+        path: 'condomini/:id',
+        component: () => import('@/components/layout/CondominioLayout.vue'),
+        meta: { requiresTenant: true },
+        children: [
+          { path: '', component: () => import('@/views/CondominioDetailView.vue'), meta: { title: 'Dettaglio Condominio' } },
+          { path: 'unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari' } },
+        ],
+      },
       { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget & Spese', requiresTenant: true } },
       { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
       { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori', requiresTenant: true } },

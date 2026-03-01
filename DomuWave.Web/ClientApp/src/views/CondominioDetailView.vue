@@ -1,15 +1,8 @@
 <template>
-  <div v-if="condominio">
-    <!-- Header -->
-    <div class="page-header">
-      <div class="header-left">
-        <router-link to="/condomini" class="btn btn-ghost btn-sm">← Indietro</router-link>
-        <h1>{{ condominio.name }}</h1>
-        <span class="badge" :class="condominio.isActive ? 'badge-green' : 'badge-muted'">
-          {{ condominio.isActive ? 'Attivo' : 'Inattivo' }}
-        </span>
-      </div>
-      <button v-if="canEdit" class="btn btn-primary" @click="openEdit">✎ Modifica</button>
+  <div>
+    <!-- Tab-level action bar -->
+    <div v-if="canEdit" class="tab-actions">
+      <button class="btn btn-primary" @click="openEdit">✎ Modifica</button>
     </div>
 
     <!-- Detail grid: 2 columns -->
@@ -109,13 +102,6 @@
           <p v-else class="text-muted" style="font-size:0.875rem;padding:0.5rem 1rem 1rem">Nessun indirizzo registrato</p>
         </div>
       </div>
-    </div>
-
-    <!-- Quick nav -->
-    <div class="quick-nav">
-      <router-link v-for="q in quickNav" :key="q.label" :to="`/condomini/${condominio.id}${q.path}`" class="qnav-chip">
-        {{ q.icon }} {{ q.label }}
-      </router-link>
     </div>
 
     <!-- Edit Modal -->
@@ -306,21 +292,18 @@
       </div>
     </div>
   </div>
-
-  <div v-else class="loading-state">
-    <div class="spinner"></div> Caricamento…
-  </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { ref, computed, inject } from 'vue'
 import { condominiumApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 
-const route    = useRoute()
 const { canEdit } = usePermissions()
-const condominio = ref(null)
+
+// Injected from CondominioLayout
+const condominio = inject('condominium')
+
 const showEdit = ref(false)
 const saving   = ref(false)
 const errors   = ref({})
@@ -385,7 +368,7 @@ async function save() {
   saving.value = true
   try {
     const { data } = await condominiumApi.update(condominio.value.id, form.value)
-    condominio.value = data
+    condominio.value = data   // updates the shared ref in CondominioLayout
     showEdit.value = false
   } catch {
     // error handled by global interceptor
@@ -393,25 +376,17 @@ async function save() {
     saving.value = false
   }
 }
-
-const quickNav = [
-  { path: '/unita', icon: '⊞', label: 'Unità' },
-  { path: '/budget',        icon: '◎', label: 'Budget' },
-  { path: '/rate',          icon: '◷', label: 'Rate' },
-  { path: '/fornitori',     icon: '◈', label: 'Fornitori' },
-  { path: '/documenti',     icon: '▤', label: 'Documenti' },
-  { path: '/comunicazioni', icon: '◉', label: 'Comunicazioni' },
-]
-
-onMounted(async () => {
-  const { data } = await condominiumApi.getById(route.params.id)
-  condominio.value = data
-})
 </script>
 
 <style scoped>
-.header-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+/* ── Tab action bar ─────────────────────────────────────────────────────────── */
+.tab-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
 
+/* ── Detail grid ────────────────────────────────────────────────────────────── */
 .detail-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -439,20 +414,7 @@ dd { font-size: 0.875rem; color: var(--text-primary); text-align: right; }
 .text-muted { color: var(--text-muted); }
 .notes-text { font-size: 0.875rem; line-height: 1.7; white-space: pre-wrap; color: var(--text-secondary); padding: 0 1rem 1rem; }
 
-.quick-nav { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.qnav-chip {
-  padding: 0.4rem 0.85rem;
-  border-radius: 99px;
-  border: 1px solid var(--border);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  font-size: 0.82rem;
-  text-decoration: none;
-  transition: all 0.15s;
-}
-.qnav-chip:hover { background: var(--bg-hover); color: var(--text-primary); text-decoration: none; }
-
-/* Edit modal */
+/* ── Edit modal ─────────────────────────────────────────────────────────────── */
 .modal--wide { width: min(760px, 96vw); }
 .form-fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-top: 1rem; }
 .form-fieldset-legend { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); padding: 0 0.4rem; }
