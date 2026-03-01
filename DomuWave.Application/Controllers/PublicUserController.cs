@@ -79,12 +79,16 @@ public class PublicUserController(
           
             if (returnDto.Profile == UserProfile.User)
             {
-                var condominoTenants = await _userTenantService.GetByCondominoUserIdAsync(user.Id, systemUser, cancellationToken)
+                var condominiums = await _userTenantService.GetCondominiumsByCondominoUserIdAsync(user.Id, systemUser, cancellationToken)
                     .ConfigureAwait(false);
 
-                returnDto.AvailableTenants = condominoTenants.Select(k => new TenantReadDto() { Code = k.Code, Name = k.Name, Id = k.Id, IsPrimary = k.IsActive }).ToList();
-               var defaultTenant = returnDto.AvailableTenants.FirstOrDefault(j => j.IsPrimary);
-               returnDto.Tenant = defaultTenant;
+                returnDto.AvailableCondominiums = condominiums;
+
+                var first = condominiums.FirstOrDefault();
+                if (first != null)
+                {
+                    returnDto.Tenant = new TenantReadDto { Id = first.TenantId, Name = first.CondominiumName };
+                }
             }
 
             else

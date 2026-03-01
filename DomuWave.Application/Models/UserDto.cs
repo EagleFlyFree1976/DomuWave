@@ -1,4 +1,5 @@
-﻿using DomuWave.Services.Dto.Tenant;
+﻿using DomuWave.Services.Dto.Condominium;
+using DomuWave.Services.Dto.Tenant;
 
 namespace DomuWave.Application.Models
 {
@@ -9,6 +10,12 @@ namespace DomuWave.Application.Models
         public TenantReadDto? Tenant { get; set; }
 
         public IList<TenantReadDto> AvailableTenants { get; set; }
+
+        /// <summary>
+        /// Popolato solo per utenti Condomino (Profile == User):
+        /// lista dei condomini presso cui l'utente risulta proprietario.
+        /// </summary>
+        public IList<CondominiumSummaryDto>? AvailableCondominiums { get; set; }
     }
 
 

@@ -37,6 +37,9 @@ export const useSessionStore = defineStore('session', () => {
   /** Loading della lista tenant */
   const loadingTenants = ref(false)
 
+  /** Lista condomini per utenti Condomino (profile == 3), popolata dalla risposta di login */
+  const condominoCondominiums = ref([])
+
   /**
    * Ruolo dell'utente corrente.
    * Adattare alla struttura del proprio authStore / oggetto utente.
@@ -49,10 +52,16 @@ export const useSessionStore = defineStore('session', () => {
   const isSuperAdmin = computed(() => {
     var localStor = localStorage.getItem(UserProfile);
     var profile = currentUserRole.value != null ? currentUserRole.value : localStor;
- 
-    return profile == 1 
+
+    return profile == 1
     }
   )
+
+  const isCondomino = computed(() => {
+    const localStor = localStorage.getItem(UserProfile)
+    const profile = currentUserRole.value != null ? currentUserRole.value : localStor
+    return profile == 3
+  })
 
   const hasTenantSelected = computed(() => !!activeTenant.value)
 
@@ -66,7 +75,7 @@ export const useSessionStore = defineStore('session', () => {
    * @param {string} role - Ruolo dell'utente ('SuperAdmin', 'Admin', ecc.)
    */
   function initFromAuth(user) {
-    console.log("initFromAuth", user.value); 
+    console.log("initFromAuth", user.value);
     currentUserRole.value = user.value.profile;
 
     // Ripristina il tenant salvato in localStorage
@@ -74,6 +83,12 @@ export const useSessionStore = defineStore('session', () => {
     const savedName = localStorage.getItem(STORAGE_TENANT_NAME_KEY)
     if (savedId && savedName) {
       activeTenant.value = { id: savedId, name: savedName }
+    }
+
+    // Ripristina i condomini del Condomino (se presenti)
+    const storedTenants = localStorage.getItem('domuwave_condomino_condominiums')
+    if (storedTenants) {
+      try { condominoCondominiums.value = JSON.parse(storedTenants) } catch { /* ignore */ }
     }
   }
 
@@ -133,6 +148,15 @@ export const useSessionStore = defineStore('session', () => {
   }
 
   /**
+   * Salva la lista dei condomini del Condomino (profile==3).
+   * @param {Array<{ id: string, name: string, code: string }>} tenants
+   */
+  function setCondominoCondominiums(tenants) {
+    condominoCondominiums.value = tenants ?? []
+    localStorage.setItem('domuwave_condomino_condominiums', JSON.stringify(condominoCondominiums.value))
+  }
+
+  /**
    * Rimuove il tenant di sessione (es. alla disconnessione o cambio utente).
    */
   function clearTenant() {
@@ -147,20 +171,25 @@ export const useSessionStore = defineStore('session', () => {
   function reset() {
     clearTenant()
     availableTenants.value = []
+    condominoCondominiums.value = []
+    localStorage.removeItem('domuwave_condomino_condominiums')
     currentUserRole.value  = null
   }
 
   return {
     // state
     availableTenants,
+    condominoCondominiums,
     activeTenant,
     loadingTenants,
     currentUserRole,
     // getters
     isSuperAdmin,
+    isCondomino,
     hasTenantSelected,
     // actions
     initFromAuth,
+    setCondominoCondominiums,
     loadTenants,
     selectTenant,
     clearTenant,

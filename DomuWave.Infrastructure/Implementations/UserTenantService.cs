@@ -2,6 +2,7 @@
 using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
+using DomuWave.Services.Dto.Condominium;
 using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
@@ -46,6 +47,26 @@ public class UserTenantService : BaseService, IUserTenantService
 
             .ToListAsync(ct);
         return unitOwners.ToList().Select(k=>k.Unit.Condominium.Tenant).ToList();
+    }
+
+    public async Task<IList<CondominiumSummaryDto>> GetCondominiumsByCondominoUserIdAsync(long userId, IUser currentUser, CancellationToken ct)
+    {
+        var unitOwners = await session.Query<UnitOwner>()
+            .Where(x => x.UserId == userId && !x.IsDeleted && x.IsActive)
+            .Fetch(x => x.Tenant)
+            .ToListAsync(ct);
+
+        return unitOwners
+            .Where(o => o.Unit?.Condominium != null && o.Tenant != null)
+            .Select(o => new CondominiumSummaryDto
+            {
+                CondominiumId   = o.Unit.Condominium.Id,
+                CondominiumName = o.Unit.Condominium.Name ?? string.Empty,
+                TenantId        = o.Tenant.Id,
+            })
+            .GroupBy(x => x.TenantId)
+            .Select(g => g.First())
+            .ToList();
     }
 
     public async Task<UserTenant?> GetDefaultByUserIdAsync(

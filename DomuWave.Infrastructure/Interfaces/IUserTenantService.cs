@@ -1,4 +1,5 @@
 using CPQ.Core.Memberships;
+using DomuWave.Services.Dto.Condominium;
 using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Interfaces;
@@ -39,4 +40,10 @@ public interface IUserTenantService : IBaseService<UserTenant, int>
 
 
     Task<IList<Tenant>> GetByCondominoUserIdAsync(long userId, IUser currentUser, CancellationToken ct);
+
+    /// <summary>
+    /// Restituisce la lista dei condomini (con nome e tenantId) per un utente Condomino,
+    /// deduplicata per tenant.
+    /// </summary>
+    Task<IList<CondominiumSummaryDto>> GetCondominiumsByCondominoUserIdAsync(long userId, IUser currentUser, CancellationToken ct);
 }

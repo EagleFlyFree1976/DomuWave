@@ -68,6 +68,7 @@
     </nav>
 
     <TenantSelectorWidget />
+    <CondominioSelectorWidget />
 
     <!-- ── Footer ── -->
     <div class="sidebar-footer">
@@ -93,6 +94,7 @@
   import { useMenuStore } from '@/stores/menuStore'
   import { useSessionStore } from '@/stores/sessionStore'
   import TenantSelectorWidget from '@/components/layout/TenantSelectorWidget.vue'
+  import CondominioSelectorWidget from '@/components/layout/CondominioSelectorWidget.vue'
 
   const route    = useRoute()
   const router   = useRouter()
