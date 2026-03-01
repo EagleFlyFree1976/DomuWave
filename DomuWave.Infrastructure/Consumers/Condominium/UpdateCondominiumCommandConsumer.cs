@@ -51,11 +51,11 @@ public class UpdateCondominiumCommandConsumer : InMemoryConsumerBase<UpdateCondo
         }
 
         var existsCode = await session.Query<Condominium>()
-            .Where(k => k.Code == command.Dto.Code.Trim() && k.Tenant.Id == existing.Tenant.Id && k.Id != existing.Id).AnyAsync(cancellationToken).ConfigureAwait(false);
+            .Where(k => k.Code == command.Dto.Code.Trim() && k.Tenant.Id == existing.Tenant.Id && k.Id != existing.Id && !k.IsDeleted).AnyAsync(cancellationToken).ConfigureAwait(false);
 
         if (existsCode)
         {
-            throw new ValidatorException($"Esiste già un condominio con il codice {command.Dto.Code}");
+            throw new ValidatorException($"Esiste giï¿½ un condominio con il codice {command.Dto.Code}");
         }
 
 

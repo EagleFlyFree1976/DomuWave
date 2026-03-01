@@ -50,7 +50,8 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
 
         var existsNumber = await session.Query<RealEstateUnit>()
             .Where(u => u.InternalNumber == command.Dto.InternalNumber.Trim()
-                     && u.Condominium.Id == command.Dto.CondominiumId)
+                     && u.Condominium.Id == command.Dto.CondominiumId
+                     && !u.IsDeleted)
             .AnyAsync(cancellationToken)
             .ConfigureAwait(false);
 

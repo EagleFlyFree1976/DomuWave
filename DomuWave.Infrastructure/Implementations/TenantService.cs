@@ -24,7 +24,7 @@ namespace DomuWave.Services.Implementations
         public async Task<bool> CanAccess(Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         {
             var exists = await session.Query<UserTenant>()
-                .Where(k => k.IsActive && k.IsEnabled && k.UserId == currentUser.Id && k.Tenant.Id == tenantId)
+                .Where(k => k.IsActive && k.IsEnabled && k.UserId == currentUser.Id && k.Tenant.Id == tenantId && !k.IsDeleted)
                 .AnyAsync(cancellationToken).ConfigureAwait(false);
             return exists;
         }

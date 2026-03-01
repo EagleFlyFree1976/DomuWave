@@ -48,7 +48,7 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
         var entity = command.Dto.ToEntity(tenant);
         
         /* validazioni */
-        // verifico l'univocità del codice condominio
+        // verifico l'univocitï¿½ del codice condominio
 
         if (string.IsNullOrEmpty(command.Dto.Code.Trim()))
         {
@@ -56,11 +56,11 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
         }
 
         var existsCode = await session.Query<Condominium>()
-            .Where(k => k.Code == command.Dto.Code.Trim() && k.Tenant.Id == command.TenantId).AnyAsync(cancellationToken).ConfigureAwait(false);
+            .Where(k => k.Code == command.Dto.Code.Trim() && k.Tenant.Id == command.TenantId && !k.IsDeleted).AnyAsync(cancellationToken).ConfigureAwait(false);
 
         if (existsCode)
         {
-            throw new ValidatorException($"Esiste già un condominio con il codice {command.Dto.Code}");
+            throw new ValidatorException($"Esiste giï¿½ un condominio con il codice {command.Dto.Code}");
         }
 
 

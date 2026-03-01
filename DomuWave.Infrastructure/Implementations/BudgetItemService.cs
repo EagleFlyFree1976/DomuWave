@@ -17,39 +17,37 @@ namespace DomuWave.Services.Implementations
 {
     public class BudgetItemService : BaseService, IBudgetItemService
     {
-        public BudgetItemService(ISessionFactoryProvider sessionFactoryProvider, ICacheManager cache) 
+        public BudgetItemService(ISessionFactoryProvider sessionFactoryProvider, ICacheManager cache)
             : base(sessionFactoryProvider, cache)
         {
         }
-        
+
         public override string CacheRegion => "BudgetItems";
-                
+
         public async Task<BudgetItem> GetByIdAsync(int id, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             return await session.Query<BudgetItem>()
-                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
         }
 
         public async Task<IList<BudgetItem>> GetAllAsync(IUser currentUser, CancellationToken cancellationToken)
         {
-            
             return await session.Query<BudgetItem>()
+                .Where(x => !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
 
         public async Task<IList<BudgetItem>> GetByTenantIdAsync(Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             return await session.Query<BudgetItem>()
-                .Where(x => x.Tenant.Id == tenantId)
+                .Where(x => x.Tenant.Id == tenantId && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
 
         public async Task<IList<BudgetItem>> FindAsync(Expression<Func<BudgetItem, bool>> predicate, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             return await session.Query<BudgetItem>()
+                .Where(x => !x.IsDeleted)
                 .Where(predicate)
                 .ToListAsync(cancellationToken);
         }
@@ -57,7 +55,7 @@ namespace DomuWave.Services.Implementations
         public async Task<BudgetItem> CreateAsync(BudgetItem entity, IUser currentUser, CancellationToken cancellationToken)
         {
             entity.Trace(currentUser);
-            
+
             await session.SaveOrUpdateAsync(entity, cancellationToken);
             await session.FlushAsync(cancellationToken);
             return entity;
@@ -66,7 +64,7 @@ namespace DomuWave.Services.Implementations
         public async Task<BudgetItem> UpdateAsync(BudgetItem entity, IUser currentUser, CancellationToken cancellationToken)
         {
             entity.Trace(currentUser);
-            
+
             await session.SaveOrUpdateAsync(entity, cancellationToken);
             await session.FlushAsync(cancellationToken);
             return entity;
@@ -74,9 +72,8 @@ namespace DomuWave.Services.Implementations
 
         public async Task<bool> DeleteAsync(int id, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             var item = await session.Query<BudgetItem>()
-                .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
 
             if (item == null)
                 return false;
@@ -90,7 +87,6 @@ namespace DomuWave.Services.Implementations
 
         public async Task<bool> HardDeleteAsync(int id, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             var item = await session.Query<BudgetItem>()
                 .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
 
@@ -104,15 +100,14 @@ namespace DomuWave.Services.Implementations
 
         public async Task<int> CountAsync(Expression<Func<BudgetItem, bool>> predicate, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             return await session.Query<BudgetItem>()
+                .Where(x => !x.IsDeleted)
                 .CountAsync(predicate, cancellationToken);
         }
 
         public async Task<bool> ExistsAsync(int id, IUser currentUser, CancellationToken cancellationToken)
         {
-            
-            return await session.Query<BudgetItem>().AnyAsync(x => x.Id == id, cancellationToken);
+            return await session.Query<BudgetItem>().AnyAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
         }
 
         public async Task<(IList<BudgetItem> Items, int TotalCount)> GetPagedAsync(
@@ -120,11 +115,9 @@ namespace DomuWave.Services.Implementations
             Expression<Func<BudgetItem, object>> orderBy, bool ascending,
             IUser currentUser, CancellationToken cancellationToken)
         {
-            
-            var query = session.Query<BudgetItem>().Where(filter);
+            var query = session.Query<BudgetItem>().Where(x => !x.IsDeleted).Where(filter);
 
             var totalCount = await query.CountAsync(cancellationToken);
-
 
             if (ascending)
             {
@@ -133,38 +126,33 @@ namespace DomuWave.Services.Implementations
             else
             {
                 query = query.OrderByDescending(orderBy);
-
             }
-            
-            query = query
 
+            query = query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize);
 
-                var items = await query.ToListAsync(cancellationToken);
+            var items = await query.ToListAsync(cancellationToken);
 
             return (items, totalCount);
         }
 
         public async Task<IList<BudgetItem>> GetByBudgetIdAsync(int budgetId, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             return await session.Query<BudgetItem>()
-                .Where(x => x.Budget.Id == budgetId)
+                .Where(x => x.Budget.Id == budgetId && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
 
         public async Task<IList<BudgetItem>> GetByAccountIdAsync(int accountId, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             return await session.Query<BudgetItem>()
-                .Where(x => x.Account.Id == accountId)
+                .Where(x => x.Account.Id == accountId && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
 
         public async Task<decimal> GetTotalAmountAsync(int budgetId, IUser currentUser, CancellationToken cancellationToken)
         {
-            
             return await session.Query<BudgetItem>()
                 .Where(x => x.Budget.Id == budgetId && !x.IsDeleted)
                 .SumAsync(x => x.Amount, cancellationToken);

@@ -101,7 +101,7 @@ public class UserTenantService : BaseService, IUserTenantService
 
     public async Task<IList<UserTenant>> FindAsync(Expression<Func<UserTenant, bool>> predicate, IUser currentUser, CancellationToken cancellationToken)
     {
-        return await session.Query<UserTenant>().Where(predicate).ToListAsync(cancellationToken);
+        return await session.Query<UserTenant>().Where(x => !x.IsDeleted).Where(predicate).ToListAsync(cancellationToken);
     }
 
     public async Task<UserTenant> CreateAsync(UserTenant entity, IUser currentUser, CancellationToken cancellationToken)
@@ -201,7 +201,7 @@ public class UserTenantService : BaseService, IUserTenantService
 
     public async Task<bool> ExistsAsync(int id, IUser currentUser, CancellationToken cancellationToken)
     {
-        return await session.Query<UserTenant>().Where(j => j.Id == id
+        return await session.Query<UserTenant>().Where(j => j.Id == id && !j.IsDeleted
         ).AnyAsync(cancellationToken).ConfigureAwait(false);
     }
 

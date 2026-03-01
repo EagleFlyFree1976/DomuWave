@@ -98,6 +98,11 @@ api.interceptors.response.use(
   }
 )
 
+// ─── Dashboard ────────────────────────────────────────────────
+export const dashboardApi = {
+  getSummary: () => api.get('/dashboard/summary'),
+}
+
 // ─── Condomini ────────────────────────────────────────────────
 export const condominiumApi = {
   getAll:       ()         => api.get('/condominiums'),
