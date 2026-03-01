@@ -42,12 +42,10 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useMenuStore } from '@/stores/menuStore'
 import Select from 'primevue/select'
 
-const router   = useRouter()
 const session  = useSessionStore()
 const menuStore = useMenuStore()
 
@@ -69,7 +67,6 @@ async function onCondominioChange({ value }) {
   if (!value) return
   session.selectTenant({ id: value.tenantId, name: value.condominiumName })
   await menuStore.fetchMenu()
-  await router.push('/dashboard')
 }
 </script>
 

@@ -3,7 +3,7 @@
     <AppSidebar />
     <div class="app-main">
       <div class="app-content">
-        <RouterView />
+        <RouterView :key="session.activeTenant?.id" />
       </div>
     </div>
   </div>
@@ -11,6 +11,9 @@
 
 <script setup>
   import AppSidebar from '@/components/layout/AppSidebar.vue'
+  import { useSessionStore } from '@/stores/sessionStore'
+
+  const session = useSessionStore()
 </script>
 
 <style scoped>

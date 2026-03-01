@@ -65,12 +65,10 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import { useSessionStore } from '@/stores/sessionStore'
 import Select from 'primevue/select'
 
 // ─── COMPOSABLES ─────────────────────────────────────────────────────────────
-const router  = useRouter()
 const session = useSessionStore()
 
 // ─── LOCAL STATE ─────────────────────────────────────────────────────────────
@@ -98,14 +96,9 @@ onMounted(async () => {
  * 1. Persiste in sessionStore (→ localStorage → X-Tenant-Id header)
  * 2. Naviga alla dashboard principale del tenant selezionato
  */
-async function onTenantChange({ value }) {
+function onTenantChange({ value }) {
   if (!value) return
-
   session.selectTenant(value)
-
-  // Naviga alla home/dashboard del tenant
-  // Adatta il nome della route alla struttura del tuo router
-  await router.push({ name: 'dashboard' })
 }
 </script>
 

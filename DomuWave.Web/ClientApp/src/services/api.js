@@ -150,13 +150,14 @@ export const budgetApi = {
 }
 
 // ─── Spese ────────────────────────────────────────────────────
+// Backend: api/expenses  (ExpensesController - [Route("api/[controller]")])
 export const expenseApi = {
   getAll:             ()                          => api.get('/expenses'),
   getById:            (id)                        => api.get(`/expenses/${id}`),
-  getByCondominium:   (condId)                    => api.get(`/expenses/condominium/${condId}`),
-  getByDateRange:     (condId, from, to)          => api.get(`/expenses/condominium/${condId}/range`, { params: { from, to } }),
-  getUnpaid:          (condId)                    => api.get(`/expenses/condominium/${condId}/unpaid`),
-  getTotal:           (condId, from, to)          => api.get(`/expenses/condominium/${condId}/total`, { params: { from, to } }),
+  getByCondominium:   (condId)                    => api.get(`/expenses/by-condominium/${condId}`),
+  getByDateRange:     (condId, from, to)          => api.get(`/expenses/by-condominium/${condId}/date-range`, { params: { from, to } }),
+  getUnpaid:          (condId)                    => api.get(`/expenses/by-condominium/${condId}/unpaid`),
+  getTotal:           (condId, from, to)          => api.get(`/expenses/by-condominium/${condId}/total`, { params: { from, to } }),
   create:             (data)                      => api.post('/expenses', data),
   update:             (id, data)                  => api.put(`/expenses/${id}`, data),
   markAsPaid:         (id, paymentDate, method)   => api.post(`/expenses/${id}/pay`, { paymentDate, method }),
@@ -164,27 +165,32 @@ export const expenseApi = {
 }
 
 // ─── Rate ─────────────────────────────────────────────────────
+// Backend: api/condominium-installments  (CondominiumInstallmentsController)
 export const installmentApi = {
-  getAll:             ()              => api.get('/installments'),
-  getById:            (id)            => api.get(`/installments/${id}`),
-  getByCondominium:   (condId)        => api.get(`/installments/condominium/${condId}`),
-  getByYear:          (condId, year)  => api.get(`/installments/condominium/${condId}/year/${year}`),
-  getOpen:            (condId)        => api.get(`/installments/condominium/${condId}/open`),
-  getOverdue:         (condId)        => api.get(`/installments/condominium/${condId}/overdue`),
-  generate:           (condId, year, budgetId) => api.post(`/installments/condominium/${condId}/generate`, { year, budgetId }),
-  create:             (data)          => api.post('/installments', data),
-  update:             (id, data)      => api.put(`/installments/${id}`, data),
-  delete:             (id)            => api.delete(`/installments/${id}`),
+  getByCondominium:   (condId)              => api.get(`/condominium-installments/by-condominium/${condId}`),
+  getByYear:          (condId, year)        => api.get(`/condominium-installments/by-condominium/${condId}`, { params: { year } }),
+  getByYearAndNumber: (condId, year, number)=> api.get(`/condominium-installments/by-condominium/${condId}/year/${year}/number/${number}`),
+  getOpen:            (condId)              => api.get(`/condominium-installments/by-condominium/${condId}/open`),
+  getOverdue:         (condId)              => api.get(`/condominium-installments/by-condominium/${condId}/overdue`),
+  generate:           (condId, year, budgetId) => api.post(`/condominium-installments/by-condominium/${condId}/generate`, { year, budgetId }),
+  create:             (data)                => api.post('/condominium-installments', data),
+  update:             (id, data)            => api.put(`/condominium-installments/${id}`, data),
+  delete:             (id)                  => api.delete(`/condominium-installments/${id}`),
 }
 
 // ─── Quote ────────────────────────────────────────────────────
+// Backend: api/condominium-fees  (CondominiumFeesController)
 export const feeApi = {
-  getAll:             ()              => api.get('/fees'),
-  getById:            (id)            => api.get(`/fees/${id}`),
-  getByInstallment:   (instId)        => api.get(`/fees/installment/${instId}`),
-  create:             (data)          => api.post('/fees', data),
-  update:             (id, data)      => api.put(`/fees/${id}`, data),
-  delete:             (id)            => api.delete(`/fees/${id}`),
+  getByInstallment:   (instId)        => api.get(`/condominium-fees/by-installment/${instId}`),
+  getByUnit:          (unitId)        => api.get(`/condominium-fees/by-unit/${unitId}`),
+  getByUser:          (userId)        => api.get(`/condominium-fees/by-user/${userId}`),
+  getUnpaid:          (condId)        => api.get(`/condominium-fees/by-condominium/${condId}/unpaid`),
+  getOverdue:         (condId)        => api.get(`/condominium-fees/by-condominium/${condId}/overdue`),
+  getTotalDue:        (userId)        => api.get(`/condominium-fees/total-due/${userId}`),
+  getBalance:         (userId)        => api.get(`/condominium-fees/balance/${userId}`),
+  recordPayment:      (feeId, amount, paymentDate, paymentMethod) => api.patch(`/condominium-fees/${feeId}/pay`, { amount, paymentDate, paymentMethod }),
+  create:             (data)          => api.post('/condominium-fees', data),
+  delete:             (id)            => api.delete(`/condominium-fees/${id}`),
 }
 
 // ─── Fornitori ────────────────────────────────────────────────
@@ -226,7 +232,7 @@ export const communicationApi = {
   getByCondominium:   (condId)        => api.get(`/communications/condominium/${condId}`),
   getVisible:         (condId)        => api.get(`/communications/condominium/${condId}/visible`),
   getByType:          (condId, type)  => api.get(`/communications/condominium/${condId}/type/${type}`),
-  getUnread:          (condId, userId)=> api.get(`/communications/condominium/${condId}/unread`, { params: { userId } }),
+  getUnread:          (condId, userId)=> api.get(`/communications/condominium/${condId}/unread/${userId}`),
   publish:            (id)            => api.post(`/communications/${id}/publish`),
   create:             (data)          => api.post('/communications', data),
   update:             (id, data)      => api.put(`/communications/${id}`, data),
