@@ -221,36 +221,32 @@
       </div>
       <div class="modal-body">
 
-        <!-- Step 1: selezione utente (solo su creazione) -->
-        <template v-if="!tenantModal.editing">
-          <fieldset class="form-fieldset">
-            <legend class="form-fieldset-legend">1 · Seleziona condomino</legend>
-            <div class="user-search-row">
-              <input class="form-input" v-model="tenantUserSearch" placeholder="Cerca per nome o email…" @input="searchTenantUsers" />
-              <button class="btn btn-ghost btn-sm" @click="openCreateCondomino('tenant')">+ Nuovo</button>
+        <!-- Dati anagrafici -->
+        <fieldset class="form-fieldset">
+          <legend class="form-fieldset-legend">Dati anagrafici</legend>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nome</label>
+              <input class="form-input" v-model="tenantModal.form.firstName" placeholder="Es. Mario" />
             </div>
-            <div v-if="loadingTenantUsers" class="loading-state small"><div class="spinner"></div></div>
-            <div v-else-if="tenantUserSearch && !tenantUserResults.length" class="empty-state small">Nessun utente trovato</div>
-            <div v-else-if="tenantUserResults.length" class="user-list">
-              <div
-                v-for="u in tenantUserResults" :key="u.id"
-                class="user-item"
-                :class="{ selected: tenantModal.form.userId === u.id }"
-                @click="selectTenantUser(u)"
-              >
-                <span class="user-name">{{ u.firstName || u.name }} {{ u.lastName }}</span>
-                <span class="user-email text-secondary">{{ u.email }}</span>
-              </div>
+            <div class="form-group">
+              <label class="form-label">Cognome</label>
+              <input class="form-input" v-model="tenantModal.form.lastName" placeholder="Es. Rossi" />
             </div>
-            <div v-if="tenantModal.form.userId" class="selected-user-badge">
-              ✓ {{ tenantModal.selectedUserName }}
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-input" type="email" v-model="tenantModal.form.email" placeholder="Es. mario.rossi@email.it" />
             </div>
-          </fieldset>
-        </template>
+            <div class="form-group">
+              <label class="form-label">Telefono</label>
+              <input class="form-input" type="tel" v-model="tenantModal.form.phone" placeholder="Es. +39 333 1234567" />
+            </div>
+          </div>
+        </fieldset>
 
-        <!-- Step 2: dettagli contratto -->
+        <!-- Dettagli contratto -->
         <fieldset class="form-fieldset" style="margin-top:1rem">
-          <legend class="form-fieldset-legend">{{ tenantModal.editing ? 'Dettagli' : '2 · Dettagli contratto' }}</legend>
+          <legend class="form-fieldset-legend">Dettagli contratto</legend>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Inizio contratto *</label>
@@ -337,12 +333,6 @@ const userResults     = ref([])
 const loadingUsers    = ref(false)
 let   userSearchTimer = null
 
-// ─── User search (for tenants) ────────────────────────────────
-const tenantUserSearch   = ref('')
-const tenantUserResults  = ref([])
-const loadingTenantUsers = ref(false)
-let   tenantSearchTimer  = null
-
 // ─── Owner modal state ────────────────────────────────────────
 const ownerModal = reactive({
   show:             false,
@@ -366,12 +356,10 @@ const ownerModal = reactive({
 
 // ─── Tenant modal state ───────────────────────────────────────
 const tenantModal = reactive({
-  show:             false,
-  editing:          null,
-  saving:           false,
-  selectedUserName: '',
+  show:    false,
+  editing: null,
+  saving:  false,
   form: {
-    userId:         0,
     firstName:      '',
     lastName:       '',
     email:          '',
@@ -428,19 +416,6 @@ function searchUsers() {
       userResults.value = Array.isArray(data) ? data : (data.items ?? [])
     } catch { userResults.value = [] }
     finally { loadingUsers.value = false }
-  }, 300)
-}
-
-function searchTenantUsers() {
-  clearTimeout(tenantSearchTimer)
-  if (!tenantUserSearch.value.trim()) { tenantUserResults.value = []; return }
-  tenantSearchTimer = setTimeout(async () => {
-    loadingTenantUsers.value = true
-    try {
-      const { data } = await userApi.search({ roles: 'Condomino', search: tenantUserSearch.value })
-      tenantUserResults.value = Array.isArray(data) ? data : (data.items ?? [])
-    } catch { tenantUserResults.value = [] }
-    finally { loadingTenantUsers.value = false }
   }, 300)
 }
 
@@ -554,9 +529,7 @@ async function deleteOwner(id) {
 
 // ─── Tenant modal actions ─────────────────────────────────────
 function openAddTenant() {
-  tenantModal.editing          = null
-  tenantModal.selectedUserName = ''
-  tenantModal.form.userId         = 0
+  tenantModal.editing             = null
   tenantModal.form.firstName      = ''
   tenantModal.form.lastName       = ''
   tenantModal.form.email          = ''
@@ -567,15 +540,11 @@ function openAddTenant() {
   tenantModal.form.expensePayer   = ''
   tenantModal.form.isActive       = true
   tenantModal.form.notes          = ''
-  tenantUserSearch.value   = ''
-  tenantUserResults.value  = []
   tenantModal.show = true
 }
 
 function openEditTenant(t) {
-  tenantModal.editing          = t.id
-  tenantModal.selectedUserName = ''
-  tenantModal.form.userId         = t.userId
+  tenantModal.editing             = t.id
   tenantModal.form.firstName      = t.firstName ?? ''
   tenantModal.form.lastName       = t.lastName ?? ''
   tenantModal.form.email          = t.email ?? ''
@@ -589,51 +558,29 @@ function openEditTenant(t) {
   tenantModal.show = true
 }
 
-function selectTenantUser(u) {
-  tenantModal.form.userId         = u.id
-  tenantModal.form.firstName      = u.firstName || u.name || ''
-  tenantModal.form.lastName       = u.lastName || ''
-  tenantModal.form.email          = u.email || ''
-  tenantModal.selectedUserName    = `${tenantModal.form.firstName} ${tenantModal.form.lastName}`.trim()
-  tenantUserResults.value         = []
-  tenantUserSearch.value          = ''
-}
-
 async function saveTenant() {
-  if (!tenantModal.editing && !tenantModal.form.userId)
-    return store.toast('Seleziona un condomino', 'error')
   if (!tenantModal.form.leaseStartDate)
     return store.toast('Specificare la data di inizio contratto', 'error')
 
   tenantModal.saving = true
   try {
+    const dto = {
+      firstName:      tenantModal.form.firstName || null,
+      lastName:       tenantModal.form.lastName || null,
+      email:          tenantModal.form.email || null,
+      phone:          tenantModal.form.phone || null,
+      leaseStartDate: tenantModal.form.leaseStartDate,
+      leaseEndDate:   tenantModal.form.leaseEndDate || null,
+      taxCode:        tenantModal.form.taxCode || null,
+      expensePayer:   tenantModal.form.expensePayer || null,
+      isActive:       tenantModal.form.isActive,
+      notes:          tenantModal.form.notes || null,
+    }
     if (tenantModal.editing) {
-      const dto = {
-        leaseStartDate: tenantModal.form.leaseStartDate,
-        leaseEndDate:   tenantModal.form.leaseEndDate || null,
-        taxCode:        tenantModal.form.taxCode || null,
-        expensePayer:   tenantModal.form.expensePayer || null,
-        isActive:       tenantModal.form.isActive,
-        notes:          tenantModal.form.notes || null,
-      }
       await unitTenantApi.update(tenantModal.editing, dto)
       store.toast('Inquilino aggiornato', 'success')
     } else {
-      const dto = {
-        unitId:         props.unitId,
-        userId:         tenantModal.form.userId,
-        firstName:      tenantModal.form.firstName || null,
-        lastName:       tenantModal.form.lastName || null,
-        email:          tenantModal.form.email || null,
-        phone:          tenantModal.form.phone || null,
-        leaseStartDate: tenantModal.form.leaseStartDate,
-        leaseEndDate:   tenantModal.form.leaseEndDate || null,
-        taxCode:        tenantModal.form.taxCode || null,
-        expensePayer:   tenantModal.form.expensePayer || null,
-        isActive:       tenantModal.form.isActive,
-        notes:          tenantModal.form.notes || null,
-      }
-      await unitTenantApi.create(dto)
+      await unitTenantApi.create({ ...dto, unitId: props.unitId })
       store.toast('Inquilino aggiunto', 'success')
     }
     tenantModal.show = false
@@ -664,11 +611,7 @@ function openCreateCondomino(target) {
 
 function onCondominoCreated(user) {
   condominoModal.show = false
-  if (condominoModal.target === 'owner') {
-    selectOwnerUser(user)
-  } else {
-    selectTenantUser(user)
-  }
+  selectOwnerUser(user)
 }
 
 // ─── Init ─────────────────────────────────────────────────────

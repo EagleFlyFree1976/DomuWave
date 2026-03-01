@@ -42,9 +42,6 @@ public class CreateUnitTenantCommandConsumer : InMemoryConsumerBase<CreateUnitTe
         if (unit == null)
             throw new NotFoundException("Unità immobiliare non trovata");
 
-        if (command.Dto.UserId <= 0)
-            throw new ValidatorException("Specificare un utente condomino valido");
-
         var entity  = command.Dto.ToEntity(unit, unit.Tenant);
         var created = await _unitTenantService
             .CreateAsync(entity, currentUser, cancellationToken)

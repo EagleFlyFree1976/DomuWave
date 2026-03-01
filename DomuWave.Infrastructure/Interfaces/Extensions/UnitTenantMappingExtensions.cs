@@ -54,6 +54,10 @@ public static class UnitTenantMappingExtensions
 
     public static void ApplyUpdate(this UnitTenant entity, UpdateUnitTenantDto dto)
     {
+        entity.FirstName      = dto.FirstName ?? string.Empty;
+        entity.Name           = dto.LastName ?? string.Empty;
+        entity.Email          = dto.Email;
+        entity.Phone          = dto.Phone;
         entity.LeaseStartDate = dto.LeaseStartDate;
         entity.LeaseEndDate   = dto.LeaseEndDate;
         entity.TaxCode        = dto.TaxCode;
