@@ -1,14 +1,15 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Supplier;
+using DomuWave.Services.Dto.Supplier;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class GetAllSuppliersCommandConsumer : InMemoryConsumerBase<GetAllSuppliersCommand, IList<Supplier>>
+public class GetAllSuppliersCommandConsumer : InMemoryConsumerBase<GetAllSuppliersCommand, IList<SupplierReadDto>>
 {
     private readonly ISupplierService _supplierService;
     private readonly IUserService _userService;
@@ -19,10 +20,10 @@ public class GetAllSuppliersCommandConsumer : InMemoryConsumerBase<GetAllSupplie
         IUserService userService) : base(sessionFactoryProvider)
     {
         _supplierService = supplierService;
-        _userService = userService;
+        _userService     = userService;
     }
 
-    protected override async Task<IList<Supplier>> Consume(
+    protected override async Task<IList<SupplierReadDto>> Consume(
         GetAllSuppliersCommand command,
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
@@ -31,8 +32,10 @@ public class GetAllSuppliersCommandConsumer : InMemoryConsumerBase<GetAllSupplie
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        return await _supplierService
+        var suppliers = await _supplierService
             .GetByTenantIdAsync(command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        return suppliers.Select(s => s.ToReadDto()).ToList();
     }
 }

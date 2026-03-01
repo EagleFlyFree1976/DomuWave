@@ -1,28 +1,29 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Supplier;
+using DomuWave.Services.Dto.Supplier;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class UpdateSupplierCommandConsumer : InMemoryConsumerBase<UpdateSupplierCommand, Supplier>
+public class UpdateSupplierCommandConsumer : InMemoryConsumerBase<UpdateSupplierCommand, SupplierReadDto>
 {
     private readonly ISupplierService _supplierService;
-    private readonly IUserService _userService;
+    private readonly IUserService     _userService;
 
     public UpdateSupplierCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         ISupplierService supplierService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService     userService) : base(sessionFactoryProvider)
     {
         _supplierService = supplierService;
-        _userService = userService;
+        _userService     = userService;
     }
 
-    protected override async Task<Supplier> Consume(
+    protected override async Task<SupplierReadDto> Consume(
         UpdateSupplierCommand command,
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
@@ -31,13 +32,17 @@ public class UpdateSupplierCommandConsumer : InMemoryConsumerBase<UpdateSupplier
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        var exists = await _supplierService
-            .ExistsAsync(command.SupplierId, currentUser, cancellationToken)
+        var existing = await _supplierService
+            .GetByIdAsync(command.SupplierId, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        if (!exists) return null;
-        command.Entity.Id = command.SupplierId;
-        return await _supplierService
-            .UpdateAsync(command.Entity, currentUser, cancellationToken)
+        if (existing == null) return null;
+
+        existing.ApplyUpdate(command.Dto);
+
+        var updated = await _supplierService
+            .UpdateAsync(existing, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        return updated.ToReadDto();
     }
 }

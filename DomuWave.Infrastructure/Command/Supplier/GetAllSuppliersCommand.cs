@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.Supplier;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Supplier;
 
-public class GetAllSuppliersCommand : BaseCommand, IQuery<IList<Models.Supplier>>
+public class GetAllSuppliersCommand : BaseCommand, IQuery<IList<SupplierReadDto>>
 {
     public Guid TenantId { get; set; }
 

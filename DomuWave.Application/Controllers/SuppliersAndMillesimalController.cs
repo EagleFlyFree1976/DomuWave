@@ -2,6 +2,7 @@ using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.Supplier;
 using DomuWave.Services.Command.MillesimalTable;
+using DomuWave.Services.Dto.Supplier;
 using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -17,11 +18,10 @@ public class SuppliersController(
     ILogger<SuppliersController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
     IMediator mediator)
-    : PrivateControllerBase(logger, configuration)
+    : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantGuid"]?.ToString() ?? Guid.Empty.ToString());
-
+    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetAllSuppliersCommand(CurrentUser.Id, TenantGuid), ct));
@@ -54,18 +54,20 @@ public class SuppliersController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Supplier supplier, CancellationToken ct)
+    [ProducesResponseType(typeof(SupplierReadDto), 201)]
+    public async Task<IActionResult> Create([FromBody] CreateSupplierDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new CreateSupplierCommand(CurrentUser.Id, supplier), ct);
+        var result = await _mediator.GetResponse(new CreateSupplierCommand(CurrentUser.Id, TenantGuid, dto), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] Supplier supplier, CancellationToken ct)
+    [ProducesResponseType(typeof(SupplierReadDto), 200)]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateSupplierDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new UpdateSupplierCommand(CurrentUser.Id, id, supplier), ct);
+        var result = await _mediator.GetResponse(new UpdateSupplierCommand(CurrentUser.Id, id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }

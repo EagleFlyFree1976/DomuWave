@@ -1,28 +1,33 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
+using CPQ.Core.Exceptions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Supplier;
+using DomuWave.Services.Dto.Supplier;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class CreateSupplierCommandConsumer : InMemoryConsumerBase<CreateSupplierCommand, Supplier>
+public class CreateSupplierCommandConsumer : InMemoryConsumerBase<CreateSupplierCommand, SupplierReadDto>
 {
     private readonly ISupplierService _supplierService;
-    private readonly IUserService _userService;
+    private readonly ITenantService   _tenantService;
+    private readonly IUserService     _userService;
 
     public CreateSupplierCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         ISupplierService supplierService,
-        IUserService userService) : base(sessionFactoryProvider)
+        ITenantService   tenantService,
+        IUserService     userService) : base(sessionFactoryProvider)
     {
         _supplierService = supplierService;
-        _userService = userService;
+        _tenantService   = tenantService;
+        _userService     = userService;
     }
 
-    protected override async Task<Supplier> Consume(
+    protected override async Task<SupplierReadDto> Consume(
         CreateSupplierCommand command,
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
@@ -31,8 +36,20 @@ public class CreateSupplierCommandConsumer : InMemoryConsumerBase<CreateSupplier
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        return await _supplierService
-            .CreateAsync(command.Entity, currentUser, cancellationToken)
+        var tenant = await _tenantService
+            .GetByIdAsync(command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+        if (tenant == null)
+            throw new NotFoundException("Dati non validi");
+
+        if (string.IsNullOrWhiteSpace(command.Dto.CompanyName))
+            throw new ValidatorException("La ragione sociale è obbligatoria");
+
+        var entity  = command.Dto.ToEntity(tenant);
+        var created = await _supplierService
+            .CreateAsync(entity, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
+        return created.ToReadDto();
     }
 }

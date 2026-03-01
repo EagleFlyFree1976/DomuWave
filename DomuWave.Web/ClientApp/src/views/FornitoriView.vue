@@ -163,12 +163,35 @@
               <input class="form-input" v-model="form.ibanAccount" />
             </div>
             <div class="form-group">
+              <label class="form-label">Referente</label>
+              <input class="form-input" v-model="form.contactPerson" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Termini di pagamento</label>
+              <input class="form-input" v-model="form.paymentTerms" />
+            </div>
+            <div class="form-group" style="grid-column:1/-1">
               <label class="form-label">Indirizzo</label>
               <input class="form-input" v-model="form.address" />
             </div>
             <div class="form-group">
               <label class="form-label">Città</label>
               <input class="form-input" v-model="form.city" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Provincia</label>
+              <input class="form-input" v-model="form.province" maxlength="2" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">CAP</label>
+              <input class="form-input" v-model="form.postalCode" maxlength="5" />
+            </div>
+            <div v-if="editing" class="form-group">
+              <label class="form-label">Stato</label>
+              <select class="form-select" v-model="form.isActive">
+                <option :value="true">Attivo</option>
+                <option :value="false">Inattivo</option>
+              </select>
             </div>
           </div>
           <div class="form-group">
@@ -291,7 +314,10 @@ async function loadData() {
   try {
     const { data } = await supplierApi.getAll()
     suppliers.value = data
-  } catch { suppliers.value = [] } finally { loading.value = false }
+  } catch (err) {
+    suppliers.value = []
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { loading.value = false }
 }
 
 async function loadContracts() {
@@ -304,7 +330,10 @@ async function loadContracts() {
         ? await supplierApi.getExpiringContracts(store.selectedCondominioId, 30)
         : await supplierApi.getActiveContracts(store.selectedCondominioId)
     contracts.value = res.data
-  } catch { contracts.value = [] } finally { loadingContracts.value = false }
+  } catch (err) {
+    contracts.value = []
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { loadingContracts.value = false }
 }
 
 function onSearch() { /* debounce optionally */ }
@@ -324,13 +353,15 @@ async function save() {
     store.toast('Fornitore salvato', 'success')
     showModal.value = false
     loadData()
-  } catch { store.toast('Errore', 'error') } finally { saving.value = false }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { saving.value = false }
 }
 
 async function deleteItem(id) {
   if (!confirm('Eliminare il fornitore?')) return
   try { await supplierApi.delete(id); store.toast('Fornitore eliminato', 'success'); loadData() }
-  catch { store.toast('Errore', 'error') }
+  catch (err) { if (!err?.response) store.toast('Impossibile raggiungere il server', 'error') }
 }
 
 function openContractModal(c = null) {
@@ -347,13 +378,15 @@ async function saveContract() {
     store.toast('Contratto salvato', 'success')
     showContractModal.value = false
     loadContracts()
-  } catch { store.toast('Errore', 'error') } finally { savingContract.value = false }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { savingContract.value = false }
 }
 
 async function deleteContract(id) {
   if (!confirm('Eliminare il contratto?')) return
   try { await supplierApi.deleteContract(id); store.toast('Contratto eliminato', 'success'); loadContracts() }
-  catch { store.toast('Errore', 'error') }
+  catch (err) { if (!err?.response) store.toast('Impossibile raggiungere il server', 'error') }
 }
 
 watch(() => store.selectedCondominioId, loadContracts)

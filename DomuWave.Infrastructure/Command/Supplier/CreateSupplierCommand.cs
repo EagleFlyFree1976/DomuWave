@@ -1,16 +1,19 @@
+using DomuWave.Services.Dto.Supplier;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Supplier;
 
-public class CreateSupplierCommand : BaseCommand, IQuery<Models.Supplier>
+public class CreateSupplierCommand : BaseCommand, IQuery<SupplierReadDto>
 {
-    public Models.Supplier Entity { get; set; }
+    public Guid TenantId { get; set; }
+    public CreateSupplierDto Dto { get; set; }
 
     public CreateSupplierCommand() { }
 
     public CreateSupplierCommand(int currentUserId) : base(currentUserId) { }
-    public CreateSupplierCommand(int currentUserId, Models.Supplier entity) : base(currentUserId)
+    public CreateSupplierCommand(int currentUserId, Guid tenantId, CreateSupplierDto dto) : base(currentUserId)
     {
-        Entity = entity;
+        TenantId = tenantId;
+        Dto      = dto;
     }
 }
