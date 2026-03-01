@@ -19,7 +19,7 @@
           <option value="open">Aperte</option>
           <option value="overdue">Scadute</option>
         </select>
-        <button class="btn btn-primary" @click="openInstModal()" style="margin-left:auto">+ Nuova rata</button>
+        <button v-if="canCreate" class="btn btn-primary" @click="openInstModal()" style="margin-left:auto">+ Nuova rata</button>
       </div>
 
       <div class="card">
@@ -47,9 +47,9 @@
                 <td class="mono">{{ fmt(i.totalAmount) }}</td>
                 <td><span class="badge" :class="instBadge(i.status)">{{ i.status }}</span></td>
                 <td>
-                  <div class="row-actions">
-                    <button class="btn-icon" @click="openInstModal(i)">✎</button>
-                    <button class="btn-icon" @click="deleteInst(i.id)" style="color:var(--accent-red)">✕</button>
+                  <div v-if="canEdit || canDelete" class="row-actions">
+                    <button v-if="canEdit" class="btn-icon" @click="openInstModal(i)">✎</button>
+                    <button v-if="canDelete" class="btn-icon" @click="deleteInst(i.id)" style="color:var(--accent-red)">✕</button>
                   </div>
                 </td>
               </tr>
@@ -69,7 +69,7 @@
             {{ i.installmentNumber }} - {{ i.description }} ({{ fmtDate(i.dueDate) }})
           </option>
         </select>
-        <button class="btn btn-primary" @click="openFeeModal()" :disabled="!selectedInstId" style="margin-left:auto">+ Nuova quota</button>
+        <button v-if="canCreate" class="btn btn-primary" @click="openFeeModal()" :disabled="!selectedInstId" style="margin-left:auto">+ Nuova quota</button>
       </div>
 
       <div class="card" v-if="selectedInstId">
@@ -99,9 +99,9 @@
                 <td><span class="badge" :class="feeBadge(f.paymentStatus)">{{ f.paymentStatus }}</span></td>
                 <td class="text-secondary">{{ fmtDate(f.paymentDate) }}</td>
                 <td>
-                  <div class="row-actions">
-                    <button class="btn-icon" @click="openFeeModal(f)">✎</button>
-                    <button class="btn-icon" @click="deleteFee(f.id)" style="color:var(--accent-red)">✕</button>
+                  <div v-if="canEdit || canDelete" class="row-actions">
+                    <button v-if="canEdit" class="btn-icon" @click="openFeeModal(f)">✎</button>
+                    <button v-if="canDelete" class="btn-icon" @click="deleteFee(f.id)" style="color:var(--accent-red)">✕</button>
                   </div>
                 </td>
               </tr>
@@ -166,8 +166,10 @@
 import { ref, watch, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { installmentApi, feeApi } from '@/services/api'
+import { usePermissions } from '@/composables/usePermissions'
 
 const store = useAppStore()
+const { canCreate, canEdit, canDelete } = usePermissions()
 const activeTab = ref('rate')
 const instYear = ref(new Date().getFullYear())
 const instFilter = ref('all')

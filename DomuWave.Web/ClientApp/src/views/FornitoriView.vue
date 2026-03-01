@@ -20,7 +20,7 @@
           <option value="Utilities">Utenze</option>
           <option value="Professional">Professionale</option>
         </select>
-        <button class="btn btn-primary" @click="openModal()">+ Nuovo fornitore</button>
+        <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuovo fornitore</button>
       </div>
 
       <div class="card">
@@ -50,9 +50,9 @@
                 <td class="text-secondary">{{ s.phone || '—' }}</td>
                 <td><span class="badge" :class="s.isActive ? 'badge-green' : 'badge-muted'">{{ s.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
                 <td>
-                  <div class="row-actions">
-                    <button class="btn-icon" @click="openModal(s)">✎</button>
-                    <button class="btn-icon" @click="deleteItem(s.id)" style="color:var(--accent-red)">✕</button>
+                  <div v-if="canEdit || canDelete" class="row-actions">
+                    <button v-if="canEdit" class="btn-icon" @click="openModal(s)">✎</button>
+                    <button v-if="canDelete" class="btn-icon" @click="deleteItem(s.id)" style="color:var(--accent-red)">✕</button>
                   </div>
                 </td>
               </tr>
@@ -70,7 +70,7 @@
           <option value="active">Attivi</option>
           <option value="expiring">In scadenza (30gg)</option>
         </select>
-        <button class="btn btn-primary" @click="openContractModal()" style="margin-left:auto">+ Nuovo contratto</button>
+        <button v-if="canCreate" class="btn btn-primary" @click="openContractModal()" style="margin-left:auto">+ Nuovo contratto</button>
       </div>
 
       <div class="card">
@@ -102,9 +102,9 @@
                 <td class="mono">{{ c.annualAmount ? fmt(c.annualAmount) : '—' }}</td>
                 <td><span class="badge" :class="contractBadge(c.status)">{{ c.status }}</span></td>
                 <td>
-                  <div class="row-actions">
-                    <button class="btn-icon" @click="openContractModal(c)">✎</button>
-                    <button class="btn-icon" @click="deleteContract(c.id)" style="color:var(--accent-red)">✕</button>
+                  <div v-if="canEdit || canDelete" class="row-actions">
+                    <button v-if="canEdit" class="btn-icon" @click="openContractModal(c)">✎</button>
+                    <button v-if="canDelete" class="btn-icon" @click="deleteContract(c.id)" style="color:var(--accent-red)">✕</button>
                   </div>
                 </td>
               </tr>
@@ -248,8 +248,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { supplierApi } from '@/services/api'
+import { usePermissions } from '@/composables/usePermissions'
 
 const store = useAppStore()
+const { canCreate, canEdit, canDelete } = usePermissions()
 const activeTab = ref('fornitori')
 const suppliers = ref([])
 const loading = ref(false)

@@ -5,7 +5,7 @@
         <router-link :to="`/condomini/${condominiumId}`" class="btn btn-ghost btn-sm">← Indietro</router-link>
         <h1>Unità · {{ condominiumName }}</h1>
       </div>
-      <button class="btn btn-primary" @click="openModal()">+ Nuova unità</button>
+      <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuova unità</button>
     </div>
 
     <!-- Search / filter -->
@@ -54,8 +54,8 @@
               <td>
                 <div class="row-actions">
                   <button class="btn-icon" @click="openOccupanti(u)" title="Occupanti">👤</button>
-                  <button class="btn-icon" @click="openModal(u)" title="Modifica">✎</button>
-                  <button class="btn-icon" @click="deleteItem(u.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
+                  <button v-if="canEdit" class="btn-icon" @click="openModal(u)" title="Modifica">✎</button>
+                  <button v-if="canDelete" class="btn-icon" @click="deleteItem(u.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
                 </div>
               </td>
             </tr>
@@ -175,9 +175,11 @@ import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { unitApi, condominiumApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
+import { usePermissions } from '@/composables/usePermissions'
 
 const route           = useRoute()
 const store           = useAppStore()
+const { canCreate, canEdit, canDelete } = usePermissions()
 const condominiumId   = Number(route.params.condominiumId)
 const condominiumName = ref('')
 

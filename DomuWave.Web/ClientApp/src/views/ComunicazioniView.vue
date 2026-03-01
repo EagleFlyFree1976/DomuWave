@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h1>Comunicazioni</h1>
-      <button class="btn btn-primary" @click="openModal()">+ Nuova comunicazione</button>
+      <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuova comunicazione</button>
     </div>
 
     <div class="toolbar">
@@ -52,9 +52,9 @@
           </div>
         </div>
         <div class="comm-actions">
-          <button v-if="!c.isVisible" class="btn btn-sm btn-ghost" @click="publishComm(c.id)">Pubblica</button>
-          <button class="btn-icon" @click="openModal(c)">✎</button>
-          <button class="btn-icon" @click="deleteItem(c.id)" style="color:var(--accent-red)">✕</button>
+          <button v-if="canEdit && !c.isVisible" class="btn btn-sm btn-ghost" @click="publishComm(c.id)">Pubblica</button>
+          <button v-if="canEdit" class="btn-icon" @click="openModal(c)">✎</button>
+          <button v-if="canDelete" class="btn-icon" @click="deleteItem(c.id)" style="color:var(--accent-red)">✕</button>
         </div>
       </div>
     </div>
@@ -130,8 +130,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { communicationApi } from '@/services/api'
+import { usePermissions } from '@/composables/usePermissions'
 
 const store = useAppStore()
+const { canCreate, canEdit, canDelete } = usePermissions()
 const communications = ref([])
 const loading = ref(false)
 const saving = ref(false)

@@ -18,7 +18,7 @@
         <template v-if="tab === 'owners'">
           <div class="section-toolbar">
             <span class="section-count">{{ owners.length }} proprietari</span>
-            <button class="btn btn-primary btn-sm" @click="openAddOwner">+ Aggiungi</button>
+            <button v-if="canCreate" class="btn btn-primary btn-sm" @click="openAddOwner">+ Aggiungi</button>
           </div>
 
           <div v-if="loadingOwners" class="loading-state"><div class="spinner"></div></div>
@@ -49,9 +49,9 @@
                   <td>{{ o.isResident ? 'Sì' : 'No' }}</td>
                   <td><span class="badge" :class="o.isActive ? 'badge-green' : 'badge-muted'">{{ o.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
                   <td>
-                    <div class="row-actions">
-                      <button class="btn-icon" @click="openEditOwner(o)" title="Modifica">✎</button>
-                      <button class="btn-icon" @click="deleteOwner(o.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
+                    <div v-if="canEdit || canDelete" class="row-actions">
+                      <button v-if="canEdit" class="btn-icon" @click="openEditOwner(o)" title="Modifica">✎</button>
+                      <button v-if="canDelete" class="btn-icon" @click="deleteOwner(o.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
                     </div>
                   </td>
                 </tr>
@@ -64,7 +64,7 @@
         <template v-if="tab === 'tenants'">
           <div class="section-toolbar">
             <span class="section-count">{{ tenants.length }} inquilini</span>
-            <button class="btn btn-primary btn-sm" @click="openAddTenant">+ Aggiungi</button>
+            <button v-if="canCreate" class="btn btn-primary btn-sm" @click="openAddTenant">+ Aggiungi</button>
           </div>
 
           <div v-if="loadingTenants" class="loading-state"><div class="spinner"></div></div>
@@ -91,9 +91,9 @@
                   <td>{{ t.leaseEndDate ? formatDate(t.leaseEndDate) : '—' }}</td>
                   <td><span class="badge" :class="t.isActive ? 'badge-green' : 'badge-muted'">{{ t.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
                   <td>
-                    <div class="row-actions">
-                      <button class="btn-icon" @click="openEditTenant(t)" title="Modifica">✎</button>
-                      <button class="btn-icon" @click="deleteTenant(t.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
+                    <div v-if="canEdit || canDelete" class="row-actions">
+                      <button v-if="canEdit" class="btn-icon" @click="openEditTenant(t)" title="Modifica">✎</button>
+                      <button v-if="canDelete" class="btn-icon" @click="deleteTenant(t.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
                     </div>
                   </td>
                 </tr>
@@ -288,12 +288,14 @@ import { useAppStore } from '@/stores/app'
 import { unitOwnerApi, unitTenantApi } from '@/services/api'
 import { userApi } from '@/services/userService'
 import CondominoModal from './CondominoModal.vue'
+import { usePermissions } from '@/composables/usePermissions'
 
 const props = defineProps({
   unitId:    { type: Number, required: true },
   unitLabel: { type: String, default: '' },
 })
 const emit = defineEmits(['close'])
+const { canCreate, canEdit, canDelete } = usePermissions()
 
 const store = useAppStore()
 

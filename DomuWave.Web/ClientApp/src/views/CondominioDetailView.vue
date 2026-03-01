@@ -9,7 +9,7 @@
           {{ condominio.isActive ? 'Attivo' : 'Inattivo' }}
         </span>
       </div>
-      <button class="btn btn-primary" @click="openEdit">✎ Modifica</button>
+      <button v-if="canEdit" class="btn btn-primary" @click="openEdit">✎ Modifica</button>
     </div>
 
     <!-- Detail grid: 2 columns -->
@@ -316,8 +316,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { condominiumApi } from '@/services/api'
+import { usePermissions } from '@/composables/usePermissions'
 
 const route    = useRoute()
+const { canEdit } = usePermissions()
 const condominio = ref(null)
 const showEdit = ref(false)
 const saving   = ref(false)

@@ -14,7 +14,7 @@
         <select class="form-select" v-model="budgetYear" style="width:120px">
           <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
         </select>
-        <button class="btn btn-primary" @click="openBudgetModal()">+ Nuovo budget</button>
+        <button v-if="canCreate" class="btn btn-primary" @click="openBudgetModal()">+ Nuovo budget</button>
       </div>
 
       <div class="card">
@@ -45,10 +45,10 @@
                 <td class="text-secondary">{{ fmtDate(b.approvalDate) }}</td>
                 <td><span class="badge" :class="statusBadge(b.status)">{{ b.status }}</span></td>
                 <td>
-                  <div class="row-actions">
-                    <button v-if="b.status==='Draft'" class="btn btn-sm btn-ghost" @click="approveBudget(b.id)">Approva</button>
-                    <button class="btn-icon" @click="openBudgetModal(b)">✎</button>
-                    <button class="btn-icon" @click="deleteBudget(b.id)" style="color:var(--accent-red)">✕</button>
+                  <div v-if="canEdit || canDelete" class="row-actions">
+                    <button v-if="canEdit && b.status==='Draft'" class="btn btn-sm btn-ghost" @click="approveBudget(b.id)">Approva</button>
+                    <button v-if="canEdit" class="btn-icon" @click="openBudgetModal(b)">✎</button>
+                    <button v-if="canDelete" class="btn-icon" @click="deleteBudget(b.id)" style="color:var(--accent-red)">✕</button>
                   </div>
                 </td>
               </tr>
@@ -68,7 +68,7 @@
           <option value="unpaid">Non pagate</option>
         </select>
         <button class="btn btn-ghost btn-sm" @click="loadExpenses">Aggiorna</button>
-        <button class="btn btn-primary" @click="openExpenseModal()" style="margin-left:auto">+ Nuova spesa</button>
+        <button v-if="canCreate" class="btn btn-primary" @click="openExpenseModal()" style="margin-left:auto">+ Nuova spesa</button>
       </div>
 
       <div class="card">
@@ -98,10 +98,10 @@
                 <td class="text-secondary">{{ e.paymentMethod || '—' }}</td>
                 <td><span class="badge" :class="payBadge(e.paymentStatus)">{{ e.paymentStatus }}</span></td>
                 <td>
-                  <div class="row-actions">
-                    <button v-if="e.paymentStatus!=='Paid'" class="btn btn-sm btn-ghost" @click="markPaid(e.id)">Paga</button>
-                    <button class="btn-icon" @click="openExpenseModal(e)">✎</button>
-                    <button class="btn-icon" @click="deleteExpense(e.id)" style="color:var(--accent-red)">✕</button>
+                  <div v-if="canEdit || canDelete" class="row-actions">
+                    <button v-if="canEdit && e.paymentStatus!=='Paid'" class="btn btn-sm btn-ghost" @click="markPaid(e.id)">Paga</button>
+                    <button v-if="canEdit" class="btn-icon" @click="openExpenseModal(e)">✎</button>
+                    <button v-if="canDelete" class="btn-icon" @click="deleteExpense(e.id)" style="color:var(--accent-red)">✕</button>
                   </div>
                 </td>
               </tr>
@@ -215,8 +215,10 @@
 import { ref, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { budgetApi, expenseApi } from '@/services/api'
+import { usePermissions } from '@/composables/usePermissions'
 
 const store = useAppStore()
+const { canCreate, canEdit, canDelete } = usePermissions()
 const activeTab = ref('budget')
 
 // Budget

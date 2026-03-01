@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h1>Documenti</h1>
-      <button class="btn btn-primary" @click="openModal()">+ Nuovo documento</button>
+      <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuovo documento</button>
     </div>
 
     <div class="toolbar">
@@ -43,8 +43,8 @@
           </div>
           <div class="doc-actions">
             <span v-if="d.isVisibleToOwners" class="badge badge-blue" style="font-size:0.7rem">👁 Proprietari</span>
-            <button class="btn-icon" @click="openModal(d)">✎</button>
-            <button class="btn-icon" @click="deleteItem(d.id)" style="color:var(--accent-red)">✕</button>
+            <button v-if="canEdit" class="btn-icon" @click="openModal(d)">✎</button>
+            <button v-if="canDelete" class="btn-icon" @click="deleteItem(d.id)" style="color:var(--accent-red)">✕</button>
           </div>
         </div>
       </div>
@@ -122,8 +122,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { documentApi } from '@/services/api'
+import { usePermissions } from '@/composables/usePermissions'
 
 const store = useAppStore()
+const { canCreate, canEdit, canDelete } = usePermissions()
 const documents = ref([])
 const loading = ref(false)
 const saving = ref(false)

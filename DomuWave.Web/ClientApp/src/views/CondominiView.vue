@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h1>Condomini</h1>
-      <button class="btn btn-primary" @click="openModal()">+ Nuovo condominio</button>
+      <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuovo condominio</button>
     </div>
 
     <!-- Search -->
@@ -45,9 +45,9 @@
               <td class="text-secondary">{{ c.installmentFrequency }}</td>
               <td><span class="badge" :class="c.isActive ? 'badge-green' : 'badge-muted'">{{ c.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
               <td>
-                <div class="row-actions">
-                  <button class="btn-icon" @click="openModal(c)" title="Modifica">✎</button>
-                  <button class="btn-icon" @click="deleteItem(c.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
+                <div v-if="canEdit || canDelete" class="row-actions">
+                  <button v-if="canEdit" class="btn-icon" @click="openModal(c)" title="Modifica">✎</button>
+                  <button v-if="canDelete" class="btn-icon" @click="deleteItem(c.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
                 </div>
               </td>
             </tr>
@@ -256,8 +256,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { condominiumApi } from '@/services/api'
+import { usePermissions } from '@/composables/usePermissions'
 
 const store = useAppStore()
+const { canCreate, canEdit, canDelete } = usePermissions()
 const loading = ref(false)
 const saving = ref(false)
 const showModal = ref(false)
