@@ -128,6 +128,10 @@
 
     const result = await authStore.login(form.username, form.password)
     if (result.success) {
+      if (result.requiresTenantSelect) {
+        router.push('/select-tenant')
+        return
+      }
       // Pre-fetch menu for current user
       await menuStore.fetchMenu()
       // Redirect to originally requested URL or dashboard

@@ -10,6 +10,7 @@ using DomuWave.Services.Clients.Request;
 using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -47,6 +48,7 @@ public class PublicUserController(
             {
                 return NotFound();
             }
+
             UserDto returnDto = new UserDto();
             returnDto.FullName = user.FullName;
             returnDto.Id = user.Id;
@@ -64,13 +66,36 @@ public class PublicUserController(
             }
             else
             {
-                returnDto.Profile = UserProfile.TenantAdministrator;
+                if (_user.Role.Code.ToLower() == "condomino")
+                {
+                    returnDto.Profile = UserProfile.User;
+                }
+                else
+                {
+                    returnDto.Profile = UserProfile.TenantAdministrator;
+                }
             }
 
-            var tenants = await _userTenantService.GetByUserIdAsync(user.Id, systemUser, cancellationToken)
+          
+            if (returnDto.Profile == UserProfile.User)
+            {
+                var condominoTenants = await _userTenantService.GetByCondominoUserIdAsync(user.Id, systemUser, cancellationToken)
                     .ConfigureAwait(false);
 
-            var tenantsDto = tenants.ToList().Where(k=>k.Tenant.IsActive && k.IsActive).Select(j => j.ToDto());
+                returnDto.AvailableTenants = condominoTenants.Select(k => new TenantReadDto() { Code = k.Code, Name = k.Name, Id = k.Id, IsPrimary = k.IsActive }).ToList();
+               var defaultTenant = returnDto.AvailableTenants.FirstOrDefault(j => j.IsPrimary);
+               returnDto.Tenant = defaultTenant;
+            }
+
+            else
+            {
+
+
+                IList<UserTenant> tenants = await _userTenantService.GetByUserIdAsync(user.Id, systemUser, cancellationToken)
+                    .ConfigureAwait(false);
+                    
+
+        var tenantsDto = tenants.ToList().Where(k=>k.Tenant.IsActive && k.IsActive).Select(j => j.ToDto());
             var defaultTenant = tenantsDto.FirstOrDefault(j => j.IsDefault);
             if (defaultTenant == null)
             {
@@ -85,12 +110,11 @@ public class PublicUserController(
                     IsPrimary = defaultTenant.IsDefault
                 };
             }
-            else
-            {
+
 
             }
 
-                return Ok(returnDto);
+            return Ok(returnDto);
         }
         catch (Exception exc)
         {

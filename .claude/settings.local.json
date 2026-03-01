@@ -5,7 +5,9 @@
       "Bash(xargs grep -l \"class CanAuthorization\")",
       "Bash(xargs grep -l \"class AuthorizationKeys\")",
       "Bash(xargs grep -l \"class TraceEntityDTO\")",
-      "Bash(xargs grep -l \"UnitOwner\\\\|UnitTenant\")"
+      "Bash(xargs grep -l \"UnitOwner\\\\|UnitTenant\")",
+      "Bash(xargs grep -l \"GetByTokenAsync\\\\|\\\\.Password\\\\s*=\")",
+      "Bash(grep -n \"class CondominiumFee\" /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Models/*.cs -A 30)"
     ]
   }
 }

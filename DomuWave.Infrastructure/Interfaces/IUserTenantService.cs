@@ -36,4 +36,7 @@ public interface IUserTenantService : IBaseService<UserTenant, int>
     /// <summary>Soft delete dell'associazione.</summary>
     Task<bool> DeleteAsync(
         int userTenantId, IUser currentUser, CancellationToken ct);
+
+
+    Task<IList<Tenant>> GetByCondominoUserIdAsync(long userId, IUser currentUser, CancellationToken ct);
 }

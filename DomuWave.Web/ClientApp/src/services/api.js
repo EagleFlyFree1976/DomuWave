@@ -121,6 +121,7 @@ export const unitApi = {
 // ─── Proprietari unità ────────────────────────────────────────
 export const unitOwnerApi = {
   getByUnit:  (unitId)      => api.get(`/unit-owners/by-unit/${unitId}`),
+  getByUser:  (userId)      => api.get(`/unit-owners/by-user/${userId}`),
   create:     (data)        => api.post('/unit-owners', data),
   update:     (id, data)    => api.put(`/unit-owners/${id}`, data),
   delete:     (id)          => api.delete(`/unit-owners/${id}`),

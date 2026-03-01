@@ -9,6 +9,16 @@ const routes = [
     component: () => import('@/views/LoginView.vue'),
     meta: { title: 'Accedi' },
   },
+  {
+    path: '/reset-password',
+    component: () => import('@/views/ResetPasswordView.vue'),
+    meta: { title: 'Reimposta password' },
+  },
+  {
+    path: '/select-tenant',
+    component: () => import('@/views/CondomininoTenantSelectView.vue'),
+    meta: { title: 'Seleziona condominio', requiresAuth: true },
+  },
 
   // ── Protette (con AppLayout come wrapper) ────────────────────────────────
   {

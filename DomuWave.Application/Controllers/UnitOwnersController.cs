@@ -24,6 +24,11 @@ public class UnitOwnersController(
     public async Task<IActionResult> GetByUnit(int unitId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetUnitOwnersByUnitCommand(CurrentUser.Id, unitId), ct));
 
+    [HttpGet("by-user/{userId:long}")]
+    [ProducesResponseType(typeof(IList<UserUnitOwnerDto>), 200)]
+    public async Task<IActionResult> GetByUser(long userId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetUnitOwnersByUserCommand(CurrentUser.Id, userId), ct));
+
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(UnitOwnerReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)

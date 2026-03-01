@@ -5,6 +5,7 @@ using CPQ.Core.Persistence.SessionFactories;
 using DomuWave.Services.Models;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
+using MassTransit.Initializers;
 using NHibernate.Linq;
 
 namespace DomuWave.Services.Implementations;
@@ -35,6 +36,16 @@ public class UserTenantService : BaseService, IUserTenantService
             .OrderByDescending(x => x.IsDefault)
             .ThenBy(x => x.Tenant.Name)
             .ToListAsync(ct);
+    }
+    
+    public async Task<IList<Tenant>> GetByCondominoUserIdAsync(long userId, IUser currentUser, CancellationToken ct)
+    {
+        List<UnitOwner> unitOwners = await session.Query<UnitOwner>()
+            .Where(x => x.UserId == userId && !x.IsDeleted)
+            .Fetch(x => x.Tenant)
+
+            .ToListAsync(ct);
+        return unitOwners.ToList().Select(k=>k.Unit.Condominium.Tenant).ToList();
     }
 
     public async Task<UserTenant?> GetDefaultByUserIdAsync(

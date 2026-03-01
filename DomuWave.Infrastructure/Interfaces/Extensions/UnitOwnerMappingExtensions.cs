@@ -46,6 +46,19 @@ public static class UnitOwnerMappingExtensions
         };
     }
 
+    public static UserUnitOwnerDto ToUserUnitOwnerDto(this UnitOwner owner)
+    {
+        if (owner == null) return null;
+
+        return new UserUnitOwnerDto
+        {
+            UnitId          = owner.Unit?.Id ?? 0,
+            CondominiumId   = owner.Unit?.Condominium?.Id ?? 0,
+            CondominiumName = owner.Unit?.Condominium?.Name,
+            TenantId        = owner.Tenant?.Id.ToString() ?? string.Empty,
+        };
+    }
+
     public static void ApplyUpdate(this UnitOwner entity, UpdateUnitOwnerDto dto)
     {
         entity.Name           = dto.OwnerType ?? string.Empty;
