@@ -1,16 +1,21 @@
 using CPQ.Core.Consumers;
+using CPQ.Core.Exceptions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.UnitOwner;
+using DomuWave.Services.Dto.UnitOwner;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
+using DomuWave.Services.Models;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class DeleteUnitOwnerCommandConsumer : InMemoryConsumerBase<DeleteUnitOwnerCommand, bool>
+public class DeleteUnitOwnerCommandConsumer : InMemoryConsumerBase<DeleteUnitOwnerCommand, UnitOwnerReadDto>
 {
-    private readonly IUnitOwnerService  _unitOwnerService;
-    private readonly IUserService       _userService;
+    private readonly IUnitOwnerService _unitOwnerService;
+    private readonly IUserService      _userService;
 
     public DeleteUnitOwnerCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
@@ -21,7 +26,7 @@ public class DeleteUnitOwnerCommandConsumer : InMemoryConsumerBase<DeleteUnitOwn
         _userService      = userService;
     }
 
-    protected override async Task<bool> Consume(
+    protected override async Task<UnitOwnerReadDto> Consume(
         DeleteUnitOwnerCommand command,
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
@@ -30,8 +35,35 @@ public class DeleteUnitOwnerCommandConsumer : InMemoryConsumerBase<DeleteUnitOwn
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        return await _unitOwnerService
+        var owner = await _unitOwnerService
+            .GetByIdAsync(command.Id, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (owner == null)
+            throw new NotFoundException("Proprietario non trovato");
+
+        var unitId = owner.Unit.Id;
+
+        var hasLinkedRecords =
+            await session.Query<ExpenseAllocation>().AnyAsync(x => x.Unit.Id == unitId, cancellationToken).ConfigureAwait(false) ||
+            await session.Query<CondominiumFee>().AnyAsync(x => x.Unit.Id == unitId, cancellationToken).ConfigureAwait(false)     ||
+            await session.Query<Receipt>().AnyAsync(x => x.Unit.Id == unitId, cancellationToken).ConfigureAwait(false)            ||
+            await session.Query<Payment>().AnyAsync(x => x.Unit.Id == unitId, cancellationToken).ConfigureAwait(false);
+
+        if (hasLinkedRecords)
+        {
+            owner.IsActive = false;
+            owner.EndDate  = DateTime.Today;
+            var updated = await _unitOwnerService
+                .UpdateAsync(owner, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+            return updated.ToReadDto();
+        }
+
+        await _unitOwnerService
             .DeleteAsync(command.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        return null;
     }
 }

@@ -41,7 +41,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="o in owners" :key="o.id">
+                <tr v-for="o in owners" :key="o.id" :class="{ 'row-inactive': !o.isActive }">
                   <td>{{ [o.firstName, o.lastName].filter(Boolean).join(' ') || '—' }}</td>
                   <td class="text-secondary">{{ o.email || '—' }}</td>
                   <td>{{ o.ownerType || '—' }}</td>
@@ -86,7 +86,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="t in tenants" :key="t.id">
+                <tr v-for="t in tenants" :key="t.id" :class="{ 'row-inactive': !t.isActive }">
                   <td>{{ t.firstName }} {{ t.lastName }}</td>
                   <td class="text-secondary">{{ t.email || '—' }}</td>
                   <td>{{ formatDate(t.leaseStartDate) }}</td>
@@ -519,8 +519,12 @@ async function saveOwner() {
 async function deleteOwner(id) {
   if (!confirm('Rimuovere questo proprietario?')) return
   try {
-    await unitOwnerApi.delete(id)
-    store.toast('Proprietario rimosso', 'success')
+    const res = await unitOwnerApi.delete(id)
+    if (res.status === 200) {
+      store.toast('Proprietario disattivato (ha storico collegato)', 'warn')
+    } else {
+      store.toast('Proprietario rimosso', 'success')
+    }
     await loadOwners()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
@@ -595,8 +599,12 @@ async function saveTenant() {
 async function deleteTenant(id) {
   if (!confirm('Rimuovere questo inquilino?')) return
   try {
-    await unitTenantApi.delete(id)
-    store.toast('Inquilino rimosso', 'success')
+    const res = await unitTenantApi.delete(id)
+    if (res.status === 200) {
+      store.toast('Inquilino disattivato (ha storico collegato)', 'warn')
+    } else {
+      store.toast('Inquilino rimosso', 'success')
+    }
     await loadTenants()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
@@ -672,4 +680,7 @@ onMounted(() => {
 .form-fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-top: 1rem; }
 .form-fieldset-legend { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); padding: 0 0.4rem; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+.row-inactive { opacity: 0.5; }
+.row-inactive td { text-decoration: line-through; }
+.row-inactive .badge { text-decoration: none; }
 </style>

@@ -53,10 +53,12 @@ public class UnitTenantsController(
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(typeof(UnitTenantReadDto), 200)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var deleted = await _mediator.GetResponse(new DeleteUnitTenantCommand(CurrentUser.Id, id), ct);
-        if (!deleted) return NotFound();
-        return NoContent();
+        var result = await _mediator.GetResponse(new DeleteUnitTenantCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NoContent();  // hard deleted
+        return Ok(result);                       // soft deactivated
     }
 }

@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.UnitOwner;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.UnitOwner;
 
-public class DeleteUnitOwnerCommand : BaseCommand, IQuery<bool>
+public class DeleteUnitOwnerCommand : BaseCommand, IQuery<UnitOwnerReadDto>
 {
     public int Id { get; set; }
 

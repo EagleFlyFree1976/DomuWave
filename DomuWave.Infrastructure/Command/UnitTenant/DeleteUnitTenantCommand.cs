@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.UnitTenant;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.UnitTenant;
 
-public class DeleteUnitTenantCommand : BaseCommand, IQuery<bool>
+public class DeleteUnitTenantCommand : BaseCommand, IQuery<UnitTenantReadDto>
 {
     public int Id { get; set; }
 
