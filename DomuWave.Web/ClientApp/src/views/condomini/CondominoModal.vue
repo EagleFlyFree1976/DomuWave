@@ -55,7 +55,7 @@ import { ref, reactive } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { userApi, userTenantApi } from '@/services/userService'
 
-const props = defineProps({ user: Object })
+const props = defineProps({ user: Object, prefill: Object })
 const emit  = defineEmits(['saved', 'close'])
 
 const store  = useAppStore()
@@ -63,12 +63,12 @@ const saving = ref(false)
 const errors = ref({})
 
 const form = reactive({
-  firstName: props.user?.firstName ?? props.user?.name ?? '',
-  lastName:  props.user?.lastName ?? '',
-  email:     props.user?.email ?? '',
-  phone:     props.user?.phone ?? '',
+  firstName: props.user?.firstName ?? props.user?.name ?? props.prefill?.firstName ?? '',
+  lastName:  props.user?.lastName  ?? props.prefill?.lastName  ?? '',
+  email:     props.user?.email     ?? props.prefill?.email     ?? '',
+  phone:     props.user?.phone     ?? props.prefill?.phone     ?? '',
   password:  '',
-  isActive:  props.user?.isActive ?? true,
+  isActive:  props.user?.isActive  ?? true,
 })
 
 function clearError(field) {
@@ -114,11 +114,11 @@ async function save() {
       const { data } = await userApi.create(payload)
       const created = {
         id:        data.id,
-        firstName: data.name,
-        lastName:  data.lastName,
-        email:     data.email,
+        firstName: form.firstName,
+        lastName:  form.lastName,
+        email:     form.email,
         phone:     form.phone,
-        isActive:  data.isActive ?? true,
+        isActive:  true,
       }
       // Associate user with current tenant
       const tenantId = localStorage.getItem('tenantId')

@@ -117,36 +117,9 @@
       </div>
       <div class="modal-body">
 
-        <!-- Step 1: selezione utente (solo su creazione) -->
-        <template v-if="!ownerModal.editing">
-          <fieldset class="form-fieldset">
-            <legend class="form-fieldset-legend">1 · Seleziona condomino</legend>
-            <div class="user-search-row">
-              <input class="form-input" v-model="userSearch" placeholder="Cerca per nome o email…" @input="searchUsers" />
-              <button class="btn btn-ghost btn-sm" @click="openCreateCondomino('owner')">+ Nuovo</button>
-            </div>
-            <div v-if="loadingUsers" class="loading-state small"><div class="spinner"></div></div>
-            <div v-else-if="userSearch && !userResults.length" class="empty-state small">Nessun utente trovato</div>
-            <div v-else-if="userResults.length" class="user-list">
-              <div
-                v-for="u in userResults" :key="u.id"
-                class="user-item"
-                :class="{ selected: ownerModal.form.userId === u.id }"
-                @click="selectOwnerUser(u)"
-              >
-                <span class="user-name">{{ u.firstName || u.name }} {{ u.lastName }}</span>
-                <span class="user-email text-secondary">{{ u.email }}</span>
-              </div>
-            </div>
-            <div v-if="ownerModal.form.userId" class="selected-user-badge">
-              ✓ {{ ownerModal.selectedUserName }}
-            </div>
-          </fieldset>
-        </template>
-
         <!-- Dati anagrafici (sempre visibili, pre-popolati dalla selezione utente) -->
         <fieldset class="form-fieldset" style="margin-top:1rem">
-          <legend class="form-fieldset-legend">{{ ownerModal.editing ? 'Dati anagrafici' : '2 · Dati anagrafici' }}</legend>
+          <legend class="form-fieldset-legend">{{ ownerModal.editing ? 'Dati anagrafici' : '1 · Dati anagrafici' }}</legend>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Nome</label>
@@ -163,9 +136,9 @@
           </div>
         </fieldset>
 
-        <!-- Step 2/3: dettagli proprietà -->
+        <!-- Step 2: dettagli proprietà -->
         <fieldset class="form-fieldset" style="margin-top:1rem">
-          <legend class="form-fieldset-legend">{{ ownerModal.editing ? 'Dettagli proprietà' : '3 · Dettagli proprietà' }}</legend>
+          <legend class="form-fieldset-legend">{{ ownerModal.editing ? 'Dettagli proprietà' : '2 · Dettagli proprietà' }}</legend>
           <div class="form-grid">
             <div class="form-group">
               <label class="form-label">Tipo proprietà</label>
@@ -200,6 +173,38 @@
             <textarea class="form-textarea" v-model="ownerModal.form.notes" rows="2"></textarea>
           </div>
         </fieldset>
+
+        <!-- Accesso piattaforma (opzionale, solo su creazione) -->
+        <template v-if="!ownerModal.editing">
+          <fieldset class="form-fieldset platform-access-fieldset" style="margin-top:1rem">
+            <legend class="form-fieldset-legend">Accesso alla piattaforma <span class="badge-optional">opzionale</span></legend>
+            <p class="platform-access-hint">
+              Se vuoi dare accesso alla piattaforma al proprietario, cercalo qui e selezionalo.
+              Se non ha ancora un account,
+              <button type="button" class="btn-link" @click="openCreateCondomino('owner')">clicca qui per crearne uno</button>.
+            </p>
+            <div class="user-search-row">
+              <input class="form-input" v-model="userSearch" placeholder="Cerca per nome o email…" @input="searchUsers" />
+            </div>
+            <div v-if="loadingUsers" class="loading-state small"><div class="spinner"></div></div>
+            <div v-else-if="userSearch && !userResults.length" class="empty-state small">Nessun utente trovato</div>
+            <div v-else-if="userResults.length" class="user-list">
+              <div
+                v-for="u in userResults" :key="u.id"
+                class="user-item"
+                :class="{ selected: ownerModal.form.userId === u.id }"
+                @click="selectOwnerUser(u)"
+              >
+                <span class="user-name">{{ u.firstName || u.name }} {{ u.lastName }}</span>
+                <span class="user-email text-secondary">{{ u.email }}</span>
+              </div>
+            </div>
+            <div v-if="ownerModal.form.userId" class="selected-user-badge">
+              ✓ {{ ownerModal.selectedUserName }}
+              <button type="button" class="btn-link btn-link-danger" style="margin-left:0.5rem" @click="clearSelectedUser">rimuovi</button>
+            </div>
+          </fieldset>
+        </template>
 
       </div>
       <div class="modal-footer">
@@ -294,6 +299,7 @@
   <CondominoModal
     v-if="condominoModal.show"
     :user="null"
+    :prefill="condominoModal.prefill"
     @saved="onCondominoCreated"
     @close="condominoModal.show = false"
   />
@@ -374,7 +380,7 @@ const tenantModal = reactive({
 })
 
 // ─── Condomino create modal ───────────────────────────────────
-const condominoModal = reactive({ show: false, target: '' })
+const condominoModal = reactive({ show: false, target: '', prefill: null })
 
 // ─── Helpers ─────────────────────────────────────────────────
 function formatDate(d) {
@@ -466,9 +472,12 @@ function selectOwnerUser(u) {
   userSearch.value            = ''
 }
 
+function clearSelectedUser() {
+  ownerModal.form.userId      = 0
+  ownerModal.selectedUserName = ''
+}
+
 async function saveOwner() {
-  if (!ownerModal.editing && !ownerModal.form.userId)
-    return store.toast('Seleziona un condomino', 'error')
   if (!ownerModal.form.startDate)
     return store.toast('Specificare la data di inizio', 'error')
 
@@ -613,8 +622,13 @@ async function deleteTenant(id) {
 
 // ─── Create new Condomino user ────────────────────────────────
 function openCreateCondomino(target) {
-  condominoModal.target = target
-  condominoModal.show   = true
+  condominoModal.target  = target
+  condominoModal.prefill = {
+    firstName: ownerModal.form.firstName || '',
+    lastName:  ownerModal.form.lastName  || '',
+    email:     ownerModal.form.email     || '',
+  }
+  condominoModal.show = true
 }
 
 function onCondominoCreated(user) {
@@ -675,6 +689,35 @@ onMounted(() => {
 
 .loading-state.small { padding: 0.5rem; }
 .empty-state.small { padding: 0.5rem; font-size: 0.8125rem; }
+
+.platform-access-fieldset { background: var(--bg-surface, #fafafa); }
+.platform-access-hint {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.75rem;
+  line-height: 1.5;
+}
+.badge-optional {
+  font-size: 0.7rem;
+  font-weight: 500;
+  background: var(--bg-hover, #f0f0f0);
+  color: var(--text-muted, #888);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.btn-link:hover { opacity: 0.8; }
+.btn-link-danger { color: var(--accent-red); }
 
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .form-fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-top: 1rem; }
