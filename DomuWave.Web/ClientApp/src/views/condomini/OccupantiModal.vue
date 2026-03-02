@@ -174,7 +174,28 @@
           </div>
         </fieldset>
 
-        <!-- Accesso piattaforma (opzionale, solo su creazione) -->
+        <!-- Accesso piattaforma in MODIFICA: abilita/disabilita utente collegato -->
+        <template v-if="ownerModal.editing">
+          <fieldset class="form-fieldset platform-access-fieldset" style="margin-top:1rem">
+            <legend class="form-fieldset-legend">Accesso alla piattaforma</legend>
+            <div v-if="ownerModal.loadingLinkedUser" class="loading-state small"><div class="spinner"></div></div>
+            <template v-else-if="ownerModal.linkedUser">
+              <div class="linked-user-info">
+                <span class="user-name">{{ ownerModal.linkedUser.firstName || ownerModal.linkedUser.name }} {{ ownerModal.linkedUser.lastName }}</span>
+                <span class="user-email text-secondary">{{ ownerModal.linkedUser.email }}</span>
+              </div>
+              <div class="form-group" style="flex-direction:row;align-items:center;gap:0.5rem;margin-top:0.75rem">
+                <input type="checkbox" id="ownerUserIsActive" v-model="ownerModal.form.userIsActive" />
+                <label for="ownerUserIsActive" style="font-size:0.875rem;cursor:pointer">Accesso abilitato alla piattaforma</label>
+              </div>
+            </template>
+            <p v-else class="platform-access-hint" style="margin:0">
+              Nessun account di piattaforma collegato a questo proprietario.
+            </p>
+          </fieldset>
+        </template>
+
+        <!-- Accesso piattaforma in CREAZIONE: opzionale -->
         <template v-if="!ownerModal.editing">
           <fieldset class="form-fieldset platform-access-fieldset" style="margin-top:1rem">
             <legend class="form-fieldset-legend">Accesso alla piattaforma <span class="badge-optional">opzionale</span></legend>
@@ -345,6 +366,8 @@ const ownerModal = reactive({
   editing:          null,
   saving:           false,
   selectedUserName: '',
+  linkedUser:       null,   // utente auth collegato (solo in edit)
+  loadingLinkedUser: false,
   form: {
     userId:         0,
     firstName:      '',
@@ -357,6 +380,7 @@ const ownerModal = reactive({
     isResident:     false,
     isActive:       true,
     notes:          '',
+    userIsActive:   true,  // stato accesso piattaforma (solo edit)
   },
 })
 
@@ -446,8 +470,10 @@ function openAddOwner() {
 }
 
 function openEditOwner(owner) {
-  ownerModal.editing          = owner.id
-  ownerModal.selectedUserName = ''
+  ownerModal.editing             = owner.id
+  ownerModal.selectedUserName    = ''
+  ownerModal.linkedUser          = null
+  ownerModal.loadingLinkedUser   = false
   ownerModal.form.userId         = owner.userId
   ownerModal.form.firstName      = owner.firstName ?? ''
   ownerModal.form.lastName       = owner.lastName ?? ''
@@ -459,7 +485,19 @@ function openEditOwner(owner) {
   ownerModal.form.isResident     = owner.isResident
   ownerModal.form.isActive       = owner.isActive
   ownerModal.form.notes          = owner.notes ?? ''
+  ownerModal.form.userIsActive   = true
   ownerModal.show = true
+
+  if (owner.userId > 0) {
+    ownerModal.loadingLinkedUser = true
+    userApi.getById(owner.userId)
+      .then(({ data }) => {
+        ownerModal.linkedUser         = data
+        ownerModal.form.userIsActive  = data.isActive ?? true
+      })
+      .catch(() => {})
+      .finally(() => { ownerModal.loadingLinkedUser = false })
+  }
 }
 
 function selectOwnerUser(u) {
@@ -497,6 +535,20 @@ async function saveOwner() {
         notes:          ownerModal.form.notes || null,
       }
       await unitOwnerApi.update(ownerModal.editing, dto)
+
+      // Aggiorna isActive utente piattaforma se collegato e cambiato
+      if (ownerModal.linkedUser && ownerModal.form.userIsActive !== ownerModal.linkedUser.isActive) {
+        try {
+          await userApi.update(ownerModal.linkedUser.id, {
+            email:    ownerModal.linkedUser.email,
+            name:     ownerModal.linkedUser.firstName || ownerModal.linkedUser.name,
+            surName:  ownerModal.linkedUser.lastName,
+            roleCode: 'Condomino',
+            isActive: ownerModal.form.userIsActive,
+          })
+        } catch { /* non bloccante */ }
+      }
+
       store.toast('Proprietario aggiornato', 'success')
     } else {
       const dto = {
@@ -691,6 +743,7 @@ onMounted(() => {
 .empty-state.small { padding: 0.5rem; font-size: 0.8125rem; }
 
 .platform-access-fieldset { background: var(--bg-surface, #fafafa); }
+.linked-user-info { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.4rem 0; }
 .platform-access-hint {
   font-size: 0.8125rem;
   color: var(--text-secondary);
