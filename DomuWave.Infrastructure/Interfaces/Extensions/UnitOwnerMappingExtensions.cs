@@ -21,9 +21,10 @@ public static class UnitOwnerMappingExtensions
             OwnershipQuota = owner.OwnershipQuota,
             StartDate      = owner.StartDate,
             EndDate        = owner.EndDate,
-            IsResident     = owner.IsResident,
-            IsActive       = owner.IsActive,
-            Notes          = owner.Notes,
+            IsResident      = owner.IsResident,
+            IsActive        = owner.IsActive,
+            IsAccessEnabled = owner.IsAccessEnabled,
+            Notes           = owner.Notes,
         };
 
         dto.SetTraceInfo(owner);
@@ -46,9 +47,10 @@ public static class UnitOwnerMappingExtensions
             OwnershipQuota = dto.OwnershipQuota,
             StartDate      = dto.StartDate,
             EndDate        = dto.EndDate,
-            IsResident     = dto.IsResident,
-            IsActive       = dto.IsActive,
-            Description    = dto.Notes,
+            IsResident      = dto.IsResident,
+            IsActive        = dto.IsActive,
+            IsAccessEnabled = dto.IsAccessEnabled,
+            Description     = dto.Notes,
         };
     }
 
@@ -67,6 +69,8 @@ public static class UnitOwnerMappingExtensions
 
     public static void ApplyUpdate(this UnitOwner entity, UpdateUnitOwnerDto dto)
     {
+        if (entity.UserId == 0 && dto.UserId > 0)
+            entity.UserId = dto.UserId;
         entity.FirstName      = dto.FirstName;
         entity.LastName       = dto.LastName;
         entity.Email          = dto.Email;
@@ -74,8 +78,9 @@ public static class UnitOwnerMappingExtensions
         entity.OwnershipQuota = dto.OwnershipQuota;
         entity.StartDate      = dto.StartDate;
         entity.EndDate        = dto.EndDate;
-        entity.IsResident     = dto.IsResident;
-        entity.IsActive       = dto.IsActive;
-        entity.Description    = dto.Notes;
+        entity.IsResident      = dto.IsResident;
+        entity.IsActive        = dto.IsActive;
+        entity.IsAccessEnabled = dto.IsAccessEnabled;
+        entity.Description     = dto.Notes;
     }
 }

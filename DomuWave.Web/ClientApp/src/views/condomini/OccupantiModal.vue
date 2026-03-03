@@ -185,13 +185,48 @@
                 <span class="user-email text-secondary">{{ ownerModal.linkedUser.email }}</span>
               </div>
               <div class="form-group" style="flex-direction:row;align-items:center;gap:0.5rem;margin-top:0.75rem">
-                <input type="checkbox" id="ownerUserIsActive" v-model="ownerModal.form.userIsActive" />
-                <label for="ownerUserIsActive" style="font-size:0.875rem;cursor:pointer">Accesso abilitato alla piattaforma</label>
+                <input type="checkbox" id="ownerAccessEnabled" v-model="ownerModal.form.isAccessEnabled" />
+                <label for="ownerAccessEnabled" style="font-size:0.875rem;cursor:pointer">Accesso abilitato alla piattaforma</label>
               </div>
             </template>
-            <p v-else class="platform-access-hint" style="margin:0">
-              Nessun account di piattaforma collegato a questo proprietario.
-            </p>
+            <template v-else>
+              <p class="platform-access-hint" style="margin:0">
+                Nessun account di piattaforma collegato a questo proprietario.
+                <button v-if="!ownerModal.showLinkUserPanel" type="button" class="btn-link"
+                        @click="ownerModal.showLinkUserPanel = true; userSearch = ''; userResults = []">
+                  Abilita accesso
+                </button>
+              </p>
+              <template v-if="ownerModal.showLinkUserPanel">
+                <div class="user-search-row" style="margin-top:0.75rem">
+                  <input class="form-input" v-model="userSearch"
+                         placeholder="Cerca condomino per nome o email…"
+                         @input="searchUsers" />
+                </div>
+                <div v-if="loadingUsers" class="loading-state small"><div class="spinner"></div></div>
+                <div v-else-if="userSearch && !userResults.length" class="empty-state small">Nessun utente trovato</div>
+                <div v-else-if="userResults.length" class="user-list">
+                  <div v-for="u in userResults" :key="u.id"
+                       class="user-item"
+                       :class="{ selected: ownerModal.form.userId === u.id }"
+                       @click="linkUserToOwner(u)">
+                    <span class="user-name">{{ u.firstName || u.name }} {{ u.lastName }}</span>
+                    <span class="user-email text-secondary">{{ u.email }}</span>
+                  </div>
+                </div>
+                <div v-if="ownerModal.form.userId" class="selected-user-badge">
+                  ✓ {{ ownerModal.selectedUserName }}
+                  <button type="button" class="btn-link btn-link-danger" style="margin-left:0.5rem"
+                          @click="ownerModal.form.userId = 0; ownerModal.selectedUserName = ''; ownerModal.showLinkUserPanel = false">
+                    annulla
+                  </button>
+                </div>
+                <p class="platform-access-hint" style="margin-top:0.5rem">
+                  Se non ha ancora un account,
+                  <button type="button" class="btn-link" @click="openCreateCondomino('owner')">clicca qui per crearne uno</button>.
+                </p>
+              </template>
+            </template>
           </fieldset>
         </template>
 
@@ -368,6 +403,7 @@ const ownerModal = reactive({
   selectedUserName: '',
   linkedUser:       null,   // utente auth collegato (solo in edit)
   loadingLinkedUser: false,
+  showLinkUserPanel: false, // pannello ricerca/creazione utente in modalità modifica
   form: {
     userId:         0,
     firstName:      '',
@@ -378,9 +414,9 @@ const ownerModal = reactive({
     startDate:      '',
     endDate:        '',
     isResident:     false,
-    isActive:       true,
-    notes:          '',
-    userIsActive:   true,  // stato accesso piattaforma (solo edit)
+    isActive:        true,
+    isAccessEnabled: true,  // flag locale accesso piattaforma
+    notes:           '',
   },
 })
 
@@ -461,9 +497,10 @@ function openAddOwner() {
   ownerModal.form.ownershipQuota = 100
   ownerModal.form.startDate      = todayIso()
   ownerModal.form.endDate        = ''
-  ownerModal.form.isResident     = false
-  ownerModal.form.isActive       = true
-  ownerModal.form.notes          = ''
+  ownerModal.form.isResident      = false
+  ownerModal.form.isActive        = true
+  ownerModal.form.isAccessEnabled = true
+  ownerModal.form.notes           = ''
   userSearch.value    = ''
   userResults.value   = []
   ownerModal.show = true
@@ -474,6 +511,7 @@ function openEditOwner(owner) {
   ownerModal.selectedUserName    = ''
   ownerModal.linkedUser          = null
   ownerModal.loadingLinkedUser   = false
+  ownerModal.showLinkUserPanel   = false
   ownerModal.form.userId         = owner.userId
   ownerModal.form.firstName      = owner.firstName ?? ''
   ownerModal.form.lastName       = owner.lastName ?? ''
@@ -482,19 +520,16 @@ function openEditOwner(owner) {
   ownerModal.form.ownershipQuota = owner.ownershipQuota
   ownerModal.form.startDate      = owner.startDate?.split('T')[0] ?? ''
   ownerModal.form.endDate        = owner.endDate?.split('T')[0] ?? ''
-  ownerModal.form.isResident     = owner.isResident
-  ownerModal.form.isActive       = owner.isActive
-  ownerModal.form.notes          = owner.notes ?? ''
-  ownerModal.form.userIsActive   = true
+  ownerModal.form.isResident      = owner.isResident
+  ownerModal.form.isActive        = owner.isActive
+  ownerModal.form.isAccessEnabled = owner.isAccessEnabled ?? true
+  ownerModal.form.notes           = owner.notes ?? ''
   ownerModal.show = true
 
   if (owner.userId > 0) {
     ownerModal.loadingLinkedUser = true
     userApi.getById(owner.userId)
-      .then(({ data }) => {
-        ownerModal.linkedUser         = data
-        ownerModal.form.userIsActive  = data.isActive ?? true
-      })
+      .then(({ data }) => { ownerModal.linkedUser = data })
       .catch(() => {})
       .finally(() => { ownerModal.loadingLinkedUser = false })
   }
@@ -515,6 +550,17 @@ function clearSelectedUser() {
   ownerModal.selectedUserName = ''
 }
 
+// Collega un utente esistente in modalità modifica (senza sovrascrivere nome/email)
+function linkUserToOwner(u) {
+  ownerModal.form.userId        = u.id
+  ownerModal.form.isAccessEnabled = true
+  ownerModal.linkedUser         = u
+  ownerModal.selectedUserName   = `${u.firstName || u.name || ''} ${u.lastName || ''}`.trim()
+  ownerModal.showLinkUserPanel  = false
+  userResults.value             = []
+  userSearch.value              = ''
+}
+
 async function saveOwner() {
   if (!ownerModal.form.startDate)
     return store.toast('Specificare la data di inizio', 'error')
@@ -523,32 +569,20 @@ async function saveOwner() {
   try {
     if (ownerModal.editing) {
       const dto = {
-        firstName:      ownerModal.form.firstName || null,
-        lastName:       ownerModal.form.lastName || null,
-        email:          ownerModal.form.email || null,
-        ownerType:      ownerModal.form.ownerType || null,
-        ownershipQuota: ownerModal.form.ownershipQuota,
-        startDate:      ownerModal.form.startDate,
-        endDate:        ownerModal.form.endDate || null,
-        isResident:     ownerModal.form.isResident,
-        isActive:       ownerModal.form.isActive,
-        notes:          ownerModal.form.notes || null,
+        userId:          ownerModal.form.userId || 0,
+        firstName:       ownerModal.form.firstName || null,
+        lastName:        ownerModal.form.lastName || null,
+        email:           ownerModal.form.email || null,
+        ownerType:       ownerModal.form.ownerType || null,
+        ownershipQuota:  ownerModal.form.ownershipQuota,
+        startDate:       ownerModal.form.startDate,
+        endDate:         ownerModal.form.endDate || null,
+        isResident:      ownerModal.form.isResident,
+        isActive:        ownerModal.form.isActive,
+        isAccessEnabled: ownerModal.form.isAccessEnabled,
+        notes:           ownerModal.form.notes || null,
       }
       await unitOwnerApi.update(ownerModal.editing, dto)
-
-      // Aggiorna isActive utente piattaforma se collegato e cambiato
-      if (ownerModal.linkedUser && ownerModal.form.userIsActive !== ownerModal.linkedUser.isActive) {
-        try {
-          await userApi.update(ownerModal.linkedUser.id, {
-            email:    ownerModal.linkedUser.email,
-            name:     ownerModal.linkedUser.firstName || ownerModal.linkedUser.name,
-            surName:  ownerModal.linkedUser.lastName,
-            roleCode: 'Condomino',
-            isActive: ownerModal.form.userIsActive,
-          })
-        } catch { /* non bloccante */ }
-      }
-
       store.toast('Proprietario aggiornato', 'success')
     } else {
       const dto = {
@@ -561,9 +595,10 @@ async function saveOwner() {
         ownershipQuota: ownerModal.form.ownershipQuota,
         startDate:      ownerModal.form.startDate,
         endDate:        ownerModal.form.endDate || null,
-        isResident:     ownerModal.form.isResident,
-        isActive:       ownerModal.form.isActive,
-        notes:          ownerModal.form.notes || null,
+        isResident:      ownerModal.form.isResident,
+        isActive:        ownerModal.form.isActive,
+        isAccessEnabled: ownerModal.form.isAccessEnabled,
+        notes:           ownerModal.form.notes || null,
       }
       await unitOwnerApi.create(dto)
       store.toast('Proprietario aggiunto', 'success')
@@ -685,7 +720,15 @@ function openCreateCondomino(target) {
 
 function onCondominoCreated(user) {
   condominoModal.show = false
-  selectOwnerUser(user)
+  if (ownerModal.editing) {
+    // In modalità modifica: collega il nuovo utente senza sovrascrivere i dati del form
+    ownerModal.form.userId        = user.id
+    ownerModal.form.isAccessEnabled = true
+    ownerModal.linkedUser         = user
+    ownerModal.showLinkUserPanel  = false
+  } else {
+    selectOwnerUser(user)
+  }
 }
 
 // ─── Init ─────────────────────────────────────────────────────

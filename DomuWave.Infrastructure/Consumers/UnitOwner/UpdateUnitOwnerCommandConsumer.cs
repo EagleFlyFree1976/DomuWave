@@ -51,22 +51,18 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
             .UpdateAsync(existing, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
-        // Sync name / email back to the auth user record via Refit
+        // Sync name back to the auth user record via Refit (email excluded: it's the login credential)
         if (existing.UserId > 0)
         {
-            
-                await _authorizationClient.UpdateUserAsync(
-                    currentUser.Token,
-                    (int)existing.UserId,
-                    new UpdateAuthUserRequest
-                    {
-                        Name     = command.Dto.FirstName,
-                        SurName  = command.Dto.LastName,
-                        Email    = command.Dto.Email
-                        
-                    },
-                    cancellationToken).ConfigureAwait(false);
-            
+            await _authorizationClient.UpdateUserAsync(
+                currentUser.Token,
+                (int)existing.UserId,
+                new UpdateAuthUserRequest
+                {
+                    Name    = command.Dto.FirstName,
+                    SurName = command.Dto.LastName,
+                },
+                cancellationToken).ConfigureAwait(false);
         }
 
         return updated.ToReadDto();

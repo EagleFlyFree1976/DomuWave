@@ -13,5 +13,6 @@ public class CreateUnitOwnerDto
     public DateTime? EndDate { get; set; }
     public bool IsResident { get; set; }
     public bool IsActive { get; set; }
+    public bool IsAccessEnabled { get; set; }
     public string? Notes { get; set; }
 }
