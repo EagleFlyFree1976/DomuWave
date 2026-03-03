@@ -11,7 +11,8 @@
       "Bash(xargs grep -l \"UpdateAsync\\\\|Update.*Command\")",
       "Bash(xargs grep -l \"interface IUserService\")",
       "Read(//c/Projects/Works/**)",
-      "Read(//c/Projects/**)"
+      "Read(//c/Projects/**)",
+      "Bash(xargs grep -l \"Budget\")"
     ]
   }
 }

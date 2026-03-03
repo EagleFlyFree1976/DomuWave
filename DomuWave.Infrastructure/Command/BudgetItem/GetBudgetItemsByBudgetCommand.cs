@@ -1,0 +1,13 @@
+using DomuWave.Services.Dto.Budget;
+using SimpleMediator.Queries;
+
+namespace DomuWave.Services.Command.BudgetItem;
+
+public class GetBudgetItemsByBudgetCommand : BaseCommand, IQuery<IList<BudgetItemReadDto>>
+{
+    public int BudgetId { get; set; }
+
+    public GetBudgetItemsByBudgetCommand() { }
+    public GetBudgetItemsByBudgetCommand(int currentUserId, int budgetId) : base(currentUserId)
+        => BudgetId = budgetId;
+}

@@ -1,18 +1,18 @@
 <template>
-  <!-- Visibile solo per gli utenti Condomino -->
-  <div v-if="session.isCondomino" class="tenant-selector">
+  <!-- Visibile per utenti Condomino e TenantAdmin -->
+  <div v-if="session.isCondomino || session.isTenantAdmin" class="tenant-selector">
 
     <!-- Label superiore -->
     <div class="tenant-selector__label">
       <i class="pi pi-home" />
-      <span>Il tuo condominio</span>
+      <span>Condominio attivo</span>
     </div>
 
     <!-- Combo di selezione -->
     <Select
-      v-model="selectedCondominio"
-      :options="session.condominoCondominiums"
-      option-label="condominiumName"
+      v-model="selectedOption"
+      :options="options"
+      option-label="label"
       :placeholder="'Seleziona condominio...'"
       class="tenant-selector__select"
       @change="onCondominioChange"
@@ -21,7 +21,7 @@
       <template #value="{ value }">
         <div v-if="value" class="tenant-selected">
           <i class="pi pi-building tenant-selected__icon" />
-          <span class="tenant-selected__name">{{ value.condominiumName }}</span>
+          <span class="tenant-selected__name">{{ value.label }}</span>
         </div>
         <span v-else class="tenant-placeholder">Seleziona condominio...</span>
       </template>
@@ -29,9 +29,9 @@
 
     <!-- Badge condominio attivo -->
     <Transition name="fade">
-      <div v-if="session.activeTenant" class="tenant-active-badge">
+      <div v-if="activeName" class="tenant-active-badge">
         <span class="tenant-active-badge__dot" />
-        <span class="tenant-active-badge__text">Accesso come: <strong>{{ session.activeTenant.name }}</strong></span>
+        <span class="tenant-active-badge__text">Attivo: <strong>{{ activeName }}</strong></span>
       </div>
     </Transition>
 
@@ -41,33 +41,80 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useMenuStore } from '@/stores/menuStore'
+import { useAppStore } from '@/stores/app'
 import Select from 'primevue/select'
 
-const session  = useSessionStore()
+const session   = useSessionStore()
 const menuStore = useMenuStore()
+const appStore  = useAppStore()
 
-// Trova l'opzione corrispondente al tenant attivo corrente
-// CondominiumSummaryDto: { condominiumId, condominiumName, tenantId (Guid as string) }
-const selectedCondominio = ref(
-  session.condominoCondominiums.find(t => t.tenantId === session.activeTenant?.id) ?? null
-)
-
-// Mantiene il v-model allineato se lo store cambia (es. dopo refresh)
-watch(
-  () => session.activeTenant,
-  (val) => {
-    selectedCondominio.value = session.condominoCondominiums.find(t => t.tenantId === val?.id) ?? null
+// ── Opzioni normalizzate ────────────────────────────────────────────────────
+// Condomino: session.condominoCondominiums → { condominiumId, condominiumName, tenantId }
+// Admin:     appStore.condomini            → { id, name, ... }
+const options = computed(() => {
+  if (session.isCondomino) {
+    return session.condominoCondominiums.map(c => ({
+      id:       c.condominiumId,
+      label:    c.condominiumName,
+      tenantId: c.tenantId,
+    }))
   }
-)
+  // TenantAdmin
+  return appStore.condomini.map(c => ({
+    id:    c.id,
+    label: c.name,
+  }))
+})
 
+// ── Valore corrente ─────────────────────────────────────────────────────────
+const selectedOption = ref(null)
+
+function syncSelection() {
+  if (session.isCondomino) {
+    selectedOption.value = options.value.find(o => o.tenantId === session.activeTenant?.id) ?? null
+  } else {
+    selectedOption.value = options.value.find(o => o.id === appStore.selectedCondominioId) ?? null
+  }
+}
+
+// ── Nome del condominio attivo (per il badge) ────────────────────────────────
+const activeName = computed(() => {
+  if (session.isCondomino) return session.activeTenant?.name ?? null
+  return appStore.selectedCondominio?.name ?? null
+})
+
+// ── Cambio selezione ─────────────────────────────────────────────────────────
 async function onCondominioChange({ value }) {
   if (!value) return
-  session.selectTenant({ id: value.tenantId, name: value.condominiumName })
-  await menuStore.fetchMenu()
+  if (session.isCondomino) {
+    // Cambia tenant (X-Tenant-Id) + aggiorna menu
+    session.selectTenant({ id: value.tenantId, name: value.label })
+    await menuStore.fetchMenu()
+    // Resetta e ricarica i condomini del nuovo tenant così tutte le
+    // view che watchano selectedCondominioId si aggiornano automaticamente
+    appStore.selectCondominio(null)
+    await appStore.loadCondomini()
+  } else {
+    // Admin: imposta il condominio selezionato → tutti i watcher nelle view scattano
+    appStore.selectCondominio(value.id)
+  }
 }
+
+// ── Sincronizzazione reattiva ────────────────────────────────────────────────
+watch(options, syncSelection, { immediate: false })
+watch(() => session.activeTenant, syncSelection)
+watch(() => appStore.selectedCondominioId, syncSelection)
+
+// ── Init: per l'admin carica i condomini se non ancora presenti ──────────────
+onMounted(async () => {
+  if (session.isTenantAdmin && !appStore.condomini.length) {
+    await appStore.loadCondomini()
+  }
+  syncSelection()
+})
 </script>
 
 <style scoped>

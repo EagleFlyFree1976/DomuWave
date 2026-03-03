@@ -140,18 +140,36 @@ export const unitTenantApi = {
   delete:     (id)          => api.delete(`/unit-tenants/${id}`),
 }
 
+// ─── Esercizi fiscali ─────────────────────────────────────────
+export const fiscalYearApi = {
+  getByCondominium:   (condId)  => api.get(`/fiscal-years/by-condominium/${condId}`),
+  getActive:          (condId)  => api.get(`/fiscal-years/active/${condId}`),
+  getById:            (id)      => api.get(`/fiscal-years/${id}`),
+}
+
+// ─── Piano dei conti ──────────────────────────────────────────
+export const chartOfAccountsApi = {
+  getByCondominium:   (condId)  => api.get(`/chart-of-accounts/by-condominium/${condId}`),
+}
+
 // ─── Budget ───────────────────────────────────────────────────
 export const budgetApi = {
-  getAll:             ()              => api.get('/budgets'),
-  getById:            (id)            => api.get(`/budgets/${id}`),
-  getByCondominium:   (condId)        => api.get(`/budgets/condominium/${condId}`),
-  getByYear:          (condId, year)  => api.get(`/budgets/condominium/${condId}/year/${year}`),
-  getCurrent:         (condId)        => api.get(`/budgets/condominium/${condId}/current`),
-  create:             (data)          => api.post('/budgets', data),
-  update:             (id, data)      => api.put(`/budgets/${id}`, data),
-  approve:            (id)            => api.post(`/budgets/${id}/approve`),
-  close:              (id)            => api.post(`/budgets/${id}/close`),
-  delete:             (id)            => api.delete(`/budgets/${id}`),
+  getByCondominium:   (condId)  => api.get(`/budgets/by-condominium/${condId}`),
+  getByFiscalYear:    (fyId)    => api.get(`/budgets/by-fiscal-year/${fyId}`),
+  getById:            (id)      => api.get(`/budgets/${id}`),
+  create:             (data)    => api.post('/budgets', data),
+  update:             (id, data)=> api.put(`/budgets/${id}`, data),
+  approve:            (id)      => api.post(`/budgets/${id}/approve`),
+  close:              (id)      => api.post(`/budgets/${id}/close`),
+  delete:             (id)      => api.delete(`/budgets/${id}`),
+}
+
+// ─── Voci di budget ───────────────────────────────────────────
+export const budgetItemApi = {
+  getByBudget:        (budgetId)        => api.get(`/budget-items/by-budget/${budgetId}`),
+  create:             (data)            => api.post('/budget-items', data),
+  update:             (id, data)        => api.put(`/budget-items/${id}`, data),
+  delete:             (id)              => api.delete(`/budget-items/${id}`),
 }
 
 // ─── Spese ────────────────────────────────────────────────────

@@ -1,0 +1,106 @@
+using CPQ.Core.ActionFilters;
+using CPQ.Core.Extensions;
+using DomuWave.Application.Code;
+using DomuWave.Services.Command.Budget;
+using DomuWave.Services.Dto.Budget;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using SimpleMediator.Core;
+using CPQ.Core.Settings;
+using DomuWave.Services.Models;
+
+namespace DomuWave.Microservice.Controllers;
+
+[Route("api/budgets")]
+public class BudgetsController(
+    ILogger<BudgetsController> logger,
+    IOptionsMonitor<OxCoreSettings> configuration,
+    IMediator mediator)
+    : PrivateAdminControllerBase(logger, configuration)
+{
+    private readonly IMediator _mediator = mediator;
+
+    [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "Budget", Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(IList<BudgetReadDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetBudgetsByCondominiumCommand(CurrentUser.Id, condominiumId), ct);
+        return Ok(result ?? new List<BudgetReadDto>());
+    }
+
+    [HttpGet("by-fiscal-year/{fiscalYearId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "Budget", Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(IList<BudgetReadDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetByFiscalYear(int fiscalYearId, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetBudgetsByFiscalYearCommand(CurrentUser.Id, fiscalYearId), ct);
+        return Ok(result ?? new List<BudgetReadDto>());
+    }
+
+    [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "Budget", Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(BudgetReadDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetBudgetByIdCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, "Budget", Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(BudgetReadDto), StatusCodes.Status201Created)]
+    public async Task<IActionResult> Create([FromBody] CreateBudgetDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(
+            new CreateBudgetCommand(CurrentUser.Id, dto), ct);
+        return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+    }
+
+    [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "Budget", Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(BudgetReadDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateBudgetDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(
+            new UpdateBudgetCommand(CurrentUser.Id, id, dto), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpPost("{id:int}/approve")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "Budget", Modules.DomuWaveModule)]
+    public async Task<IActionResult> Approve(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new ApproveBudgetCommand(CurrentUser.Id, id), ct);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+
+    [HttpPost("{id:int}/close")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "Budget", Modules.DomuWaveModule)]
+    public async Task<IActionResult> Close(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new CloseBudgetCommand(CurrentUser.Id, id), ct);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, "Budget", Modules.DomuWaveModule)]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new DeleteBudgetCommand(CurrentUser.Id, id), ct);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+}

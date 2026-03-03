@@ -57,6 +57,12 @@ export const useSessionStore = defineStore('session', () => {
     }
   )
 
+  const isTenantAdmin = computed(() => {
+    const localStor = localStorage.getItem(UserProfile)
+    const profile = currentUserRole.value != null ? currentUserRole.value : localStor
+    return profile == 2
+  })
+
   const isCondomino = computed(() => {
     const localStor = localStorage.getItem(UserProfile)
     const profile = currentUserRole.value != null ? currentUserRole.value : localStor
@@ -185,6 +191,7 @@ export const useSessionStore = defineStore('session', () => {
     currentUserRole,
     // getters
     isSuperAdmin,
+    isTenantAdmin,
     isCondomino,
     hasTenantSelected,
     // actions
