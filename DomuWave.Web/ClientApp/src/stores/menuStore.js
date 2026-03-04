@@ -33,7 +33,7 @@ export const useMenuStore = defineStore('menu', () => {
   /**
    * Converte la lista piatta con parentMenuId in un albero gerarchico.
    * Struttura attesa dal backend:
-   * { id, parentMenuId, icon, description, shortDescription, action, authorizationCode }
+   * { id, parentMenuId, icon, description, shortDescription, action, authorizationCode, orderKey }
    */
   function buildTree(flat) {
     if (!Array.isArray(flat) || flat.length === 0) return []
@@ -46,7 +46,7 @@ export const useMenuStore = defineStore('menu', () => {
         label: item.description ?? item.shortDescription ?? '',
         path: item.action ?? '/',
         icon: resolveIcon(item.icon, item.action, item.description),
-        order: item.id, // usa id come ordine se non c'è un campo order
+        order: item.orderKey ?? item.id,
         tags: item.tags ? item.tags.split(',').map((t) => t.trim()) : [],
         children: [],
       }

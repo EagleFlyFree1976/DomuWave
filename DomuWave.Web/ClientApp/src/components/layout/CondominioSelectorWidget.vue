@@ -1,6 +1,6 @@
 <template>
-  <!-- Visibile per utenti Condomino e TenantAdmin -->
-  <div v-if="session.isCondomino || session.isTenantAdmin" class="tenant-selector">
+  <!-- Visibile per Condomino, TenantAdmin e SuperAdmin (quando ha un tenant attivo) -->
+  <div v-if="session.isCondomino || session.isTenantAdmin || (session.isSuperAdmin && session.hasTenantSelected)" class="tenant-selector">
 
     <!-- Label superiore -->
     <div class="tenant-selector__label">
@@ -108,9 +108,9 @@ watch(options, syncSelection, { immediate: false })
 watch(() => session.activeTenant, syncSelection)
 watch(() => appStore.selectedCondominioId, syncSelection)
 
-// ── Init: per l'admin carica i condomini se non ancora presenti ──────────────
+// ── Init: carica i condomini se non ancora presenti (admin e superadmin) ─────
 onMounted(async () => {
-  if (session.isTenantAdmin && !appStore.condomini.length) {
+  if ((session.isTenantAdmin || session.isSuperAdmin) && !appStore.condomini.length) {
     await appStore.loadCondomini()
   }
   syncSelection()

@@ -2,7 +2,6 @@
 
 public class AuthorizationKeys
 {
-    
     public const string Authorizations = "AUTH";
     public const string System = "IsSystem";
     public const string Users = "users";
@@ -10,7 +9,20 @@ public class AuthorizationKeys
     public const string Accounts = "Accounts";
     public const string AccountType = "AccountType";
     public const string Currencies = "Currencies";
-    public const string Admin= "Admin";
+    public const string Admin = "Admin";
+
+    // Condominium management
+    public const string Condominiums = "Condominium";
+    public const string RealEstateUnits = "RealEstateUnit";
+    public const string UnitOwners = "UnitOwner";
+    public const string UnitTenants = "UnitTenant";
+    public const string Suppliers = "Supplier";
+    public const string FiscalYear = "FSCY";
+    public const string Budget = "Budget";
+    public const string Expenses = "Expense";
+    public const string Installments = "Installment";
+    public const string Communications = "Communication";
+    public const string Documents = "Document";
 }
 
 

@@ -142,9 +142,14 @@ export const unitTenantApi = {
 
 // ─── Esercizi fiscali ─────────────────────────────────────────
 export const fiscalYearApi = {
-  getByCondominium:   (condId)  => api.get(`/fiscal-years/by-condominium/${condId}`),
-  getActive:          (condId)  => api.get(`/fiscal-years/active/${condId}`),
-  getById:            (id)      => api.get(`/fiscal-years/${id}`),
+  getByCondominium:   (condId)        => api.get(`/fiscal-years/by-condominium/${condId}`),
+  getActive:          (condId)        => api.get(`/fiscal-years/active/${condId}`),
+  getById:            (id)            => api.get(`/fiscal-years/${id}`),
+  create:             (data)          => api.post('/fiscal-years', data),
+  update:             (id, data)      => api.put(`/fiscal-years/${id}`, data),
+  startClosing:       (id, notes)     => api.post(`/fiscal-years/${id}/start-closing`, { notes }),
+  close:              (id, notes)     => api.post(`/fiscal-years/${id}/close`, { notes }),
+  lock:               (id, notes)     => api.post(`/fiscal-years/${id}/lock`, { notes }),
 }
 
 // ─── Piano dei conti ──────────────────────────────────────────

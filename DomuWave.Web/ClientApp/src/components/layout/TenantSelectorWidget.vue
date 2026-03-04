@@ -66,10 +66,12 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useSessionStore } from '@/stores/sessionStore'
+import { useAppStore } from '@/stores/app'
 import Select from 'primevue/select'
 
 // ─── COMPOSABLES ─────────────────────────────────────────────────────────────
-const session = useSessionStore()
+const session  = useSessionStore()
+const appStore = useAppStore()
 
 // ─── LOCAL STATE ─────────────────────────────────────────────────────────────
 // Copia locale per il v-model della Select; sincronizzata con lo store
@@ -96,9 +98,13 @@ onMounted(async () => {
  * 1. Persiste in sessionStore (→ localStorage → X-Tenant-Id header)
  * 2. Naviga alla dashboard principale del tenant selezionato
  */
-function onTenantChange({ value }) {
+async function onTenantChange({ value }) {
   if (!value) return
   session.selectTenant(value)
+  // Reset condominio selezionato e ricarica la lista per il nuovo tenant
+  // così il CondominioSelectorWidget e tutte le view si aggiornano
+  appStore.selectCondominio(null)
+  await appStore.loadCondomini()
 }
 </script>
 

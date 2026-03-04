@@ -21,7 +21,7 @@ public class FiscalYearsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<FiscalYearListItemDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
     {
@@ -32,7 +32,7 @@ public class FiscalYearsController(
     }
 
     [HttpGet("active/{condominiumId:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FiscalYearReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetActive(int condominiumId, CancellationToken ct)
     {
@@ -43,7 +43,7 @@ public class FiscalYearsController(
     }
 
     [HttpGet("{id:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FiscalYearReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -54,7 +54,7 @@ public class FiscalYearsController(
     }
 
     [HttpGet("{id:int}/check-document-date")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DocumentDateWarningDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> CheckDocumentDate(
         int id, [FromQuery] DateTime documentDate, CancellationToken ct)
@@ -66,7 +66,7 @@ public class FiscalYearsController(
     }
 
     [HttpPost]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FiscalYearReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] FiscalYearCreateDto dto, CancellationToken ct)
     {
@@ -77,7 +77,7 @@ public class FiscalYearsController(
     }
 
     [HttpPut("{id:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FiscalYearReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int id, [FromBody] FiscalYearUpdateDto dto, CancellationToken ct)
     {
@@ -89,7 +89,7 @@ public class FiscalYearsController(
     }
 
     [HttpPost("{id:int}/start-closing")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     public async Task<IActionResult> StartClosing(int id, [FromBody] FiscalYearCloseRequestDto dto, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -99,7 +99,7 @@ public class FiscalYearsController(
     }
 
     [HttpPost("{id:int}/close")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     public async Task<IActionResult> Close(int id, [FromBody] FiscalYearCloseRequestDto dto, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -109,7 +109,7 @@ public class FiscalYearsController(
     }
 
     [HttpPost("{id:int}/lock")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "FiscalYear", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     public async Task<IActionResult> Lock(int id, [FromBody] FiscalYearCloseRequestDto dto, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(

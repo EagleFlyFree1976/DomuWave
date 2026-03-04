@@ -21,7 +21,7 @@ public class BudgetItemsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-budget/{budgetId:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "Budget", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<BudgetItemReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByBudget(int budgetId, CancellationToken ct)
     {
@@ -31,7 +31,7 @@ public class BudgetItemsController(
     }
 
     [HttpPost]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, "Budget", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BudgetItemReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateBudgetItemDto dto, CancellationToken ct)
     {
@@ -42,7 +42,7 @@ public class BudgetItemsController(
     }
 
     [HttpPut("{id:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, "Budget", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BudgetItemReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateBudgetItemDto dto, CancellationToken ct)
     {
@@ -54,7 +54,7 @@ public class BudgetItemsController(
     }
 
     [HttpDelete("{id:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, "Budget", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(

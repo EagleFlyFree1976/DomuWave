@@ -21,7 +21,7 @@ public class ChartOfAccountsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, "Budget", Modules.DomuWaveModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<ChartOfAccountsReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
     {
