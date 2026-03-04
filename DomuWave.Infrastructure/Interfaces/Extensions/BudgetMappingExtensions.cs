@@ -16,7 +16,7 @@ public static class BudgetMappingExtensions
             CondominiumName = budget.Condominium?.Name,
             FiscalYearId   = budget.FiscalYear?.Id ?? 0,
             FiscalYearCode = budget.FiscalYear?.Code,
-            Type           = budget.Type ?? string.Empty,
+            Type           = budget.Type,
             ApprovalDate   = budget.ApprovalDate,
             Status         = budget.Status ?? string.Empty,
             TotalIncome    = budget.TotalIncome,

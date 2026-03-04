@@ -34,16 +34,16 @@
     <property name="ClosingDate"     column="ClosingDate"     type="DateTime" not-null="false" />
     <property name="ClosedDate"      column="ClosedDate"      type="DateTime" not-null="false" />
     <property name="LockedDate"      column="LockedDate"      type="DateTime" not-null="false" />
-    <property name="ClosedByUserId"  column="ClosedByUserId"  type="long"     not-null="false" />
+    <property name="ClosedByUserId"  column="ClosedByUserId"  type="int"     not-null="false" />
     <property name="ClosingNotes"    column="ClosingNotes"    type="string"   length="500" not-null="false" />
 
     <!-- Audit (ereditati da TraceEntity) -->
     <property name="IsDeleted"           column="IsDeleted"           type="bool"   not-null="true" />
     <property name="CreationDate"        column="CreationDate"        type="DateTime" not-null="true" />
-    <property name="CreatedBy"           column="CreatedBy"           type="long"   not-null="false" />
+    <property name="CreatedBy"           column="CreatedBy"           type="int"   not-null="false" />
     <property name="CreatedByFullName"   column="CreatedByFullName"   type="string" length="200" not-null="false" />
     <property name="LastUpdateDate"      column="LastUpdateDate"      type="DateTime" not-null="false" />
-    <property name="LastUpdatedBy"       column="LastUpdatedBy"       type="long"   not-null="false" />
+    <property name="LastUpdatedBy"       column="LastUpdatedBy"       type="int"   not-null="false" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="string" length="200" not-null="false" />
 
     <!-- Collezioni lazy -->

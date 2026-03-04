@@ -56,7 +56,7 @@
             </thead>
             <tbody>
               <tr v-for="b in budgets" :key="b.id">
-                <td>{{ b.type }}</td>
+                <td>{{ b.type === 1 ? 'Preventivo' : 'Consuntivo' }}</td>
                 <td class="mono text-right text-green">{{ fmt(b.totalIncome) }}</td>
                 <td class="mono text-right text-red">{{ fmt(b.totalExpenses) }}</td>
                 <td class="text-secondary">{{ fmtDate(b.approvalDate) }}</td>
@@ -151,9 +151,9 @@
           <div class="form-grid">
             <div class="form-group" v-if="!editingBudget">
               <label class="form-label">Tipo *</label>
-              <select class="form-select" v-model="budgetForm.type">
-                <option value="Preventivo">Preventivo</option>
-                <option value="Consuntivo">Consuntivo</option>
+              <select class="form-select" v-model.number="budgetForm.type">
+                <option value="1">Preventivo</option>
+                <option value="2">Consuntivo</option>
               </select>
             </div>
             <div class="form-group">
@@ -379,7 +379,7 @@ const loadingBudget = ref(false)
 const showBudgetModal = ref(false)
 const editingBudget  = ref(null)
 const savingBudget   = ref(false)
-const budgetForm     = ref({ type: 'Preventivo', totalIncome: 0, notes: '' })
+const budgetForm     = ref({ type: 1, totalIncome: 0, notes: '' })
 
 async function loadBudgets() {
   if (!selectedFiscalYearId.value) { budgets.value = []; return }
@@ -394,7 +394,7 @@ function openBudgetModal(b = null) {
   editingBudget.value = b?.id ?? null
   budgetForm.value = b
     ? { totalIncome: b.totalIncome, notes: b.notes ?? '' }
-    : { type: 'Preventivo', totalIncome: 0, notes: '' }
+    : { type: 1, totalIncome: 0, notes: '' }
   showBudgetModal.value = true
 }
 

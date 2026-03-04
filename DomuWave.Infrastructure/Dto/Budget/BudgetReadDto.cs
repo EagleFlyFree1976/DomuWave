@@ -1,4 +1,5 @@
 using CPQ.Core.DTO;
+using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Dto.Budget;
 
@@ -8,7 +9,7 @@ public class BudgetReadDto : TraceEntityDTO<int>
     public string? CondominiumName { get; set; }
     public int FiscalYearId { get; set; }
     public string? FiscalYearCode { get; set; }
-    public string Type { get; set; } = string.Empty;
+    public BudgetType Type { get; set; }
     public DateTime? ApprovalDate { get; set; }
     public string Status { get; set; } = string.Empty;
     public decimal TotalIncome { get; set; }

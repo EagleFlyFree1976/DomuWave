@@ -16,7 +16,7 @@ public static class BudgetItemMappingExtensions
             AccountId   = item.Account?.Id ?? 0,
             AccountCode = item.Account?.Code,
             AccountName = item.Account?.Name,
-            AccountType = item.Account?.Type,
+            AccountType = item.Account?.Type.ToString(),
             Description = item.Description,
             Amount      = item.Amount,
             Notes       = item.Notes,

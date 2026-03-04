@@ -141,9 +141,13 @@ namespace DomuWave.Services.Implementations
                 throw new InvalidOperationException(
                     $"Esiste già un esercizio con codice '{code}' per questo condominio.");
 
+            var condominium = await session.GetAsync<Condominium>(condominiumId, ct)
+                ?? throw new InvalidOperationException($"Condominio con ID {condominiumId} non trovato.");
+
             var fiscalYear = new FiscalYear
             {
-                Condominium = session.Load<Condominium>(condominiumId),
+                Condominium = condominium,
+                Tenant = condominium.Tenant,
                 Code = code,
                 Description = description,
                 StartDate = startDate,

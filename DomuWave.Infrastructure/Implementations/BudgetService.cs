@@ -143,7 +143,7 @@ namespace DomuWave.Services.Implementations
                 .ToListAsync();
         }
 
-        public async Task<Budget> GetByYearAndTypeAsync(int condominiumId, int year, string type, IUser currentUser, CancellationToken cancellationToken)
+        public async Task<Budget> GetByYearAndTypeAsync(int condominiumId, int year, BudgetType type, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<Budget>()
                 .FirstOrDefaultAsync(x => x.Condominium.Id == condominiumId 

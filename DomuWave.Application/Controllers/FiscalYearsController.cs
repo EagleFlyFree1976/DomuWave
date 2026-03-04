@@ -16,7 +16,7 @@ public class FiscalYearsController(
     ILogger<FiscalYearsController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
     IMediator mediator)
-    : PrivateAdminControllerBase(logger, configuration)
+    : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
 

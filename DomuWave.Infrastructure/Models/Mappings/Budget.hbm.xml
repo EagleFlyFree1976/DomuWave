@@ -18,8 +18,7 @@
 		<many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
 		<many-to-one name="FiscalYear"  class="DomuWave.Services.Models.FiscalYear, DomuWave.Services"  column="FiscalYearId"  not-null="true" />
 
-		<property name="Name"           column="Type"           type="String"   length="50"   not-null="true" />
-		<property name="Type"           column="Type"           type="String"   length="50"   not-null="true" insert="false" update="false" />
+		<property name="Type"           column="Type"           type="Int32"    not-null="true" />
 		<property name="Description"    column="Notes"          type="String"   length="1000" />
 		<property name="Notes"          column="Notes"          type="String"   length="1000" insert="false" update="false" />
 		<property name="ApprovalDate"   column="ApprovalDate"   type="DateTime" />
@@ -27,11 +26,13 @@
 		<property name="TotalIncome"    column="TotalIncome"    type="Decimal"  not-null="true" />
 		<property name="TotalExpenses"  column="TotalExpenses"  type="Decimal"  not-null="true" />
 
-		<property name="CreatedBy"             column="CreatedById"           type="Int32"  not-null="true" />
-		<property name="CreatedByFullName"     column="CreatedByFullName"     type="String" length="200" />
+		<property name="CreatedBy"             column="CreatedById"           type="Int32"    not-null="true" />
+		<property name="CreatedByFullName"     column="CreatedByFullName"     type="String"   length="200" />
+		<property name="CreationDate"          column="CreationDate"          type="DateTime" not-null="true" />
 		<property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
-		<property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-		<property name="IsDeleted"             column="IsDeleted"             type="Boolean" not-null="true" />
+		<property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"   length="200" />
+		<property name="LastUpdateDate"        column="LastUpdateDate"        type="DateTime" />
+		<property name="IsDeleted"             column="IsDeleted"             type="Boolean"  not-null="true" />
 
 		<bag name="Items" inverse="true" cascade="all-delete-orphan" lazy="true">
 			<key column="BudgetId" />

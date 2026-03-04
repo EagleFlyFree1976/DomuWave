@@ -18,7 +18,7 @@ public class AuthorizationKeys
     public const string UnitTenants = "UnitTenant";
     public const string Suppliers = "Supplier";
     public const string FiscalYear = "FSCY";
-    public const string Budget = "Budget";
+    public const string Budget = "BDG";
     public const string Expenses = "Expense";
     public const string Installments = "Installment";
     public const string Communications = "Communication";

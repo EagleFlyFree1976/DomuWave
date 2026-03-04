@@ -52,7 +52,7 @@ namespace DomuWave.Services.Models
         public virtual DateTime? LockedDate { get; set; }
 
         /// <summary>ID dell'utente che ha eseguito la chiusura.</summary>
-        public virtual long? ClosedByUserId { get; set; }
+        public virtual int? ClosedByUserId { get; set; }
 
         /// <summary>Note dell'amministratore registrate in fase di chiusura.</summary>
         public virtual string ClosingNotes { get; set; }

@@ -21,7 +21,7 @@
     <property name="Name" column="Name" type="String" length="200" not-null="true" />
     <property name="Description" column="Description" type="String" length="500" />
     <property name="Code" column="Code" type="String" length="50" not-null="true" />
-    <property name="Type" column="Type" type="String" length="50" not-null="true" />
+    <property name="Type" column="Type" type="Int32" not-null="true" />
     <property name="Category" column="Category" type="String" length="100" />
     <property name="Level" column="Level" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />

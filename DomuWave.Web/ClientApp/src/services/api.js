@@ -154,7 +154,10 @@ export const fiscalYearApi = {
 
 // ─── Piano dei conti ──────────────────────────────────────────
 export const chartOfAccountsApi = {
-  getByCondominium:   (condId)  => api.get(`/chart-of-accounts/by-condominium/${condId}`),
+  getByCondominium: (condId)   => api.get(`/chart-of-accounts/by-condominium/${condId}`),
+  create:           (data)     => api.post('/chart-of-accounts', data),
+  update:           (id, data) => api.put(`/chart-of-accounts/${id}`, data),
+  delete:           (id)       => api.delete(`/chart-of-accounts/${id}`),
 }
 
 // ─── Budget ───────────────────────────────────────────────────

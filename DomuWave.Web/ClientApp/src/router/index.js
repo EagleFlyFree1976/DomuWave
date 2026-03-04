@@ -40,6 +40,7 @@ const routes = [
         ],
       },
       { path: 'esercizi-fiscali', component: () => import('@/views/EserciziFiscaliView.vue'), meta: { title: 'Esercizi Fiscali', requiresTenant: true } },
+      { path: 'piano-dei-conti',  component: () => import('@/views/PianoDeiContiView.vue'),  meta: { title: 'Piano dei Conti',  requiresTenant: true } },
       { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget & Spese', requiresTenant: true } },
       { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
       { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori', requiresTenant: true } },

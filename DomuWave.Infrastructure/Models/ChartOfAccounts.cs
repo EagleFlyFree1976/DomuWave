@@ -8,7 +8,7 @@ namespace DomuWave.Services.Models
     {
         public virtual Condominium Condominium { get; set; }
         public virtual string Code { get; set; }
-        public virtual string Type { get; set; }
+        public virtual ChartOfAccountsType Type { get; set; }
         public virtual string Category { get; set; }
         public virtual ChartOfAccounts ParentAccount { get; set; }
         public virtual int Level { get; set; }
