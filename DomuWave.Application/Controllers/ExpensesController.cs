@@ -1,7 +1,7 @@
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.Expense;
-using DomuWave.Services.Models;
+using DomuWave.Services.Dto.Expense;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -19,7 +19,7 @@ public class ExpensesController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Expense>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -28,7 +28,7 @@ public class ExpensesController(
     }
 
     [HttpGet("{id:long}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Expense))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExpenseReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(long id, CancellationToken ct)
     {
@@ -39,7 +39,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/date-range")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Expense>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetByDateRange(
         int condominiumId, [FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken ct)
     {
@@ -49,7 +49,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-supplier/{supplierId:int}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Expense>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetBySupplier(int supplierId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -58,7 +58,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/type/{expenseType}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Expense>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetByType(int condominiumId, string expenseType, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -67,7 +67,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/unpaid")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<Expense>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetUnpaid(int condominiumId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -85,24 +85,24 @@ public class ExpensesController(
     }
 
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(Expense))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ExpenseReadDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Create([FromBody] Expense expense, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateExpenseDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new CreateExpenseCommand(CurrentUser.Id, expense), ct);
+            new CreateExpenseCommand(CurrentUser.Id, dto), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id:long}")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Expense))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExpenseReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(long id, [FromBody] Expense expense, CancellationToken ct)
+    public async Task<IActionResult> Update(long id, [FromBody] UpdateExpenseDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new UpdateExpenseCommand(CurrentUser.Id, id, expense), ct);
+            new UpdateExpenseCommand(CurrentUser.Id, id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }

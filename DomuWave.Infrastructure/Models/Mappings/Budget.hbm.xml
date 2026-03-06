@@ -22,7 +22,7 @@
 		<property name="Description"    column="Notes"          type="String"   length="1000" />
 		<property name="Notes"          column="Notes"          type="String"   length="1000" insert="false" update="false" />
 		<property name="ApprovalDate"   column="ApprovalDate"   type="DateTime" />
-		<property name="Status"         column="Status"         type="String"   length="50"   not-null="true" />
+		<many-to-one name="Status" class="DomuWave.Services.Models.BudgetStatus, DomuWave.Services" column="StatusId" not-null="true" lazy="false" fetch="join" />
 		<property name="TotalIncome"    column="TotalIncome"    type="Decimal"  not-null="true" />
 		<property name="TotalExpenses"  column="TotalExpenses"  type="Decimal"  not-null="true" />
 

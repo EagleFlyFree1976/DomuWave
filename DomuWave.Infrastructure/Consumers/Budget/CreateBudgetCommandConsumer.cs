@@ -54,7 +54,7 @@ public class CreateBudgetCommandConsumer
             FiscalYear    = fiscalYear,
             Tenant        = condominium.Tenant,
             Type          = command.Dto.Type,
-            Status        = "Draft",
+            Status        = session.Load<BudgetStatus>(BudgetStatus.Draft),
             TotalIncome   = command.Dto.TotalIncome,
             TotalExpenses = 0,
             Description   = command.Dto.Notes,

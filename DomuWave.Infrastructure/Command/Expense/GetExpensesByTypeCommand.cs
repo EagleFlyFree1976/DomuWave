@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.Expense;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Expense;
 
-public class GetExpensesByTypeCommand : BaseCommand, IQuery<IList<Models.Expense>>
+public class GetExpensesByTypeCommand : BaseCommand, IQuery<IList<ExpenseReadDto>>
 {
     public int CondominiumId { get; set; }
     public string ExpenseType { get; set; }

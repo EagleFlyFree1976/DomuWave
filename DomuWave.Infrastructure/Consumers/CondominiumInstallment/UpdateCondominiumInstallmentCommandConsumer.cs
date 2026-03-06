@@ -1,43 +1,47 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.CondominiumInstallment;
+using DomuWave.Services.Dto.CondominiumInstallment;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class UpdateCondominiumInstallmentCommandConsumer : InMemoryConsumerBase<UpdateCondominiumInstallmentCommand, CondominiumInstallment>
+public class UpdateCondominiumInstallmentCommandConsumer : InMemoryConsumerBase<UpdateCondominiumInstallmentCommand, CondominiumInstallmentReadDto>
 {
     private readonly ICondominiumInstallmentService _condominiumInstallmentService;
-    private readonly IUserService _userService;
+    private readonly IUserService                   _userService;
 
     public UpdateCondominiumInstallmentCommandConsumer(
-        ISessionFactoryProvider sessionFactoryProvider,
+        ISessionFactoryProvider        sessionFactoryProvider,
         ICondominiumInstallmentService condominiumInstallmentService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService                   userService) : base(sessionFactoryProvider)
     {
         _condominiumInstallmentService = condominiumInstallmentService;
-        _userService = userService;
+        _userService                   = userService;
     }
 
-    protected override async Task<CondominiumInstallment> Consume(
+    protected override async Task<CondominiumInstallmentReadDto> Consume(
         UpdateCondominiumInstallmentCommand command,
-        IMediationContext mediationContext,
-        CancellationToken cancellationToken)
+        IMediationContext                   mediationContext,
+        CancellationToken                   cancellationToken)
     {
         var currentUser = await _userService
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        var exists = await _condominiumInstallmentService
-            .ExistsAsync(command.InstallmentId, currentUser, cancellationToken)
+        var entity = await _condominiumInstallmentService
+            .GetByIdAsync(command.InstallmentId, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        if (!exists) return null;
-        command.Entity.Id = command.InstallmentId;
-        return await _condominiumInstallmentService
-            .UpdateAsync(command.Entity, currentUser, cancellationToken)
+        if (entity == null) return null;
+
+        entity.ApplyUpdate(command.Dto);
+        var updated = await _condominiumInstallmentService
+            .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        return updated.ToReadDto();
     }
 }

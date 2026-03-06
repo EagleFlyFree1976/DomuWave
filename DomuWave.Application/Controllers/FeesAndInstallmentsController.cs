@@ -2,7 +2,8 @@ using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.CondominiumFee;
 using DomuWave.Services.Command.CondominiumInstallment;
-using DomuWave.Services.Models;
+using DomuWave.Services.Dto.CondominiumFee;
+using DomuWave.Services.Dto.CondominiumInstallment;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -56,10 +57,10 @@ public class CondominiumFeesController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CondominiumFee fee, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateCondominiumFeeDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new CreateCondominiumFeeCommand(CurrentUser.Id, fee), ct);
+        var result = await _mediator.GetResponse(new CreateCondominiumFeeCommand(CurrentUser.Id, dto), ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
@@ -128,19 +129,19 @@ public class CondominiumInstallmentsController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CondominiumInstallment installment, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateCondominiumInstallmentDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new CreateCondominiumInstallmentCommand(CurrentUser.Id, installment), ct);
+        var result = await _mediator.GetResponse(new CreateCondominiumInstallmentCommand(CurrentUser.Id, dto), ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] CondominiumInstallment installment, CancellationToken ct)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateCondominiumInstallmentDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new UpdateCondominiumInstallmentCommand(CurrentUser.Id, id, installment), ct);
+            new UpdateCondominiumInstallmentCommand(CurrentUser.Id, id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }

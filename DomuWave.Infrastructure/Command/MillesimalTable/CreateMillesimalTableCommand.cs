@@ -1,16 +1,15 @@
+using DomuWave.Services.Dto.MillesimalTable;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.MillesimalTable;
 
-public class CreateMillesimalTableCommand : BaseCommand, IQuery<Models.MillesimalTable>
+public class CreateMillesimalTableCommand : BaseCommand, IQuery<MillesimalTableReadDto>
 {
-    public Models.MillesimalTable Entity { get; set; }
+    public CreateMillesimalTableDto Dto { get; set; }
 
     public CreateMillesimalTableCommand() { }
-
-    public CreateMillesimalTableCommand(int currentUserId) : base(currentUserId) { }
-    public CreateMillesimalTableCommand(int currentUserId, Models.MillesimalTable entity) : base(currentUserId)
+    public CreateMillesimalTableCommand(int currentUserId, CreateMillesimalTableDto dto) : base(currentUserId)
     {
-        Entity = entity;
+        Dto = dto;
     }
 }

@@ -10,7 +10,7 @@ namespace DomuWave.Services.Models
         public virtual FiscalYear FiscalYear { get; set; }
         public virtual BudgetType Type { get; set; }
         public virtual DateTime? ApprovalDate { get; set; }
-        public virtual string Status { get; set; }
+        public virtual BudgetStatus Status { get; set; }
         public virtual decimal TotalIncome { get; set; }
         public virtual decimal TotalExpenses { get; set; }
         public virtual string Notes { get; set; }

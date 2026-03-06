@@ -1,16 +1,17 @@
+using DomuWave.Services.Dto.CondominiumInstallment;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.CondominiumInstallment;
 
-public class CreateCondominiumInstallmentCommand : BaseCommand, IQuery<Models.CondominiumInstallment>
+public class CreateCondominiumInstallmentCommand : BaseCommand, IQuery<CondominiumInstallmentReadDto>
 {
-    public Models.CondominiumInstallment Entity { get; set; }
+    public CreateCondominiumInstallmentDto Dto { get; set; }
 
     public CreateCondominiumInstallmentCommand() { }
 
     public CreateCondominiumInstallmentCommand(int currentUserId) : base(currentUserId) { }
-    public CreateCondominiumInstallmentCommand(int currentUserId, Models.CondominiumInstallment entity) : base(currentUserId)
+    public CreateCondominiumInstallmentCommand(int currentUserId, CreateCondominiumInstallmentDto dto) : base(currentUserId)
     {
-        Entity = entity;
+        Dto = dto;
     }
 }

@@ -1,16 +1,15 @@
+using DomuWave.Services.Dto.Expense;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Expense;
 
-public class CreateExpenseCommand : BaseCommand, IQuery<Models.Expense>
+public class CreateExpenseCommand : BaseCommand, IQuery<ExpenseReadDto>
 {
-    public Models.Expense Entity { get; set; }
+    public CreateExpenseDto Dto { get; set; }
 
     public CreateExpenseCommand() { }
-
-    public CreateExpenseCommand(int currentUserId) : base(currentUserId) { }
-    public CreateExpenseCommand(int currentUserId, Models.Expense entity) : base(currentUserId)
+    public CreateExpenseCommand(int currentUserId, CreateExpenseDto dto) : base(currentUserId)
     {
-        Entity = entity;
+        Dto = dto;
     }
 }

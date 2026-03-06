@@ -15,7 +15,8 @@
       "Bash(xargs grep -l \"Budget\")",
       "Bash(xargs cat)",
       "Bash(xargs wc -l)",
-      "Bash(xargs grep -l \"CreateTenant\\\\|TenantCreate\\\\|new Tenant\")"
+      "Bash(xargs grep -l \"CreateTenant\\\\|TenantCreate\\\\|new Tenant\")",
+      "Bash(Get-ChildItem \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\DomuWave.Infrastructure\\\\Command\\\\Expense\")"
     ]
   }
 }

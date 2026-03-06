@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.MillesimalTable;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.MillesimalTable;
 
-public class GetMillesimalTableByIdCommand : BaseCommand, IQuery<Models.MillesimalTable>
+public class GetMillesimalTableByIdCommand : BaseCommand, IQuery<MillesimalTableReadDto>
 {
     public int TableId { get; set; }
 

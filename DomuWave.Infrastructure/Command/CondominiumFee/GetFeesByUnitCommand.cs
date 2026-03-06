@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.CondominiumFee;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.CondominiumFee;
 
-public class GetFeesByUnitCommand : BaseCommand, IQuery<IList<Models.CondominiumFee>>
+public class GetFeesByUnitCommand : BaseCommand, IQuery<IList<CondominiumFeeReadDto>>
 {
     public int UnitId { get; set; }
 

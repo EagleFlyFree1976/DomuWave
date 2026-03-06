@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.CondominiumInstallment;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.CondominiumInstallment;
 
-public class GetOverdueInstallmentsCommand : BaseCommand, IQuery<IList<Models.CondominiumInstallment>>
+public class GetOverdueInstallmentsCommand : BaseCommand, IQuery<IList<CondominiumInstallmentReadDto>>
 {
     public int CondominiumId { get; set; }
 

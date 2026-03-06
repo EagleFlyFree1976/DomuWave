@@ -1,43 +1,47 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.MillesimalTable;
+using DomuWave.Services.Dto.MillesimalTable;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class UpdateMillesimalTableCommandConsumer : InMemoryConsumerBase<UpdateMillesimalTableCommand, Models.MillesimalTable>
+public class UpdateMillesimalTableCommandConsumer : InMemoryConsumerBase<UpdateMillesimalTableCommand, MillesimalTableReadDto>
 {
     private readonly IMillesimalTableService _millesimalTableService;
-    private readonly IUserService _userService;
+    private readonly IUserService            _userService;
 
     public UpdateMillesimalTableCommandConsumer(
-        ISessionFactoryProvider sessionFactoryProvider,
-        IMillesimalTableService millesimalTableService,
-        IUserService userService) : base(sessionFactoryProvider)
+        ISessionFactoryProvider  sessionFactoryProvider,
+        IMillesimalTableService  millesimalTableService,
+        IUserService             userService) : base(sessionFactoryProvider)
     {
         _millesimalTableService = millesimalTableService;
-        _userService = userService;
+        _userService            = userService;
     }
 
-    protected override async Task<Models.MillesimalTable> Consume(
+    protected override async Task<MillesimalTableReadDto> Consume(
         UpdateMillesimalTableCommand command,
-        IMediationContext mediationContext,
-        CancellationToken cancellationToken)
+        IMediationContext             mediationContext,
+        CancellationToken             cancellationToken)
     {
         var currentUser = await _userService
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        var exists = await _millesimalTableService
-            .ExistsAsync(command.TableId, currentUser, cancellationToken)
+        var entity = await _millesimalTableService
+            .GetByIdAsync(command.TableId, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        if (!exists) return null;
-        command.Entity.Id = command.TableId;
-        return await _millesimalTableService
-            .UpdateAsync(command.Entity, currentUser, cancellationToken)
+        if (entity == null) return null;
+
+        entity.ApplyUpdate(command.Dto);
+        var updated = await _millesimalTableService
+            .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        return updated.ToReadDto();
     }
 }

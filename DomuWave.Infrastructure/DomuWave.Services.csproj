@@ -3,6 +3,7 @@
   <ItemGroup>
     <None Remove="Models\Mappings\Budget.hbm.xml" />
     <None Remove="Models\Mappings\BudgetItem.hbm.xml" />
+    <None Remove="Models\Mappings\BudgetStatus.hbm.xml" />
     <None Remove="Models\Mappings\ChartOfAccounts.hbm.xml" />
     <None Remove="Models\Mappings\ChartOfAccountsCategory.hbm.xml" />
     <None Remove="Models\Mappings\ChartOfAccountsCategoryTemplate.hbm.xml" />
@@ -35,6 +36,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Models\Mappings\Budget.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\BudgetItem.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BudgetStatus.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ChartOfAccounts.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ChartOfAccountsCategory.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ChartOfAccountsCategoryTemplate.hbm.xml" />

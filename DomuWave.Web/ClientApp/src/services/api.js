@@ -209,7 +209,7 @@ export const expenseApi = {
   getTotal:           (condId, from, to)          => api.get(`/expenses/by-condominium/${condId}/total`, { params: { from, to } }),
   create:             (data)                      => api.post('/expenses', data),
   update:             (id, data)                  => api.put(`/expenses/${id}`, data),
-  markAsPaid:         (id, paymentDate, method)   => api.post(`/expenses/${id}/pay`, { paymentDate, method }),
+  markAsPaid:         (id, paymentDate, method)   => api.patch(`/expenses/${id}/pay`, { paymentDate, paymentMethod: method }),
   delete:             (id)                        => api.delete(`/expenses/${id}`),
 }
 
@@ -240,6 +240,13 @@ export const feeApi = {
   recordPayment:      (feeId, amount, paymentDate, paymentMethod) => api.patch(`/condominium-fees/${feeId}/pay`, { amount, paymentDate, paymentMethod }),
   create:             (data)          => api.post('/condominium-fees', data),
   delete:             (id)            => api.delete(`/condominium-fees/${id}`),
+}
+
+// ─── Tabelle Millesimali ───────────────────────────────────────
+export const millesimalTableApi = {
+  getByCondominium:   (condId)        => api.get(`/millesimal-tables/by-condominium/${condId}`),
+  getActive:          (condId)        => api.get(`/millesimal-tables/by-condominium/${condId}/active`),
+  getById:            (id)            => api.get(`/millesimal-tables/${id}`),
 }
 
 // ─── Fornitori ────────────────────────────────────────────────

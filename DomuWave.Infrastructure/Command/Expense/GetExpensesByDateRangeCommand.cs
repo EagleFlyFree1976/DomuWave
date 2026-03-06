@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.Expense;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Expense;
 
-public class GetExpensesByDateRangeCommand : BaseCommand, IQuery<IList<Models.Expense>>
+public class GetExpensesByDateRangeCommand : BaseCommand, IQuery<IList<ExpenseReadDto>>
 {
     public int CondominiumId { get; set; }
     public DateTime From { get; set; }

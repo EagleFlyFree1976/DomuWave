@@ -1,8 +1,9 @@
+using DomuWave.Services.Dto.CondominiumInstallment;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.CondominiumInstallment;
 
-public class GetInstallmentByYearAndNumberCommand : BaseCommand, IQuery<Models.CondominiumInstallment>
+public class GetInstallmentByYearAndNumberCommand : BaseCommand, IQuery<CondominiumInstallmentReadDto>
 {
     public int CondominiumId { get; set; }
     public int Year { get; set; }

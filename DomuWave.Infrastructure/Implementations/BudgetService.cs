@@ -180,7 +180,7 @@ namespace DomuWave.Services.Implementations
             if (budget == null)
                 return false;
 
-            budget.Status = "Approved";
+            budget.Status = session.Load<BudgetStatus>(BudgetStatus.Approved);
             budget.ApprovalDate = DateTime.Now;
             await session.SaveOrUpdateAsync(budget);
             await session.FlushAsync();
@@ -195,7 +195,7 @@ namespace DomuWave.Services.Implementations
             if (budget == null)
                 return false;
 
-            budget.Status = "Closed";
+            budget.Status = session.Load<BudgetStatus>(BudgetStatus.Closed);
             await session.SaveOrUpdateAsync(budget);
             await session.FlushAsync();
             return true;

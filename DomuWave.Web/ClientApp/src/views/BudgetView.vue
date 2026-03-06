@@ -60,16 +60,23 @@
                 <td class="mono text-right text-green">{{ fmt(b.totalIncome) }}</td>
                 <td class="mono text-right text-red">{{ fmt(b.totalExpenses) }}</td>
                 <td class="text-secondary">{{ fmtDate(b.approvalDate) }}</td>
-                <td><span class="badge" :class="statusBadge(b.status)">{{ statusLabel(b.status) }}</span></td>
+                <td><span class="badge" :class="statusBadge(b.statusId)">{{ statusLabel(b.statusId) }}</span></td>
                 <td>
                   <div class="row-actions">
                     <button class="btn btn-sm btn-ghost" @click="openItemsModal(b)">Voci</button>
-                    <button v-if="canEdit && b.status === 'Draft'" class="btn btn-sm btn-ghost"
-                            @click="approveBudget(b.id)">Approva</button>
-                    <button v-if="canEdit && b.status === 'Approved'" class="btn btn-sm btn-ghost"
-                            @click="closeBudget(b.id)">Chiudi</button>
-                    <button v-if="canEdit" class="btn-icon" @click="openBudgetModal(b)" title="Modifica">✎</button>
-                    <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
+                    <button v-if="canEdit && b.statusId === 1 && !blockedTypes.has(b.type)"
+                            class="btn btn-sm btn-ghost"
+                            @click="approveBudget(b)">Approva</button>
+                    <span v-if="canEdit && b.statusId === 1 && blockedTypes.has(b.type)"
+                          class="badge badge-muted" title="Esiste già un budget di questo tipo approvato o chiuso">
+                      Non approvabile
+                    </span>
+                    <button v-if="canEdit && b.statusId === 2" class="btn btn-sm btn-ghost"
+                            @click="closeBudget(b)">Chiudi</button>
+                    <button v-if="canEdit && b.statusId === 1" class="btn-icon"
+                            @click="openBudgetModal(b)" title="Modifica">✎</button>
+                    <button v-if="canDelete && b.statusId === 1" class="btn-icon"
+                            style="color:var(--accent-red)"
                             @click="deleteBudget(b.id)" title="Elimina">✕</button>
                   </div>
                 </td>
@@ -116,9 +123,9 @@
             </thead>
             <tbody>
               <tr v-for="e in expenses" :key="e.id">
-                <td class="mono text-secondary">{{ fmtDate(e.expenseDate) }}</td>
-                <td>{{ e.supplier?.companyName || '—' }}</td>
-                <td class="mono text-right">{{ fmt(e.amount) }}</td>
+                <td class="mono text-secondary">{{ fmtDate(e.documentDate) }}</td>
+                <td>{{ e.supplierName || '—' }}</td>
+                <td class="mono text-right">{{ fmt(e.grossAmount) }}</td>
                 <td class="mono text-right text-secondary">{{ fmt(e.vatAmount) }}</td>
                 <td class="text-secondary">{{ e.paymentMethod || '—' }}</td>
                 <td><span class="badge" :class="payBadge(e.paymentStatus)">{{ e.paymentStatus }}</span></td>
@@ -187,8 +194,8 @@
             <p class="modal-subtitle" v-if="selectedBudget">
               {{ selectedBudget.type }}
               <span v-if="selectedBudget.fiscalYearCode"> · {{ selectedBudget.fiscalYearCode }}</span>
-              <span class="badge ml-2" :class="statusBadge(selectedBudget.status)">
-                {{ statusLabel(selectedBudget.status) }}
+              <span class="badge ml-2" :class="statusBadge(selectedBudget.statusId)">
+                {{ statusLabel(selectedBudget.statusId) }}
               </span>
             </p>
           </div>
@@ -291,24 +298,67 @@
          MODAL — Crea / Modifica Spesa
     ══════════════════════════════════════════════════ -->
     <div class="modal-overlay" v-if="showExpenseModal" @click.self="showExpenseModal = false">
-      <div class="modal">
+      <div class="modal modal-lg">
         <div class="modal-header">
           <h2>{{ editingExp ? 'Modifica spesa' : 'Nuova spesa' }}</h2>
           <button class="btn-icon" @click="showExpenseModal = false">✕</button>
         </div>
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label">Data spesa *</label>
-              <input class="form-input" type="date" v-model="expForm.expenseDate" />
+            <div class="form-group" style="grid-column: span 2">
+              <label class="form-label">Descrizione *</label>
+              <input class="form-input" v-model="expForm.name" placeholder="Descrizione spesa…" />
             </div>
             <div class="form-group">
-              <label class="form-label">Importo (€) *</label>
-              <input class="form-input" type="number" step="0.01" v-model.number="expForm.amount" />
+              <label class="form-label">N° documento</label>
+              <input class="form-input" v-model="expForm.documentNumber" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo spesa *</label>
+              <input class="form-input" v-model="expForm.expenseType" placeholder="es. Manutenzione" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data documento *</label>
+              <input class="form-input" type="date" v-model="expForm.documentDate" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data registrazione *</label>
+              <input class="form-input" type="date" v-model="expForm.registrationDate" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Importo lordo (€) *</label>
+              <input class="form-input" type="number" step="0.01" v-model.number="expForm.grossAmount" />
             </div>
             <div class="form-group">
               <label class="form-label">IVA (€)</label>
               <input class="form-input" type="number" step="0.01" v-model.number="expForm.vatAmount" />
+            </div>
+            <div class="form-group" style="grid-column: span 2">
+              <label class="form-label">Conto *</label>
+              <select class="form-select" v-model.number="expForm.accountId">
+                <option :value="null" disabled>Seleziona conto…</option>
+                <optgroup v-for="grp in accountGroups" :key="grp.type" :label="grp.type">
+                  <option v-for="a in grp.accounts" :key="a.id" :value="a.id">{{ a.code }} – {{ a.name }}</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tabella millesimale *</label>
+              <select class="form-select" v-model.number="expForm.millesimalTableId">
+                <option :value="null" disabled>Seleziona tabella…</option>
+                <option v-for="t in millesimalTables" :key="t.id" :value="t.id">
+                  {{ t.code }}{{ t.description ? ' – ' + t.description : '' }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Fornitore</label>
+              <select class="form-select" v-model.number="expForm.supplierId">
+                <option :value="null">—</option>
+                <option v-for="s in suppliers" :key="s.id" :value="s.id">
+                  {{ s.name || s.companyName }}
+                </option>
+              </select>
             </div>
             <div class="form-group">
               <label class="form-label">Metodo pagamento</label>
@@ -319,17 +369,9 @@
                 <option value="Check">Assegno</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Tipo spesa</label>
-              <input class="form-input" v-model="expForm.expenseType" />
-            </div>
-            <div class="form-group">
-              <label class="form-label">N° fattura</label>
-              <input class="form-input" v-model="expForm.invoiceNumber" />
-            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">Descrizione</label>
+            <label class="form-label">Note</label>
             <textarea class="form-textarea" v-model="expForm.description" rows="2"></textarea>
           </div>
         </div>
@@ -348,7 +390,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { budgetApi, budgetItemApi, fiscalYearApi, chartOfAccountsApi, expenseApi } from '@/services/api'
+import { budgetApi, budgetItemApi, fiscalYearApi, chartOfAccountsApi, expenseApi, supplierApi, millesimalTableApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 
 const store = useAppStore()
@@ -420,12 +462,32 @@ async function saveBudget() {
   } catch { /* toast handled globally */ } finally { savingBudget.value = false }
 }
 
-async function approveBudget(id) {
-  try { await budgetApi.approve(id); await loadBudgets() } catch {}
+// Tipi di budget per cui esiste già un approvato o chiuso (non approvabili)
+const blockedTypes = computed(() => {
+  const s = new Set()
+  for (const b of budgets.value) {
+    if (b.statusId === 2 || b.statusId === 3) s.add(b.type)
+  }
+  return s
+})
+
+async function approveBudget(b) {
+  const tipo = b.type === 1 ? 'preventivo' : 'consuntivo'
+  if (!confirm(
+    `Approvare il budget ${tipo}?\n\n` +
+    `Una volta approvato, non sarà possibile approvare un altro budget dello stesso tipo ` +
+    `per questo esercizio finché non verrà chiuso il corrente.`
+  )) return
+  try { await budgetApi.approve(b.id); await loadBudgets() } catch {}
 }
 
-async function closeBudget(id) {
-  try { await budgetApi.close(id); await loadBudgets() } catch {}
+async function closeBudget(b) {
+  const tipo = b.type === 1 ? 'preventivo' : 'consuntivo'
+  if (!confirm(
+    `Chiudere il budget ${tipo}?\n\n` +
+    `Dopo la chiusura sarà possibile approvare un nuovo budget dello stesso tipo.`
+  )) return
+  try { await budgetApi.close(b.id); await loadBudgets() } catch {}
 }
 
 async function deleteBudget(id) {
@@ -558,7 +620,15 @@ const today           = new Date().toISOString().slice(0, 10)
 const firstOfYear     = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10)
 const expFrom         = ref(firstOfYear)
 const expTo           = ref(today)
-const expForm         = ref({ expenseDate: today, amount: 0, vatAmount: 0, paymentMethod: '', expenseType: '', invoiceNumber: '', description: '' })
+const suppliers       = ref([])
+const millesimalTables = ref([])
+
+const emptyExpForm = () => ({
+  name: '', documentNumber: '', documentDate: today, registrationDate: today,
+  grossAmount: 0, vatAmount: 0, expenseType: '', paymentStatus: 'ToPay',
+  paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: ''
+})
+const expForm = ref(emptyExpForm())
 
 async function loadExpenses() {
   if (!store.selectedCondominioId) return
@@ -571,21 +641,69 @@ async function loadExpenses() {
   } catch { expenses.value = [] } finally { loadingExp.value = false }
 }
 
-function openExpenseModal(e = null) {
+async function openExpenseModal(e = null) {
   editingExp.value = e?.id ?? null
-  expForm.value = e
-    ? { ...e }
-    : { expenseDate: today, amount: 0, vatAmount: 0, paymentMethod: '', expenseType: '', invoiceNumber: '', description: '' }
+  expForm.value = e ? {
+    name:               e.name ?? '',
+    documentNumber:     e.documentNumber ?? '',
+    documentDate:       e.documentDate?.slice(0, 10) ?? today,
+    registrationDate:   e.registrationDate?.slice(0, 10) ?? today,
+    grossAmount:        e.grossAmount ?? 0,
+    vatAmount:          e.vatAmount ?? 0,
+    expenseType:        e.expenseType ?? '',
+    paymentStatus:      e.paymentStatus ?? 'ToPay',
+    paymentMethod:      e.paymentMethod ?? '',
+    supplierId:         e.supplierId ?? null,
+    accountId:          e.accountId ?? null,
+    millesimalTableId:  e.millesimalTableId ?? null,
+    description:        e.description ?? '',
+  } : emptyExpForm()
+
+  // Load dropdowns (accounts already loaded when opening items modal; reload suppliers & millesimal tables)
+  if (!accountsLoaded && store.selectedCondominioId) {
+    try {
+      const { data } = await chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
+      chartOfAccounts.value = data ?? []
+      accountsLoaded = true
+    } catch { chartOfAccounts.value = [] }
+  }
+  if (store.selectedCondominioId) {
+    try {
+      const [supRes, mtRes] = await Promise.all([
+        supplierApi.getAll(),
+        millesimalTableApi.getByCondominium(store.selectedCondominioId),
+      ])
+      suppliers.value = supRes.data ?? []
+      millesimalTables.value = mtRes.data ?? []
+    } catch {}
+  }
   showExpenseModal.value = true
 }
 
 async function saveExpense() {
   savingExp.value = true
   try {
+    const payload = {
+      name:             expForm.value.name,
+      documentNumber:   expForm.value.documentNumber || null,
+      documentDate:     expForm.value.documentDate,
+      registrationDate: expForm.value.registrationDate,
+      grossAmount:      expForm.value.grossAmount,
+      vatAmount:        expForm.value.vatAmount,
+      netAmount:        expForm.value.grossAmount - expForm.value.vatAmount,
+      expenseType:      expForm.value.expenseType,
+      paymentStatus:    expForm.value.paymentStatus || 'ToPay',
+      paymentMethod:    expForm.value.paymentMethod || null,
+      description:      expForm.value.description || null,
+      condominiumId:    store.selectedCondominioId,
+      accountId:        expForm.value.accountId         ?? null,
+      millesimalTableId: expForm.value.millesimalTableId ?? null,
+      supplierId:       expForm.value.supplierId        ?? null,
+    }
     if (editingExp.value) {
-      await expenseApi.update(editingExp.value, expForm.value)
+      await expenseApi.update(editingExp.value, payload)
     } else {
-      await expenseApi.create({ ...expForm.value, condominiumId: store.selectedCondominioId })
+      await expenseApi.create(payload)
     }
     showExpenseModal.value = false
     await loadExpenses()
@@ -608,8 +726,8 @@ async function deleteExpense(id) {
 const fmt     = (v) => v != null ? '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 
-const statusBadge  = (s) => ({ Draft: 'badge-muted', Approved: 'badge-green', Closed: 'badge-purple' }[s] ?? 'badge-muted')
-const statusLabel  = (s) => ({ Draft: 'Bozza', Approved: 'Approvato', Closed: 'Chiuso' }[s] ?? s)
+const statusBadge  = (id) => ({ 1: 'badge-muted', 2: 'badge-green', 3: 'badge-purple' }[id] ?? 'badge-muted')
+const statusLabel  = (id) => ({ 1: 'Bozza', 2: 'Approvato', 3: 'Chiuso' }[id] ?? String(id ?? ''))
 const payBadge     = (s) => ({ ToPay: 'badge-amber', Paid: 'badge-green', Overdue: 'badge-red' }[s] ?? 'badge-muted')
 
 // ─── Watchers / Init ──────────────────────────────────────────

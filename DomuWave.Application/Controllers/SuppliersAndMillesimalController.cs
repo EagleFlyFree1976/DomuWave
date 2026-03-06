@@ -3,7 +3,7 @@ using DomuWave.Application.Code;
 using DomuWave.Services.Command.Supplier;
 using DomuWave.Services.Command.MillesimalTable;
 using DomuWave.Services.Dto.Supplier;
-using DomuWave.Services.Models;
+using DomuWave.Services.Dto.MillesimalTable;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -118,18 +118,18 @@ public class MillesimalTablesController(
         => Ok(await _mediator.GetResponse(new GetActiveMillesimalTablesCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] MillesimalTable table, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateMillesimalTableDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new CreateMillesimalTableCommand(CurrentUser.Id, table), ct);
+        var result = await _mediator.GetResponse(new CreateMillesimalTableCommand(CurrentUser.Id, dto), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] MillesimalTable table, CancellationToken ct)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateMillesimalTableDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new UpdateMillesimalTableCommand(CurrentUser.Id, id, table), ct);
+        var result = await _mediator.GetResponse(new UpdateMillesimalTableCommand(CurrentUser.Id, id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
