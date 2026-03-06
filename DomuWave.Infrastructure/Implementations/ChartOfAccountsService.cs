@@ -153,7 +153,8 @@ namespace DomuWave.Services.Implementations
                     && !x.IsDeleted, cancellationToken);
         }
 
-        public async Task<IList<ChartOfAccounts>> GetByTypeAsync(int condominiumId, string type, IUser currentUser, CancellationToken cancellationToken)
+        public async Task<IList<ChartOfAccounts>> GetByTypeAsync(int condominiumId, ChartOfAccountsType type,
+            IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<ChartOfAccounts>()
                 .Where(x => x.Condominium.Id == condominiumId 

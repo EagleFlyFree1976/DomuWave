@@ -16,7 +16,8 @@ public static class ChartOfAccountsMappingExtensions
             Code            = account.Code ?? string.Empty,
             Name            = account.Name ?? string.Empty,
             Type            = account.Type,
-            Category        = account.Category,
+            CategoryId      = account.Category?.Id,
+            CategoryName    = account.Category?.Name,
             Level           = account.Level,
             IsActive        = account.IsActive,
             ParentAccountId = account.ParentAccount?.Id,
@@ -26,7 +27,8 @@ public static class ChartOfAccountsMappingExtensions
     public static ChartOfAccounts ToEntity(
         this CreateChartOfAccountsDto dto,
         Condominium condominium,
-        ChartOfAccounts? parentAccount = null)
+        ChartOfAccounts? parentAccount = null,
+        ChartOfAccountsCategory? category = null)
     {
         return new ChartOfAccounts
         {
@@ -37,19 +39,19 @@ public static class ChartOfAccountsMappingExtensions
             Name          = dto.Name.Trim(),
             Description   = dto.Description,
             Type          = dto.Type,
-            Category      = dto.Category,
+            Category      = category,
             Level         = parentAccount != null ? parentAccount.Level + 1 : 1,
             IsActive      = dto.IsActive,
             IsDeleted     = false,
         };
     }
 
-    public static void ApplyUpdate(this ChartOfAccounts entity, UpdateChartOfAccountsDto dto)
+    public static void ApplyUpdate(this ChartOfAccounts entity, UpdateChartOfAccountsDto dto, ChartOfAccountsCategory? category = null)
     {
         entity.Code        = dto.Code.Trim();
         entity.Name        = dto.Name.Trim();
         entity.Type        = dto.Type;
-        entity.Category    = dto.Category;
+        entity.Category    = category;
         entity.Description = dto.Description;
         entity.IsActive    = dto.IsActive;
     }

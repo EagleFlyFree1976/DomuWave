@@ -15,16 +15,22 @@ namespace DomuWave.Services.Consumers.Tenant;
 public class CreateTenantCommandConsumer
     : InMemoryConsumerBase<CreateTenantCommand, TenantReadDto>
 {
-    private readonly ITenantService _tenantService;
-    private readonly IUserService _userService;
+    private readonly ITenantService                          _tenantService;
+    private readonly IUserService                            _userService;
+    private readonly IChartOfAccountsCategoryService         _categoryService;
+    private readonly IChartOfAccountsCategoryTemplateService _templateService;
 
     public CreateTenantCommandConsumer(
-        ISessionFactoryProvider sessionFactoryProvider,
-        ITenantService tenantService,
-        IUserService userService) : base(sessionFactoryProvider)
+        ISessionFactoryProvider                  sessionFactoryProvider,
+        ITenantService                           tenantService,
+        IUserService                             userService,
+        IChartOfAccountsCategoryService          categoryService,
+        IChartOfAccountsCategoryTemplateService  templateService) : base(sessionFactoryProvider)
     {
-        _tenantService = tenantService;
-        _userService   = userService;
+        _tenantService   = tenantService;
+        _userService     = userService;
+        _categoryService = categoryService;
+        _templateService = templateService;
     }
 
     protected override async Task<TenantReadDto> Consume(
@@ -56,6 +62,19 @@ public class CreateTenantCommandConsumer
         var created = await _tenantService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        // Seed categorie dal template
+        var templates = await _templateService
+            .GetActiveAsync(currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var template in templates)
+        {
+            var category = template.ToCategory(created);
+            await _categoryService
+                .CreateAsync(category, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         return created.ToReadDto();
     }

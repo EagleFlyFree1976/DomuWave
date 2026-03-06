@@ -45,7 +45,7 @@ public class CreateChartOfAccountsCommandConsumer
             throw new ValidatorException("Il codice conto è obbligatorio.");
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new ValidatorException("Il nome conto è obbligatorio.");
-        if (string.IsNullOrWhiteSpace(dto.Type))
+        if (dto.Type == null)
             throw new ValidatorException("Il tipo conto è obbligatorio.");
 
         var condominium = await _condominiumService
@@ -72,7 +72,17 @@ public class CreateChartOfAccountsCommandConsumer
                 throw new NotFoundException("Conto padre non trovato.");
         }
 
-        var entity  = dto.ToEntity(condominium, parent);
+        ChartOfAccountsCategory? category = null;
+        if (dto.CategoryId.HasValue)
+        {
+            category = await session.Query<ChartOfAccountsCategory>()
+                .FirstOrDefaultAsync(x => x.Id == dto.CategoryId.Value && !x.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (category == null)
+                throw new NotFoundException("Categoria non trovata.");
+        }
+
+        var entity  = dto.ToEntity(condominium, parent, category);
         var created = await _accountService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

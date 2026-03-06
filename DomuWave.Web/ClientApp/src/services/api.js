@@ -154,10 +154,28 @@ export const fiscalYearApi = {
 
 // ─── Piano dei conti ──────────────────────────────────────────
 export const chartOfAccountsApi = {
-  getByCondominium: (condId)   => api.get(`/chart-of-accounts/by-condominium/${condId}`),
-  create:           (data)     => api.post('/chart-of-accounts', data),
-  update:           (id, data) => api.put(`/chart-of-accounts/${id}`, data),
-  delete:           (id)       => api.delete(`/chart-of-accounts/${id}`),
+  getByCondominium:    (condId)   => api.get(`/chart-of-accounts/by-condominium/${condId}`),
+  create:              (data)     => api.post('/chart-of-accounts', data),
+  update:              (id, data) => api.put(`/chart-of-accounts/${id}`, data),
+  delete:              (id)       => api.delete(`/chart-of-accounts/${id}`),
+  copyFromCondominium: (data)     => api.post('/chart-of-accounts/copy-from-condominium', data),
+}
+
+// ─── Categorie piano dei conti ────────────────────────────────
+export const chartOfAccountsCategoryApi = {
+  getAll:           ()              => api.get('/chart-of-accounts-categories'),
+  create:           (data)          => api.post('/chart-of-accounts-categories', data),
+  update:           (id, data)      => api.put(`/chart-of-accounts-categories/${id}`, data),
+  delete:           (id)            => api.delete(`/chart-of-accounts-categories/${id}`),
+  importFromTemplate: (templateIds) => api.post('/chart-of-accounts-categories/import-from-template', templateIds),
+}
+
+// ─── Template categorie piano dei conti (SuperAdmin) ─────────
+export const chartOfAccountsCategoryTemplateApi = {
+  getAll:  ()           => api.get('/chart-of-accounts-category-templates'),
+  create:  (data)       => api.post('/chart-of-accounts-category-templates', data),
+  update:  (id, data)   => api.put(`/chart-of-accounts-category-templates/${id}`, data),
+  delete:  (id)         => api.delete(`/chart-of-accounts-category-templates/${id}`),
 }
 
 // ─── Budget ───────────────────────────────────────────────────

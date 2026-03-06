@@ -60,4 +60,15 @@ public class ChartOfAccountsController(
             new DeleteChartOfAccountsCommand(CurrentUser.Id, id), ct);
         return NoContent();
     }
+
+    [HttpPost("copy-from-condominium")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CopyFromCondominium(
+        [FromBody] CopyChartOfAccountsDto dto, CancellationToken ct)
+    {
+        var copied = await _mediator.GetResponse(
+            new CopyChartOfAccountsCommand(CurrentUser.Id, dto.SourceCondominiumId, dto.TargetCondominiumId), ct);
+        return Ok(copied);
+    }
 }

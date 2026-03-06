@@ -7,9 +7,17 @@
         <h1 class="view-title">Piano dei Conti</h1>
         <p class="view-subtitle" v-if="condominioName">{{ condominioName }}</p>
       </div>
-      <button class="btn btn-primary" @click="openModal()" :disabled="!store.selectedCondominioId">
-        <i class="pi pi-plus"></i> Nuovo Conto
-      </button>
+      <div class="header-actions">
+        <router-link to="/categorie-piano-dei-conti" class="btn btn-ghost">
+          <i class="pi pi-tags"></i> Gestisci Categorie
+        </router-link>
+        <button class="btn btn-ghost" @click="openCopy" :disabled="!store.selectedCondominioId">
+          <i class="pi pi-copy"></i> Copia da…
+        </button>
+        <button class="btn btn-primary" @click="openModal()" :disabled="!store.selectedCondominioId">
+          <i class="pi pi-plus"></i> Nuovo Conto
+        </button>
+      </div>
     </div>
 
     <!-- Filtri -->
@@ -18,6 +26,10 @@
       <select class="form-select filter-select" v-model.number="filterType">
         <option value="">Tutti i tipi</option>
         <option v-for="t in typeOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
+      </select>
+      <select class="form-select filter-select" v-model.number="filterCategory">
+        <option value="">Tutte le categorie</option>
+        <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
       </select>
     </div>
 
@@ -50,7 +62,7 @@
             <td class="mono">{{ a.code }}</td>
             <td :style="{ paddingLeft: `${(a.level - 1) * 1.2 + 0.75}rem` }">{{ a.name }}</td>
             <td><span class="badge badge-type">{{ typeLabel(a.type) }}</span></td>
-            <td class="text-secondary">{{ a.category ?? '—' }}</td>
+            <td class="text-secondary">{{ a.categoryName ?? '—' }}</td>
             <td class="text-center">{{ a.level }}</td>
             <td class="text-secondary mono">{{ parentCode(a.parentAccountId) }}</td>
             <td>
@@ -62,6 +74,9 @@
               <button class="icon-btn" title="Modifica" @click="openModal(a)">
                 <i class="pi pi-pencil"></i>
               </button>
+              <button class="icon-btn" title="Clona" @click="cloneAccount(a)">
+                <i class="pi pi-copy"></i>
+              </button>
               <button class="icon-btn danger" title="Elimina" @click="confirmDelete(a)">
                 <i class="pi pi-trash"></i>
               </button>
@@ -71,7 +86,7 @@
       </table>
     </div>
 
-    <!-- Modal Create/Edit -->
+    <!-- Modal Create/Edit Conto -->
     <Teleport to="body">
       <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
         <div class="modal modal-md">
@@ -107,7 +122,10 @@
 
               <div class="form-group">
                 <label class="form-label">Categoria</label>
-                <input class="form-input" v-model="form.category" placeholder="es. Ordinaria, Straordinaria…" />
+                <select class="form-select" v-model.number="form.categoryId">
+                  <option :value="null">— Nessuna —</option>
+                  <option v-for="c in activeCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
               </div>
 
               <div class="form-group" v-if="!editing">
@@ -145,7 +163,46 @@
       </div>
     </Teleport>
 
-    <!-- Confirm delete -->
+    <!-- Copy from existing condominium -->
+    <Teleport to="body">
+      <div v-if="showCopy" class="modal-overlay" @click.self="showCopy = false">
+        <div class="modal modal-sm">
+          <div class="modal-header">
+            <h2>Copia Piano dei Conti</h2>
+            <button class="icon-btn" @click="showCopy = false"><i class="pi pi-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-stack">
+              <div class="form-group" :class="{ 'has-error': copyError }">
+                <label class="form-label">Condominio sorgente *</label>
+                <select class="form-select" v-model.number="copySourceId">
+                  <option :value="null">— Seleziona —</option>
+                  <option
+                    v-for="c in otherCondomini"
+                    :key="c.id"
+                    :value="c.id"
+                  >{{ c.name }}</option>
+                </select>
+                <span class="field-error" v-if="copyError">{{ copyError }}</span>
+              </div>
+              <p class="copy-hint">
+                <i class="pi pi-info-circle"></i>
+                Verranno copiati tutti i conti del condominio selezionato. I conti con codice già presente nel condominio corrente verranno ignorati. Le categorie non vengono copiate.
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="showCopy = false">Annulla</button>
+            <button class="btn btn-primary" @click="doCopy" :disabled="copying || !copySourceId">
+              <i class="pi pi-spin pi-spinner" v-if="copying"></i>
+              {{ copying ? 'Copia in corso…' : 'Copia' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Confirm delete conto -->
     <Teleport to="body">
       <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
         <div class="modal modal-sm">
@@ -176,20 +233,31 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { chartOfAccountsApi } from '@/services/api'
+import { chartOfAccountsApi, chartOfAccountsCategoryApi } from '@/services/api'
+
+const otherCondomini = computed(() =>
+  (store.condomini ?? []).filter(c => c.id !== store.selectedCondominioId)
+)
 
 const store = useAppStore()
 
-const accounts    = ref([])
-const loading     = ref(false)
-const search      = ref('')
-const filterType  = ref('')
-const showModal   = ref(false)
-const editing     = ref(null)   // account id when editing, null when creating
-const saving      = ref(false)
-const deleteTarget = ref(null)
-const deleting    = ref(false)
-const errors      = ref({})
+// ── Conti ──────────────────────────────────────────────────────
+const accounts       = ref([])
+const loading        = ref(false)
+const search         = ref('')
+const filterType     = ref('')
+const filterCategory = ref('')
+const showModal      = ref(false)
+const editing        = ref(null)
+const saving         = ref(false)
+const deleteTarget   = ref(null)
+const deleting       = ref(false)
+const errors         = ref({})
+
+// ── Categorie (solo per il dropdown) ──────────────────────────
+const categories = ref([])
+
+const activeCategories = computed(() => categories.value.filter(c => c.isActive))
 
 const typeOptions = [
   { value: 1, label: 'Entrata' },
@@ -199,7 +267,7 @@ const typeOptions = [
 const typeLabel = (v) => typeOptions.find(o => o.value === v)?.label ?? v
 
 const emptyForm = () => ({
-  code: '', name: '', type: 2, category: '', description: '',
+  code: '', name: '', type: 2, categoryId: null, description: '',
   parentAccountId: null, isActive: true,
 })
 const form = ref(emptyForm())
@@ -210,6 +278,7 @@ const condominioName = computed(() =>
 const filtered = computed(() => {
   let list = accounts.value
   if (filterType.value !== '') list = list.filter(a => a.type === filterType.value)
+  if (filterCategory.value !== '') list = list.filter(a => a.categoryId === filterCategory.value)
   if (search.value) {
     const q = search.value.toLowerCase()
     list = list.filter(a =>
@@ -232,9 +301,17 @@ async function load() {
   } catch { accounts.value = [] } finally { loading.value = false }
 }
 
-watch(() => store.selectedCondominioId, load)
-onMounted(load)
+async function loadCategories() {
+  try {
+    const res = await chartOfAccountsCategoryApi.getAll()
+    categories.value = res.data ?? []
+  } catch { categories.value = [] }
+}
 
+watch(() => store.selectedCondominioId, load)
+onMounted(() => { load(); loadCategories() })
+
+// ── Conti CRUD ─────────────────────────────────────────────────
 function clearError(f) { delete errors.value[f] }
 
 function validate() {
@@ -250,13 +327,29 @@ function openModal(a = null) {
     editing.value = a.id
     form.value = {
       code: a.code, name: a.name, type: a.type,
-      category: a.category ?? '', description: a.description ?? '',
+      categoryId: a.categoryId ?? null,
+      description: a.description ?? '',
       parentAccountId: a.parentAccountId ?? null,
       isActive: a.isActive,
     }
   } else {
     editing.value = null
     form.value = emptyForm()
+  }
+  showModal.value = true
+}
+
+function cloneAccount(a) {
+  errors.value  = {}
+  editing.value = null   // nuovo conto, non modifica
+  form.value = {
+    code:            '',                      // da compilare — deve essere univoco
+    name:            a.name,
+    type:            a.type,
+    categoryId:      a.categoryId ?? null,
+    description:     a.description ?? '',
+    parentAccountId: a.parentAccountId ?? null,
+    isActive:        a.isActive,
   }
   showModal.value = true
 }
@@ -268,7 +361,7 @@ async function save() {
     if (editing.value) {
       await chartOfAccountsApi.update(editing.value, {
         code: form.value.code, name: form.value.name,
-        type: form.value.type, category: form.value.category || null,
+        type: form.value.type, categoryId: form.value.categoryId,
         description: form.value.description || null, isActive: form.value.isActive,
       })
     } else {
@@ -278,7 +371,7 @@ async function save() {
         code:            form.value.code,
         name:            form.value.name,
         type:            form.value.type,
-        category:        form.value.category || null,
+        categoryId:      form.value.categoryId,
         description:     form.value.description || null,
         isActive:        form.value.isActive,
       })
@@ -302,6 +395,33 @@ async function doDelete() {
     if (!err?.response) throw err
   } finally { deleting.value = false }
 }
+
+// ── Copia da condominio esistente ───────────────────────────────
+const showCopy     = ref(false)
+const copySourceId = ref(null)
+const copying      = ref(false)
+const copyError    = ref('')
+
+function openCopy() {
+  copySourceId.value = null
+  copyError.value    = ''
+  showCopy.value     = true
+}
+
+async function doCopy() {
+  if (!copySourceId.value) { copyError.value = 'Seleziona un condominio sorgente'; return }
+  copying.value = true
+  try {
+    await chartOfAccountsApi.copyFromCondominium({
+      sourceCondominiumId: copySourceId.value,
+      targetCondominiumId: store.selectedCondominioId,
+    })
+    showCopy.value = false
+    await load()
+  } catch (err) {
+    if (!err?.response) throw err
+  } finally { copying.value = false }
+}
 </script>
 
 <style scoped>
@@ -314,6 +434,8 @@ async function doDelete() {
 }
 .view-title  { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); }
 .view-subtitle { font-size: .85rem; color: var(--text-muted); margin-top: .2rem; }
+
+.header-actions { display: flex; gap: .5rem; align-items: center; }
 
 .filter-bar {
   display: flex; gap: .75rem; margin-bottom: 1rem;
@@ -398,6 +520,7 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   display: inline-flex; align-items: center; gap: .4rem;
   padding: .5rem 1rem; border-radius: 7px; font-size: .875rem;
   font-weight: 500; cursor: pointer; border: none; transition: background .12s;
+  text-decoration: none;
 }
 .btn-primary { background: #34d399; color: #0f172a; }
 .btn-primary:hover:not(:disabled) { background: #2ac488; }
@@ -406,6 +529,15 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .btn-danger { background: #f87171; color: #fff; }
 .btn-danger:hover:not(:disabled) { background: #ef4444; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
+
+.form-stack { display: flex; flex-direction: column; gap: .9rem; }
+.copy-hint {
+  display: flex; align-items: flex-start; gap: .5rem;
+  font-size: .8rem; color: var(--text-muted);
+  background: var(--bg-surface); border-radius: 7px;
+  padding: .65rem .85rem; line-height: 1.45;
+}
+.copy-hint .pi { margin-top: .1rem; flex-shrink: 0; }
 
 .radio-group {
   display: flex; gap: 1.25rem; flex-wrap: wrap;

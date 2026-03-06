@@ -58,7 +58,17 @@ public class UpdateChartOfAccountsCommandConsumer
         if (codeExists)
             throw new ValidatorException($"Esiste già un conto con codice '{dto.Code}' per questo condominio.");
 
-        entity.ApplyUpdate(dto);
+        ChartOfAccountsCategory? category = null;
+        if (dto.CategoryId.HasValue)
+        {
+            category = await session.Query<ChartOfAccountsCategory>()
+                .FirstOrDefaultAsync(x => x.Id == dto.CategoryId.Value && !x.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (category == null)
+                throw new NotFoundException("Categoria non trovata.");
+        }
+
+        entity.ApplyUpdate(dto, category);
         var updated = await _accountService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

@@ -52,6 +52,8 @@ public static class Startup
 
         services.AddScoped<IBudgetItemService, BudgetItemService>();
         services.AddScoped<IBudgetService, BudgetService>();
+        services.AddScoped<IChartOfAccountsCategoryTemplateService, ChartOfAccountsCategoryTemplateService>();
+        services.AddScoped<IChartOfAccountsCategoryService, ChartOfAccountsCategoryService>();
         services.AddScoped<IChartOfAccountsService, ChartOfAccountsService>();
         services.AddScoped<ICommunicationReadService, CommunicationReadService>();
         services.AddScoped<ICommunicationService, CommunicationService>();

@@ -41,6 +41,8 @@ const routes = [
       },
       { path: 'esercizi-fiscali', component: () => import('@/views/EserciziFiscaliView.vue'), meta: { title: 'Esercizi Fiscali', requiresTenant: true } },
       { path: 'piano-dei-conti',  component: () => import('@/views/PianoDeiContiView.vue'),  meta: { title: 'Piano dei Conti',  requiresTenant: true } },
+      { path: 'categorie-piano-dei-conti', component: () => import('@/views/CategoriePianoDeiContiView.vue'), meta: { title: 'Categorie Piano dei Conti', requiresTenant: true } },
+      { path: 'template-categorie-piano-dei-conti', component: () => import('@/views/TemplateCategoriePianoDeiContiView.vue'), meta: { title: 'Template Categorie Piano dei Conti', requiresAuth: true, requiredRole: 'SuperAdmin' } },
       { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget & Spese', requiresTenant: true } },
       { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
       { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori', requiresTenant: true } },

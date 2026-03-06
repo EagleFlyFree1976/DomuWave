@@ -12,7 +12,10 @@
       "Bash(xargs grep -l \"interface IUserService\")",
       "Read(//c/Projects/Works/**)",
       "Read(//c/Projects/**)",
-      "Bash(xargs grep -l \"Budget\")"
+      "Bash(xargs grep -l \"Budget\")",
+      "Bash(xargs cat)",
+      "Bash(xargs wc -l)",
+      "Bash(xargs grep -l \"CreateTenant\\\\|TenantCreate\\\\|new Tenant\")"
     ]
   }
 }
