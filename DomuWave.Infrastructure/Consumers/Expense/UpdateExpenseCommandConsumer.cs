@@ -55,9 +55,10 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
                 .FirstOrDefaultAsync(x => x.Id == dto.SupplierId.Value && !x.IsDeleted, cancellationToken)
                 .ConfigureAwait(false);
 
-        var expenseType = session.Load<ExpenseType>(dto.ExpenseTypeId);
+        var expenseType   = session.Load<ExpenseType>(dto.ExpenseTypeId);
+        var paymentStatus = session.Load<ExpensePaymentStatus>(dto.PaymentStatusId > 0 ? dto.PaymentStatusId : entity.PaymentStatus?.Id ?? ExpensePaymentStatus.DaPagare);
 
-        entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType);
+        entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType, paymentStatus);
         var updated = await _expenseService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

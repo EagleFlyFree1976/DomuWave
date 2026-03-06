@@ -16,7 +16,9 @@
       "Bash(xargs cat)",
       "Bash(xargs wc -l)",
       "Bash(xargs grep -l \"CreateTenant\\\\|TenantCreate\\\\|new Tenant\")",
-      "Bash(Get-ChildItem \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\DomuWave.Infrastructure\\\\Command\\\\Expense\")"
+      "Bash(Get-ChildItem \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\DomuWave.Infrastructure\\\\Command\\\\Expense\")",
+      "Bash(grep -h \"modal-sm\\\\|modal--wide\\\\|modal-xl\\\\|modal-md\\\\|modal-lg\" c:/Projects/Works/DomuWave/DomuWave.Web/wwwroot/assets/css/*.css)",
+      "Bash(tr '}' '\\\\n')"
     ]
   }
 }

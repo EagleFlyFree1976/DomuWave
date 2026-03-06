@@ -92,13 +92,19 @@
     ══════════════════════════════════════════════════ -->
     <div v-if="activeTab === 'spese'">
       <div class="tab-toolbar">
-        <input class="form-input" type="date" v-model="expFrom" style="width:160px" />
-        <input class="form-input" type="date" v-model="expTo"   style="width:160px" />
-        <select class="form-select" v-model="expFilter" style="width:140px">
+        <select class="form-select" v-model.number="expTypeFilter" style="width:160px" @change="loadExpenses">
+          <option :value="0">Tutti i tipi</option>
+          <option :value="1">Manutenzione</option>
+          <option :value="2">Pulizie</option>
+          <option :value="3">Sicurezza</option>
+          <option :value="4">Utenze</option>
+          <option :value="5">Professionale</option>
+          <option :value="6">Altro</option>
+        </select>
+        <select class="form-select" v-model="expFilter" style="width:140px" @change="loadExpenses">
           <option value="">Tutte</option>
           <option value="unpaid">Non pagate</option>
         </select>
-        <button class="btn btn-ghost btn-sm" @click="loadExpenses">Aggiorna</button>
         <button v-if="canCreate" class="btn btn-primary" style="margin-left:auto"
                 @click="openExpenseModal()">+ Nuova spesa</button>
       </div>
@@ -128,10 +134,10 @@
                 <td class="mono text-right">{{ fmt(e.grossAmount) }}</td>
                 <td class="mono text-right text-secondary">{{ fmt(e.vatAmount) }}</td>
                 <td class="text-secondary">{{ e.paymentMethod || '—' }}</td>
-                <td><span class="badge" :class="payBadge(e.paymentStatus)">{{ e.paymentStatus }}</span></td>
+                <td><span class="badge" :class="payBadge(e.paymentStatusId)">{{ e.paymentStatusName }}</span></td>
                 <td>
                   <div class="row-actions">
-                    <button v-if="canEdit && e.paymentStatus !== 'Paid'" class="btn btn-sm btn-ghost"
+                    <button v-if="canEdit && e.paymentStatusId !== 2" class="btn btn-sm btn-ghost"
                             @click="markPaid(e.id)">Paga</button>
                     <button v-if="canEdit" class="btn-icon" @click="openExpenseModal(e)">✎</button>
                     <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
@@ -148,257 +154,245 @@
     <!-- ══════════════════════════════════════════════════
          MODAL — Crea / Modifica Budget
     ══════════════════════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showBudgetModal" @click.self="showBudgetModal = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h2>{{ editingBudget ? 'Modifica budget' : 'Nuovo budget' }}</h2>
-          <button class="btn-icon" @click="showBudgetModal = false">✕</button>
+    <BaseModal
+      :show="showBudgetModal"
+      @close="showBudgetModal = false"
+      :title="editingBudget ? 'Modifica budget' : 'Nuovo budget'"
+      :subtitle="store.selectedCondominio?.name"
+    >
+      <div class="form-grid">
+        <div class="form-group" v-if="!editingBudget">
+          <label class="form-label">Tipo *</label>
+          <select class="form-select" v-model.number="budgetForm.type">
+            <option value="1">Preventivo</option>
+            <option value="2">Consuntivo</option>
+          </select>
         </div>
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group" v-if="!editingBudget">
-              <label class="form-label">Tipo *</label>
-              <select class="form-select" v-model.number="budgetForm.type">
-                <option value="1">Preventivo</option>
-                <option value="2">Consuntivo</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Totale entrate (€)</label>
-              <input class="form-input" type="number" step="0.01" v-model.number="budgetForm.totalIncome" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Note</label>
-            <textarea class="form-textarea" v-model="budgetForm.notes" rows="2"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="showBudgetModal = false">Annulla</button>
-          <button class="btn btn-primary" @click="saveBudget" :disabled="savingBudget">
-            <span v-if="savingBudget" class="spinner" style="width:14px;height:14px"></span>
-            {{ editingBudget ? 'Salva' : 'Crea' }}
-          </button>
+        <div class="form-group">
+          <label class="form-label">Totale entrate (€)</label>
+          <input class="form-input" type="number" step="0.01" v-model.number="budgetForm.totalIncome" />
         </div>
       </div>
-    </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea class="form-textarea" v-model="budgetForm.notes" rows="2"></textarea>
+      </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="showBudgetModal = false">Annulla</button>
+        <button class="btn btn-primary" @click="saveBudget" :disabled="savingBudget">
+          <span v-if="savingBudget" class="spinner" style="width:14px;height:14px"></span>
+          {{ editingBudget ? 'Salva' : 'Crea' }}
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- ══════════════════════════════════════════════════
          MODAL — Voci di Budget
     ══════════════════════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showItemsModal" @click.self="closeItemsModal">
-      <div class="modal modal-lg">
-        <div class="modal-header">
-          <div>
-            <h2>Voci di budget</h2>
-            <p class="modal-subtitle" v-if="selectedBudget">
-              {{ selectedBudget.type }}
-              <span v-if="selectedBudget.fiscalYearCode"> · {{ selectedBudget.fiscalYearCode }}</span>
-              <span class="badge ml-2" :class="statusBadge(selectedBudget.statusId)">
-                {{ statusLabel(selectedBudget.statusId) }}
-              </span>
-            </p>
-          </div>
-          <button class="btn-icon" @click="closeItemsModal">✕</button>
-        </div>
+    <BaseModal :show="showItemsModal" @close="closeItemsModal" size="lg">
+      <template #title>Voci di budget</template>
+      <template #subtitle>
+        <span v-if="store.selectedCondominio" class="modal-condominium">{{ store.selectedCondominio.name }}</span>
+        <span v-if="store.selectedCondominio && selectedBudget"> · </span>
+        <span v-if="selectedBudget">{{ selectedBudget.type }}</span>
+        <span v-if="selectedBudget?.fiscalYearCode"> · {{ selectedBudget.fiscalYearCode }}</span>
+        <span v-if="selectedBudget" class="badge ml-2" :class="statusBadge(selectedBudget.statusId)">
+          {{ statusLabel(selectedBudget.statusId) }}
+        </span>
+      </template>
 
-        <div class="modal-body">
-          <!-- Add new item button -->
-          <div class="items-toolbar" v-if="canCreate && !showItemForm">
-            <button class="btn btn-primary btn-sm" @click="openItemForm()">+ Aggiungi voce</button>
-          </div>
+      <!-- Add new item button -->
+      <div class="items-toolbar" v-if="canCreate && !showItemForm">
+        <button class="btn btn-primary btn-sm" @click="openItemForm()">+ Aggiungi voce</button>
+      </div>
 
-          <!-- Item form (inline) -->
-          <div class="item-form-panel" v-if="showItemForm">
-            <div class="form-grid form-grid-3">
-              <div class="form-group" style="grid-column: span 2">
-                <label class="form-label">Conto *</label>
-                <select class="form-select" v-model.number="itemForm.accountId">
-                  <option :value="null" disabled>Seleziona conto…</option>
-                  <optgroup v-for="grp in accountGroups" :key="grp.type" :label="grp.type">
-                    <option v-for="a in grp.accounts" :key="a.id" :value="a.id">
-                      {{ a.code }} – {{ a.name }}
-                    </option>
-                  </optgroup>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Importo (€) *</label>
-                <input class="form-input" type="number" step="0.01" v-model.number="itemForm.amount" />
-              </div>
-              <div class="form-group" style="grid-column: span 2">
-                <label class="form-label">Descrizione</label>
-                <input class="form-input" v-model="itemForm.description" placeholder="Descrizione voce…" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Note</label>
-                <input class="form-input" v-model="itemForm.notes" />
-              </div>
-            </div>
-            <div class="item-form-actions">
-              <button class="btn btn-ghost btn-sm" @click="cancelItemForm">Annulla</button>
-              <button class="btn btn-primary btn-sm" @click="saveItem" :disabled="savingItem">
-                <span v-if="savingItem" class="spinner" style="width:12px;height:12px"></span>
-                {{ editingItem ? 'Salva' : 'Aggiungi' }}
-              </button>
-            </div>
+      <!-- Item form (inline) -->
+      <div class="item-form-panel" v-if="showItemForm">
+        <div class="form-grid form-grid-3">
+          <div class="form-group" style="grid-column: span 2">
+            <label class="form-label">Conto *</label>
+            <select class="form-select" v-model.number="itemForm.accountId">
+              <option :value="null" disabled>Seleziona conto…</option>
+              <optgroup v-for="grp in accountGroups" :key="grp.type" :label="grp.type">
+                <option v-for="a in grp.accounts" :key="a.id" :value="a.id">
+                  {{ a.code }} – {{ a.name }}
+                </option>
+              </optgroup>
+            </select>
           </div>
-
-          <!-- Items table -->
-          <div v-if="loadingItems" class="loading-state"><div class="spinner"></div></div>
-          <div v-else-if="!budgetItems.length && !showItemForm" class="empty-state" style="padding:1.5rem">
-            <div class="empty-icon">◎</div>
-            <div>Nessuna voce di budget. Clicca "+ Aggiungi voce" per iniziare.</div>
+          <div class="form-group">
+            <label class="form-label">Importo (€) *</label>
+            <input class="form-input" type="number" step="0.01" v-model.number="itemForm.amount" />
           </div>
-          <div v-else-if="budgetItems.length" class="table-wrap" style="margin-top:0.5rem">
-            <table>
-              <thead>
-                <tr>
-                  <th>Conto</th>
-                  <th>Descrizione</th>
-                  <th class="text-right">Importo</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="item in budgetItems" :key="item.id">
-                  <td>
-                    <span class="mono text-secondary" style="font-size:0.8em">{{ item.accountCode }}</span>
-                    {{ item.accountName }}
-                  </td>
-                  <td class="text-secondary">{{ item.description || '—' }}</td>
-                  <td class="mono text-right">{{ fmt(item.amount) }}</td>
-                  <td>
-                    <div class="row-actions">
-                      <button v-if="canEdit" class="btn-icon" @click="openItemForm(item)" title="Modifica">✎</button>
-                      <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
-                              @click="deleteItem(item.id)" title="Elimina">✕</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr class="items-total-row">
-                  <td colspan="2" class="text-secondary">Totale voci</td>
-                  <td class="mono text-right text-red">{{ fmt(totalItems) }}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+          <div class="form-group" style="grid-column: span 2">
+            <label class="form-label">Descrizione</label>
+            <input class="form-input" v-model="itemForm.description" placeholder="Descrizione voce…" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Note</label>
+            <input class="form-input" v-model="itemForm.notes" />
           </div>
         </div>
-
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="closeItemsModal">Chiudi</button>
+        <div class="item-form-actions">
+          <button class="btn btn-ghost btn-sm" @click="cancelItemForm">Annulla</button>
+          <button class="btn btn-primary btn-sm" @click="saveItem" :disabled="savingItem">
+            <span v-if="savingItem" class="spinner" style="width:12px;height:12px"></span>
+            {{ editingItem ? 'Salva' : 'Aggiungi' }}
+          </button>
         </div>
       </div>
-    </div>
+
+      <!-- Items table -->
+      <div v-if="loadingItems" class="loading-state"><div class="spinner"></div></div>
+      <div v-else-if="!budgetItems.length && !showItemForm" class="empty-state" style="padding:1.5rem">
+        <div class="empty-icon">◎</div>
+        <div>Nessuna voce di budget. Clicca "+ Aggiungi voce" per iniziare.</div>
+      </div>
+      <div v-else-if="budgetItems.length" class="table-wrap" style="margin-top:0.5rem">
+        <table>
+          <thead>
+            <tr>
+              <th>Conto</th>
+              <th>Descrizione</th>
+              <th class="text-right">Importo</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in budgetItems" :key="item.id">
+              <td>
+                <span class="mono text-secondary" style="font-size:0.8em">{{ item.accountCode }}</span>
+                {{ item.accountName }}
+              </td>
+              <td class="text-secondary">{{ item.description || '—' }}</td>
+              <td class="mono text-right">{{ fmt(item.amount) }}</td>
+              <td>
+                <div class="row-actions">
+                  <button v-if="canEdit" class="btn-icon" @click="openItemForm(item)" title="Modifica">✎</button>
+                  <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
+                          @click="deleteItem(item.id)" title="Elimina">✕</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="items-total-row">
+              <td colspan="2" class="text-secondary">Totale voci</td>
+              <td class="mono text-right text-red">{{ fmt(totalItems) }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <template #footer>
+        <button class="btn btn-ghost" @click="closeItemsModal">Chiudi</button>
+      </template>
+    </BaseModal>
 
     <!-- ══════════════════════════════════════════════════
          MODAL — Crea / Modifica Spesa
     ══════════════════════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showExpenseModal" @click.self="showExpenseModal = false">
-      <div class="modal modal-lg">
-        <div class="modal-header">
-          <h2>{{ editingExp ? 'Modifica spesa' : 'Nuova spesa' }}</h2>
-          <button class="btn-icon" @click="showExpenseModal = false">✕</button>
+    <BaseModal
+      :show="showExpenseModal"
+      @close="showExpenseModal = false"
+      :title="editingExp ? 'Modifica spesa' : 'Nuova spesa'"
+      :subtitle="store.selectedCondominio?.name"
+      size="lg"
+    >
+      <div class="form-grid">
+        <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.name }">
+          <label class="form-label">Descrizione *</label>
+          <input class="form-input" v-model="expForm.name" placeholder="Descrizione spesa…" @input="clearExpError('name')" />
+          <span v-if="expErrors.name" class="field-error">{{ expErrors.name }}</span>
         </div>
-        <div class="modal-body">
-          <div class="form-grid">
-            <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.name }">
-              <label class="form-label">Descrizione *</label>
-              <input class="form-input" v-model="expForm.name" placeholder="Descrizione spesa…" @input="clearExpError('name')" />
-              <span v-if="expErrors.name" class="field-error">{{ expErrors.name }}</span>
-            </div>
-            <div class="form-group">
-              <label class="form-label">N° documento</label>
-              <input class="form-input" v-model="expForm.documentNumber" />
-            </div>
-            <div class="form-group" :class="{ 'has-error': expErrors.expenseTypeId }">
-              <label class="form-label">Tipo spesa *</label>
-              <select class="form-select" v-model.number="expForm.expenseTypeId" @change="clearExpError('expenseTypeId')">
-                <option :value="0" disabled>Seleziona tipo…</option>
-                <option :value="1">Manutenzione</option>
-                <option :value="2">Pulizie</option>
-                <option :value="3">Sicurezza</option>
-                <option :value="4">Utenze</option>
-                <option :value="5">Professionale</option>
-                <option :value="6">Altro</option>
-              </select>
-              <span v-if="expErrors.expenseTypeId" class="field-error">{{ expErrors.expenseTypeId }}</span>
-            </div>
-            <div class="form-group" :class="{ 'has-error': expErrors.documentDate }">
-              <label class="form-label">Data documento *</label>
-              <input class="form-input" type="date" v-model="expForm.documentDate" @input="clearExpError('documentDate')" />
-              <span v-if="expErrors.documentDate" class="field-error">{{ expErrors.documentDate }}</span>
-            </div>
-            <div class="form-group" :class="{ 'has-error': expErrors.registrationDate }">
-              <label class="form-label">Data registrazione *</label>
-              <input class="form-input" type="date" v-model="expForm.registrationDate" @input="clearExpError('registrationDate')" />
-              <span v-if="expErrors.registrationDate" class="field-error">{{ expErrors.registrationDate }}</span>
-            </div>
-            <div class="form-group" :class="{ 'has-error': expErrors.grossAmount }">
-              <label class="form-label">Importo lordo (€) *</label>
-              <input class="form-input" type="number" step="0.01" v-model.number="expForm.grossAmount" @input="clearExpError('grossAmount')" />
-              <span v-if="expErrors.grossAmount" class="field-error">{{ expErrors.grossAmount }}</span>
-            </div>
-            <div class="form-group">
-              <label class="form-label">IVA (€)</label>
-              <input class="form-input" type="number" step="0.01" v-model.number="expForm.vatAmount" />
-            </div>
-            <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.accountId }">
-              <label class="form-label">Conto *</label>
-              <select class="form-select" v-model.number="expForm.accountId" @change="clearExpError('accountId')">
-                <option :value="null" disabled>Seleziona conto…</option>
-                <optgroup v-for="grp in accountGroups" :key="grp.type" :label="grp.type">
-                  <option v-for="a in grp.accounts" :key="a.id" :value="a.id">{{ a.code }} – {{ a.name }}</option>
-                </optgroup>
-              </select>
-              <span v-if="expErrors.accountId" class="field-error">{{ expErrors.accountId }}</span>
-            </div>
-            <div class="form-group" :class="{ 'has-error': expErrors.millesimalTableId }">
-              <label class="form-label">Tabella millesimale *</label>
-              <select class="form-select" v-model.number="expForm.millesimalTableId" @change="clearExpError('millesimalTableId')">
-                <option :value="null" disabled>Seleziona tabella…</option>
-                <option v-for="t in millesimalTables" :key="t.id" :value="t.id">
-                  {{ t.code }}{{ t.description ? ' – ' + t.description : '' }}
-                </option>
-              </select>
-              <span v-if="expErrors.millesimalTableId" class="field-error">{{ expErrors.millesimalTableId }}</span>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Fornitore</label>
-              <select class="form-select" v-model.number="expForm.supplierId">
-                <option :value="null">—</option>
-                <option v-for="s in suppliers" :key="s.id" :value="s.id">
-                  {{ s.name || s.companyName }}
-                </option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Metodo pagamento</label>
-              <select class="form-select" v-model="expForm.paymentMethod">
-                <option value="">—</option>
-                <option value="BankTransfer">Bonifico</option>
-                <option value="Cash">Contanti</option>
-                <option value="Check">Assegno</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Note</label>
-            <textarea class="form-textarea" v-model="expForm.description" rows="2"></textarea>
-          </div>
+        <div class="form-group">
+          <label class="form-label">N° documento</label>
+          <input class="form-input" v-model="expForm.documentNumber" />
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="showExpenseModal = false">Annulla</button>
-          <button class="btn btn-primary" @click="saveExpense" :disabled="savingExp">
-            <span v-if="savingExp" class="spinner" style="width:14px;height:14px"></span>
-            {{ editingExp ? 'Salva' : 'Crea' }}
-          </button>
+        <div class="form-group" :class="{ 'has-error': expErrors.expenseTypeId }">
+          <label class="form-label">Tipo spesa *</label>
+          <select class="form-select" v-model.number="expForm.expenseTypeId" @change="clearExpError('expenseTypeId')">
+            <option :value="0" disabled>Seleziona tipo…</option>
+            <option :value="1">Manutenzione</option>
+            <option :value="2">Pulizie</option>
+            <option :value="3">Sicurezza</option>
+            <option :value="4">Utenze</option>
+            <option :value="5">Professionale</option>
+            <option :value="6">Altro</option>
+          </select>
+          <span v-if="expErrors.expenseTypeId" class="field-error">{{ expErrors.expenseTypeId }}</span>
+        </div>
+        <div class="form-group" :class="{ 'has-error': expErrors.documentDate }">
+          <label class="form-label">Data documento *</label>
+          <input class="form-input" type="date" v-model="expForm.documentDate" @input="clearExpError('documentDate')" />
+          <span v-if="expErrors.documentDate" class="field-error">{{ expErrors.documentDate }}</span>
+        </div>
+        <div class="form-group" :class="{ 'has-error': expErrors.registrationDate }">
+          <label class="form-label">Data registrazione *</label>
+          <input class="form-input" type="date" v-model="expForm.registrationDate" @input="clearExpError('registrationDate')" />
+          <span v-if="expErrors.registrationDate" class="field-error">{{ expErrors.registrationDate }}</span>
+        </div>
+        <div class="form-group" :class="{ 'has-error': expErrors.grossAmount }">
+          <label class="form-label">Importo lordo (€) *</label>
+          <input class="form-input" type="number" step="0.01" v-model.number="expForm.grossAmount" @input="clearExpError('grossAmount')" />
+          <span v-if="expErrors.grossAmount" class="field-error">{{ expErrors.grossAmount }}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">IVA (€)</label>
+          <input class="form-input" type="number" step="0.01" v-model.number="expForm.vatAmount" />
+        </div>
+        <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.accountId }">
+          <label class="form-label">Conto *</label>
+          <select class="form-select" v-model.number="expForm.accountId" @change="clearExpError('accountId')">
+            <option :value="null" disabled>Seleziona conto…</option>
+            <optgroup v-for="grp in accountGroups" :key="grp.type" :label="grp.type">
+              <option v-for="a in grp.accounts" :key="a.id" :value="a.id">{{ a.code }} – {{ a.name }}</option>
+            </optgroup>
+          </select>
+          <span v-if="expErrors.accountId" class="field-error">{{ expErrors.accountId }}</span>
+        </div>
+        <div class="form-group" :class="{ 'has-error': expErrors.millesimalTableId }">
+          <label class="form-label">Tabella millesimale *</label>
+          <select class="form-select" v-model.number="expForm.millesimalTableId" @change="clearExpError('millesimalTableId')">
+            <option :value="null" disabled>Seleziona tabella…</option>
+            <option v-for="t in millesimalTables" :key="t.id" :value="t.id">
+              {{ t.code }}{{ t.description ? ' – ' + t.description : '' }}
+            </option>
+          </select>
+          <span v-if="expErrors.millesimalTableId" class="field-error">{{ expErrors.millesimalTableId }}</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fornitore</label>
+          <select class="form-select" v-model.number="expForm.supplierId">
+            <option :value="null">—</option>
+            <option v-for="s in suppliers" :key="s.id" :value="s.id">
+              {{ s.name || s.companyName }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Metodo pagamento</label>
+          <select class="form-select" v-model="expForm.paymentMethod">
+            <option value="">—</option>
+            <option value="BankTransfer">Bonifico</option>
+            <option value="Cash">Contanti</option>
+            <option value="Check">Assegno</option>
+          </select>
         </div>
       </div>
-    </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea class="form-textarea" v-model="expForm.description" rows="2"></textarea>
+      </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="showExpenseModal = false">Annulla</button>
+        <button class="btn btn-primary" @click="saveExpense" :disabled="savingExp">
+          <span v-if="savingExp" class="spinner" style="width:14px;height:14px"></span>
+          {{ editingExp ? 'Salva' : 'Crea' }}
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -407,6 +401,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { budgetApi, budgetItemApi, fiscalYearApi, chartOfAccountsApi, expenseApi, supplierApi, millesimalTableApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import BaseModal from '@/components/BaseModal.vue'
 
 const store = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
@@ -632,6 +627,7 @@ const editingExp      = ref(null)
 const savingExp       = ref(false)
 const expErrors       = ref({})
 const expFilter       = ref('')
+const expTypeFilter   = ref(0)
 
 function clearExpError(field) { delete expErrors.value[field] }
 
@@ -649,15 +645,12 @@ function validateExpForm() {
   return Object.keys(e).length === 0
 }
 const today           = new Date().toISOString().slice(0, 10)
-const firstOfYear     = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10)
-const expFrom         = ref(firstOfYear)
-const expTo           = ref(today)
 const suppliers       = ref([])
 const millesimalTables = ref([])
 
 const emptyExpForm = () => ({
   name: '', documentNumber: '', documentDate: today, registrationDate: today,
-  grossAmount: 0, vatAmount: 0, expenseTypeId: 0, paymentStatus: 'ToPay',
+  grossAmount: 0, vatAmount: 0, expenseTypeId: 0, paymentStatusId: 1,
   paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: ''
 })
 const expForm = ref(emptyExpForm())
@@ -666,9 +659,14 @@ async function loadExpenses() {
   if (!store.selectedCondominioId) return
   loadingExp.value = true
   try {
-    const res = expFilter.value === 'unpaid'
-      ? await expenseApi.getUnpaid(store.selectedCondominioId)
-      : await expenseApi.getByDateRange(store.selectedCondominioId, expFrom.value, expTo.value)
+    let res
+    if (expFilter.value === 'unpaid') {
+      res = await expenseApi.getUnpaid(store.selectedCondominioId)
+    } else if (expTypeFilter.value) {
+      res = await expenseApi.getByType(store.selectedCondominioId, expTypeFilter.value)
+    } else {
+      res = await expenseApi.getByCondominium(store.selectedCondominioId)
+    }
     expenses.value = res.data
   } catch { expenses.value = [] } finally { loadingExp.value = false }
 }
@@ -684,7 +682,7 @@ async function openExpenseModal(e = null) {
     grossAmount:        e.grossAmount ?? 0,
     vatAmount:          e.vatAmount ?? 0,
     expenseTypeId:      e.expenseTypeId ?? 0,
-    paymentStatus:      e.paymentStatus ?? 'ToPay',
+    paymentStatusId:    e.paymentStatusId ?? 1,
     paymentMethod:      e.paymentMethod ?? '',
     supplierId:         e.supplierId ?? null,
     accountId:          e.accountId ?? null,
@@ -726,7 +724,7 @@ async function saveExpense() {
       vatAmount:        expForm.value.vatAmount,
       netAmount:        expForm.value.grossAmount - expForm.value.vatAmount,
       expenseTypeId:    expForm.value.expenseTypeId,
-      paymentStatus:    expForm.value.paymentStatus || 'ToPay',
+      paymentStatusId:  expForm.value.paymentStatusId || 1,
       paymentMethod:    expForm.value.paymentMethod || null,
       description:      expForm.value.description || null,
       condominiumId:    store.selectedCondominioId,
@@ -764,11 +762,13 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 
 const statusBadge  = (id) => ({ 1: 'badge-muted', 2: 'badge-green', 3: 'badge-purple' }[id] ?? 'badge-muted')
 const statusLabel  = (id) => ({ 1: 'Bozza', 2: 'Approvato', 3: 'Chiuso' }[id] ?? String(id ?? ''))
-const payBadge     = (s) => ({ ToPay: 'badge-amber', Paid: 'badge-green', Overdue: 'badge-red' }[s] ?? 'badge-muted')
+const payBadge     = (id) => ({ 1: 'badge-amber', 2: 'badge-green', 3: 'badge-red' }[id] ?? 'badge-muted')
 
 // ─── Watchers / Init ──────────────────────────────────────────
 watch(() => store.selectedCondominioId, async () => {
   accountsLoaded = false
+  expTypeFilter.value = 0
+  expFilter.value = ''
   await loadFiscalYears()
   await loadExpenses()
 })
@@ -788,10 +788,6 @@ onMounted(async () => {
 .text-green  { color: var(--accent-green, #22c55e); }
 .text-red    { color: var(--accent-red,   #ef4444); }
 .ml-2        { margin-left: 0.5rem; }
-
-/* Modal sizing */
-.modal-lg    { max-width: 760px; width: 95vw; }
-.modal-subtitle { margin: 0.15rem 0 0; font-size: 0.85rem; color: var(--text-muted); }
 
 /* Items modal toolbar */
 .items-toolbar { margin-bottom: 0.75rem; }

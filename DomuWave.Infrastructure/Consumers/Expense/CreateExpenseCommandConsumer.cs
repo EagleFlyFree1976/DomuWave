@@ -54,9 +54,10 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
                 .FirstOrDefaultAsync(x => x.Id == dto.SupplierId.Value && !x.IsDeleted, cancellationToken)
                 .ConfigureAwait(false);
 
-        var expenseType = session.Load<ExpenseType>(dto.ExpenseTypeId);
+        var expenseType    = session.Load<ExpenseType>(dto.ExpenseTypeId);
+        var paymentStatus  = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
 
-        var entity  = dto.ToEntity(condominium, account, millesimalTable, supplier, expenseType);
+        var entity  = dto.ToEntity(condominium, account, millesimalTable, supplier, expenseType, paymentStatus);
         var created = await _expenseService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

@@ -610,6 +610,17 @@ tbody tr:hover td {
   flex-shrink: 0;
 }
 
+/* Modal size variants */
+.modal-sm   { max-width: 420px; }
+.modal-md   { max-width: 560px; }
+.modal-lg   { max-width: 760px; width: 95vw; }
+.modal-xl   { max-width: 1020px; width: 96vw; }
+.modal-wide { max-width: 760px; width: min(760px, 96vw); }
+
+/* Modal text helpers */
+.modal-subtitle     { margin: 0.15rem 0 0; font-size: 0.85rem; color: var(--text-muted); }
+.modal-condominium  { font-weight: 600; color: var(--accent); }
+
 /* ── Tab toolbar ───────────────────────────────────────────────── */
 .tab-toolbar {
   display: flex;

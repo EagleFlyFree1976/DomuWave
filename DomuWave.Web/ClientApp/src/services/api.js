@@ -205,6 +205,7 @@ export const expenseApi = {
   getById:            (id)                        => api.get(`/expenses/${id}`),
   getByCondominium:   (condId)                    => api.get(`/expenses/by-condominium/${condId}`),
   getByDateRange:     (condId, from, to)          => api.get(`/expenses/by-condominium/${condId}/date-range`, { params: { from, to } }),
+  getByType:          (condId, typeId)            => api.get(`/expenses/by-condominium/${condId}/type/${typeId}`),
   getUnpaid:          (condId)                    => api.get(`/expenses/by-condominium/${condId}/unpaid`),
   getTotal:           (condId, from, to)          => api.get(`/expenses/by-condominium/${condId}/total`, { params: { from, to } }),
   create:             (data)                      => api.post('/expenses', data),

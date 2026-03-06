@@ -14,7 +14,7 @@ public class CreateExpenseDto
     public decimal  VatAmount         { get; set; }
     public decimal  NetAmount         { get; set; }
     public int      ExpenseTypeId     { get; set; }
-    public string   PaymentStatus     { get; set; } = "ToPay";
+    public int      PaymentStatusId   { get; set; } = 1;
     public string?  PaymentMethod     { get; set; }
     public string?  Description       { get; set; }
 }

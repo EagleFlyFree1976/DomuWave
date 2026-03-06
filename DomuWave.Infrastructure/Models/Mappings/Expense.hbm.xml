@@ -29,7 +29,7 @@
     <property name="VatAmount" column="VatAmount" type="Decimal" not-null="true" />
     <property name="NetAmount" column="NetAmount" type="Decimal" not-null="true" />
     <many-to-one name="ExpenseType" class="DomuWave.Services.Models.ExpenseType, DomuWave.Services" column="ExpenseTypeId" not-null="true" lazy="false" fetch="join" />
-    <property name="PaymentStatus" column="PaymentStatus" type="String" length="50" not-null="true" />
+    <many-to-one name="PaymentStatus" class="DomuWave.Services.Models.ExpensePaymentStatus, DomuWave.Services" column="PaymentStatusId" not-null="true" lazy="false" fetch="join" />
     <property name="PaymentDate" column="PaymentDate" type="DateTime" />
     <property name="PaymentMethod" column="PaymentMethod" type="String" length="50" />
     <property name="DocumentPath" column="DocumentPath" type="String" length="500" />

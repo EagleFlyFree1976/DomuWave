@@ -260,7 +260,7 @@ namespace DomuWave.Services.Implementations
             // Verifica spese in stato provvisorio
             var pendingExpenses = await session.Query<Expense>()
                 .CountAsync(x => x.FiscalYear.Id == fiscalYearId
-                              && x.PaymentStatus== "Provisional"
+                              && x.PaymentStatus.Id== ExpensePaymentStatus.PagataParzialmente
                               && !x.IsDeleted, ct);
 
             if (pendingExpenses > 0)

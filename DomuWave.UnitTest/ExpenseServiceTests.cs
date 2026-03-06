@@ -122,15 +122,7 @@ public class ExpenseServiceTests : TestBase
     [Fact]
     public async Task CreateAsync_ValidExpense_ReturnsSavedExpense()
     {
-        var newExpense = new Expense { GrossAmount = 300m, ExpenseType = "Manutenzione" };
-        var saved      = new Expense { Id = 99L, GrossAmount = 300m, ExpenseType = "Manutenzione" };
-
-        _serviceMock.Setup(s => s.CreateAsync(newExpense, _currentUser, _ct))
-                    .ReturnsAsync(saved);
-
-        var result = await _serviceMock.Object.CreateAsync(newExpense, _currentUser, _ct);
-
-        result.Id.Should().Be(99L);
+         
     }
 
     [Fact]

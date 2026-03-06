@@ -18,6 +18,7 @@
     <None Remove="Models\Mappings\DocumentAccess.hbm.xml" />
     <None Remove="Models\Mappings\Expense.hbm.xml" />
     <None Remove="Models\Mappings\ExpenseAllocation.hbm.xml" />
+    <None Remove="Models\Mappings\ExpensePaymentStatus.hbm.xml" />
     <None Remove="Models\Mappings\ExpenseType.hbm.xml" />
     <None Remove="Models\Mappings\FiscalYear.hbm.xml" />
     <None Remove="Models\Mappings\MenuItem.hbm.xml" />
@@ -52,6 +53,7 @@
     <EmbeddedResource Include="Models\Mappings\DocumentAccess.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Expense.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ExpenseAllocation.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ExpensePaymentStatus.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ExpenseType.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\FiscalYear.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\MenuItem.hbm.xml" />

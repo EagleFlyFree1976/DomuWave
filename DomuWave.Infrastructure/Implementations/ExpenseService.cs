@@ -160,7 +160,7 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<Expense>> GetUnpaidExpensesAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<Expense>()
-                .Where(x => x.Condominium.Id == condominiumId && !x.PaymentDate.HasValue && !x.IsDeleted)
+                .Where(x => x.Condominium.Id == condominiumId && x.PaymentStatus.Id != ExpensePaymentStatus.Pagata && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
 
@@ -182,8 +182,9 @@ namespace DomuWave.Services.Implementations
             if (expense == null)
                 return false;
 
-            expense.PaymentDate = paymentDate;
+            expense.PaymentDate   = paymentDate;
             expense.PaymentMethod = paymentMethod;
+            expense.PaymentStatus = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.Pagata);
             expense.Trace(currentUser);
 
             await session.SaveOrUpdateAsync(expense, cancellationToken);

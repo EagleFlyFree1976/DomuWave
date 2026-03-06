@@ -21,7 +21,8 @@ public class ExpenseReadDto : TraceEntityDTO<long>
     public decimal  NetAmount          { get; set; }
     public int      ExpenseTypeId      { get; set; }
     public string   ExpenseTypeName    { get; set; } = string.Empty;
-    public string   PaymentStatus      { get; set; } = string.Empty;
+    public int      PaymentStatusId    { get; set; }
+    public string   PaymentStatusName  { get; set; } = string.Empty;
     public DateTime? PaymentDate       { get; set; }
     public string?  PaymentMethod      { get; set; }
     public string?  Description        { get; set; }
