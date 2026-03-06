@@ -19,7 +19,8 @@ public class ExpenseReadDto : TraceEntityDTO<long>
     public decimal  GrossAmount        { get; set; }
     public decimal  VatAmount          { get; set; }
     public decimal  NetAmount          { get; set; }
-    public string   ExpenseType        { get; set; } = string.Empty;
+    public int      ExpenseTypeId      { get; set; }
+    public string   ExpenseTypeName    { get; set; } = string.Empty;
     public string   PaymentStatus      { get; set; } = string.Empty;
     public DateTime? PaymentDate       { get; set; }
     public string?  PaymentMethod      { get; set; }

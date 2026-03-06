@@ -13,6 +13,8 @@ public static class MillesimalTableMappingExtensions
         {
             CondominiumId   = entity.Condominium?.Id ?? 0,
             Code            = entity.Code ?? string.Empty,
+            Name            = entity.Name,
+            Description     = entity.Description,
             TotalMillesimal = entity.TotalMillesimal,
             IsActive        = entity.IsActive,
         };
@@ -27,6 +29,8 @@ public static class MillesimalTableMappingExtensions
             Tenant          = condominium.Tenant,
             Condominium     = condominium,
             Code            = dto.Code,
+            Name            = dto.Name ?? dto.Code,
+            Description     = dto.Description,
             TotalMillesimal = dto.TotalMillesimal,
             IsActive        = dto.IsActive,
         };
@@ -35,6 +39,8 @@ public static class MillesimalTableMappingExtensions
     public static void ApplyUpdate(this MillesimalTable entity, UpdateMillesimalTableDto dto)
     {
         entity.Code            = dto.Code;
+        entity.Name            = dto.Name ?? dto.Code;
+        entity.Description     = dto.Description;
         entity.TotalMillesimal = dto.TotalMillesimal;
         entity.IsActive        = dto.IsActive;
     }

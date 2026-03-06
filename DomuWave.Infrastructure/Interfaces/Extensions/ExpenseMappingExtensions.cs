@@ -11,26 +11,27 @@ public static class ExpenseMappingExtensions
         if (entity == null) return null;
         var dto = new ExpenseReadDto
         {
-            CondominiumId      = entity.Condominium?.Id ?? 0,
-            SupplierId         = entity.Supplier?.Id,
-            SupplierName       = entity.Supplier?.Name,
-            AccountId          = entity.Account?.Id ?? 0,
-            AccountCode        = entity.Account?.Code,
-            AccountName        = entity.Account?.Name,
-            MillesimalTableId  = entity.MillesimalTable?.Id ?? 0,
+            CondominiumId       = entity.Condominium?.Id ?? 0,
+            SupplierId          = entity.Supplier?.Id,
+            SupplierName        = entity.Supplier?.Name,
+            AccountId           = entity.Account?.Id ?? 0,
+            AccountCode         = entity.Account?.Code,
+            AccountName         = entity.Account?.Name,
+            MillesimalTableId   = entity.MillesimalTable?.Id ?? 0,
             MillesimalTableCode = entity.MillesimalTable?.Code,
-            Name               = entity.Name ?? string.Empty,
-            DocumentNumber     = entity.DocumentNumber,
-            DocumentDate       = entity.DocumentDate,
-            RegistrationDate   = entity.RegistrationDate,
-            GrossAmount        = entity.GrossAmount,
-            VatAmount          = entity.VatAmount,
-            NetAmount          = entity.NetAmount,
-            ExpenseType        = entity.ExpenseType ?? string.Empty,
-            PaymentStatus      = entity.PaymentStatus ?? string.Empty,
-            PaymentDate        = entity.PaymentDate,
-            PaymentMethod      = entity.PaymentMethod,
-            Description        = entity.Description,
+            Name                = entity.Name ?? string.Empty,
+            DocumentNumber      = entity.DocumentNumber,
+            DocumentDate        = entity.DocumentDate,
+            RegistrationDate    = entity.RegistrationDate,
+            GrossAmount         = entity.GrossAmount,
+            VatAmount           = entity.VatAmount,
+            NetAmount           = entity.NetAmount,
+            ExpenseTypeId       = entity.ExpenseType?.Id ?? 0,
+            ExpenseTypeName     = entity.ExpenseType?.Name ?? string.Empty,
+            PaymentStatus       = entity.PaymentStatus ?? string.Empty,
+            PaymentDate         = entity.PaymentDate,
+            PaymentMethod       = entity.PaymentMethod,
+            Description         = entity.Description,
         };
         dto.SetTraceInfo(entity);
         return dto;
@@ -38,7 +39,7 @@ public static class ExpenseMappingExtensions
 
     public static Expense ToEntity(this CreateExpenseDto dto,
         Condominium condominium, ChartOfAccounts account,
-        MillesimalTable millesimalTable, Supplier? supplier)
+        MillesimalTable millesimalTable, Supplier? supplier, ExpenseType expenseType)
     {
         return new Expense
         {
@@ -54,7 +55,7 @@ public static class ExpenseMappingExtensions
             GrossAmount      = dto.GrossAmount,
             VatAmount        = dto.VatAmount,
             NetAmount        = dto.NetAmount,
-            ExpenseType      = dto.ExpenseType,
+            ExpenseType      = expenseType,
             PaymentStatus    = dto.PaymentStatus ?? "ToPay",
             PaymentMethod    = dto.PaymentMethod,
             Description      = dto.Description,
@@ -62,7 +63,7 @@ public static class ExpenseMappingExtensions
     }
 
     public static void ApplyUpdate(this Expense entity, UpdateExpenseDto dto,
-        ChartOfAccounts account, MillesimalTable millesimalTable, Supplier? supplier)
+        ChartOfAccounts account, MillesimalTable millesimalTable, Supplier? supplier, ExpenseType expenseType)
     {
         entity.Account          = account;
         entity.MillesimalTable  = millesimalTable;
@@ -74,7 +75,7 @@ public static class ExpenseMappingExtensions
         entity.GrossAmount      = dto.GrossAmount;
         entity.VatAmount        = dto.VatAmount;
         entity.NetAmount        = dto.NetAmount;
-        entity.ExpenseType      = dto.ExpenseType;
+        entity.ExpenseType      = expenseType;
         entity.PaymentStatus    = dto.PaymentStatus;
         entity.PaymentMethod    = dto.PaymentMethod;
         entity.Description      = dto.Description;

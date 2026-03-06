@@ -13,7 +13,7 @@ public class CreateExpenseDto
     public decimal  GrossAmount       { get; set; }
     public decimal  VatAmount         { get; set; }
     public decimal  NetAmount         { get; set; }
-    public string   ExpenseType       { get; set; } = string.Empty;
+    public int      ExpenseTypeId     { get; set; }
     public string   PaymentStatus     { get; set; } = "ToPay";
     public string?  PaymentMethod     { get; set; }
     public string?  Description       { get; set; }

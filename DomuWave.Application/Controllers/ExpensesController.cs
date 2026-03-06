@@ -57,12 +57,12 @@ public class ExpensesController(
         return Ok(result);
     }
 
-    [HttpGet("by-condominium/{condominiumId:int}/type/{expenseType}")]
+    [HttpGet("by-condominium/{condominiumId:int}/type/{expenseTypeId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
-    public async Task<IActionResult> GetByType(int condominiumId, string expenseType, CancellationToken ct)
+    public async Task<IActionResult> GetByType(int condominiumId, int expenseTypeId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetExpensesByTypeCommand(CurrentUser.Id, condominiumId, expenseType), ct);
+            new GetExpensesByTypeCommand(CurrentUser.Id, condominiumId, expenseTypeId), ct);
         return Ok(result);
     }
 

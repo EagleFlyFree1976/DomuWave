@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.ExpenseType, DomuWave.Services"
+         table="ExpenseTypeLookup"
+         mutable="false">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="assigned" />
+    </id>
+
+    <property name="Name" column="Name" type="String" length="50" not-null="true" />
+
+  </class>
+
+</hibernate-mapping>

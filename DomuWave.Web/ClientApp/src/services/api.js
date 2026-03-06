@@ -247,6 +247,17 @@ export const millesimalTableApi = {
   getByCondominium:   (condId)        => api.get(`/millesimal-tables/by-condominium/${condId}`),
   getActive:          (condId)        => api.get(`/millesimal-tables/by-condominium/${condId}/active`),
   getById:            (id)            => api.get(`/millesimal-tables/${id}`),
+  create:             (data)          => api.post('/millesimal-tables', data),
+  update:             (id, data)      => api.put(`/millesimal-tables/${id}`, data),
+  delete:             (id)            => api.delete(`/millesimal-tables/${id}`),
+}
+
+// ─── Voci Millesimali (UnitMillesimal) ────────────────────────
+export const unitMillesimalApi = {
+  getByTable:  (tableId)      => api.get(`/unit-millesimals/by-table/${tableId}`),
+  create:      (data)         => api.post('/unit-millesimals', data),
+  update:      (id, data)     => api.put(`/unit-millesimals/${id}`, data),
+  delete:      (id)           => api.delete(`/unit-millesimals/${id}`),
 }
 
 // ─── Fornitori ────────────────────────────────────────────────

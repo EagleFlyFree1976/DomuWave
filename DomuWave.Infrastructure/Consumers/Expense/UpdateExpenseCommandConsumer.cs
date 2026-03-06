@@ -55,7 +55,9 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
                 .FirstOrDefaultAsync(x => x.Id == dto.SupplierId.Value && !x.IsDeleted, cancellationToken)
                 .ConfigureAwait(false);
 
-        entity.ApplyUpdate(dto, account, millesimalTable, supplier);
+        var expenseType = session.Load<ExpenseType>(dto.ExpenseTypeId);
+
+        entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType);
         var updated = await _expenseService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

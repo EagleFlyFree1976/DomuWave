@@ -2,8 +2,10 @@ using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.Supplier;
 using DomuWave.Services.Command.MillesimalTable;
+using DomuWave.Services.Command.UnitMillesimal;
 using DomuWave.Services.Dto.Supplier;
 using DomuWave.Services.Dto.MillesimalTable;
+using DomuWave.Services.Dto.UnitMillesimal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -138,6 +140,50 @@ public class MillesimalTablesController(
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteMillesimalTableCommand(CurrentUser.Id, id), ct);
+        if (!deleted) return NotFound();
+        return NoContent();
+    }
+}
+
+// ─── UnitMillesimals ──────────────────────────────────────────────────────────
+
+[Route("api/unit-millesimals")]
+[Produces("application/json")]
+public class UnitMillesimalsController(
+    ILogger<UnitMillesimalsController> logger,
+    IOptionsMonitor<OxCoreSettings>    configuration,
+    IMediator                          mediator)
+    : PrivateControllerBase(logger, configuration)
+{
+    private readonly IMediator _mediator = mediator;
+
+    [HttpGet("by-table/{tableId:int}")]
+    public async Task<IActionResult> GetByTable(int tableId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetUnitMillesimalsByTableCommand(CurrentUser.Id, tableId), ct));
+
+    [HttpPost]
+    [ProducesResponseType(typeof(UnitMillesimalReadDto), 201)]
+    public async Task<IActionResult> Create([FromBody] CreateUnitMillesimalDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(new CreateUnitMillesimalCommand(CurrentUser.Id, dto), ct);
+        return StatusCode(201, result);
+    }
+
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(UnitMillesimalReadDto), 200)]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateUnitMillesimalDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(new UpdateUnitMillesimalCommand(CurrentUser.Id, id, dto), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    {
+        var deleted = await _mediator.GetResponse(new DeleteUnitMillesimalCommand(CurrentUser.Id, id), ct);
         if (!deleted) return NotFound();
         return NoContent();
     }

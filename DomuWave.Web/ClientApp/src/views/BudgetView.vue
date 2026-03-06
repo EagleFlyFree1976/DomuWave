@@ -314,10 +314,18 @@
               <label class="form-label">N° documento</label>
               <input class="form-input" v-model="expForm.documentNumber" />
             </div>
-            <div class="form-group" :class="{ 'has-error': expErrors.expenseType }">
+            <div class="form-group" :class="{ 'has-error': expErrors.expenseTypeId }">
               <label class="form-label">Tipo spesa *</label>
-              <input class="form-input" v-model="expForm.expenseType" placeholder="es. Manutenzione" @input="clearExpError('expenseType')" />
-              <span v-if="expErrors.expenseType" class="field-error">{{ expErrors.expenseType }}</span>
+              <select class="form-select" v-model.number="expForm.expenseTypeId" @change="clearExpError('expenseTypeId')">
+                <option :value="0" disabled>Seleziona tipo…</option>
+                <option :value="1">Manutenzione</option>
+                <option :value="2">Pulizie</option>
+                <option :value="3">Sicurezza</option>
+                <option :value="4">Utenze</option>
+                <option :value="5">Professionale</option>
+                <option :value="6">Altro</option>
+              </select>
+              <span v-if="expErrors.expenseTypeId" class="field-error">{{ expErrors.expenseTypeId }}</span>
             </div>
             <div class="form-group" :class="{ 'has-error': expErrors.documentDate }">
               <label class="form-label">Data documento *</label>
@@ -631,7 +639,7 @@ function validateExpForm() {
   const e = {}
   const f = expForm.value
   if (!f.name?.trim())          e.name             = 'Campo obbligatorio'
-  if (!f.expenseType?.trim())   e.expenseType      = 'Campo obbligatorio'
+  if (!f.expenseTypeId)         e.expenseTypeId    = 'Selezionare un tipo spesa'
   if (!f.documentDate)          e.documentDate     = 'Campo obbligatorio'
   if (!f.registrationDate)      e.registrationDate = 'Campo obbligatorio'
   if (!f.grossAmount || f.grossAmount <= 0) e.grossAmount = 'Inserire un importo maggiore di zero'
@@ -649,7 +657,7 @@ const millesimalTables = ref([])
 
 const emptyExpForm = () => ({
   name: '', documentNumber: '', documentDate: today, registrationDate: today,
-  grossAmount: 0, vatAmount: 0, expenseType: '', paymentStatus: 'ToPay',
+  grossAmount: 0, vatAmount: 0, expenseTypeId: 0, paymentStatus: 'ToPay',
   paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: ''
 })
 const expForm = ref(emptyExpForm())
@@ -675,7 +683,7 @@ async function openExpenseModal(e = null) {
     registrationDate:   e.registrationDate?.slice(0, 10) ?? today,
     grossAmount:        e.grossAmount ?? 0,
     vatAmount:          e.vatAmount ?? 0,
-    expenseType:        e.expenseType ?? '',
+    expenseTypeId:      e.expenseTypeId ?? 0,
     paymentStatus:      e.paymentStatus ?? 'ToPay',
     paymentMethod:      e.paymentMethod ?? '',
     supplierId:         e.supplierId ?? null,
@@ -717,7 +725,7 @@ async function saveExpense() {
       grossAmount:      expForm.value.grossAmount,
       vatAmount:        expForm.value.vatAmount,
       netAmount:        expForm.value.grossAmount - expForm.value.vatAmount,
-      expenseType:      expForm.value.expenseType,
+      expenseTypeId:    expForm.value.expenseTypeId,
       paymentStatus:    expForm.value.paymentStatus || 'ToPay',
       paymentMethod:    expForm.value.paymentMethod || null,
       description:      expForm.value.description || null,

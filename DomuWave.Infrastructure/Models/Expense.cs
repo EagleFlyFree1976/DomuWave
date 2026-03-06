@@ -15,7 +15,7 @@ namespace DomuWave.Services.Models
         public virtual decimal GrossAmount { get; set; }
         public virtual decimal VatAmount { get; set; }
         public virtual decimal NetAmount { get; set; }
-        public virtual string ExpenseType { get; set; }
+        public virtual ExpenseType ExpenseType { get; set; }
 
         public virtual FiscalYear FiscalYear { get; set; }
         public virtual MillesimalTable MillesimalTable { get; set; }
