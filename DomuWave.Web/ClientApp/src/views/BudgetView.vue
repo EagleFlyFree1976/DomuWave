@@ -305,51 +305,58 @@
         </div>
         <div class="modal-body">
           <div class="form-grid">
-            <div class="form-group" style="grid-column: span 2">
+            <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.name }">
               <label class="form-label">Descrizione *</label>
-              <input class="form-input" v-model="expForm.name" placeholder="Descrizione spesa…" />
+              <input class="form-input" v-model="expForm.name" placeholder="Descrizione spesa…" @input="clearExpError('name')" />
+              <span v-if="expErrors.name" class="field-error">{{ expErrors.name }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">N° documento</label>
               <input class="form-input" v-model="expForm.documentNumber" />
             </div>
-            <div class="form-group">
+            <div class="form-group" :class="{ 'has-error': expErrors.expenseType }">
               <label class="form-label">Tipo spesa *</label>
-              <input class="form-input" v-model="expForm.expenseType" placeholder="es. Manutenzione" />
+              <input class="form-input" v-model="expForm.expenseType" placeholder="es. Manutenzione" @input="clearExpError('expenseType')" />
+              <span v-if="expErrors.expenseType" class="field-error">{{ expErrors.expenseType }}</span>
             </div>
-            <div class="form-group">
+            <div class="form-group" :class="{ 'has-error': expErrors.documentDate }">
               <label class="form-label">Data documento *</label>
-              <input class="form-input" type="date" v-model="expForm.documentDate" />
+              <input class="form-input" type="date" v-model="expForm.documentDate" @input="clearExpError('documentDate')" />
+              <span v-if="expErrors.documentDate" class="field-error">{{ expErrors.documentDate }}</span>
             </div>
-            <div class="form-group">
+            <div class="form-group" :class="{ 'has-error': expErrors.registrationDate }">
               <label class="form-label">Data registrazione *</label>
-              <input class="form-input" type="date" v-model="expForm.registrationDate" />
+              <input class="form-input" type="date" v-model="expForm.registrationDate" @input="clearExpError('registrationDate')" />
+              <span v-if="expErrors.registrationDate" class="field-error">{{ expErrors.registrationDate }}</span>
             </div>
-            <div class="form-group">
+            <div class="form-group" :class="{ 'has-error': expErrors.grossAmount }">
               <label class="form-label">Importo lordo (€) *</label>
-              <input class="form-input" type="number" step="0.01" v-model.number="expForm.grossAmount" />
+              <input class="form-input" type="number" step="0.01" v-model.number="expForm.grossAmount" @input="clearExpError('grossAmount')" />
+              <span v-if="expErrors.grossAmount" class="field-error">{{ expErrors.grossAmount }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">IVA (€)</label>
               <input class="form-input" type="number" step="0.01" v-model.number="expForm.vatAmount" />
             </div>
-            <div class="form-group" style="grid-column: span 2">
+            <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.accountId }">
               <label class="form-label">Conto *</label>
-              <select class="form-select" v-model.number="expForm.accountId">
+              <select class="form-select" v-model.number="expForm.accountId" @change="clearExpError('accountId')">
                 <option :value="null" disabled>Seleziona conto…</option>
                 <optgroup v-for="grp in accountGroups" :key="grp.type" :label="grp.type">
                   <option v-for="a in grp.accounts" :key="a.id" :value="a.id">{{ a.code }} – {{ a.name }}</option>
                 </optgroup>
               </select>
+              <span v-if="expErrors.accountId" class="field-error">{{ expErrors.accountId }}</span>
             </div>
-            <div class="form-group">
+            <div class="form-group" :class="{ 'has-error': expErrors.millesimalTableId }">
               <label class="form-label">Tabella millesimale *</label>
-              <select class="form-select" v-model.number="expForm.millesimalTableId">
+              <select class="form-select" v-model.number="expForm.millesimalTableId" @change="clearExpError('millesimalTableId')">
                 <option :value="null" disabled>Seleziona tabella…</option>
                 <option v-for="t in millesimalTables" :key="t.id" :value="t.id">
                   {{ t.code }}{{ t.description ? ' – ' + t.description : '' }}
                 </option>
               </select>
+              <span v-if="expErrors.millesimalTableId" class="field-error">{{ expErrors.millesimalTableId }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">Fornitore</label>
@@ -615,7 +622,24 @@ const loadingExp      = ref(false)
 const showExpenseModal = ref(false)
 const editingExp      = ref(null)
 const savingExp       = ref(false)
+const expErrors       = ref({})
 const expFilter       = ref('')
+
+function clearExpError(field) { delete expErrors.value[field] }
+
+function validateExpForm() {
+  const e = {}
+  const f = expForm.value
+  if (!f.name?.trim())          e.name             = 'Campo obbligatorio'
+  if (!f.expenseType?.trim())   e.expenseType      = 'Campo obbligatorio'
+  if (!f.documentDate)          e.documentDate     = 'Campo obbligatorio'
+  if (!f.registrationDate)      e.registrationDate = 'Campo obbligatorio'
+  if (!f.grossAmount || f.grossAmount <= 0) e.grossAmount = 'Inserire un importo maggiore di zero'
+  if (!f.accountId)             e.accountId        = 'Selezionare un conto'
+  if (!f.millesimalTableId)     e.millesimalTableId = 'Selezionare una tabella millesimale'
+  expErrors.value = e
+  return Object.keys(e).length === 0
+}
 const today           = new Date().toISOString().slice(0, 10)
 const firstOfYear     = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0, 10)
 const expFrom         = ref(firstOfYear)
@@ -642,6 +666,7 @@ async function loadExpenses() {
 }
 
 async function openExpenseModal(e = null) {
+  expErrors.value = {}
   editingExp.value = e?.id ?? null
   expForm.value = e ? {
     name:               e.name ?? '',
@@ -681,6 +706,7 @@ async function openExpenseModal(e = null) {
 }
 
 async function saveExpense() {
+  if (!validateExpForm()) return
   savingExp.value = true
   try {
     const payload = {
@@ -707,7 +733,9 @@ async function saveExpense() {
     }
     showExpenseModal.value = false
     await loadExpenses()
-  } catch { /* global */ } finally { savingExp.value = false }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { savingExp.value = false }
 }
 
 async function markPaid(id) {
@@ -773,4 +801,9 @@ onMounted(async () => {
 
 /* Items total row */
 .items-total-row td { font-weight: 600; border-top: 2px solid var(--border); }
+
+/* Form validation */
+.has-error .form-input,
+.has-error .form-select { border-color: var(--accent-red, #e53e3e); }
+.field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; display: block; }
 </style>
