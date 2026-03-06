@@ -21,5 +21,6 @@
     <property name="PopulateEvent"  column="PopulateEvent" not-null="false"></property>
     <property name="OrderKey"  column="OrderKey" not-null="true"></property>
     <property name="Tags" column="Tags" not-null="false" />
+    
   </class>
 </hibernate-mapping>

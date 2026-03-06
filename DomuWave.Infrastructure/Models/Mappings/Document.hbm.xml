@@ -35,6 +35,8 @@
     <property name="LastUpdatedBy" column="LastUpdatedById" type="Int32" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
+    <property name="CreationDate"          column="CreationDate"          type="DateTime" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="DateTime" />
 
     <bag name="Accesses" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="DocumentId" />

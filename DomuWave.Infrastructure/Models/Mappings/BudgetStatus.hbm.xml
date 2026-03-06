@@ -12,6 +12,7 @@
     </id>
 
     <property name="Name" column="Name" type="String" length="50" not-null="true" />
+    
 
   </class>
 
