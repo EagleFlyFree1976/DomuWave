@@ -21,19 +21,27 @@
             <tr>
               <th>Codice</th>
               <th>Nome</th>
-              <th class="text-right">Totale millesimi</th>
+              <th class="text-right">Totale definito</th>
+              <th class="text-right">Totale calcolato</th>
               <th>Stato</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="t in tables" :key="t.id">
+            <tr v-for="t in tables" :key="t.id" :class="{ 'row-anomaly': hasAnomaly(t) }">
               <td class="mono">{{ t.code }}</td>
               <td>{{ t.name || '—' }}</td>
               <td class="mono text-right">{{ fmtMillesimal(t.totalMillesimal) }}</td>
+              <td class="mono text-right">
+                <span :class="hasAnomaly(t) ? 'text-warning' : 'text-success'">
+                  {{ fmtMillesimal(t.calculatedMillesimal) }}
+                </span>
+                <span v-if="hasAnomaly(t)" class="anomaly-icon"
+                      title="Anomalia: la somma dei millesimi delle unità non corrisponde al totale definito">⚠</span>
+              </td>
               <td>
-                <span class="badge" :class="t.isActive ? 'badge-green' : 'badge-muted'">
-                  {{ t.isActive ? 'Attiva' : 'Inattiva' }}
+                <span class="badge" :class="t.isDraft ? 'badge-draft' : 'badge-green'">
+                  {{ t.isDraft ? 'Bozza' : 'Attiva' }}
                 </span>
               </td>
               <td>
@@ -75,10 +83,6 @@
               <input class="form-input" type="number" step="0.001" v-model.number="tableForm.totalMillesimal"
                      @input="clearTableError('totalMillesimal')" />
               <span v-if="tableErrors.totalMillesimal" class="field-error">{{ tableErrors.totalMillesimal }}</span>
-            </div>
-            <div class="form-group" style="display:flex;align-items:center;gap:.5rem;padding-top:1.6rem">
-              <input type="checkbox" id="isActive" v-model="tableForm.isActive" style="width:16px;height:16px" />
-              <label for="isActive" class="form-label" style="margin:0">Attiva</label>
             </div>
           </div>
           <div class="form-group">
@@ -229,7 +233,7 @@ const showTableModal = ref(false)
 const editingTable   = ref(null)
 const savingTable    = ref(false)
 const tableErrors    = ref({})
-const tableForm      = ref({ code: '', name: '', description: '', totalMillesimal: 1000, isActive: true })
+const tableForm      = ref({ code: '', name: '', description: '', totalMillesimal: 1000 })
 
 function clearTableError(field) { delete tableErrors.value[field] }
 
@@ -255,8 +259,8 @@ function openTableModal(t = null) {
   tableErrors.value = {}
   editingTable.value = t?.id ?? null
   tableForm.value = t
-    ? { code: t.code, name: t.name ?? '', description: t.description ?? '', totalMillesimal: t.totalMillesimal, isActive: t.isActive }
-    : { code: '', name: '', description: '', totalMillesimal: 1000, isActive: true }
+    ? { code: t.code, name: t.name ?? '', description: t.description ?? '', totalMillesimal: t.totalMillesimal }
+    : { code: '', name: '', description: '', totalMillesimal: 1000 }
   showTableModal.value = true
 }
 
@@ -268,14 +272,14 @@ async function saveTable() {
       await millesimalTableApi.update(editingTable.value, {
         code: tableForm.value.code, name: tableForm.value.name,
         description: tableForm.value.description,
-        totalMillesimal: tableForm.value.totalMillesimal, isActive: tableForm.value.isActive,
+        totalMillesimal: tableForm.value.totalMillesimal,
       })
     } else {
       await millesimalTableApi.create({
         condominiumId: store.selectedCondominioId,
         code: tableForm.value.code, name: tableForm.value.name,
         description: tableForm.value.description,
-        totalMillesimal: tableForm.value.totalMillesimal, isActive: tableForm.value.isActive,
+        totalMillesimal: tableForm.value.totalMillesimal,
       })
     }
     showTableModal.value = false
@@ -358,6 +362,7 @@ function closeEntriesModal() {
   selectedTable.value    = null
   entries.value          = []
   showEntryForm.value    = false
+  loadTables()
 }
 
 async function loadEntries() {
@@ -418,6 +423,11 @@ async function deleteEntry(id) {
   }
 }
 
+// ─── Anomalia ─────────────────────────────────────────────────
+function hasAnomaly(t) {
+  return t.calculatedMillesimal != null && t.calculatedMillesimal !== t.totalMillesimal
+}
+
 // ─── Formatter ───────────────────────────────────────────────
 const fmtMillesimal = (v) => v != null
   ? Number(v).toLocaleString('it-IT', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
@@ -434,6 +444,9 @@ onMounted(loadTables)
 
 <style scoped>
 .row-actions   { display: flex; gap: .4rem; justify-content: flex-end; }
+.row-anomaly td { background: color-mix(in srgb, var(--accent-amber, #f59e0b) 8%, transparent); }
+.badge-draft   { background: var(--bg-surface); border: 1px solid var(--border); color: var(--text-muted); }
+.anomaly-icon  { color: var(--accent-amber, #f59e0b); margin-left: .3rem; font-size: .9rem; cursor: help; }
 .text-right    { text-align: right; }
 .modal-lg      { max-width: 820px; width: 95vw; }
 .modal-subtitle { margin: .15rem 0 0; font-size: .85rem; color: var(--text-muted); }

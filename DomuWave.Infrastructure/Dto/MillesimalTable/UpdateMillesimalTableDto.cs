@@ -6,5 +6,4 @@ public class UpdateMillesimalTableDto
     public string?  Name            { get; set; }
     public string?  Description     { get; set; }
     public decimal  TotalMillesimal { get; set; }
-    public bool     IsActive        { get; set; }
 }

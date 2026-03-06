@@ -1,5 +1,6 @@
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
+using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Budget;
@@ -44,8 +45,6 @@ public class ApproveBudgetCommandConsumer
         if (budget.Status?.Id != BudgetStatus.Draft)
             throw new ValidatorException("Solo i budget in stato Bozza possono essere approvati.");
 
-        // Verifica che non esista già un budget dello stesso tipo (Preventivo/Consuntivo)
-        // approvato o chiuso per lo stesso condominio e lo stesso esercizio fiscale.
         var tipoLabel = budget.Type == BudgetType.Preventivo ? "preventivo" : "consuntivo";
         var conflicting = await session.Query<Budget>()
             .AnyAsync(x => x.Id             != command.Id
@@ -61,8 +60,109 @@ public class ApproveBudgetCommandConsumer
                 $"Esiste già un budget {tipoLabel} approvato o chiuso per questo esercizio e condominio. " +
                 "Non è possibile approvarne un altro.");
 
-        return await _budgetService
+        // Approva il budget
+        var approved = await _budgetService
             .ApproveBudgetAsync(command.Id, command.CurrentUserId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        if (!approved)
+            return false;
+
+        // Genera le rate e le quote
+        await GenerateInstallmentsAndFees(budget, command, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
+        return true;
+    }
+
+    private async Task GenerateInstallmentsAndFees(
+        Budget budget,
+        ApproveBudgetCommand command,
+        object currentUser,
+        CancellationToken cancellationToken)
+    {
+        var n            = command.NumberOfInstallments > 0 ? command.NumberOfInstallments : 4;
+        var firstDueDate = command.FirstDueDate == default ? DateTime.Today : command.FirstDueDate;
+
+        // Verifica che non esistano già rate per questo budget
+        var existingCount = await session.Query<CondominiumInstallment>()
+            .CountAsync(x => x.Budget.Id == budget.Id && !x.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (existingCount > 0)
+            return; // già generate, skip
+
+        // Carica la tabella millesimale attiva del condominio
+        var millesimalTable = await session.Query<MillesimalTable>()
+            .FirstOrDefaultAsync(x => x.Condominium.Id == budget.Condominium.Id
+                                   && x.IsActive && !x.IsDraft && !x.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        // Carica le voci millesimali (quote per unità)
+        var unitMillesimals = millesimalTable != null
+            ? await session.Query<UnitMillesimal>()
+                .Where(x => x.MillesimalTable.Id == millesimalTable.Id && !x.IsDeleted)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false)
+            : new List<UnitMillesimal>();
+
+        var totalMillesimal = millesimalTable?.TotalMillesimal ?? 0m;
+        var amountPerInstallment = n > 0 ? Math.Round(budget.TotalIncome / n, 2) : 0m;
+        var user = currentUser as CPQ.Core.Memberships.IUser;
+
+        for (int i = 1; i <= n; i++)
+        {
+            // Scadenza: ogni rata a distanza di 30 giorni (approssimazione mensile)
+            var dueDate = firstDueDate.AddMonths(i - 1);
+
+            var installment = new CondominiumInstallment
+            {
+                Condominium       = budget.Condominium,
+                Budget            = budget,
+                FiscalYear        = budget.FiscalYear,
+                Tenant            = budget.Tenant,
+                InstallmentNumber = i,
+                DueDate           = dueDate,
+                TotalAmount       = amountPerInstallment,
+                Status            = "Open",
+                Notes             = $"Rata {i}/{n} – {budget.FiscalYear?.Code ?? dueDate.Year.ToString()}",
+            };
+
+            if (user != null) installment.Trace(user);
+
+            await session.SaveOrUpdateAsync(installment, cancellationToken).ConfigureAwait(false);
+            await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+            // Genera una quota per ogni unità della tabella millesimale
+            foreach (var um in unitMillesimals)
+            {
+                var share = totalMillesimal > 0
+                    ? Math.Round(amountPerInstallment * um.Millesimal / totalMillesimal, 2)
+                    : 0m;
+
+                // Recupera il proprietario dell'unità (UnitOwner attivo)
+                var owner = await session.Query<UnitOwner>()
+                    .FirstOrDefaultAsync(x => x.Unit.Id == um.Unit.Id && !x.IsDeleted, cancellationToken)
+                    .ConfigureAwait(false);
+
+                var fee = new CondominiumFee
+                {
+                    Installment   = installment,
+                    Unit          = um.Unit,
+                    UserId        = owner?.UserId ?? 0,
+                    Tenant        = budget.Tenant,
+                    AmountDue     = share,
+                    AmountPaid    = 0m,
+                    Balance       = share,
+                    PaymentStatus = "ToPay",
+                };
+
+                if (user != null) fee.Trace(user);
+
+                await session.SaveOrUpdateAsync(fee, cancellationToken).ConfigureAwait(false);
+            }
+
+            await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 }

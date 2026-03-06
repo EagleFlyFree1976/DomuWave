@@ -6,17 +6,19 @@ namespace DomuWave.Services.Interfaces.Extensions;
 
 public static class MillesimalTableMappingExtensions
 {
-    public static MillesimalTableReadDto ToReadDto(this MillesimalTable entity)
+    public static MillesimalTableReadDto ToReadDto(this MillesimalTable entity, decimal calculatedMillesimal = 0m)
     {
         if (entity == null) return null;
         var dto = new MillesimalTableReadDto
         {
-            CondominiumId   = entity.Condominium?.Id ?? 0,
-            Code            = entity.Code ?? string.Empty,
-            Name            = entity.Name,
-            Description     = entity.Description,
-            TotalMillesimal = entity.TotalMillesimal,
-            IsActive        = entity.IsActive,
+            CondominiumId        = entity.Condominium?.Id ?? 0,
+            Code                 = entity.Code ?? string.Empty,
+            Name                 = entity.Name,
+            Description          = entity.Description,
+            TotalMillesimal      = entity.TotalMillesimal,
+            IsActive             = entity.IsActive,
+            IsDraft              = entity.IsDraft,
+            CalculatedMillesimal = calculatedMillesimal,
         };
         dto.SetTraceInfo(entity);
         return dto;
@@ -32,7 +34,8 @@ public static class MillesimalTableMappingExtensions
             Name            = dto.Name ?? dto.Code,
             Description     = dto.Description,
             TotalMillesimal = dto.TotalMillesimal,
-            IsActive        = dto.IsActive,
+            IsActive        = false,
+            IsDraft         = true,
         };
     }
 
@@ -42,6 +45,6 @@ public static class MillesimalTableMappingExtensions
         entity.Name            = dto.Name ?? dto.Code;
         entity.Description     = dto.Description;
         entity.TotalMillesimal = dto.TotalMillesimal;
-        entity.IsActive        = dto.IsActive;
+        // IsActive / IsDraft are managed automatically based on millesimal sum
     }
 }

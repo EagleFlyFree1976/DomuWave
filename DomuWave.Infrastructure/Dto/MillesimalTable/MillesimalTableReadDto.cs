@@ -8,6 +8,8 @@ public class MillesimalTableReadDto : TraceEntityDTO<int>
     public string   Code            { get; set; } = string.Empty;
     public string?  Name            { get; set; }
     public string?  Description     { get; set; }
-    public decimal  TotalMillesimal { get; set; }
-    public bool     IsActive        { get; set; }
+    public decimal  TotalMillesimal     { get; set; }
+    public decimal  CalculatedMillesimal { get; set; }
+    public bool     IsActive            { get; set; }
+    public bool     IsDraft             { get; set; }
 }

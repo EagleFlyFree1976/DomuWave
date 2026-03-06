@@ -1,5 +1,6 @@
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
+using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.UnitMillesimal;
@@ -66,6 +67,25 @@ public class CreateUnitMillesimalCommandConsumer
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        await UpdateTableStatusAsync(table, currentUser, cancellationToken).ConfigureAwait(false);
+
         return created.ToReadDto();
+    }
+
+    private async Task UpdateTableStatusAsync(MillesimalTable table, IUser currentUser, CancellationToken cancellationToken)
+    {
+        var sum = await session.Query<UnitMillesimal>()
+            .Where(x => x.MillesimalTable.Id == table.Id && !x.IsDeleted)
+            .SumAsync(x => (decimal?)x.Millesimal, cancellationToken)
+            .ConfigureAwait(false) ?? 0m;
+
+        var shouldBeActive = sum == table.TotalMillesimal && table.TotalMillesimal > 0;
+        if (table.IsActive != shouldBeActive || table.IsDraft != !shouldBeActive)
+        {
+            table.IsActive = shouldBeActive;
+            table.IsDraft  = !shouldBeActive;
+            await session.SaveOrUpdateAsync(table, cancellationToken).ConfigureAwait(false);
+            await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
     }
 }

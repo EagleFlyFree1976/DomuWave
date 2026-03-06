@@ -3,6 +3,7 @@
     <AppSidebar />
     <div class="app-main">
       <div class="app-content">
+        <CondominiBreadcrumb />
         <RouterView :key="session.activeTenant?.id" />
       </div>
     </div>
@@ -11,6 +12,7 @@
 
 <script setup>
   import AppSidebar from '@/components/layout/AppSidebar.vue'
+  import CondominiBreadcrumb from '@/components/layout/CondominiBreadcrumb.vue'
   import { useSessionStore } from '@/stores/sessionStore'
 
   const session = useSessionStore()

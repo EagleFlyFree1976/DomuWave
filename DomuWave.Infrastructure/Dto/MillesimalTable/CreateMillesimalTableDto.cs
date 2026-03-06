@@ -7,5 +7,4 @@ public class CreateMillesimalTableDto
     public string?  Name            { get; set; }
     public string?  Description     { get; set; }
     public decimal  TotalMillesimal { get; set; }
-    public bool     IsActive        { get; set; } = true;
 }

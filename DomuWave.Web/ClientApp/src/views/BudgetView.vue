@@ -66,7 +66,7 @@
                     <button class="btn btn-sm btn-ghost" @click="openItemsModal(b)">Voci</button>
                     <button v-if="canEdit && b.statusId === 1 && !blockedTypes.has(b.type)"
                             class="btn btn-sm btn-ghost"
-                            @click="approveBudget(b)">Approva</button>
+                            @click="openApproveModal(b)">Approva</button>
                     <span v-if="canEdit && b.statusId === 1 && blockedTypes.has(b.type)"
                           class="badge badge-muted" title="Esiste già un budget di questo tipo approvato o chiuso">
                       Non approvabile
@@ -147,6 +147,45 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         MODAL — Approvazione Budget + Rate
+    ══════════════════════════════════════════════════ -->
+    <div class="modal-overlay" v-if="showApproveModal" @click.self="showApproveModal = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Approva budget</h2>
+          <button class="btn-icon" @click="showApproveModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="approve-info">
+            Approvando il budget verranno generate automaticamente le rate e le relative quote per ogni unità
+            in base alla tabella millesimale attiva.
+          </p>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Numero di rate *</label>
+              <input class="form-input" type="number" min="1" max="24"
+                     v-model.number="approveForm.numberOfInstallments" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prima scadenza *</label>
+              <input class="form-input" type="date" v-model="approveForm.firstDueDate" />
+            </div>
+          </div>
+          <p class="approve-hint">
+            Le scadenze successive saranno distanziate di un mese l'una dall'altra.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="showApproveModal = false">Annulla</button>
+          <button class="btn btn-primary" @click="confirmApprove" :disabled="savingApprove">
+            <span v-if="savingApprove" class="spinner" style="width:14px;height:14px"></span>
+            Approva e genera rate
+          </button>
         </div>
       </div>
     </div>
@@ -481,14 +520,36 @@ const blockedTypes = computed(() => {
   return s
 })
 
-async function approveBudget(b) {
-  const tipo = b.type === 1 ? 'preventivo' : 'consuntivo'
-  if (!confirm(
-    `Approvare il budget ${tipo}?\n\n` +
-    `Una volta approvato, non sarà possibile approvare un altro budget dello stesso tipo ` +
-    `per questo esercizio finché non verrà chiuso il corrente.`
-  )) return
-  try { await budgetApi.approve(b.id); await loadBudgets() } catch {}
+// ─── Approvazione con parametri rate ──────────────────────────
+const showApproveModal    = ref(false)
+const approvingBudget     = ref(null)
+const savingApprove       = ref(false)
+const approveForm         = ref({ numberOfInstallments: 4, firstDueDate: '' })
+
+function openApproveModal(b) {
+  approvingBudget.value = b
+  const today = new Date()
+  // prima scadenza: primo giorno del mese successivo
+  const next = new Date(today.getFullYear(), today.getMonth() + 1, 1)
+  approveForm.value = {
+    numberOfInstallments: 4,
+    firstDueDate: next.toISOString().slice(0, 10),
+  }
+  showApproveModal.value = true
+}
+
+async function confirmApprove() {
+  if (!approvingBudget.value) return
+  savingApprove.value = true
+  try {
+    await budgetApi.approve(approvingBudget.value.id, {
+      numberOfInstallments: approveForm.value.numberOfInstallments,
+      firstDueDate: approveForm.value.firstDueDate,
+    })
+    showApproveModal.value = false
+    approvingBudget.value  = null
+    await loadBudgets()
+  } catch { /* global */ } finally { savingApprove.value = false }
 }
 
 async function closeBudget(b) {
@@ -805,6 +866,10 @@ onMounted(async () => {
 
 /* Items total row */
 .items-total-row td { font-weight: 600; border-top: 2px solid var(--border); }
+
+/* Approve modal */
+.approve-info { font-size: .875rem; color: var(--text-secondary); margin-bottom: 1rem; }
+.approve-hint { font-size: .78rem; color: var(--text-muted); margin-top: .5rem; }
 
 /* Form validation */
 .has-error .form-input,

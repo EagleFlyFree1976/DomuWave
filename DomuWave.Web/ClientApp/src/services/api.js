@@ -185,7 +185,7 @@ export const budgetApi = {
   getById:            (id)      => api.get(`/budgets/${id}`),
   create:             (data)    => api.post('/budgets', data),
   update:             (id, data)=> api.put(`/budgets/${id}`, data),
-  approve:            (id)      => api.post(`/budgets/${id}/approve`),
+  approve:            (id, opts) => api.post(`/budgets/${id}/approve`, opts ?? {}),
   close:              (id)      => api.post(`/budgets/${id}/close`),
   delete:             (id)      => api.delete(`/budgets/${id}`),
 }

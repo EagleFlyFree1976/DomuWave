@@ -5,6 +5,8 @@ using DomuWave.Services.Command.MillesimalTable;
 using DomuWave.Services.Dto.MillesimalTable;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
+using DomuWave.Services.Models;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -36,6 +38,13 @@ public class GetMillesimalTableByIdCommandConsumer : InMemoryConsumerBase<GetMil
             .GetByIdAsync(command.TableId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
-        return entity?.ToReadDto();
+        if (entity == null) return null;
+
+        var calculated = await session.Query<UnitMillesimal>()
+            .Where(x => x.MillesimalTable.Id == entity.Id && !x.IsDeleted)
+            .SumAsync(x => (decimal?)x.Millesimal, cancellationToken)
+            .ConfigureAwait(false) ?? 0m;
+
+        return entity.ToReadDto(calculated);
     }
 }

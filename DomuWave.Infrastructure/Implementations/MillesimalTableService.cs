@@ -156,8 +156,9 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<MillesimalTable>> GetActiveTablesAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<MillesimalTable>()
-                .Where(x => x.Condominium.Id == condominiumId 
-                    && x.IsActive 
+                .Where(x => x.Condominium.Id == condominiumId
+                    && x.IsActive
+                    && !x.IsDraft
                     && !x.IsDeleted)
                 .OrderByDescending(x => x.CreationDate)
                 .ToListAsync(cancellationToken);

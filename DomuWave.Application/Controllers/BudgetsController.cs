@@ -76,10 +76,14 @@ public class BudgetsController(
 
     [HttpPost("{id:int}/approve")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
-    public async Task<IActionResult> Approve(int id, CancellationToken ct)
+    public async Task<IActionResult> Approve(int id, [FromBody] ApproveInstallmentOptionsDto options, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new ApproveBudgetCommand(CurrentUser.Id, id), ct);
+            new ApproveBudgetCommand(CurrentUser.Id, id)
+            {
+                NumberOfInstallments = options?.NumberOfInstallments ?? 4,
+                FirstDueDate         = options?.FirstDueDate ?? DateTime.Today,
+            }, ct);
         if (!result) return NotFound();
         return NoContent();
     }
