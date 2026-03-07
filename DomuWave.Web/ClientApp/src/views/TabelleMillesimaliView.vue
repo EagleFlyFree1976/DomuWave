@@ -3,14 +3,18 @@
     <!-- ── Header ──────────────────────────────────────────── -->
     <div class="page-header">
       <h1>Tabelle Millesimali</h1>
-      <button v-if="canCreate" class="btn btn-primary" @click="openTableModal()">
+      <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary" @click="openTableModal()">
         + Nuova tabella
       </button>
     </div>
 
     <!-- ── Lista tabelle ───────────────────────────────────── -->
     <div class="card">
-      <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
+      <div v-if="!store.selectedCondominioId" class="empty-state">
+        <div class="empty-icon">◎</div>
+        <div>Seleziona un condominio per visualizzare le tabelle millesimali.</div>
+      </div>
+      <div v-else-if="loading" class="loading-state"><div class="spinner"></div></div>
       <div v-else-if="!tables.length" class="empty-state">
         <div class="empty-icon">◎</div>
         <div>Nessuna tabella millesimale. Clicca "+ Nuova tabella" per iniziare.</div>
@@ -24,6 +28,7 @@
               <th class="text-right">Totale definito</th>
               <th class="text-right">Totale calcolato</th>
               <th>Stato</th>
+              <th>Abilitazione</th>
               <th></th>
             </tr>
           </thead>
@@ -45,8 +50,16 @@
                 </span>
               </td>
               <td>
+                <span class="badge" :class="t.isEnabled ? 'badge-green' : 'badge-muted'">
+                  {{ t.isEnabled ? 'Abilitata' : 'Disabilitata' }}
+                </span>
+              </td>
+              <td>
                 <div class="row-actions">
                   <button class="btn btn-sm btn-ghost" @click="openEntriesModal(t)">Voci</button>
+                  <button v-if="canEdit" class="btn btn-sm btn-ghost" @click="toggleEnabled(t)">
+                    {{ t.isEnabled ? 'Disabilita' : 'Abilita' }}
+                  </button>
                   <button v-if="canEdit" class="btn-icon" @click="openTableModal(t)" title="Modifica">✎</button>
                   <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
                           @click="deleteTable(t.id)" title="Elimina">✕</button>
@@ -293,6 +306,15 @@ async function deleteTable(id) {
   if (!confirm('Eliminare questa tabella millesimale e tutte le sue voci?')) return
   try {
     await millesimalTableApi.delete(id)
+    await loadTables()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+async function toggleEnabled(t) {
+  try {
+    await millesimalTableApi.setEnabled(t.id, !t.isEnabled)
     await loadTables()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')

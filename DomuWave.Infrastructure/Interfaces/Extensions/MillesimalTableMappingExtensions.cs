@@ -18,6 +18,7 @@ public static class MillesimalTableMappingExtensions
             TotalMillesimal      = entity.TotalMillesimal,
             IsActive             = entity.IsActive,
             IsDraft              = entity.IsDraft,
+            IsEnabled            = entity.IsEnabled,
             CalculatedMillesimal = calculatedMillesimal,
         };
         dto.SetTraceInfo(entity);
@@ -36,6 +37,7 @@ public static class MillesimalTableMappingExtensions
             TotalMillesimal = dto.TotalMillesimal,
             IsActive        = false,
             IsDraft         = true,
+            IsEnabled       = true,
         };
     }
 

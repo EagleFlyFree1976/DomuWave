@@ -136,6 +136,13 @@ public class MillesimalTablesController(
         return Ok(result);
     }
 
+    [HttpPatch("{id:int}/enabled")]
+    public async Task<IActionResult> SetEnabled(int id, [FromBody] bool isEnabled, CancellationToken ct)
+    {
+        await _mediator.GetResponse(new SetMillesimalTableEnabledCommand(CurrentUser.Id, id, isEnabled), ct);
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

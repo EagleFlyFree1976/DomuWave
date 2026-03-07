@@ -1,4 +1,5 @@
 using CPQ.Core.Consumers;
+using CPQ.Core.Exceptions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Expense;
@@ -37,23 +38,49 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
         var entity = await _expenseService
             .GetByIdAsync(command.ExpenseId, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        if (entity == null) return null;
+        if (entity == null)
+            throw new NotFoundException("Spesa non trovata.");
 
         var dto = command.Dto;
+
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ValidatorException("La descrizione della spesa è obbligatoria.");
+        if (dto.ExpenseTypeId <= 0)
+            throw new ValidatorException("Il tipo spesa è obbligatorio.");
+        if (dto.DocumentDate == default)
+            throw new ValidatorException("La data documento è obbligatoria.");
+        if (dto.RegistrationDate == default)
+            throw new ValidatorException("La data di registrazione è obbligatoria.");
+        if (dto.GrossAmount <= 0)
+            throw new ValidatorException("L'importo lordo deve essere maggiore di zero.");
+        if (dto.VatAmount < 0)
+            throw new ValidatorException("L'importo IVA non può essere negativo.");
+        if (dto.VatAmount > dto.GrossAmount)
+            throw new ValidatorException("L'importo IVA non può essere superiore all'importo lordo.");
 
         var account = await session.Query<ChartOfAccounts>()
             .FirstOrDefaultAsync(x => x.Id == dto.AccountId && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
+        if (account == null)
+            throw new NotFoundException("Conto del piano dei conti non trovato.");
 
         var millesimalTable = await session.Query<MillesimalTable>()
             .FirstOrDefaultAsync(x => x.Id == dto.MillesimalTableId && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
+        if (millesimalTable == null)
+            throw new NotFoundException("Tabella millesimale non trovata.");
+        if (!millesimalTable.IsEnabled && millesimalTable.Id != entity.MillesimalTable?.Id)
+            throw new ValidatorException("La tabella millesimale selezionata è disabilitata.");
 
         Supplier? supplier = null;
         if (dto.SupplierId.HasValue)
+        {
             supplier = await session.Query<Supplier>()
                 .FirstOrDefaultAsync(x => x.Id == dto.SupplierId.Value && !x.IsDeleted, cancellationToken)
                 .ConfigureAwait(false);
+            if (supplier == null)
+                throw new NotFoundException("Fornitore non trovato.");
+        }
 
         var expenseType   = session.Load<ExpenseType>(dto.ExpenseTypeId);
         var paymentStatus = session.Load<ExpensePaymentStatus>(dto.PaymentStatusId > 0 ? dto.PaymentStatusId : entity.PaymentStatus?.Id ?? ExpensePaymentStatus.DaPagare);

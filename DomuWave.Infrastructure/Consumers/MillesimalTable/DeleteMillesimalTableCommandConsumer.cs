@@ -1,9 +1,11 @@
 using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
+using CPQ.Core.Exceptions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.MillesimalTable;
 using DomuWave.Services.Interfaces;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -30,6 +32,22 @@ public class DeleteMillesimalTableCommandConsumer : InMemoryConsumerBase<DeleteM
         var currentUser = await _userService
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
+
+        var usedInAccount = await session.Query<ChartOfAccounts>()
+            .AnyAsync(a => a.DefaultMillesimalTable != null
+                        && a.DefaultMillesimalTable.Id == command.TableId
+                        && !a.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+        if (usedInAccount)
+            throw new ValidatorException("Impossibile eliminare la tabella millesimale: è impostata come predefinita in uno o più conti del piano dei conti. Disabilitarla invece.");
+
+        var usedInExpense = await session.Query<Expense>()
+            .AnyAsync(e => e.MillesimalTable != null
+                        && e.MillesimalTable.Id == command.TableId
+                        && !e.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+        if (usedInExpense)
+            throw new ValidatorException("Impossibile eliminare la tabella millesimale: è utilizzata in una o più spese. Disabilitarla invece.");
 
         return await _millesimalTableService
             .DeleteAsync(command.TableId, currentUser, cancellationToken)

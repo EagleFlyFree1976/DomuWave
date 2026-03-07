@@ -395,8 +395,8 @@
           <label class="form-label">Tabella millesimale *</label>
           <select class="form-select" v-model.number="expForm.millesimalTableId" @change="clearExpError('millesimalTableId')">
             <option :value="null" disabled>Seleziona tabella…</option>
-            <option v-for="t in millesimalTables" :key="t.id" :value="t.id">
-              {{ t.code }}{{ t.name ? ' – ' + t.name : '' }}
+            <option v-for="t in enabledMillesimalTables" :key="t.id" :value="t.id">
+              {{ t.code }}{{ t.name ? ' – ' + t.name : '' }}{{ !t.isEnabled ? ' (disabilitata)' : '' }}
             </option>
           </select>
           <span v-if="expErrors.millesimalTableId" class="field-error">{{ expErrors.millesimalTableId }}</span>
@@ -705,9 +705,13 @@ function validateExpForm() {
   expErrors.value = e
   return Object.keys(e).length === 0
 }
-const today           = new Date().toISOString().slice(0, 10)
-const suppliers       = ref([])
+const today            = new Date().toISOString().slice(0, 10)
+const suppliers        = ref([])
 const millesimalTables = ref([])
+const enabledMillesimalTables = computed(() => {
+  const currentId = editingExp.value ? expForm.value.millesimalTableId : null
+  return millesimalTables.value.filter(t => t.isEnabled || t.id === currentId)
+})
 
 const emptyExpForm = () => ({
   name: '', documentNumber: '', documentDate: today, registrationDate: today,

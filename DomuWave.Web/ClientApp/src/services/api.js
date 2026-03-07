@@ -251,6 +251,7 @@ export const millesimalTableApi = {
   getById:            (id)            => api.get(`/millesimal-tables/${id}`),
   create:             (data)          => api.post('/millesimal-tables', data),
   update:             (id, data)      => api.put(`/millesimal-tables/${id}`, data),
+  setEnabled:         (id, isEnabled) => api.patch(`/millesimal-tables/${id}/enabled`, isEnabled),
   delete:             (id)            => api.delete(`/millesimal-tables/${id}`),
 }
 

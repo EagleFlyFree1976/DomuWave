@@ -13,6 +13,7 @@ namespace DomuWave.Services.Models
         public virtual decimal TotalMillesimal { get; set; }
         public virtual bool IsActive { get; set; }
         public virtual bool IsDraft { get; set; }
+        public virtual bool IsEnabled { get; set; }
 
         public virtual IList<UnitMillesimal> UnitMillesimals { get; set; } = new List<UnitMillesimal>();
         public virtual IList<Expense> Expenses { get; set; } = new List<Expense>(); 
