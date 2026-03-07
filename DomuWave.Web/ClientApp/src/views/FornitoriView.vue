@@ -96,7 +96,7 @@
               <tr v-for="c in contracts" :key="c.id">
                 <td class="mono text-muted">{{ c.contractNumber || '—' }}</td>
                 <td style="font-weight:500">{{ c.subject }}</td>
-                <td class="text-secondary">{{ c.supplier?.companyName || '—' }}</td>
+                <td class="text-secondary">{{ c.supplierName || '—' }}</td>
                 <td class="mono text-secondary">{{ fmtDate(c.startDate) }}</td>
                 <td class="mono" :class="isExpiring(c.endDate) ? 'text-amber' : 'text-secondary'">{{ fmtDate(c.endDate) }}</td>
                 <td class="mono">{{ c.annualAmount ? fmt(c.annualAmount) : '—' }}</td>
