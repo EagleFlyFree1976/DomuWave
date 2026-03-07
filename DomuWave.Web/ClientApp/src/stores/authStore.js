@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
 import api from '@/services/api'
+
 import { useSessionStore } from '@/stores/sessionStore'
 const STORAGE_KEY = 'tenantId'
 const STORAGE_TENANT_NAME_KEY = 'tenantName'
@@ -16,6 +17,12 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value)
   const currentUser = computed(() => user.value)
 
+  async function requestReset(email) {
+    console.log("[AuthStore] request-reset-password:", email);
+    await api.post('PublicUser/request-reset-password', {
+      email: email,
+    })
+  }
   async function login(username, password) {
     loading.value = true
     error.value = null
@@ -100,5 +107,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('domuwave_userprofile')
   }
 
-  return { token, user, loading, error, isAuthenticated, currentUser, login, logout }
+  return { token, user, loading, error, isAuthenticated, currentUser, login, logout, requestReset }
 })

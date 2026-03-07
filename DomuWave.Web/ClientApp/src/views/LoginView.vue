@@ -64,6 +64,12 @@
             </small>
           </div>
 
+          <div class="form-actions">
+            <RouterLink to="/reset-password" class="forgot-link">
+              Password dimenticata?
+            </RouterLink>
+          </div>
+
           <!-- API Error -->
           <Message v-if="authStore.error" severity="error" :closable="false" class="login-error">
             <i class="pi pi-exclamation-triangle" style="margin-right: 6px"></i>
@@ -227,6 +233,22 @@
     flex-direction: column;
     align-items: center;
     gap: 2rem;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin: 0.2rem 0 0.8rem;
+  }
+
+  .forgot-link {
+    font-size: 0.9rem;
+    color: var(--p-primary-color);
+    text-decoration: none;
+  }
+
+  .forgot-link:hover {
+    text-decoration: underline;
   }
 
   /* ── Brand ───────────────────────────────────────────────────────────────── */

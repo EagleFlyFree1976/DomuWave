@@ -23,14 +23,50 @@
       <!-- Card -->
       <div class="login-card">
 
-        <!-- Token mancante -->
+        <!-- Richiesta reset (senza token) -->
         <template v-if="!token">
           <div class="card-header">
-            <div class="state-icon state-icon--error"><i class="pi pi-exclamation-triangle"></i></div>
-            <h2>Link non valido</h2>
-            <p>Il link di recupero password non è valido o è scaduto.</p>
+            <h2>Recupero password</h2>
+            <p>Inserisci la tua email per ricevere il link di reimpostazione.</p>
           </div>
-          <router-link to="/login" class="login-btn p-button p-component" style="text-decoration:none;display:flex;justify-content:center">
+
+          <form @submit.prevent="handleRequestReset" class="login-form" novalidate>
+            <div class="field">
+              <label for="email">Email</label>
+              <div class="input-wrapper" :class="{ 'has-error': requestV$.email.$error }">
+                <i class="pi pi-envelope input-icon"></i>
+                <InputText id="email"
+                           v-model="requestForm.email"
+                           placeholder="nome@dominio.it"
+                           autocomplete="email"
+                           :class="{ 'p-invalid': requestV$.email.$error }"
+                           @blur="requestV$.email.$touch()" />
+              </div>
+              <small class="error-msg" v-if="requestV$.email.$error">
+                {{ requestV$.email.$errors[0].$message }}
+              </small>
+            </div>
+
+            <Message v-if="requestError" severity="error" :closable="false" class="login-error">
+              <i class="pi pi-exclamation-triangle" style="margin-right:6px"></i>
+              {{ requestError }}
+            </Message>
+
+            <Message v-if="requestSuccess" severity="success" :closable="false" class="login-success">
+              <i class="pi pi-check" style="margin-right:6px"></i>
+              Se l'email esiste, riceverai un link per reimpostare la password.
+            </Message>
+
+            <Button type="submit"
+                    label="Invia link di reset"
+                    icon="pi pi-send"
+                    icon-pos="right"
+                    class="login-btn"
+                    :loading="requestLoading"
+                    :disabled="requestLoading" />
+          </form>
+
+          <router-link to="/login" class="helper-link">
             <i class="pi pi-arrow-left" style="margin-right:0.5rem"></i> Torna al login
           </router-link>
         </template>
@@ -123,22 +159,32 @@
 import { ref, reactive, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useVuelidate } from '@vuelidate/core'
-import { required, helpers, minLength, sameAs } from '@vuelidate/validators'
+import { required, helpers, minLength, sameAs, email } from '@vuelidate/validators'
+import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
+import { useAuthStore } from '@/stores/authStore'
 import authApiClient from '@/services/authApiClient'
 
 const route = useRoute()
-
+  const authStore = useAuthStore()
 const token   = computed(() => route.query.token ?? '')
 const state   = ref('pending')   // 'pending' | 'success'
 const loading = ref(false)
 const apiError = ref('')
 
+const requestLoading = ref(false)
+const requestError = ref('')
+const requestSuccess = ref(false)
+
 const form = reactive({
   newPassword:     '',
   confirmPassword: '',
+})
+
+const requestForm = reactive({
+  email: '',
 })
 
 const rules = {
@@ -152,28 +198,69 @@ const rules = {
   },
 }
 
-const v$ = useVuelidate(rules, form)
+const requestRules = {
+  email: {
+    required: helpers.withMessage("L'email è obbligatoria", required),
+    email: helpers.withMessage('Inserisci un indirizzo email valido', email),
+  },
+}
 
-async function handleSubmit() {
+const v$ = useVuelidate(rules, form)
+const requestV$ = useVuelidate(requestRules, requestForm)
+
+function getErrorMessage(err) {
+  const data = err.response?.data
+  const errs = data?.Errors ?? data?.errors
+  if (Array.isArray(errs) && errs.length) return errs.join('\n')
+  if (data?.message) return data.message
+  if (data?.title) return data.title
+  if (!err.response) return 'Impossibile raggiungere il server'
+  return 'Si è verificato un errore. Riprova o richiedi un nuovo link.'
+}
+
+async function handleRequestReset() {
+  requestError.value = ''
+  requestSuccess.value = false
+  const valid = await requestV$.value.$validate()
+  if (!valid) return
+
+  requestLoading.value = true
+  try {
+    const result = await authStore.requestReset(requestForm.email)
+  
+    requestSuccess.value = true
+  } catch (err) {
+    requestError.value = getErrorMessage(err)
+  } finally {
+    requestLoading.value = false
+  }
+}
+
+  async function handleSubmit() {
+    console.log("handleSubmit");
   apiError.value = ''
-  const valid = await v$.value.$validate()
+    const valid = await v$.value.$validate()
+    console.log("handleSubmit valid :" + valid);
   if (!valid) return
 
   loading.value = true
-  try {
+    try {
+      console.log("handleSubmit call  publicuser/confirm-reset-password:", {
+        token: token.value,
+        newPassword: form.newPassword,
+      });
     await authApiClient.post('/publicuser/confirm-reset-password', {
       token:       token.value,
       newPassword: form.newPassword,
     })
+      console.log("handleSubmit CALLED  publicuser/confirm-reset-password:", {
+        token: token.value,
+        newPassword: form.newPassword,
+      });
     state.value = 'success'
-  } catch (err) {
-    const data = err.response?.data
-    const errs = data?.Errors ?? data?.errors
-    if (Array.isArray(errs) && errs.length)      apiError.value = errs.join('\n')
-    else if (data?.message)                       apiError.value = data.message
-    else if (data?.title)                         apiError.value = data.title
-    else if (!err.response)                       apiError.value = 'Impossibile raggiungere il server'
-    else                                          apiError.value = 'Si è verificato un errore. Riprova o richiedi un nuovo link.'
+    } catch (err) {
+      console.log("handleSubmit err", err)
+    apiError.value = getErrorMessage(err)
   } finally {
     loading.value = false
   }
@@ -278,11 +365,26 @@ async function handleSubmit() {
 
 .error-msg { font-size: 0.78rem; color: var(--p-red-400); }
 .login-error { border-radius: 10px; }
+.login-success { border-radius: 10px; }
 
 .login-btn {
   width: 100%; padding: 0.75rem; border-radius: 10px;
   font-weight: 600; font-size: 0.95rem; margin-top: 0.5rem;
   justify-content: center;
+}
+
+.helper-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--p-primary-color);
+  text-decoration: none;
+}
+
+.helper-link:hover {
+  text-decoration: underline;
 }
 
 .login-footer { font-size: 0.75rem; color: var(--p-text-muted-color); opacity: 0.6; margin: 0; text-align: center; }

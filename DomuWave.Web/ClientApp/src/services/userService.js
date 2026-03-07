@@ -2,15 +2,15 @@ import api from './api'
 import authApiClient from '@/services/authApiClient'
 // ─── Utenti ──────────────────────────────────────────────────────────────────
 export const userApi = {
-  /** Ricerca utenti con filtri: { search, isActive, roles, groups } */
-  search: (params) => authApiClient.get('/users/search', { params }),
-  getById: (id) => authApiClient.get(`/users/${id}`),
-  /** Crea utente (admin): { email, password, name, surName } */
-  create: (data) => authApiClient.post('/users/register', data),
-  update: (id, data) => authApiClient.put(`/users/${id}`, data),
-  delete: (id) => authApiClient.delete(`/users/${id}`),
+  /** Ricerca utenti con filtri: { search, isActive, roles } */
+  search: (params) => api.get('/users/search', { params }),
+  getById: (id) => api.get(`/users/${id}`),
+  /** Crea utente (admin): { email, password, name, surName, roleCode, moduleCode } */
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`),
   /** Invia email di reset password */
-  resetPassword: (id) => authApiClient.post(`/users/${id}/reset-password`),
+  resetPassword: (id) => api.post(`/users/${id}/reset-password`),
 }
 
 // ─── Ruoli per modulo ────────────────────────────────────────────────────────

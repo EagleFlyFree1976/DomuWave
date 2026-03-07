@@ -33,6 +33,32 @@ public class PublicUserController(
     private IAuthorizationClient _authorizationClient = authorizationClient;
     private IUserTenantService _userTenantService = userTenantService;
     private IUserService _userService = userService;
+
+    [HttpPost("request-reset-password")]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK)]
+    [ProducesResponseType(statusCode: StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(statusCode: StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> RequestResetPassword(
+        [FromBody] RequestResetPasswordDto request,
+        CancellationToken cancellationToken)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Email))
+        {
+            return BadRequest(new { message = "Email obbligatoria" });
+        }
+
+        try
+        {
+            await _authorizationClient.ResetPasswordByEmailAsync(request.Email , cancellationToken);
+
+            return Ok(new { message = "Email inviata" });
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { message = "Errore durante l'invio dell'email" });
+        }
+    }
     [HttpPost("login")]
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(UserDto))]
     public async Task<IActionResult> GetByLogin([FromBody] UserLogin logininfo, CancellationToken cancellationToken)
@@ -126,3 +152,5 @@ public class PublicUserController(
         }
     }
 }
+
+public record RequestResetPasswordDto(string Email);
