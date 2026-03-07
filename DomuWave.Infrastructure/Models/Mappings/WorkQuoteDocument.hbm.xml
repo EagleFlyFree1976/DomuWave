@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.WorkQuoteDocument, DomuWave.Services" table="WorkQuoteDocument" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='WorkQuoteDocument'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services"         column="TenantId" not-null="true" />
+    <many-to-one name="Work"   class="DomuWave.Services.Models.WorkQuote, DomuWave.Services"       column="QuoteId"  not-null="true" />
+
+    <property name="Name"         column="Title"        type="String"  length="200" not-null="true" />
+    <property name="Title"        column="Title"        type="String"  length="200" not-null="true" insert="false" update="false" />
+    <property name="FileName"     column="FileName"     type="String"  length="255" not-null="true" />
+    <property name="FilePath"     column="FilePath"     type="String"  length="500" not-null="true" />
+    <property name="FileSize"     column="FileSize"     type="Int64"   not-null="true" />
+    <property name="MimeType"     column="MimeType"     type="String"  length="100" not-null="true" />
+    <property name="DocumentType" column="DocumentType" type="String"  length="100" />
+    <property name="Notes"        column="Notes"        type="String"  length="2000" />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"    not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"   length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"   length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean"  not-null="true" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+  </class>
+
+</hibernate-mapping>

@@ -29,6 +29,10 @@
     <None Remove="Models\Mappings\RealEstateUnit.hbm.xml" />
     <None Remove="Models\Mappings\Receipt.hbm.xml" />
     <None Remove="Models\Mappings\Supplier.hbm.xml" />
+    <None Remove="Models\Mappings\ExtraordinaryWork.hbm.xml" />
+    <None Remove="Models\Mappings\Maintenance.hbm.xml" />
+    <None Remove="Models\Mappings\WorkQuote.hbm.xml" />
+    <None Remove="Models\Mappings\WorkQuoteDocument.hbm.xml" />
     <None Remove="Models\Mappings\SupplierContract.hbm.xml" />
     <None Remove="Models\Mappings\Tenant.hbm.xml" />
     <None Remove="Models\Mappings\UnitMillesimal.hbm.xml" />
@@ -65,6 +69,10 @@
     <EmbeddedResource Include="Models\Mappings\RealEstateUnit.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Receipt.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Supplier.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ExtraordinaryWork.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Maintenance.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\WorkQuote.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\WorkQuoteDocument.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\SupplierContract.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Tenant.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UnitMillesimal.hbm.xml" />

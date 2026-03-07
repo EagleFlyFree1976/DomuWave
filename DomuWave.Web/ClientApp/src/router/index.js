@@ -48,6 +48,8 @@ const routes = [
       { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget & Spese', requiresTenant: true } },
       { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
       { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori', requiresTenant: true } },
+      { path: 'manutenzioni', component: () => import('@/views/ManutenzioniView.vue'), meta: { title: 'Manutenzioni', requiresTenant: true } },
+      { path: 'lavori-straordinari', component: () => import('@/views/LavoriStraordinariView.vue'), meta: { title: 'Lavori Straordinari', requiresTenant: true } },
       { path: 'documenti', component: () => import('@/views/DocumentiView.vue'), meta: { title: 'Documenti', requiresTenant: true } },
       { path: 'comunicazioni', component: () => import('@/views/ComunicazioniView.vue'), meta: { title: 'Comunicazioni', requiresTenant: true } },
 

@@ -283,6 +283,38 @@ export const supplierApi = {
   deleteContract:     (id)            => api.delete(`/supplier-contracts/${id}`),
 }
 
+// ─── Lavori Straordinari ──────────────────────────────────────
+export const extraordinaryWorkApi = {
+  getByCondominium: (condId)            => api.get(`/extraordinary-works/condominium/${condId}`),
+  getByStatus:      (condId, status)    => api.get(`/extraordinary-works/condominium/${condId}/status/${status}`),
+  getById:          (id)                => api.get(`/extraordinary-works/${id}`),
+  create:           (data)              => api.post('/extraordinary-works', data),
+  update:           (id, data)          => api.put(`/extraordinary-works/${id}`, data),
+  delete:           (id)                => api.delete(`/extraordinary-works/${id}`),
+  // Preventivi
+  getQuotes:        (workId)            => api.get(`/extraordinary-works/${workId}/quotes`),
+  createQuote:      (workId, data)      => api.post(`/extraordinary-works/${workId}/quotes`, data),
+  updateQuote:      (workId, qId, data) => api.put(`/extraordinary-works/${workId}/quotes/${qId}`, data),
+  deleteQuote:      (workId, qId)       => api.delete(`/extraordinary-works/${workId}/quotes/${qId}`),
+  approveQuote:     (workId, qId)       => api.post(`/extraordinary-works/${workId}/quotes/${qId}/approve`),
+  rejectQuote:      (workId, qId)       => api.post(`/extraordinary-works/${workId}/quotes/${qId}/reject`),
+  // Documenti preventivo
+  addDocument:      (workId, qId, data) => api.post(`/extraordinary-works/${workId}/quotes/${qId}/documents`, data),
+  deleteDocument:   (workId, qId, docId)=> api.delete(`/extraordinary-works/${workId}/quotes/${qId}/documents/${docId}`),
+}
+
+// ─── Manutenzioni ─────────────────────────────────────────────
+export const maintenanceApi = {
+  getByCondominium:  (condId)         => api.get(`/maintenance/condominium/${condId}`),
+  getOpen:           (condId)         => api.get(`/maintenance/condominium/${condId}/open`),
+  getByStatus:       (condId, status) => api.get(`/maintenance/condominium/${condId}/status/${status}`),
+  getByPriority:     (condId, prio)   => api.get(`/maintenance/condominium/${condId}/priority/${prio}`),
+  getById:           (id)             => api.get(`/maintenance/${id}`),
+  create:            (data)           => api.post('/maintenance', data),
+  update:            (id, data)       => api.put(`/maintenance/${id}`, data),
+  delete:            (id)             => api.delete(`/maintenance/${id}`),
+}
+
 // ─── Documenti ────────────────────────────────────────────────
 export const documentApi = {
   getAll:             ()              => api.get('/documents'),

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.WorkQuote, DomuWave.Services" table="WorkQuote" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='WorkQuote'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant"   class="DomuWave.Services.Models.Tenant, DomuWave.Services"          column="TenantId"  not-null="true" />
+    <many-to-one name="Work"     class="DomuWave.Services.Models.ExtraordinaryWork, DomuWave.Services" column="WorkId"    not-null="true" />
+    <many-to-one name="Supplier" class="DomuWave.Services.Models.Supplier, DomuWave.Services"          column="SupplierId" />
+
+    <property name="Name"        column="QuoteNumber"  type="String"   length="50" />
+    <property name="QuoteNumber" column="QuoteNumber"  type="String"   length="50" insert="false" update="false" />
+    <property name="QuoteDate"   column="QuoteDate"    type="DateTime" not-null="true" />
+    <property name="ValidUntil"  column="ValidUntil"   type="DateTime" />
+    <property name="Amount"      column="Amount"       type="Decimal"  not-null="true" />
+    <property name="Status"      column="Status"       type="String"   length="50" not-null="true" />
+    <property name="Notes"       column="Notes"        type="String"   length="2000" />
+    <property name="IsApproved"  column="IsApproved"   type="Boolean"  not-null="true" />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"    not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"   length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"   length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean"  not-null="true" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+    <bag name="Documents" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="QuoteId" />
+      <one-to-many class="DomuWave.Services.Models.WorkQuoteDocument, DomuWave.Services" />
+    </bag>
+
+  </class>
+
+</hibernate-mapping>

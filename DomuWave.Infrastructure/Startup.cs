@@ -64,9 +64,11 @@ public static class Startup
         services.AddScoped<ICondominiumService, CondominiumService>();
         services.AddScoped<IDocumentAccessService, DocumentAccessService>();
         services.AddScoped<IDocumentService, DocumentService>();
+        services.AddScoped<IExtraordinaryWorkService, ExtraordinaryWorkService>();
         services.AddScoped<IExpenseAllocationService, ExpenseAllocationService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IFiscalYearService, FiscalYearService>();
+        services.AddScoped<IMaintenanceService, MaintenanceService>();
         services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IMillesimalTableService, MillesimalTableService>();
@@ -77,6 +79,8 @@ public static class Startup
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IUnitMillesimalService, UnitMillesimalService>();
         services.AddScoped<IUnitOwnerService, UnitOwnerService>();
+        services.AddScoped<IWorkQuoteDocumentService, WorkQuoteDocumentService>();
+        services.AddScoped<IWorkQuoteService, WorkQuoteService>();
         services.AddScoped<IUnitTenantService, UnitTenantService>();
         services.AddScoped<IUserTenantService, UserTenantService>();
         return services;
