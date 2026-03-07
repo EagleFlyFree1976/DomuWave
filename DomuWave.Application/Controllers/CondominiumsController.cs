@@ -113,4 +113,15 @@ public class CondominiumsController(
         if (!deleted) return NotFound();
         return NoContent();
     }
+
+    [HttpGet("{id:int}/setup-status")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumSetupStatusDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSetupStatus(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetCondominiumSetupStatusCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
 }

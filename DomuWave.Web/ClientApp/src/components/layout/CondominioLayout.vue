@@ -48,6 +48,7 @@ const quickNav = [
   { path: '/fornitori',     icon: '◈', label: 'Fornitori' },
   { path: '/documenti',     icon: '▤', label: 'Documenti' },
   { path: '/comunicazioni', icon: '◉', label: 'Comunicazioni' },
+  { path: '/setup',         icon: '✓', label: 'Setup' },
 ]
 
 provide('condominium', condominium)

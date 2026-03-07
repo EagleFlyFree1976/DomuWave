@@ -40,13 +40,13 @@ public class GetDashboardSummaryCommandConsumer
                 .CountAsync(t => t.IsActive && !t.IsDeleted, cancellationToken)
                 .ConfigureAwait(false);
 
-            dto.TotalActiveCondominiumsCount = await session.Query<Condominium>()
+            dto.TotalActiveCondominiumsCount = await session.Query<Models.Condominium>()
                 .CountAsync(c => c.IsActive && !c.IsDeleted, cancellationToken)
                 .ConfigureAwait(false);
         }
         else
         {
-            var condominiumIds = await session.Query<Condominium>()
+            var condominiumIds = await session.Query<Models.Condominium>()
                 .Where(c => c.Tenant.Id == command.TenantId && c.IsActive && !c.IsDeleted)
                 .Select(c => c.Id)
                 .ToListAsync(cancellationToken)

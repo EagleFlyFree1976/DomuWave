@@ -44,7 +44,7 @@ public class CopyChartOfAccountsCommandConsumer
         if (target == null)
             throw new NotFoundException("Condominio di destinazione non trovato.");
 
-        var sourceExists = await session.Query<Condominium>()
+        var sourceExists = await session.Query<Models.Condominium>()
             .AnyAsync(x => x.Id == command.SourceCondominiumId && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
         if (!sourceExists)

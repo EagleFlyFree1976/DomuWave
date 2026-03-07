@@ -105,12 +105,13 @@ export const dashboardApi = {
 
 // ─── Condomini ────────────────────────────────────────────────
 export const condominiumApi = {
-  getAll:       ()         => api.get('/condominiums'),
-  getById:      (id)       => api.get(`/condominiums/${id}`),
-  getActive:    (tenantId) => api.get(`/condominiums/active`, { params: { tenantId } }),
-  create:       (data)     => api.post('/condominiums', data),
-  update:       (id, data) => api.put(`/condominiums/${id}`, data),
-  delete:       (id)       => api.delete(`/condominiums/${id}`),
+  getAll:         ()         => api.get('/condominiums'),
+  getById:        (id)       => api.get(`/condominiums/${id}`),
+  getActive:      (tenantId) => api.get(`/condominiums/active`, { params: { tenantId } }),
+  create:         (data)     => api.post('/condominiums', data),
+  update:         (id, data) => api.put(`/condominiums/${id}`, data),
+  delete:         (id)       => api.delete(`/condominiums/${id}`),
+  getSetupStatus: (id)       => api.get(`/condominiums/${id}/setup-status`),
 }
 
 // ─── Unità immobiliari ────────────────────────────────────────
@@ -273,8 +274,9 @@ export const supplierApi = {
   update:         (id, data)      => api.put(`/suppliers/${id}`, data),
   delete:         (id)            => api.delete(`/suppliers/${id}`),
   // Contratti
-  getContracts:       (suppId)        => api.get(`/supplier-contracts/supplier/${suppId}`),
-  getActiveContracts: (condId)        => api.get(`/supplier-contracts/condominium/${condId}/active`),
+  getContracts:              (suppId)        => api.get(`/supplier-contracts/supplier/${suppId}`),
+  getContractsByCondominium: (condId)        => api.get(`/supplier-contracts/condominium/${condId}`),
+  getActiveContracts:        (condId)        => api.get(`/supplier-contracts/condominium/${condId}/active`),
   getExpiringContracts:(condId, days) => api.get(`/supplier-contracts/condominium/${condId}/expiring`, { params: { days } }),
   createContract:     (data)          => api.post('/supplier-contracts', data),
   updateContract:     (id, data)      => api.put(`/supplier-contracts/${id}`, data),

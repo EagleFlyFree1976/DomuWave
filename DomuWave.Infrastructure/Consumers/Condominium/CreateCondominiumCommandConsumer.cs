@@ -55,7 +55,7 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
             throw new ValidatorException($"Specificare il codice condominio");
         }
 
-        var existsCode = await session.Query<Condominium>()
+        var existsCode = await session.Query<Models.Condominium>()
             .Where(k => k.Code == command.Dto.Code.Trim() && k.Tenant.Id == command.TenantId && !k.IsDeleted).AnyAsync(cancellationToken).ConfigureAwait(false);
 
         if (existsCode)

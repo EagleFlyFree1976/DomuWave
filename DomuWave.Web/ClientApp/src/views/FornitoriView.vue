@@ -233,9 +233,10 @@
                 <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.companyName }}</option>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Data inizio</label>
-              <input class="form-input" type="date" v-model="contractForm.startDate" />
+            <div class="form-group" :class="{ 'has-error': contractErrors.startDate }">
+              <label class="form-label">Data inizio *</label>
+              <input class="form-input" type="date" v-model="contractForm.startDate" @change="contractErrors.startDate = null" />
+              <span v-if="contractErrors.startDate" class="field-error">{{ contractErrors.startDate }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">Data fine</label>
@@ -289,6 +290,7 @@ const contractFilter = ref('all')
 const showContractModal = ref(false)
 const editingContract = ref(null)
 const savingContract = ref(false)
+const contractErrors = ref({})
 
 const fmt = (v) => v != null ? '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
@@ -328,7 +330,7 @@ async function loadContracts() {
       ? await supplierApi.getActiveContracts(store.selectedCondominioId)
       : contractFilter.value === 'expiring'
         ? await supplierApi.getExpiringContracts(store.selectedCondominioId, 30)
-        : await supplierApi.getActiveContracts(store.selectedCondominioId)
+        : await supplierApi.getContractsByCondominium(store.selectedCondominioId)
     contracts.value = res.data
   } catch (err) {
     contracts.value = []
@@ -370,11 +372,26 @@ function openContractModal(c = null) {
   showContractModal.value = true
 }
 
+function sanitizeContractForm(form) {
+  return {
+    ...form,
+    startDate:    form.startDate    || null,
+    endDate:      form.endDate      || null,
+    annualAmount: form.annualAmount !== '' ? form.annualAmount : null,
+  }
+}
+
 async function saveContract() {
+  contractErrors.value = {}
+  if (!contractForm.value.startDate) {
+    contractErrors.value.startDate = 'La data di inizio è obbligatoria'
+    return
+  }
   savingContract.value = true
   try {
-    if (editingContract.value) await supplierApi.updateContract(editingContract.value, contractForm.value)
-    else await supplierApi.createContract({ ...contractForm.value, condominiumId: store.selectedCondominioId })
+    const payload = sanitizeContractForm(contractForm.value)
+    if (editingContract.value) await supplierApi.updateContract(editingContract.value, payload)
+    else await supplierApi.createContract({ ...payload, condominiumId: store.selectedCondominioId })
     store.toast('Contratto salvato', 'success')
     showContractModal.value = false
     loadContracts()

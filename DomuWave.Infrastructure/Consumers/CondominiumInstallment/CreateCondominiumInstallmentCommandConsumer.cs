@@ -35,7 +35,7 @@ public class CreateCondominiumInstallmentCommandConsumer : InMemoryConsumerBase<
             .ConfigureAwait(false);
 
         var dto = command.Dto;
-        var condominium = await session.Query<Condominium>()
+        var condominium = await session.Query<Models.Condominium>()
             .FirstOrDefaultAsync(x => x.Id == dto.CondominiumId && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
 

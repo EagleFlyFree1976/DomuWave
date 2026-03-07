@@ -52,7 +52,7 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
         if (dto.VatAmount > dto.GrossAmount)
             throw new ValidatorException("L'importo IVA non può essere superiore all'importo lordo.");
 
-        var condominium = await session.Query<Condominium>()
+        var condominium = await session.Query<Models.Condominium>()
             .FirstOrDefaultAsync(x => x.Id == dto.CondominiumId && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
         if (condominium == null)
