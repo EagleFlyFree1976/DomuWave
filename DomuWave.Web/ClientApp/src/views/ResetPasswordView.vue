@@ -184,7 +184,7 @@ const form = reactive({
 })
 
 const requestForm = reactive({
-  email: '',
+  email: route.query.email ?? '',
 })
 
 const rules = {
@@ -268,7 +268,7 @@ async function handleRequestReset() {
 </script>
 
 <style scoped>
-/* ── Layout (identico a LoginView) ───────────────────────────────────────── */
+/* ── Layout ───────────────────────────────────────────────────────────────── */
 .login-wrapper {
   min-height: 100vh;
   display: flex;
@@ -278,6 +278,10 @@ async function handleRequestReset() {
   position: relative;
   overflow: hidden;
   font-family: 'DM Sans', sans-serif;
+  background-image: url(../assets/sfondodomuweb.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .login-bg { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
@@ -315,17 +319,31 @@ async function handleRequestReset() {
 .brand-text h1 { font-size: 1.6rem; font-weight: 700; margin: 0; line-height: 1; color: var(--p-text-color); letter-spacing: -0.5px; }
 .brand-text span { font-size: 0.78rem; color: var(--p-text-muted-color); letter-spacing: 0.5px; text-transform: uppercase; }
 
+/* ── Card ─────────────────────────────────────────────────────────────────── */
 .login-card {
   width: 100%;
-  background: var(--p-surface-card);
-  border: 1px solid var(--p-surface-border);
-  border-radius: 16px; padding: 2.5rem 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,.2), 0 20px 60px -10px rgba(0,0,0,.3);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 20px 60px -10px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  transition: box-shadow 0.3s ease;
+}
+.login-card:hover {
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 25px 70px -10px rgba(0, 0, 0, 0.4);
 }
 
-.card-header { margin-bottom: 2rem; text-align: center; }
-.card-header h2 { font-size: 1.5rem; font-weight: 700; margin: 0 0 0.4rem; color: var(--p-text-color); }
-.card-header p  { font-size: 0.875rem; color: var(--p-text-muted-color); margin: 0; }
+/* ── Card header ──────────────────────────────────────────────────────────── */
+.card-header {
+  margin-bottom: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.card-header h2 { font-size: 1.5rem; font-weight: 700; margin: 0; color: #1e293b; }
+.card-header p  { font-size: 0.875rem; color: #64748b; margin: 0; }
 
 .state-icon {
   width: 56px; height: 56px; border-radius: 50%;
@@ -336,10 +354,11 @@ async function handleRequestReset() {
 .state-icon--success { background: rgba(56, 161, 105, 0.15); color: var(--p-green-500, #38a169); }
 .state-icon--error   { background: rgba(229, 62, 62, 0.12);  color: var(--p-red-400, #e53e3e); }
 
+/* ── Form ─────────────────────────────────────────────────────────────────── */
 .login-form { display: flex; flex-direction: column; gap: 1.25rem; }
 
 .field { display: flex; flex-direction: column; gap: 0.4rem; }
-.field label { font-size: 0.85rem; font-weight: 600; color: var(--p-text-color); }
+.field label { font-size: 0.85rem; font-weight: 600; color: #1e293b; }
 
 .input-wrapper { position: relative; }
 .input-icon {
@@ -349,11 +368,21 @@ async function handleRequestReset() {
 
 .input-wrapper :deep(.p-inputtext),
 .input-wrapper :deep(.p-password-input) {
-  padding-left: 2.5rem !important; width: 100%;
-  border-radius: 10px; background: var(--p-surface-overlay);
-  border-color: var(--p-surface-border);
+  padding-left: 2.5rem !important;
+  width: 100%;
+  border-radius: 10px;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #1e293b;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+
+.input-wrapper :deep(.p-inputtext:-webkit-autofill),
+.input-wrapper :deep(.p-password-input:-webkit-autofill) {
+  -webkit-text-fill-color: #1e293b;
+  -webkit-box-shadow: 0 0 0 1000px #f8fafc inset;
+}
+
 .input-wrapper :deep(.p-inputtext:focus),
 .input-wrapper :deep(.p-password-input:focus) {
   border-color: var(--p-primary-color);
@@ -374,18 +403,11 @@ async function handleRequestReset() {
 }
 
 .helper-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  color: var(--p-primary-color);
-  text-decoration: none;
+  display: flex; align-items: center; justify-content: center;
+  margin-top: 1rem; font-size: 0.9rem;
+  color: var(--p-primary-color); text-decoration: none;
 }
-
-.helper-link:hover {
-  text-decoration: underline;
-}
+.helper-link:hover { text-decoration: underline; }
 
 .login-footer { font-size: 0.75rem; color: var(--p-text-muted-color); opacity: 0.6; margin: 0; text-align: center; }
 </style>

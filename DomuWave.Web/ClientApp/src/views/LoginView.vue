@@ -65,7 +65,7 @@
           </div>
 
           <div class="form-actions">
-            <RouterLink to="/reset-password" class="forgot-link">
+            <RouterLink :to="{ path: '/reset-password', query: form.username ? { email: form.username } : {} }" class="forgot-link">
               Password dimenticata?
             </RouterLink>
           </div>
@@ -154,6 +154,10 @@
     position: relative;
     overflow: hidden;
     font-family: 'DM Sans', sans-serif;
+    background-image: url(../assets/sfondodomuweb.png);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
   /* ── Decorative background ───────────────────────────────────────────────── */
@@ -295,34 +299,38 @@
   /* ── Card ────────────────────────────────────────────────────────────────── */
   .login-card {
     width: 100%;
-    background: var(--p-surface-card);
-    border: 1px solid var(--p-surface-border);
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 16px;
     padding: 2.5rem 2rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 20px 60px -10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), 0 20px 60px -10px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(12px);
     transition: box-shadow 0.3s ease;
   }
 
     .login-card:hover {
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25), 0 25px 70px -10px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 25px 70px -10px rgba(0, 0, 0, 0.4);
     }
 
   /* ── Card header ─────────────────────────────────────────────────────────── */
   .card-header {
     margin-bottom: 2rem;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
   }
 
     .card-header h2 {
       font-size: 1.5rem;
       font-weight: 700;
-      margin: 0 0 0.4rem;
-      color: var(--p-text-color);
+      margin: 0;
+      color: #1e293b;
     }
 
     .card-header p {
       font-size: 0.875rem;
-      color: var(--p-text-muted-color);
+      color: #64748b;
       margin: 0;
     }
 
@@ -342,7 +350,7 @@
     .field label {
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--p-text-color);
+      color: #1e293b;
     }
 
   .input-wrapper {
@@ -366,9 +374,16 @@
     padding-left: 2.5rem !important;
     width: 100%;
     border-radius: 10px;
-    background: var(--p-surface-overlay);
-    border-color: var(--p-surface-border);
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: #1e293b;
     transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .input-wrapper :deep(.p-inputtext:-webkit-autofill),
+  .input-wrapper :deep(.p-password-input:-webkit-autofill) {
+    -webkit-text-fill-color: #1e293b;
+    -webkit-box-shadow: 0 0 0 1000px #f8fafc inset;
   }
 
   .input-wrapper :deep(.p-inputtext:focus),

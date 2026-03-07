@@ -1,108 +1,171 @@
-# DomuWave - Manuale d'uso (bozza)
+# DomuWave - Manuale d'uso
 
 Data: 2026-03-07
 
 ## 1. Scopo del manuale
-Questo manuale descrive l'utilizzo dell'applicazione DomuWave per la gestione condomini, unita immobiliari, anagrafiche e processi amministrativi collegati. E' rivolto a tutti i profili (utente finale, operatore, amministratore, tecnico).
+Questo manuale descrive l'utilizzo dell'applicazione DomuWave per la gestione dei condomini. E' rivolto a utenti finali, operatori e amministratori.
 
 ## 2. Accesso e sicurezza
 ### 2.1 Login
-- Accedi dalla pagina di login.
-- Se la sessione e' gia' attiva, l'app ti porta automaticamente alla dashboard.
+- Inserisci username/email e password nella pagina di login.
+- Se la sessione e' gia' attiva, verrai reindirizzato alla dashboard.
 
-### 2.2 Reset password
-- Usa la funzione di reset password se non ricordi le credenziali.
+### 2.2 Recupero password
+- Usa il link "Password dimenticata".
+- Inserisci l'email e invia la richiesta.
+- Segui il link ricevuto via email per impostare una nuova password.
 
 ### 2.3 Ruoli e permessi
-Alcune sezioni richiedono il ruolo di SuperAdmin (es. gestione tenant, autorizzazioni, utenti, template categorie). Se non hai il ruolo richiesto, la sezione non e' accessibile.
+- Alcune sezioni sono riservate ai SuperAdmin (tenant, autorizzazioni, utenti, template categorie).
+- Le sezioni operative richiedono un tenant/condominio selezionato.
 
-## 3. Selezione del tenant/condominio
-- Se il tuo profilo e' SuperAdmin e non hai un tenant selezionato, l'app ti reindirizza alla gestione tenant.
-- In ambiente multi-tenant, seleziona il condominio/tenant prima di accedere alle sezioni operative.
+## 3. Selezione tenant e condominio
+- Se sei SuperAdmin e non hai un tenant selezionato, l'app ti propone la gestione tenant.
+- Seleziona il tenant/condominio prima di accedere ai moduli operativi.
 
-## 4. Struttura di navigazione
-La navigazione principale e' organizzata per moduli. Ogni modulo corrisponde a una vista dedicata.
+## 4. Navigazione generale
+La navigazione e' organizzata per moduli. Le voci visibili dipendono dal ruolo e dal tenant selezionato.
 
-### 4.1 Dashboard
-- Vista di sintesi con indicatori principali.
-- Punto di accesso rapido alle sezioni piu' usate.
+## 5. Dashboard
+### 5.1 Cosa vedi
+- Riepilogo dei dati principali e accessi rapidi alle funzioni.
 
-### 4.2 Condomini
-- Elenco e gestione dei condomini.
-- Accesso al dettaglio condominio.
+### 5.2 Cosa fare
+- Controlla lo stato generale del condominio.
+- Accedi rapidamente ai moduli piu' utilizzati.
 
-#### 4.2.1 Dettaglio Condominio
-- Dati generali del condominio.
-- Collegamenti alle unita e alla panoramica occupanti.
+## 6. Condomini
+### 6.1 Elenco condomini
+- Visualizza e seleziona un condominio.
+- Accedi al dettaglio e alle sotto-sezioni (unita, panoramica, budget, ecc.).
 
-#### 4.2.2 Unita immobiliari
-- Gestione delle unita associate al condominio.
-- Filtri per tipologia, scala o piano.
+### 6.2 Dettaglio condominio
+- Verifica dati anagrafici, tecnici e amministrativi.
+- Aggiorna indirizzo, recapiti e parametri gestionali.
 
-#### 4.2.3 Panoramica occupanti
-- Vista complessiva proprietari/conduttori collegati alle unita.
+### 6.3 Unita immobiliari
+- Crea e aggiorna le unita (scala, piano, interno, destinazione, mq).
+- Gestisci stato e classificazione delle unita.
 
-### 4.3 Esercizi fiscali
-- Gestione degli esercizi fiscali del tenant.
-- Impostazione periodi contabili.
+### 6.4 Panoramica occupanti
+- Consulta proprietari e inquilini collegati alle unita.
+- Verifica presenza e stato degli occupanti.
 
-### 4.4 Piano dei conti
-- Struttura contabile del condominio.
-- Gestione conti, categorie e livelli.
+## 7. Esercizi fiscali
+### 7.1 Creazione esercizio
+- Imposta anno, date di inizio/fine e stato attivo.
 
-### 4.5 Categorie piano dei conti
-- Categorie utilizzate per classificare voci e movimenti.
+### 7.2 Gestione stato
+- Apri, blocca o chiudi l'esercizio secondo le regole contabili.
 
-### 4.6 Template categorie piano dei conti (SuperAdmin)
-- Modelli predefiniti per inizializzare categorie standard.
+## 8. Piano dei conti
+### 8.1 Struttura
+- Definisci conti, livelli e codici.
+- Mantieni una gerarchia coerente per la reportistica.
 
-### 4.7 Tabelle millesimali
-- Definizione e gestione delle tabelle millesimali.
-- Attivazione/disattivazione delle tabelle per i condomini.
+### 8.2 Categorie
+- Crea e aggiorna categorie e sottocategorie.
+- Associa le categorie ai conti per una classificazione chiara.
 
-### 4.8 Budget e spese
-- Inserimento e consultazione di budget.
-- Gestione spese con filtri per periodo, fornitore e tipologia.
-- Aggiornamento stato pagamento.
+### 8.3 Template categorie (SuperAdmin)
+- Usa i template per inizializzare velocemente le categorie standard.
 
-### 4.9 Rate e quote
-- Gestione rate e quote condominiali.
-- Ripartizioni basate su tabelle millesimali.
+## 9. Tabelle millesimali
+### 9.1 Creazione
+- Crea tutte le tabelle richieste (generale, scale, ascensore, ecc.).
 
-### 4.10 Fornitori
-- Anagrafica fornitori.
-- Ricerca per P.IVA o tipologia.
+### 9.2 Compilazione
+- Inserisci i millesimi per ogni unita.
+- Verifica la somma totale e correggi eventuali squilibri.
 
-### 4.11 Documenti
-- Archivio documentale del condominio.
-- Caricamento e consultazione documenti.
+### 9.3 Attivazione
+- Abilita le tabelle che devono essere usate per ripartizioni e rate.
 
-### 4.12 Comunicazioni
-- Comunicazioni interne ed esterne.
-- Pianificazione pubblicazione e visibilita'.
+## 10. Budget
+### 10.1 Creare un budget
+- Seleziona l'esercizio fiscale attivo.
+- Crea il budget preventivo o consuntivo.
 
-### 4.13 Gestione tenant (SuperAdmin)
-- Elenco tenant.
-- Creazione e modifica tenant.
+### 10.2 Approvazione e chiusura
+- Approva il budget per generare rate e quote.
+- Chiudi il budget al termine del periodo.
 
-### 4.14 Autorizzazioni (SuperAdmin)
-- Gestione permessi e accessi alle funzionalita'.
+### 10.3 Voci di budget
+- Aggiungi e modifica le voci di spesa.
+- Controlla il totale e l'allineamento con il budget.
 
-### 4.15 Gestione utenti (SuperAdmin)
-- Creazione, modifica e disabilitazione utenti.
+## 11. Spese
+### 11.1 Inserimento spese
+- Compila data, fornitore, importi e conto.
+- Seleziona una tabella millesimale valida.
 
-## 5. Flusso operativo consigliato
-1. Creare/aggiornare i tenant (SuperAdmin).
-2. Inserire i condomini e le unita immobiliari.
-3. Definire tabelle millesimali e piano dei conti.
-4. Configurare fornitori e categorie.
-5. Gestire budget, spese e rate.
-6. Pubblicare documenti e comunicazioni.
+### 11.2 Pagamento
+- Registra il pagamento e aggiorna lo stato.
 
-## 6. Buone pratiche
-- Mantieni aggiornate le anagrafiche (condomini, unita, fornitori).
-- Usa le categorie in modo coerente per reportistica chiara.
+### 11.3 Filtri
+- Filtra per tipologia, periodo o stato di pagamento.
+
+## 12. Rate e quote
+### 12.1 Generazione rate
+- Le rate sono generate in fase di approvazione budget.
+
+### 12.2 Gestione quote
+- Verifica le quote per ogni unita.
+- Controlla eventuali anomalie e ripartizioni.
+
+## 13. Fornitori
+### 13.1 Anagrafica fornitori
+- Inserisci dati, P.IVA e contatti.
+- Aggiorna lo stato e le tipologie.
+
+### 13.2 Contratti
+- Allega informazioni contrattuali e scadenze.
+
+## 14. Documenti
+### 14.1 Archivio
+- Carica regolamenti, verbali, documenti tecnici.
+
+### 14.2 Consultazione
+- Filtra e scarica i documenti necessari.
+
+## 15. Comunicazioni
+### 15.1 Creazione comunicazioni
+- Inserisci titolo, testo e periodo di visibilita'.
+- Se necessario, invia via email.
+
+### 15.2 Pubblicazione
+- Programma la data di pubblicazione e scadenza.
+
+## 16. Gestione tenant (SuperAdmin)
+### 16.1 Elenco tenant
+- Visualizza l'elenco tenant e lo stato.
+
+### 16.2 Creazione e modifica
+- Crea nuovi tenant e aggiorna le informazioni.
+
+## 17. Autorizzazioni (SuperAdmin)
+- Configura ruoli, permessi e moduli accessibili.
+
+## 18. Gestione utenti (SuperAdmin)
+- Crea utenti, assegna ruoli e tenant.
+- Esegui reset password e disabilita account se necessario.
+
+## 19. Messa in esercizio del condominio (checklist)
+1. Dati anagrafici e indirizzo completi.
+2. Unita immobiliari inserite e occupanti collegati.
+3. Tabelle millesimali create, compilate e attive.
+4. Piano dei conti e categorie completati.
+5. Esercizio fiscale corrente attivo.
+6. Fornitori principali inseriti.
+7. Budget preventivo creato e approvato.
+8. Rate generate e verificate.
+9. Documenti iniziali caricati e comunicazioni inviate.
+
+## 20. Buone pratiche
+- Mantieni anagrafiche aggiornate.
+- Usa categorie coerenti per report e rendiconti.
 - Verifica periodicamente tabelle millesimali e rate.
+- Archivia in modo ordinato documenti e comunicazioni.
 
-## 7. Supporto
+## 21. Supporto
 Per supporto tecnico o richieste di configurazione avanzata, contatta l'amministratore di sistema o il team IT.
