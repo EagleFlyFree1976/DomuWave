@@ -396,7 +396,7 @@
           <select class="form-select" v-model.number="expForm.millesimalTableId" @change="clearExpError('millesimalTableId')">
             <option :value="null" disabled>Seleziona tabella…</option>
             <option v-for="t in millesimalTables" :key="t.id" :value="t.id">
-              {{ t.code }}{{ t.description ? ' – ' + t.description : '' }}
+              {{ t.code }}{{ t.name ? ' – ' + t.name : '' }}
             </option>
           </select>
           <span v-if="expErrors.millesimalTableId" class="field-error">{{ expErrors.millesimalTableId }}</span>
@@ -824,6 +824,15 @@ const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 const statusBadge  = (id) => ({ 1: 'badge-muted', 2: 'badge-green', 3: 'badge-purple' }[id] ?? 'badge-muted')
 const statusLabel  = (id) => ({ 1: 'Bozza', 2: 'Approvato', 3: 'Chiuso' }[id] ?? String(id ?? ''))
 const payBadge     = (id) => ({ 1: 'badge-amber', 2: 'badge-green', 3: 'badge-red' }[id] ?? 'badge-muted')
+
+// Auto-select DefaultMillesimalTable when account changes
+watch(() => expForm.value.accountId, (accountId) => {
+  if (!accountId) return
+  const account = chartOfAccounts.value.find(a => a.id === accountId)
+  if (account?.defaultMillesimalTableId) {
+    expForm.value.millesimalTableId = account.defaultMillesimalTableId
+  }
+})
 
 // ─── Watchers / Init ──────────────────────────────────────────
 watch(() => store.selectedCondominioId, async () => {

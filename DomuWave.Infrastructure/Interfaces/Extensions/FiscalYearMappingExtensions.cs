@@ -23,7 +23,8 @@ namespace DomuWave.Services.Interfaces.Extensions
                 Description          = fy.Description,
                 StartDate            = fy.StartDate,
                 EndDate              = fy.EndDate,
-                Status               = fy.Status,
+                StatusId             = fy.Status?.Id ?? 0,
+                StatusName           = fy.Status?.Name ?? string.Empty,
                 IsActive             = fy.IsActive,
                 ClosingDate          = fy.ClosingDate,
                 ClosedDate           = fy.ClosedDate,
@@ -48,7 +49,8 @@ namespace DomuWave.Services.Interfaces.Extensions
                 Description = fy.Description,
                 StartDate   = fy.StartDate,
                 EndDate     = fy.EndDate,
-                Status      = fy.Status,
+                StatusId    = fy.Status?.Id ?? 0,
+                StatusName  = fy.Status?.Name ?? string.Empty,
                 IsActive    = fy.IsActive
             };
         }

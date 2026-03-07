@@ -1,29 +1,27 @@
 namespace DomuWave.Services.Models
 {
     /// <summary>
-    /// Costanti per gli stati del ciclo di vita di un FiscalYear.
+    /// Lookup entity per gli stati del ciclo di vita di un FiscalYear.
     /// </summary>
-    public static class FiscalYearStatus
+    public class FiscalYearStatus
     {
+        public virtual int    Id   { get; set; }
+        public virtual string Name { get; set; }
+
+        // ─── Costanti ID ───────────────────────────────────────────
+        /// <summary>Esercizio creato ma non ancora aperto (default alla creazione).</summary>
+        public const int Draft   = 1;
+
         /// <summary>Esercizio aperto: registrazioni libere.</summary>
-        public const string Open = "Open";
+        public const int Open    = 2;
 
-        /// <summary>
-        /// Esercizio in fase di chiusura: ancora aperto a registrazioni di rettifica
-        /// (es. fatture con data documento nel periodo ma ricevute dopo la chiusura formale).
-        /// </summary>
-        public const string Closing = "Closing";
+        /// <summary>Esercizio in fase di chiusura: ancora aperto a rettifiche.</summary>
+        public const int Closing = 3;
 
-        /// <summary>
-        /// Esercizio chiuso definitivamente. IsActive = false.
-        /// È possibile aprire un nuovo esercizio.
-        /// </summary>
-        public const string Closed = "Closed";
+        /// <summary>Esercizio chiuso definitivamente. IsActive = false.</summary>
+        public const int Closed  = 4;
 
-        /// <summary>
-        /// Esercizio bloccato. Nessuna modifica consentita.
-        /// Tipicamente dopo l'approvazione del consuntivo in assemblea.
-        /// </summary>
-        public const string Locked = "Locked";
+        /// <summary>Esercizio bloccato. Nessuna modifica consentita.</summary>
+        public const int Locked  = 5;
     }
 }

@@ -14,12 +14,15 @@ namespace DomuWave.Services.Models
         public virtual int Level { get; set; }
         public virtual bool IsActive { get; set; }
 
+        public virtual MillesimalTable? DefaultMillesimalTable { get; set; }
+
         public virtual IList<ChartOfAccounts> ChildAccounts { get; set; } = new List<ChartOfAccounts>();
         public virtual IList<BudgetItem> BudgetItems { get; set; } = new List<BudgetItem>();
         public virtual IList<Expense> Expenses { get; set; } = new List<Expense>();
         public override int GetHashCode()
         {
             return this.Id.GetHashCode();
+            
         }
     }
 }

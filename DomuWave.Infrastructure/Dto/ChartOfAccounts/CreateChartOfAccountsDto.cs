@@ -11,5 +11,6 @@ public class CreateChartOfAccountsDto
     public ChartOfAccountsType Type            { get; set; } = ChartOfAccountsType.Uscita;
     public int?                CategoryId      { get; set; }
     public string?             Description     { get; set; }
-    public bool                IsActive        { get; set; } = true;
+    public bool                IsActive                  { get; set; } = true;
+    public int?                DefaultMillesimalTableId  { get; set; }
 }

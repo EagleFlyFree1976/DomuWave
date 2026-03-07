@@ -27,7 +27,8 @@
     <property name="Description" column="Description" type="string" length="200" not-null="false" />
     <property name="StartDate"   column="StartDate"   type="DateTime"            not-null="true" />
     <property name="EndDate"     column="EndDate"     type="DateTime"            not-null="true" />
-    <property name="Status"      column="Status"      type="string" length="50"  not-null="true" />
+    <many-to-one name="Status" class="FiscalYearStatus"
+                 column="StatusId" not-null="true" lazy="false" fetch="join" />
     <property name="IsActive"    column="IsActive"    type="bool"                not-null="true" />
 
     <!-- Campi di chiusura -->
@@ -39,10 +40,10 @@
 
     <!-- Audit (ereditati da TraceEntity) -->
     <property name="IsDeleted"           column="IsDeleted"           type="bool"   not-null="true" />
-    <property name="CreationDate"        column="CreationDate"        type="DateTime" not-null="true" />
+    <property name="CreationDate"        column="CreationDate"        type="datetime2" not-null="true" />
     <property name="CreatedBy"           column="CreatedBy"           type="int"   not-null="false" />
     <property name="CreatedByFullName"   column="CreatedByFullName"   type="string" length="200" not-null="false" />
-    <property name="LastUpdateDate"      column="LastUpdateDate"      type="DateTime" not-null="false" />
+    <property name="LastUpdateDate"      column="LastUpdateDate"      type="datetime2" not-null="false" />
     <property name="LastUpdatedBy"       column="LastUpdatedBy"       type="int"   not-null="false" />
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="string" length="200" not-null="false" />
 

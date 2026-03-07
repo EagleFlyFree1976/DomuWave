@@ -21,6 +21,7 @@
     <None Remove="Models\Mappings\ExpensePaymentStatus.hbm.xml" />
     <None Remove="Models\Mappings\ExpenseType.hbm.xml" />
     <None Remove="Models\Mappings\FiscalYear.hbm.xml" />
+    <None Remove="Models\Mappings\FiscalYearStatus.hbm.xml" />
     <None Remove="Models\Mappings\MenuItem.hbm.xml" />
     <None Remove="Models\Mappings\Message.hbm.xml" />
     <None Remove="Models\Mappings\MillesimalTable.hbm.xml" />
@@ -56,6 +57,7 @@
     <EmbeddedResource Include="Models\Mappings\ExpensePaymentStatus.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ExpenseType.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\FiscalYear.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\FiscalYearStatus.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\MenuItem.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Message.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\MillesimalTable.hbm.xml" />

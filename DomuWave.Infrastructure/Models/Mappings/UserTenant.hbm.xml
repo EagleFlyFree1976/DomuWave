@@ -23,10 +23,10 @@
 
 		<property name="CreatedBy"             column="CreatedById"           type="Int32"  not-null="true" />
 		<property name="CreatedByFullName"     column="CreatedByFullName"     type="String" length="200" />
-		<property name="CreationDate"          column="CreationDate"          type="DateTime" not-null="true" />
+		<property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
 		<property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
 		<property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
-		<property name="LastUpdateDate"        column="LastUpdateDate"        type="DateTime" />
+		<property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
 		<property name="IsDeleted"             column="IsDeleted"             type="Boolean" not-null="true" />
 
 	</class>

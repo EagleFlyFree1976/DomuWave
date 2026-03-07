@@ -23,6 +23,7 @@
     <property name="Code" column="Code" type="String" length="50" not-null="true" />
     <property name="Type" column="Type" type="Int32" not-null="true" />
     <many-to-one name="Category" class="DomuWave.Services.Models.ChartOfAccountsCategory, DomuWave.Services" column="CategoryId" />
+    <many-to-one name="DefaultMillesimalTable" class="DomuWave.Services.Models.MillesimalTable, DomuWave.Services" column="DefaultMillesimalTableId" />
     <property name="Level" column="Level" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
 
@@ -32,8 +33,8 @@
     <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String" length="200" />
     <property name="IsDeleted" column="IsDeleted" type="Boolean" not-null="true" />
     <property name="IsEnabled" column="IsActive" type="Boolean" insert="false" update="false" />
-    <property name="CreationDate"          column="CreationDate"          type="DateTime" not-null="true" />
-    <property name="LastUpdateDate"        column="LastUpdateDate"        type="DateTime" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
 
     <bag name="ChildAccounts" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="ParentAccountId" />

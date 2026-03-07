@@ -53,6 +53,7 @@
             <th>Categoria</th>
             <th>Livello</th>
             <th>Conto padre</th>
+            <th>Tab. millesimale</th>
             <th>Stato</th>
             <th></th>
           </tr>
@@ -65,6 +66,7 @@
             <td class="text-secondary">{{ a.categoryName ?? '—' }}</td>
             <td class="text-center">{{ a.level }}</td>
             <td class="text-secondary mono">{{ parentCode(a.parentAccountId) }}</td>
+            <td class="text-secondary">{{ a.defaultMillesimalTableName ?? '—' }}</td>
             <td>
               <span class="badge" :class="a.isActive ? 'badge-open' : 'badge-muted'">
                 {{ a.isActive ? 'Attivo' : 'Inattivo' }}
@@ -125,6 +127,14 @@
                 <select class="form-select" v-model.number="form.categoryId">
                   <option :value="null">— Nessuna —</option>
                   <option v-for="c in activeCategories" :key="c.id" :value="c.id">{{ c.name }}</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Tabella millesimale default</label>
+                <select class="form-select" v-model.number="form.defaultMillesimalTableId">
+                  <option :value="null">— Nessuna —</option>
+                  <option v-for="t in millesimalTables" :key="t.id" :value="t.id">{{ t.name }}</option>
                 </select>
               </div>
 
@@ -233,7 +243,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { chartOfAccountsApi, chartOfAccountsCategoryApi } from '@/services/api'
+import { chartOfAccountsApi, chartOfAccountsCategoryApi, millesimalTableApi } from '@/services/api'
 
 const otherCondomini = computed(() =>
   (store.condomini ?? []).filter(c => c.id !== store.selectedCondominioId)
@@ -259,6 +269,9 @@ const categories = ref([])
 
 const activeCategories = computed(() => categories.value.filter(c => c.isActive))
 
+// ── Tabelle millesimali (per il dropdown) ──────────────────────
+const millesimalTables = ref([])
+
 const typeOptions = [
   { value: 1, label: 'Entrata' },
   { value: 2, label: 'Uscita' },
@@ -268,7 +281,7 @@ const typeLabel = (v) => typeOptions.find(o => o.value === v)?.label ?? v
 
 const emptyForm = () => ({
   code: '', name: '', type: 2, categoryId: null, description: '',
-  parentAccountId: null, isActive: true,
+  parentAccountId: null, isActive: true, defaultMillesimalTableId: null,
 })
 const form = ref(emptyForm())
 
@@ -308,8 +321,16 @@ async function loadCategories() {
   } catch { categories.value = [] }
 }
 
-watch(() => store.selectedCondominioId, load)
-onMounted(() => { load(); loadCategories() })
+async function loadMillesimalTables() {
+  if (!store.selectedCondominioId) { millesimalTables.value = []; return }
+  try {
+    const res = await millesimalTableApi.getByCondominium(store.selectedCondominioId)
+    millesimalTables.value = (res.data ?? []).filter(t => t.isActive)
+  } catch { millesimalTables.value = [] }
+}
+
+watch(() => store.selectedCondominioId, () => { load(); loadMillesimalTables() })
+onMounted(() => { load(); loadCategories(); loadMillesimalTables() })
 
 // ── Conti CRUD ─────────────────────────────────────────────────
 function clearError(f) { delete errors.value[f] }
@@ -331,6 +352,7 @@ function openModal(a = null) {
       description: a.description ?? '',
       parentAccountId: a.parentAccountId ?? null,
       isActive: a.isActive,
+      defaultMillesimalTableId: a.defaultMillesimalTableId ?? null,
     }
   } else {
     editing.value = null
@@ -360,20 +382,25 @@ async function save() {
   try {
     if (editing.value) {
       await chartOfAccountsApi.update(editing.value, {
-        code: form.value.code, name: form.value.name,
-        type: form.value.type, categoryId: form.value.categoryId,
-        description: form.value.description || null, isActive: form.value.isActive,
+        code:                     form.value.code,
+        name:                     form.value.name,
+        type:                     form.value.type,
+        categoryId:               form.value.categoryId,
+        description:              form.value.description || null,
+        isActive:                 form.value.isActive,
+        defaultMillesimalTableId: form.value.defaultMillesimalTableId,
       })
     } else {
       await chartOfAccountsApi.create({
-        condominiumId:   store.selectedCondominioId,
-        parentAccountId: form.value.parentAccountId,
-        code:            form.value.code,
-        name:            form.value.name,
-        type:            form.value.type,
-        categoryId:      form.value.categoryId,
-        description:     form.value.description || null,
-        isActive:        form.value.isActive,
+        condominiumId:            store.selectedCondominioId,
+        parentAccountId:          form.value.parentAccountId,
+        code:                     form.value.code,
+        name:                     form.value.name,
+        type:                     form.value.type,
+        categoryId:               form.value.categoryId,
+        description:              form.value.description || null,
+        isActive:                 form.value.isActive,
+        defaultMillesimalTableId: form.value.defaultMillesimalTableId,
       })
     }
     showModal.value = false

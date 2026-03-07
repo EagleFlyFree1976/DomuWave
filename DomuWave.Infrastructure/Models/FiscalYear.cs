@@ -30,11 +30,10 @@ namespace DomuWave.Services.Models
         public virtual DateTime EndDate { get; set; }
 
         /// <summary>
-        /// Stato corrente dell'esercizio.
-        /// Valori: Open | Closing | Closed | Locked.
-        /// Vincolo DB: CK_FiscalYear_Status.
+        /// Stato corrente dell'esercizio (FK a FiscalYearStatusLookup).
+        /// Costanti: FiscalYearStatus.Draft | Open | Closing | Closed | Locked.
         /// </summary>
-        public virtual string Status { get; set; }
+        public virtual FiscalYearStatus Status { get; set; }
 
         /// <summary>
         /// Indica se l'esercizio è quello attualmente attivo per il condominio.

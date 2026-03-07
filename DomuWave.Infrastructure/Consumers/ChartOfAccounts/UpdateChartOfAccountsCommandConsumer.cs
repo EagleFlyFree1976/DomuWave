@@ -68,7 +68,17 @@ public class UpdateChartOfAccountsCommandConsumer
                 throw new NotFoundException("Categoria non trovata.");
         }
 
-        entity.ApplyUpdate(dto, category);
+        MillesimalTable? defaultMillesimalTable = null;
+        if (dto.DefaultMillesimalTableId.HasValue)
+        {
+            defaultMillesimalTable = await session.Query<MillesimalTable>()
+                .FirstOrDefaultAsync(x => x.Id == dto.DefaultMillesimalTableId.Value && !x.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (defaultMillesimalTable == null)
+                throw new NotFoundException("Tabella millesimale non trovata.");
+        }
+
+        entity.ApplyUpdate(dto, category, defaultMillesimalTable);
         var updated = await _accountService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
@@ -97,7 +98,7 @@ namespace DomuWave.Services.Implementations
         }
 
         // ─────────────────────────────────────────────
-        // COMMAND — OPEN
+        // COMMAND — CREATE (Draft)
         // ─────────────────────────────────────────────
 
         /// <inheritdoc />
@@ -112,23 +113,12 @@ namespace DomuWave.Services.Implementations
         {
             // Validazione date
             if (endDate <= startDate)
-                throw new InvalidOperationException(
+                throw new ValidatorException(
                     "La data di fine esercizio deve essere successiva alla data di inizio.");
-
-            // Verifica esercizio già aperto o in chiusura
-            var hasOpenOrClosing = await session.Query<FiscalYear>()
-                .AnyAsync(x => x.Condominium.Id == condominiumId
-                            && (x.Status == FiscalYearStatus.Open || x.Status == FiscalYearStatus.Closing)
-                            && !x.IsDeleted, ct);
-
-            if (hasOpenOrClosing)
-                throw new InvalidOperationException(
-                    "Esiste già un esercizio aperto o in fase di chiusura per questo condominio. " +
-                    "Chiuderlo prima di aprirne uno nuovo.");
 
             // Verifica sovrapposizione date
             if (await HasOverlapAsync(condominiumId, startDate, endDate, excludeId: null, ct))
-                throw new InvalidOperationException(
+                throw new ValidatorException(
                     "Le date dell'esercizio si sovrappongono con un esercizio esistente.");
 
             // Codice univoco per condominio
@@ -138,11 +128,14 @@ namespace DomuWave.Services.Implementations
                             && !x.IsDeleted, ct);
 
             if (codeExists)
-                throw new InvalidOperationException(
+                throw new ValidatorException(
                     $"Esiste già un esercizio con codice '{code}' per questo condominio.");
 
             var condominium = await session.GetAsync<Condominium>(condominiumId, ct)
-                ?? throw new InvalidOperationException($"Condominio con ID {condominiumId} non trovato.");
+                ?? throw new ValidatorException($"Condominio con ID {condominiumId} non trovato.");
+
+            var draftStatus = await session.GetAsync<FiscalYearStatus>(FiscalYearStatus.Draft, ct)
+                ?? throw new ValidatorException("Stato 'Draft' non trovato nella tabella di lookup.");
 
             var fiscalYear = new FiscalYear
             {
@@ -152,8 +145,8 @@ namespace DomuWave.Services.Implementations
                 Description = description,
                 StartDate = startDate,
                 EndDate = endDate,
-                Status = FiscalYearStatus.Open,
-                IsActive = true,
+                Status = draftStatus,
+                IsActive = false,
                 IsDeleted = false
             };
 
@@ -163,6 +156,48 @@ namespace DomuWave.Services.Implementations
 
             _cache.Clear(CacheRegion);
             return fiscalYear;
+        }
+
+        // ─────────────────────────────────────────────
+        // COMMAND — OPEN (Draft → Open)
+        // ─────────────────────────────────────────────
+
+        /// <inheritdoc />
+        public async Task<bool> OpenFromDraftAsync(int fiscalYearId, IUser currentUser, CancellationToken ct = default)
+        {
+            var fiscalYear = await GetByIdAsync(fiscalYearId, currentUser, ct);
+            if (fiscalYear == null)
+                throw new NotFoundException("Esercizio fiscale non trovato.");
+
+            if (fiscalYear.Status?.Id != FiscalYearStatus.Draft)
+                throw new ValidatorException(
+                    $"Impossibile aprire l'esercizio: lo stato corrente è '{fiscalYear.Status?.Name}'. " +
+                    "L'esercizio deve essere in stato Draft.");
+
+            // Verifica che non esista già un esercizio Open o Closing per il condominio
+            var hasOpenOrClosing = await session.Query<FiscalYear>()
+                .AnyAsync(x => x.Condominium.Id == fiscalYear.Condominium.Id
+                            && x.Id != fiscalYearId
+                            && (x.Status.Id == FiscalYearStatus.Open || x.Status.Id == FiscalYearStatus.Closing)
+                            && !x.IsDeleted, ct);
+
+            if (hasOpenOrClosing)
+                throw new ValidatorException(
+                    "Esiste già un esercizio aperto o in fase di chiusura per questo condominio. " +
+                    "Chiuderlo prima di aprirne uno nuovo.");
+
+            var openStatus = await session.GetAsync<FiscalYearStatus>(FiscalYearStatus.Open, ct)
+                ?? throw new ValidatorException("Stato 'Open' non trovato nella tabella di lookup.");
+
+            fiscalYear.Status = openStatus;
+            fiscalYear.IsActive = true;
+            fiscalYear.Trace(currentUser);
+
+            await session.SaveOrUpdateAsync(fiscalYear, ct);
+            await session.FlushAsync(ct);
+
+            _cache.Clear(CacheRegion);
+            return true;
         }
 
         // ─────────────────────────────────────────────
@@ -179,25 +214,25 @@ namespace DomuWave.Services.Implementations
             var fiscalYear = await GetByIdAsync(fiscalYearId, currentUser, ct);
             if (fiscalYear == null) return null;
 
-            if (fiscalYear.Status == FiscalYearStatus.Closed || fiscalYear.Status == FiscalYearStatus.Locked)
-                throw new InvalidOperationException(
-                    $"Non è possibile modificare un esercizio in stato '{fiscalYear.Status}'.");
+            if (fiscalYear.Status?.Id == FiscalYearStatus.Closed || fiscalYear.Status?.Id == FiscalYearStatus.Locked)
+                throw new ValidatorException(
+                    $"Non è possibile modificare un esercizio in stato '{fiscalYear.Status?.Name}'.");
 
             if (dto.Description != null)
                 fiscalYear.Description = dto.Description;
 
             if (dto.EndDate.HasValue)
             {
-                if (fiscalYear.Status != FiscalYearStatus.Open)
-                    throw new InvalidOperationException(
-                        "La data di fine può essere modificata solo su esercizi in stato Open.");
+                if (fiscalYear.Status?.Id != FiscalYearStatus.Open && fiscalYear.Status?.Id != FiscalYearStatus.Draft)
+                    throw new ValidatorException(
+                        "La data di fine può essere modificata solo su esercizi in stato Draft o Open.");
 
                 if (dto.EndDate.Value <= fiscalYear.StartDate)
-                    throw new InvalidOperationException(
+                    throw new ValidatorException(
                         "La nuova data di fine deve essere successiva alla data di inizio.");
 
                 if (await HasOverlapAsync(fiscalYear.Condominium.Id, fiscalYear.StartDate, dto.EndDate.Value, fiscalYearId, ct))
-                    throw new InvalidOperationException(
+                    throw new ValidatorException(
                         "La nuova data di fine causa sovrapposizione con un altro esercizio.");
 
                 fiscalYear.EndDate = dto.EndDate.Value;
@@ -223,14 +258,18 @@ namespace DomuWave.Services.Implementations
             CancellationToken ct = default)
         {
             var fiscalYear = await GetByIdAsync(fiscalYearId, currentUser, ct);
-            if (fiscalYear == null) return false;
+            if (fiscalYear == null)
+                throw new NotFoundException("Esercizio fiscale non trovato.");
 
-            if (fiscalYear.Status != FiscalYearStatus.Open)
-                throw new InvalidOperationException(
-                    $"Impossibile avviare la chiusura: lo stato corrente è '{fiscalYear.Status}'. " +
+            if (fiscalYear.Status?.Id != FiscalYearStatus.Open)
+                throw new ValidatorException(
+                    $"Impossibile avviare la chiusura: lo stato corrente è '{fiscalYear.Status?.Name}'. " +
                     "L'esercizio deve essere in stato Open.");
 
-            fiscalYear.Status = FiscalYearStatus.Closing;
+            var closingStatus = await session.GetAsync<FiscalYearStatus>(FiscalYearStatus.Closing, ct)
+                ?? throw new ValidatorException("Stato 'Closing' non trovato nella tabella di lookup.");
+
+            fiscalYear.Status = closingStatus;
             fiscalYear.ClosingDate = DateTime.UtcNow;
             if (notes != null) fiscalYear.ClosingNotes = notes;
 
@@ -250,11 +289,12 @@ namespace DomuWave.Services.Implementations
             CancellationToken ct = default)
         {
             var fiscalYear = await GetByIdAsync(fiscalYearId, currentUser, ct);
-            if (fiscalYear == null) return false;
+            if (fiscalYear == null)
+                throw new NotFoundException("Esercizio fiscale non trovato.");
 
-            if (fiscalYear.Status != FiscalYearStatus.Open && fiscalYear.Status != FiscalYearStatus.Closing)
-                throw new InvalidOperationException(
-                    $"Impossibile chiudere l'esercizio: lo stato corrente è '{fiscalYear.Status}'. " +
+            if (fiscalYear.Status?.Id != FiscalYearStatus.Open && fiscalYear.Status?.Id != FiscalYearStatus.Closing)
+                throw new ValidatorException(
+                    $"Impossibile chiudere l'esercizio: lo stato corrente è '{fiscalYear.Status?.Name}'. " +
                     "L'esercizio deve essere in stato Open o Closing.");
 
             // Verifica spese in stato provvisorio
@@ -264,11 +304,14 @@ namespace DomuWave.Services.Implementations
                               && !x.IsDeleted, ct);
 
             if (pendingExpenses > 0)
-                throw new InvalidOperationException(
+                throw new ValidatorException(
                     $"Impossibile chiudere l'esercizio: esistono {pendingExpenses} " +
                     "spese in stato provvisorio. Confermarle o eliminarle prima di procedere.");
 
-            fiscalYear.Status = FiscalYearStatus.Closed;
+            var closedStatus = await session.GetAsync<FiscalYearStatus>(FiscalYearStatus.Closed, ct)
+                ?? throw new ValidatorException("Stato 'Closed' non trovato nella tabella di lookup.");
+
+            fiscalYear.Status = closedStatus;
             fiscalYear.IsActive = false;
             fiscalYear.ClosedDate = DateTime.UtcNow;
             fiscalYear.ClosedByUserId = currentUser.Id;
@@ -290,14 +333,18 @@ namespace DomuWave.Services.Implementations
             CancellationToken ct = default)
         {
             var fiscalYear = await GetByIdAsync(fiscalYearId, currentUser, ct);
-            if (fiscalYear == null) return false;
+            if (fiscalYear == null)
+                throw new NotFoundException("Esercizio fiscale non trovato.");
 
-            if (fiscalYear.Status != FiscalYearStatus.Closed)
-                throw new InvalidOperationException(
-                    $"Impossibile bloccare l'esercizio: lo stato corrente è '{fiscalYear.Status}'. " +
+            if (fiscalYear.Status?.Id != FiscalYearStatus.Closed)
+                throw new ValidatorException(
+                    $"Impossibile bloccare l'esercizio: lo stato corrente è '{fiscalYear.Status?.Name}'. " +
                     "L'esercizio deve essere in stato Closed.");
 
-            fiscalYear.Status = FiscalYearStatus.Locked;
+            var lockedStatus = await session.GetAsync<FiscalYearStatus>(FiscalYearStatus.Locked, ct)
+                ?? throw new ValidatorException("Stato 'Locked' non trovato nella tabella di lookup.");
+
+            fiscalYear.Status = lockedStatus;
             fiscalYear.LockedDate = DateTime.UtcNow;
             if (notes != null) fiscalYear.ClosingNotes = notes;
 
@@ -322,8 +369,8 @@ namespace DomuWave.Services.Implementations
             var fiscalYear = await GetByIdAsync(id, currentUser, ct);
             if (fiscalYear == null) return false;
 
-            if (fiscalYear.Status == FiscalYearStatus.Closed || fiscalYear.Status == FiscalYearStatus.Locked)
-                throw new InvalidOperationException(
+            if (fiscalYear.Status?.Id == FiscalYearStatus.Closed || fiscalYear.Status?.Id == FiscalYearStatus.Locked)
+                throw new ValidatorException(
                     "Non è possibile eliminare un esercizio chiuso o bloccato.");
 
             fiscalYear.IsDeleted = true;
@@ -364,7 +411,7 @@ namespace DomuWave.Services.Implementations
                              && x.StartDate <= documentDate
                              && x.EndDate >= documentDate
                              && !x.IsDeleted
-                             && x.Status != FiscalYearStatus.Locked)
+                             && x.Status.Id != FiscalYearStatus.Locked)
                     .FirstOrDefaultAsync(ct);
 
                 if (suggestedFy != null)
@@ -376,7 +423,8 @@ namespace DomuWave.Services.Implementations
                         Description = suggestedFy.Description,
                         StartDate = suggestedFy.StartDate,
                         EndDate = suggestedFy.EndDate,
-                        Status = suggestedFy.Status,
+                        StatusId = suggestedFy.Status?.Id ?? 0,
+                        StatusName = suggestedFy.Status?.Name ?? string.Empty,
                         IsActive = suggestedFy.IsActive
                     };
 

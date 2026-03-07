@@ -82,7 +82,17 @@ public class CreateChartOfAccountsCommandConsumer
                 throw new NotFoundException("Categoria non trovata.");
         }
 
-        var entity  = dto.ToEntity(condominium, parent, category);
+        MillesimalTable? defaultMillesimalTable = null;
+        if (dto.DefaultMillesimalTableId.HasValue)
+        {
+            defaultMillesimalTable = await session.Query<MillesimalTable>()
+                .FirstOrDefaultAsync(x => x.Id == dto.DefaultMillesimalTableId.Value && !x.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (defaultMillesimalTable == null)
+                throw new NotFoundException("Tabella millesimale non trovata.");
+        }
+
+        var entity  = dto.ToEntity(condominium, parent, category, defaultMillesimalTable);
         var created = await _accountService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

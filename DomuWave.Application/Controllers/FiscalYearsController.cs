@@ -88,6 +88,16 @@ public class FiscalYearsController(
         return Ok(result);
     }
 
+    [HttpPost("{id:int}/open")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    public async Task<IActionResult> Open(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new OpenFiscalYearFromDraftCommand(CurrentUser.Id, id), ct);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+
     [HttpPost("{id:int}/start-closing")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     public async Task<IActionResult> StartClosing(int id, [FromBody] FiscalYearCloseRequestDto dto, CancellationToken ct)

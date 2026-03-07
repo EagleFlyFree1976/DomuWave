@@ -9,5 +9,6 @@ public class UpdateChartOfAccountsDto
     public ChartOfAccountsType Type        { get; set; }
     public int?                CategoryId  { get; set; }
     public string?             Description { get; set; }
-    public bool                IsActive    { get; set; } = true;
+    public bool                IsActive                  { get; set; } = true;
+    public int?                DefaultMillesimalTableId  { get; set; }
 }

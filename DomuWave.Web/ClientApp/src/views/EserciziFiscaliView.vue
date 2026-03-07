@@ -36,7 +36,6 @@
           </thead>
           <tbody>
             <template v-for="fy in fiscalYears" :key="fy.id">
-              <!-- Riga principale -->
               <tr :class="{ 'row-expanded': expandedId === fy.id }">
                 <td class="mono">
                   <span v-if="fy.isActive" class="active-dot" title="Esercizio attivo"></span>
@@ -46,34 +45,34 @@
                 <td class="mono text-secondary">{{ fmtDate(fy.startDate) }}</td>
                 <td class="mono text-secondary">{{ fmtDate(fy.endDate) }}</td>
                 <td>
-                  <span class="badge" :class="statusBadge(fy.status)">
-                    {{ statusLabel(fy.status) }}
+                  <span class="badge" :class="statusBadge(fy.statusId)">
+                    {{ statusLabel(fy.statusId) }}
                   </span>
                 </td>
                 <td>
                   <div class="row-actions">
-                    <!-- Dettaglio / Summary -->
                     <button class="btn btn-sm btn-ghost" @click="toggleDetail(fy)">
                       {{ expandedId === fy.id ? 'Chiudi' : 'Dettaglio' }}
                     </button>
-
-                    <!-- Modifica (solo Open) -->
-                    <button v-if="canEdit && fy.status === 'Open'"
+                    <button v-if="canEdit && (fy.statusId === 1 || fy.statusId === 2)"
                             class="btn-icon" title="Modifica"
                             @click="openEditModal(fy)">✎</button>
-
-                    <!-- Transizioni di stato -->
-                    <button v-if="canEdit && fy.status === 'Open'"
+                    <button v-if="canEdit && fy.statusId === 1"
+                            class="btn btn-sm btn-ghost btn-green"
+                            @click="openTransitionModal(fy, 'open')">
+                      Apri
+                    </button>
+                    <button v-if="canEdit && fy.statusId === 2"
                             class="btn btn-sm btn-ghost btn-amber"
                             @click="openTransitionModal(fy, 'startClosing')">
                       Avvia chiusura
                     </button>
-                    <button v-if="canEdit && fy.status === 'Closing'"
+                    <button v-if="canEdit && fy.statusId === 3"
                             class="btn btn-sm btn-ghost btn-purple"
                             @click="openTransitionModal(fy, 'close')">
                       Chiudi
                     </button>
-                    <button v-if="canEdit && fy.status === 'Closed'"
+                    <button v-if="canEdit && fy.statusId === 4"
                             class="btn btn-sm btn-ghost btn-muted"
                             @click="openTransitionModal(fy, 'lock')">
                       Blocca
@@ -135,88 +134,76 @@
     <!-- ══════════════════════════════════════════════════
          MODAL — Crea / Modifica esercizio
     ══════════════════════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showModal" @click.self="showModal = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h2>{{ editingId ? 'Modifica esercizio' : 'Nuovo esercizio fiscale' }}</h2>
-          <button class="btn-icon" @click="showModal = false">✕</button>
+    <BaseModal :show="showModal"
+               @close="showModal = false"
+               :title="editingId ? 'Modifica esercizio' : 'Nuovo esercizio fiscale'"
+               :subtitle="store.selectedCondominio?.name"
+               size="lg">
+      <div class="form-grid">
+        <div class="form-group" :class="{ 'has-error': errors.code }">
+          <label class="form-label">Codice *</label>
+          <input class="form-input" v-model="form.code"
+                 :readonly="!!editingId"
+                 placeholder="es. 2025, EF-2025-01"
+                 @input="clearError('code')" />
+          <span v-if="errors.code" class="field-error">{{ errors.code }}</span>
         </div>
-        <div class="modal-body">
-          <div class="form-grid">
-            <!-- Codice (readonly in edit) -->
-            <div class="form-group" :class="{ 'has-error': errors.code }">
-              <label class="form-label">Codice *</label>
-              <input class="form-input" v-model="form.code"
-                     :readonly="!!editingId"
-                     placeholder="es. 2025, EF-2025-01"
-                     @input="clearError('code')" />
-              <span v-if="errors.code" class="field-error">{{ errors.code }}</span>
-            </div>
 
-            <!-- Descrizione -->
-            <div class="form-group" :class="{ 'has-error': errors.description }">
-              <label class="form-label">Descrizione</label>
-              <input class="form-input" v-model="form.description"
-                     placeholder="Descrizione opzionale"
-                     @input="clearError('description')" />
-              <span v-if="errors.description" class="field-error">{{ errors.description }}</span>
-            </div>
-
-            <!-- Data inizio (readonly in edit) -->
-            <div class="form-group" :class="{ 'has-error': errors.startDate }">
-              <label class="form-label">Data inizio *</label>
-              <input class="form-input" type="date" v-model="form.startDate"
-                     :readonly="!!editingId"
-                     @change="clearError('startDate')" />
-              <span v-if="errors.startDate" class="field-error">{{ errors.startDate }}</span>
-            </div>
-
-            <!-- Data fine -->
-            <div class="form-group" :class="{ 'has-error': errors.endDate }">
-              <label class="form-label">Data fine *</label>
-              <input class="form-input" type="date" v-model="form.endDate"
-                     @change="clearError('endDate')" />
-              <span v-if="errors.endDate" class="field-error">{{ errors.endDate }}</span>
-            </div>
-          </div>
+        <div class="form-group" :class="{ 'has-error': errors.description }">
+          <label class="form-label">Descrizione</label>
+          <input class="form-input" v-model="form.description"
+                 placeholder="Descrizione opzionale"
+                 @input="clearError('description')" />
+          <span v-if="errors.description" class="field-error">{{ errors.description }}</span>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="showModal = false">Annulla</button>
-          <button class="btn btn-primary" @click="saveFiscalYear" :disabled="saving">
-            <span v-if="saving" class="spinner" style="width:14px;height:14px"></span>
-            {{ editingId ? 'Salva' : 'Crea' }}
-          </button>
+
+        <div class="form-group" :class="{ 'has-error': errors.startDate }">
+          <label class="form-label">Data inizio *</label>
+          <input class="form-input" type="date" v-model="form.startDate"
+                 :readonly="!!editingId"
+                 @change="clearError('startDate')" />
+          <span v-if="errors.startDate" class="field-error">{{ errors.startDate }}</span>
+        </div>
+
+        <div class="form-group" :class="{ 'has-error': errors.endDate }">
+          <label class="form-label">Data fine *</label>
+          <input class="form-input" type="date" v-model="form.endDate"
+                 @change="clearError('endDate')" />
+          <span v-if="errors.endDate" class="field-error">{{ errors.endDate }}</span>
         </div>
       </div>
-    </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="showModal = false">Annulla</button>
+        <button class="btn btn-primary" @click="saveFiscalYear" :disabled="saving">
+          <span v-if="saving" class="spinner" style="width:14px;height:14px"></span>
+          {{ editingId ? 'Salva' : 'Crea' }}
+        </button>
+      </template>
+    </BaseModal>
 
     <!-- ══════════════════════════════════════════════════
          MODAL — Transizione di stato
     ══════════════════════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showTransitionModal" @click.self="showTransitionModal = false">
-      <div class="modal modal-sm">
-        <div class="modal-header">
-          <h2>{{ transitionTitle }}</h2>
-          <button class="btn-icon" @click="showTransitionModal = false">✕</button>
-        </div>
-        <div class="modal-body">
-          <p class="transition-desc">{{ transitionDesc }}</p>
-          <div class="form-group">
-            <label class="form-label">Note amministratore</label>
-            <textarea class="form-textarea" v-model="transitionNotes"
-                      rows="3" placeholder="Note opzionali…"></textarea>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-ghost" @click="showTransitionModal = false">Annulla</button>
-          <button class="btn btn-primary" :class="transitionBtnClass"
-                  @click="executeTransition" :disabled="savingTransition">
-            <span v-if="savingTransition" class="spinner" style="width:14px;height:14px"></span>
-            Conferma
-          </button>
-        </div>
+    <BaseModal :show="showTransitionModal"
+               @close="showTransitionModal = false"
+               :title="transitionTitle"
+               :subtitle="transitionTarget?.code"
+               size="sm">
+      <p class="transition-desc">{{ transitionDesc }}</p>
+      <div v-if="transitionType !== 'open'" class="form-group">
+        <label class="form-label">Note amministratore</label>
+        <textarea class="form-textarea" v-model="transitionNotes"
+                  rows="3" placeholder="Note opzionali…"></textarea>
       </div>
-    </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="showTransitionModal = false">Annulla</button>
+        <button class="btn btn-primary" :class="transitionBtnClass"
+                @click="executeTransition" :disabled="savingTransition">
+          <span v-if="savingTransition" class="spinner" style="width:14px;height:14px"></span>
+          Conferma
+        </button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -225,13 +212,14 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { fiscalYearApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import BaseModal from '@/components/BaseModal.vue'
 
 const store = useAppStore()
 const { canCreate, canEdit } = usePermissions()
 
 // ── Lista ──────────────────────────────────────────────────────────────────
-const fiscalYears    = ref([])
-const loading        = ref(false)
+const fiscalYears = ref([])
+const loading     = ref(false)
 
 async function loadFiscalYears() {
   if (!store.selectedCondominioId) { fiscalYears.value = []; return }
@@ -263,11 +251,11 @@ async function toggleDetail(fy) {
 }
 
 // ── Crea / Modifica ───────────────────────────────────────────────────────
-const showModal  = ref(false)
-const editingId  = ref(null)
-const saving     = ref(false)
-const form       = ref({ code: '', description: '', startDate: '', endDate: '' })
-const errors     = ref({})
+const showModal = ref(false)
+const editingId = ref(null)
+const saving    = ref(false)
+const form      = ref({ code: '', description: '', startDate: '', endDate: '' })
+const errors    = ref({})
 
 function clearError(f) { delete errors.value[f] }
 
@@ -283,8 +271,8 @@ function validate() {
 
 function openCreateModal() {
   editingId.value = null
-  form.value = { code: '', description: '', startDate: '', endDate: '' }
-  errors.value = {}
+  form.value      = { code: '', description: '', startDate: '', endDate: '' }
+  errors.value    = {}
   showModal.value = true
 }
 
@@ -296,7 +284,7 @@ function openEditModal(fy) {
     startDate:   fy.startDate?.slice(0, 10) ?? '',
     endDate:     fy.endDate?.slice(0, 10) ?? '',
   }
-  errors.value = {}
+  errors.value    = {}
   showModal.value = true
 }
 
@@ -320,7 +308,9 @@ async function saveFiscalYear() {
     }
     showModal.value = false
     await loadFiscalYears()
-  } catch { /* global toast */ } finally { saving.value = false }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { saving.value = false }
 }
 
 // ── Transizioni di stato ──────────────────────────────────────────────────
@@ -331,6 +321,11 @@ const transitionNotes     = ref('')
 const savingTransition    = ref(false)
 
 const TRANSITION_META = {
+  open: {
+    title: 'Apri esercizio',
+    desc:  "L'esercizio passerà in stato «Aperto». Sarà possibile registrare spese, rate e incassi. Non potranno esistere altri esercizi aperti per lo stesso condominio.",
+    btn:   'btn-green',
+  },
   startClosing: {
     title: 'Avvia chiusura esercizio',
     desc:  "L'esercizio passerà in stato «In chiusura». Sarà ancora possibile registrare movimenti, ma non creare nuovi esercizi sovrapposti.",
@@ -348,14 +343,14 @@ const TRANSITION_META = {
   },
 }
 
-const transitionTitle   = computed(() => TRANSITION_META[transitionType.value]?.title ?? '')
-const transitionDesc    = computed(() => TRANSITION_META[transitionType.value]?.desc ?? '')
+const transitionTitle    = computed(() => TRANSITION_META[transitionType.value]?.title ?? '')
+const transitionDesc     = computed(() => TRANSITION_META[transitionType.value]?.desc ?? '')
 const transitionBtnClass = computed(() => TRANSITION_META[transitionType.value]?.btn ?? '')
 
 function openTransitionModal(fy, type) {
-  transitionTarget.value = fy
-  transitionType.value   = type
-  transitionNotes.value  = ''
+  transitionTarget.value    = fy
+  transitionType.value      = type
+  transitionNotes.value     = ''
   showTransitionModal.value = true
 }
 
@@ -365,42 +360,46 @@ async function executeTransition() {
   try {
     const id    = transitionTarget.value.id
     const notes = transitionNotes.value || null
-    if (transitionType.value === 'startClosing') await fiscalYearApi.startClosing(id, notes)
+    if (transitionType.value === 'open')          await fiscalYearApi.open(id)
+    else if (transitionType.value === 'startClosing') await fiscalYearApi.startClosing(id, notes)
     else if (transitionType.value === 'close')   await fiscalYearApi.close(id, notes)
     else if (transitionType.value === 'lock')    await fiscalYearApi.lock(id, notes)
     showTransitionModal.value = false
-    // Se era espanso, ricarica il dettaglio
     if (expandedId.value === id) {
       const { data } = await fiscalYearApi.getById(id)
       detail.value = data
     }
     await loadFiscalYears()
-  } catch { /* global toast */ } finally { savingTransition.value = false }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { savingTransition.value = false }
 }
 
 // ── Formatters ─────────────────────────────────────────────────────────────
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
+const fmtDate     = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 const fmtDateTime = (d) => d ? new Date(d).toLocaleString('it-IT') : '—'
-const fmt = (v) => v != null ? '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
+const fmt         = (v) => v != null ? '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
 
-const statusBadge = (s) => ({
-  Open:    'badge-green',
-  Closing: 'badge-amber',
-  Closed:  'badge-purple',
-  Locked:  'badge-muted',
-}[s] ?? 'badge-muted')
+const statusBadge = (id) => ({
+  1: 'badge-draft',
+  2: 'badge-green',
+  3: 'badge-amber',
+  4: 'badge-purple',
+  5: 'badge-muted',
+}[id] ?? 'badge-muted')
 
-const statusLabel = (s) => ({
-  Open:    'Aperto',
-  Closing: 'In chiusura',
-  Closed:  'Chiuso',
-  Locked:  'Bloccato',
-}[s] ?? s)
+const statusLabel = (id) => ({
+  1: 'Bozza',
+  2: 'Aperto',
+  3: 'In chiusura',
+  4: 'Chiuso',
+  5: 'Bloccato',
+}[id] ?? '—')
 
 // ── Watchers / Init ────────────────────────────────────────────────────────
 watch(() => store.selectedCondominioId, () => {
   expandedId.value = null
-  detail.value = null
+  detail.value     = null
   loadFiscalYears()
 })
 onMounted(loadFiscalYears)
@@ -429,16 +428,10 @@ onMounted(loadFiscalYears)
 .detail-row td   { padding: 0; border-bottom: 1px solid var(--border); }
 
 /* Pannello dettaglio */
-.detail-panel {
-  padding: 1.25rem 1.5rem;
-  background: var(--bg-surface);
-}
+.detail-panel   { padding: 1.25rem 1.5rem; background: var(--bg-surface); }
 .detail-loading { display: flex; justify-content: center; padding: 1rem; }
 
-.detail-grid {
-  display: flex; flex-wrap: wrap; gap: 1rem;
-  margin-bottom: 0.75rem;
-}
+.detail-grid { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.75rem; }
 .detail-card {
   flex: 1 1 140px;
   background: var(--bg);
@@ -454,16 +447,23 @@ onMounted(loadFiscalYears)
 .detail-value { font-size: 1.1rem; font-weight: 600; font-family: monospace; }
 .text-green   { color: var(--accent-green, #22c55e); }
 .text-red     { color: var(--accent-red, #ef4444); }
+.detail-meta  { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; }
 
-.detail-meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; }
-
-/* Modal sm */
-.modal-sm { max-width: 460px; }
+/* Transizione modale */
 .transition-desc { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5; }
 
+/* Badge bozza */
+:global(.badge-draft) { background: #f3f4f6; color: #6b7280; border: 1px solid #d1d5db; }
+
 /* Bottoni stato */
-.btn-amber  { color: #f59e0b !important; border-color: #f59e0b50 !important; }
+.btn-green        { color: #22c55e !important; border-color: #22c55e50 !important; }
+.btn-green:hover  { background: #22c55e15 !important; }
+.btn-amber        { color: #f59e0b !important; border-color: #f59e0b50 !important; }
 .btn-amber:hover  { background: #f59e0b15 !important; }
-.btn-purple { color: #a855f7 !important; border-color: #a855f750 !important; }
+.btn-purple       { color: #a855f7 !important; border-color: #a855f750 !important; }
 .btn-purple:hover { background: #a855f715 !important; }
+
+/* Form validation */
+.has-error .form-input { border-color: var(--accent-red, #e53e3e); }
+.field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; display: block; }
 </style>

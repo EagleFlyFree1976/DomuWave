@@ -147,6 +147,7 @@ export const fiscalYearApi = {
   getById:            (id)            => api.get(`/fiscal-years/${id}`),
   create:             (data)          => api.post('/fiscal-years', data),
   update:             (id, data)      => api.put(`/fiscal-years/${id}`, data),
+  open:               (id)            => api.post(`/fiscal-years/${id}/open`),
   startClosing:       (id, notes)     => api.post(`/fiscal-years/${id}/start-closing`, { notes }),
   close:              (id, notes)     => api.post(`/fiscal-years/${id}/close`, { notes }),
   lock:               (id, notes)     => api.post(`/fiscal-years/${id}/lock`, { notes }),

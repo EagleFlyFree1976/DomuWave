@@ -29,12 +29,9 @@ namespace DomuWave.Services.Interfaces
         Task<IList<FiscalYear>> GetByCondominiumAsync(int condominiumId, IUser currentUser, CancellationToken ct = default);
 
         /// <summary>
-        /// Apre un nuovo esercizio per il condominio specificato.
-        /// Verifica che:
-        /// - non esista già un esercizio Open o Closing per il condominio;
-        /// - le date non si sovrappongano con esercizi esistenti;
-        /// - EndDate sia successiva a StartDate.
-        /// Lancia <see cref="InvalidOperationException"/> in caso di violazione.
+        /// Crea un nuovo esercizio in stato Draft per il condominio specificato.
+        /// Verifica che le date non si sovrappongano con esercizi esistenti e che EndDate > StartDate.
+        /// Non verifica esercizi aperti (si può avere più bozze).
         /// </summary>
         Task<FiscalYear> OpenAsync(
             int condominiumId,
@@ -44,6 +41,12 @@ namespace DomuWave.Services.Interfaces
             DateTime endDate,
             IUser currentUser,
             CancellationToken ct = default);
+
+        /// <summary>
+        /// Transizione Draft → Open.
+        /// Verifica che non esista già un esercizio Open o Closing per il condominio.
+        /// </summary>
+        Task<bool> OpenFromDraftAsync(int fiscalYearId, IUser currentUser, CancellationToken ct = default);
 
         /// <summary>
         /// Aggiorna descrizione e/o data di fine di un esercizio in stato Open.
