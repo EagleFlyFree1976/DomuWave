@@ -31,6 +31,7 @@
               <th>Unità</th>
               <th>Rate</th>
               <th>Stato</th>
+              <th class="text-center">Setup</th>
               <th></th>
             </tr>
           </thead>
@@ -44,6 +45,17 @@
               <td>{{ c.numberOfUnits }}</td>
               <td class="text-secondary">{{ c.installmentFrequency }}</td>
               <td><span class="badge" :class="c.isActive ? 'badge-green' : 'badge-muted'">{{ c.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
+              <td class="text-center setup-cell">
+                <template v-if="setupStatus[c.id] === null">
+                  <span class="setup-loading">…</span>
+                </template>
+                <template v-else-if="setupStatus[c.id]">
+                  <router-link :to="`/condomini/${c.id}/setup`" class="setup-pill" :class="setupStatus[c.id].ok === setupStatus[c.id].total ? 'setup-ok' : 'setup-ko'">
+                    <span class="setup-icon">{{ setupStatus[c.id].ok === setupStatus[c.id].total ? '✓' : '✕' }}</span>
+                    {{ setupStatus[c.id].ok }}/{{ setupStatus[c.id].total }}
+                  </router-link>
+                </template>
+              </td>
               <td>
                 <div v-if="canEdit || canDelete" class="row-actions">
                   <button v-if="canEdit" class="btn-icon" @click="openModal(c)" title="Modifica">✎</button>
@@ -253,13 +265,16 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { condominiumApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 
-const store = useAppStore()
+const store  = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
+
+// { [condominiumId]: { ok: number, total: number } | null }
+const setupStatus = reactive({})
 const loading = ref(false)
 const saving = ref(false)
 const showModal = ref(false)
@@ -300,6 +315,17 @@ async function loadData() {
   loading.value = true
   await store.loadCondomini()
   loading.value = false
+  store.condomini.forEach(c => loadSetupStatus(c.id))
+}
+
+function loadSetupStatus(id) {
+  setupStatus[id] = null
+  condominiumApi.getSetupStatus(id)
+    .then(r => {
+      const s = r.data
+      setupStatus[id] = { ok: s.completedSections, total: s.totalSections }
+    })
+    .catch(() => { setupStatus[id] = undefined })
 }
 
 function openModal(item = null) {
@@ -400,6 +426,24 @@ onMounted(loadData)
 .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
 .search-input { flex: 1; max-width: 360px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+
+.setup-cell { width: 80px; }
+.setup-loading { font-size: 0.8rem; color: var(--text-muted); }
+.setup-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+.setup-pill:hover { opacity: 0.8; }
+.setup-ok  { background: #dcfce7; color: #16a34a; }
+.setup-ko  { background: #fee2e2; color: #dc2626; }
+.setup-icon { font-size: 0.7rem; }
 
 .modal--wide { width: min(760px, 96vw); }
 

@@ -19,7 +19,7 @@
     <many-to-one name="Account" class="DomuWave.Services.Models.ChartOfAccounts, DomuWave.Services" column="AccountId" not-null="true" />
     <many-to-one name="Supplier" class="DomuWave.Services.Models.Supplier, DomuWave.Services" column="SupplierId" />
     <many-to-one name="MillesimalTable" class="DomuWave.Services.Models.MillesimalTable, DomuWave.Services" column="MillesimalTableId" not-null="true" />
-
+    <many-to-one name="FiscalYear"  class="DomuWave.Services.Models.FiscalYear,DomuWave.Services"     column="FiscalYearId"  not-null="true" />
     <property name="Name" column="Description" type="String" length="500" not-null="true" />
     <property name="Description" column="Notes" type="String" length="1000" />
     <property name="DocumentNumber" column="DocumentNumber" type="String" length="50" />

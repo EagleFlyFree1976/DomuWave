@@ -19,7 +19,9 @@
       "Bash(Get-ChildItem \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\DomuWave.Infrastructure\\\\Command\\\\Expense\")",
       "Bash(grep -h \"modal-sm\\\\|modal--wide\\\\|modal-xl\\\\|modal-md\\\\|modal-lg\" c:/Projects/Works/DomuWave/DomuWave.Web/wwwroot/assets/css/*.css)",
       "Bash(tr '}' '\\\\n')",
-      "Bash(ls \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\docs\\\\migrations\"\" 2>/dev/null || echo \"NOT FOUND \")"
+      "Bash(ls \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\docs\\\\migrations\"\" 2>/dev/null || echo \"NOT FOUND \")",
+      "Bash(xargs grep -l \"class TenantEntity\")",
+      "Bash(xargs grep -l \"class GenericEntity\\\\|class TraceEntity\")"
     ]
   }
 }

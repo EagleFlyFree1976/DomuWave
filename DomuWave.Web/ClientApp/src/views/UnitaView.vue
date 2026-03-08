@@ -2,12 +2,20 @@
   <div>
     <!-- Search / filter toolbar -->
     <div class="toolbar">
-      <input class="form-input search-input" v-model="search" placeholder="Cerca per numero interno, scala…" />
-      <select class="form-select" v-model="filterType" style="width:180px">
+      <input class="form-input search-input" v-model="search" placeholder="Cerca per numero interno…" />
+      <select class="form-select filter-select" v-model="filterStaircase">
+        <option value="">Tutte le scale</option>
+        <option v-for="s in staircaseOptions" :key="s" :value="s">Scala {{ s }}</option>
+      </select>
+      <select class="form-select filter-select" v-model.number="filterFloor">
+        <option :value="null">Tutti i piani</option>
+        <option v-for="f in floorOptions" :key="f" :value="f">Piano {{ f }}</option>
+      </select>
+      <select class="form-select filter-select" v-model="filterType">
         <option value="">Tutti i tipi</option>
         <option v-for="t in unitTypes" :key="t" :value="t">{{ t }}</option>
       </select>
-      <select class="form-select" v-model="filterActive" style="width:140px">
+      <select class="form-select filter-select" v-model="filterActive">
         <option value="">Tutte</option>
         <option value="true">Attive</option>
         <option value="false">Inattive</option>
@@ -26,27 +34,34 @@
           <thead>
             <tr>
               <th>N° Interno</th>
+              <th>Denominazione</th>
               <th>Scala</th>
               <th>Piano</th>
               <th>Tipo</th>
               <th>Occupazione</th>
               <th>Mq</th>
               <th>Stato</th>
+              <th class="text-center">Prop.</th>
+              <th class="text-center">Inq.</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="u in filtered" :key="u.id">
               <td class="mono" style="font-weight:500">{{ u.internalNumber || '—' }}</td>
+              <td class="display-name-cell">{{ u.displayName || '—' }}</td>
               <td>{{ u.staircase || '—' }}</td>
               <td>{{ u.floor }}</td>
               <td class="text-secondary">{{ u.unitType || '—' }}</td>
               <td class="text-secondary">{{ u.occupancyStatus || '—' }}</td>
               <td class="text-secondary">{{ u.areaSqm != null ? `${u.areaSqm} m²` : '—' }}</td>
               <td><span class="badge" :class="u.isActive ? 'badge-green' : 'badge-muted'">{{ u.isActive ? 'Attiva' : 'Inattiva' }}</span></td>
+              <td class="text-center text-secondary count-cell">{{ occupantCounts[u.id]?.owners ?? '…' }}</td>
+              <td class="text-center text-secondary count-cell">{{ occupantCounts[u.id]?.tenants ?? '…' }}</td>
               <td>
                 <div class="row-actions">
                   <button class="btn-icon" @click="openOccupanti(u)" title="Occupanti">👤</button>
+                  <button v-if="canCreate" class="btn-icon" @click="cloneUnit(u)" title="Clona unità">⧉</button>
                   <button v-if="canEdit" class="btn-icon" @click="openModal(u)" title="Modifica">✎</button>
                   <button v-if="canDelete" class="btn-icon" @click="deleteItem(u.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
                 </div>
@@ -61,7 +76,7 @@
     <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
       <div class="modal">
         <div class="modal-header">
-          <h2>{{ editing ? 'Modifica' : 'Nuova' }} unità</h2>
+          <h2>{{ editing ? 'Modifica' : isCloning ? 'Clona' : 'Nuova' }} unità</h2>
           <button class="btn-icon" @click="showModal=false">✕</button>
         </div>
         <div class="modal-body">
@@ -69,6 +84,14 @@
           <fieldset class="form-fieldset">
             <legend class="form-fieldset-legend">Identificazione</legend>
             <div class="form-grid">
+              <div v-if="editing" class="form-group">
+                <label class="form-label">ID</label>
+                <input class="form-input" :value="editing" readonly />
+              </div>
+              <div v-if="editing || isCloning" class="form-group form-group--full">
+                <label class="form-label">Denominazione</label>
+                <input class="form-input" :value="form.displayName || '—'" readonly />
+              </div>
               <div class="form-group" :class="{ 'has-error': errors.internalNumber }">
                 <label class="form-label">N° interno *</label>
                 <input class="form-input" v-model="form.internalNumber" placeholder="Es. 1" @input="clearError('internalNumber')" />
@@ -162,15 +185,15 @@
     v-if="occupantiUnit"
     :unit-id="occupantiUnit.id"
     :unit-label="occupantiUnit.internalNumber || `#${occupantiUnit.id}`"
-    @close="occupantiUnit = null"
+    @close="onOccupantiClose"
   />
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { unitApi } from '@/services/api'
+import { unitApi, unitOwnerApi, unitTenantApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 import { usePermissions } from '@/composables/usePermissions'
 
@@ -181,16 +204,20 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 // condominiumId comes from the parent route param :id (via CondominioLayout)
 const condominiumId = Number(route.params.id)
 
-const loading       = ref(false)
-const saving        = ref(false)
-const showModal     = ref(false)
-const editing       = ref(null)
-const occupantiUnit = ref(null)
-const search        = ref('')
-const filterType    = ref('')
-const filterActive  = ref('')
-const errors        = ref({})
-const units         = ref([])
+const loading         = ref(false)
+const saving          = ref(false)
+const showModal       = ref(false)
+const editing         = ref(null)
+const isCloning       = ref(false)
+const occupantiUnit   = ref(null)
+const search          = ref('')
+const filterStaircase = ref('')
+const filterFloor     = ref(null)
+const filterType      = ref('')
+const filterActive    = ref('')
+const errors          = ref({})
+const units           = ref([])
+const occupantCounts  = reactive({}) // { [unitId]: { owners: number, tenants: number } }
 
 const unitTypes = [
   'Residenziale', 'Commerciale', 'Artigianale', 'Direzionale',
@@ -216,17 +243,22 @@ const defaultForm = () => ({
 })
 const form = ref(defaultForm())
 
+const staircaseOptions = computed(() =>
+  [...new Set(units.value.map(u => u.staircase).filter(Boolean))].sort()
+)
+const floorOptions = computed(() =>
+  [...new Set(units.value.map(u => u.floor).filter(v => v != null))].sort((a, b) => a - b)
+)
+
 const filtered = computed(() => {
   let list = units.value
   if (search.value) {
     const q = search.value.toLowerCase()
-    list = list.filter(u =>
-      u.internalNumber?.toLowerCase().includes(q) ||
-      u.staircase?.toLowerCase().includes(q) ||
-      String(u.floor).includes(q)
-    )
+    list = list.filter(u => u.internalNumber?.toLowerCase().includes(q))
   }
-  if (filterType.value) list = list.filter(u => u.unitType === filterType.value)
+  if (filterStaircase.value) list = list.filter(u => u.staircase === filterStaircase.value)
+  if (filterFloor.value != null) list = list.filter(u => u.floor === filterFloor.value)
+  if (filterType.value)   list = list.filter(u => u.unitType === filterType.value)
   if (filterActive.value !== '') list = list.filter(u => String(u.isActive) === filterActive.value)
   return list
 })
@@ -235,7 +267,9 @@ async function loadData() {
   loading.value = true
   try {
     const { data } = await unitApi.getByCondominium(condominiumId)
-    units.value = data
+    units.value = data ?? []
+    // Carica conteggi proprietari/inquilini in background
+    units.value.forEach(u => loadOccupantCounts(u.id))
   } catch {
     // error handled by interceptor
   } finally {
@@ -243,16 +277,42 @@ async function loadData() {
   }
 }
 
+function loadOccupantCounts(unitId) {
+  occupantCounts[unitId] = { owners: null, tenants: null }
+  unitOwnerApi.getByUnit(unitId)
+    .then(r => { occupantCounts[unitId].owners = (r.data ?? []).filter(o => o.isActive).length })
+    .catch(() => { occupantCounts[unitId].owners = 0 })
+  unitTenantApi.getByUnit(unitId)
+    .then(r => { occupantCounts[unitId].tenants = (r.data ?? []).filter(t => t.isActive).length })
+    .catch(() => { occupantCounts[unitId].tenants = 0 })
+}
+
 function openOccupanti(unit) {
   occupantiUnit.value = unit
 }
 
+function onOccupantiClose() {
+  const unitId = occupantiUnit.value?.id
+  occupantiUnit.value = null
+  if (unitId) loadOccupantCounts(unitId)
+}
+
 function openModal(item = null) {
-  editing.value = item?.id ?? null
-  if (item) {
-    form.value = { ...item, condominiumId }
-  } else {
-    form.value = defaultForm()
+  editing.value  = item?.id ?? null
+  isCloning.value = false
+  form.value = item ? { ...item, condominiumId } : defaultForm()
+  errors.value = {}
+  showModal.value = true
+}
+
+function cloneUnit(item) {
+  editing.value   = null
+  isCloning.value = true
+  form.value = {
+    ...item,
+    condominiumId,
+    internalNumber: '',
+    displayName:    '',
   }
   errors.value = {}
   showModal.value = true
@@ -309,9 +369,13 @@ onMounted(loadData)
 
 <style scoped>
 .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
-.search-input { flex: 1; min-width: 200px; max-width: 360px; }
+.search-input { flex: 1; min-width: 160px; max-width: 280px; }
+.filter-select { width: 140px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+.count-cell { width: 48px; font-size: 0.8125rem; }
+.display-name-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); font-size: 0.875rem; }
 
+.form-group--full { grid-column: 1 / -1; }
 .form-fieldset { border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-top: 1rem; }
 .form-fieldset-legend { font-size: 0.8125rem; font-weight: 600; color: var(--text-secondary); padding: 0 0.4rem; }
 

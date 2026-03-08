@@ -6,14 +6,16 @@ using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.FiscalYear;
 using DomuWave.Services.Interfaces;
+using NHibernate.Linq;
 using SimpleMediator.Core;
+using System.Linq;
 
 namespace DomuWave.Services.Consumers;
 
 public class GetFiscalYearByIdCommandConsumer : InMemoryConsumerBase<GetFiscalYearByIdCommand, FiscalYearReadDto>
 {
     private readonly IFiscalYearService _fiscalYearService;
-    private readonly IUserService _userService;
+    private readonly IUserService       _userService;
 
     public GetFiscalYearByIdCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
@@ -21,7 +23,7 @@ public class GetFiscalYearByIdCommandConsumer : InMemoryConsumerBase<GetFiscalYe
         IUserService userService) : base(sessionFactoryProvider)
     {
         _fiscalYearService = fiscalYearService;
-        _userService = userService;
+        _userService       = userService;
     }
 
     protected override async Task<FiscalYearReadDto> Consume(
@@ -36,6 +38,46 @@ public class GetFiscalYearByIdCommandConsumer : InMemoryConsumerBase<GetFiscalYe
         var fy = await _fiscalYearService
             .GetByIdAsync(command.FiscalYearId, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        return fy?.ToReadDto();
+
+        if (fy == null) return null;
+
+        var dto = fy.ToReadDto();
+
+        // ── Calcola riepilogo finanziario ──────────────────────────────
+        var fyId = fy.Id;
+
+        var installments = await session.Query<CondominiumInstallment>()
+            .Where(i => i.FiscalYear.Id == fyId && !i.IsDeleted)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        var installmentIds = installments.Select(i => i.Id).ToList();
+
+        var fees = installmentIds.Any()
+            ? await session.Query<CondominiumFee>()
+                .Where(f => installmentIds.Contains(f.Installment.Id) && !f.IsDeleted)
+                .ToListAsync(cancellationToken).ConfigureAwait(false)
+            : new System.Collections.Generic.List<CondominiumFee>();
+
+        var expenses = await session.Query<Expense>()
+            .Where(e => e.FiscalYear.Id == fyId && !e.IsDeleted)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        var budgetCount = await session.Query<Budget>()
+            .CountAsync(b => b.FiscalYear.Id == fyId && !b.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        dto.Summary = new FiscalYearSummaryDto
+        {
+            TotalExpenses            = expenses.Sum(e => e.GrossAmount),
+            TotalExpensesPaid        = expenses.Where(e => e.PaymentStatus?.Id == ExpensePaymentStatus.Pagata).Sum(e => e.GrossAmount),
+            TotalInstallmentsBilled  = installments.Sum(i => i.TotalAmount),
+            TotalPaymentsReceived    = fees.Sum(f => f.AmountPaid),
+            Balance                  = fees.Sum(f => f.AmountPaid) - expenses.Sum(e => e.GrossAmount),
+            ExpenseCount             = expenses.Count,
+            InstallmentCount         = installments.Count,
+            BudgetCount              = budgetCount,
+        };
+
+        return dto;
     }
 }

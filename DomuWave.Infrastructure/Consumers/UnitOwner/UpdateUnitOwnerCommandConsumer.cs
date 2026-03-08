@@ -82,7 +82,8 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
         var owners = await session.Query<UnitOwner>()
             .Where(o => o.Unit.Id == unitId && o.IsActive && !o.IsDeleted)
             .ToListAsync(ct).ConfigureAwait(false);
-        unit.Owners = owners;
+        unit.Owners.Clear();
+        foreach (var o in owners) unit.Owners.Add(o);
         unit.RefreshDisplayName();
         await _realEstateUnitService.UpdateAsync(unit, currentUser, ct).ConfigureAwait(false);
     }

@@ -32,15 +32,19 @@
         <div class="unit-header">
           <div class="unit-header-left">
             <span class="unit-number">Int. {{ u.internalNumber }}</span>
+            <span v-if="u.displayName" class="unit-displayname">{{ u.displayName }}</span>
             <span class="unit-meta">
               Piano {{ u.floor }}
               <template v-if="u.staircase"> · Sc. {{ u.staircase }}</template>
               <template v-if="u.unitType"> · {{ u.unitType }}</template>
             </span>
           </div>
-          <span class="badge" :class="u.isActive ? 'badge-green' : 'badge-muted'">
-            {{ u.isActive ? 'Attiva' : 'Inattiva' }}
-          </span>
+          <div class="unit-header-right">
+            <button class="btn-icon-sm" @click="openOccupanti(u)" title="Gestisci occupanti">👤</button>
+            <span class="badge" :class="u.isActive ? 'badge-green' : 'badge-muted'">
+              {{ u.isActive ? 'Attiva' : 'Inattiva' }}
+            </span>
+          </div>
         </div>
 
         <!-- Corpo: proprietari | inquilini -->
@@ -95,19 +99,29 @@
     </div>
 
   </div>
+
+  <!-- Occupanti modal -->
+  <OccupantiModal
+    v-if="occupantiUnit"
+    :unit-id="occupantiUnit.id"
+    :unit-label="occupantiUnit.internalNumber || `#${occupantiUnit.id}`"
+    @close="onOccupantiClose"
+  />
 </template>
 
 <script setup>
 import { ref, reactive, computed, inject, onMounted, watch } from 'vue'
 import { unitApi, unitOwnerApi, unitTenantApi } from '@/services/api'
+import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 
 const condominiumId = inject('condominiumId')
 
-const units      = ref([])
-const unitData   = reactive({})   // { [unitId]: { owners, tenants, loadingOwners, loadingTenants } }
+const units        = ref([])
+const unitData     = reactive({})   // { [unitId]: { owners, tenants, loadingOwners, loadingTenants } }
 const loadingUnits = ref(false)
 const search       = ref('')
 const showInactive = ref(false)
+const occupantiUnit = ref(null)
 
 // ─── Helpers ──────────────────────────────────────────────────
 function fullName(p) {
@@ -174,6 +188,16 @@ async function load(id) {
   finally { loadingUnits.value = false }
 }
 
+function openOccupanti(unit) {
+  occupantiUnit.value = unit
+}
+
+function onOccupantiClose() {
+  const unit = occupantiUnit.value
+  occupantiUnit.value = null
+  if (unit) loadUnit(unit)
+}
+
 onMounted(() => load(condominiumId.value))
 watch(condominiumId, load)
 </script>
@@ -222,7 +246,21 @@ watch(condominiumId, load)
   gap: 0.5rem;
 }
 .unit-header-left { display: flex; align-items: center; gap: 0.6rem; }
+.unit-header-right { display: flex; align-items: center; gap: 0.4rem; }
+.btn-icon-sm {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 0.9rem;
+  border-radius: 4px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+.btn-icon-sm:hover { opacity: 1; background: var(--bg-muted, #f3f4f6); }
 .unit-number { font-weight: 600; font-size: 0.9rem; }
+.unit-displayname { font-size: 0.85rem; color: var(--text-secondary); font-style: italic; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .unit-meta { font-size: 0.8rem; color: var(--text-secondary); }
 
 /* ── Body con 2 colonne ─────────────────────────────────────── */

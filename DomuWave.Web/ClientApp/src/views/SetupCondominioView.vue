@@ -41,14 +41,16 @@
 
       <!-- ── SEZIONI ─────────────────────────────────────────────────── -->
       <SectionCard
-        v-for="s in sections"
+        v-for="(s, i) in sections"
         :key="s.key"
+        :step="i + 1"
         :title="s.title"
         :icon="s.icon"
         :desc="s.desc"
         :section="status[s.key]"
         :link="s.link"
         :link-label="s.linkLabel"
+        :blocked="i > 0 && status[sections[i - 1].key]?.status !== 0 && status[sections[i - 1].key]?.status !== 'Ok'"
       />
 
     </template>

@@ -1,7 +1,8 @@
 <template>
-  <div class="section-card" :class="statusKey">
-    <div class="section-header" @click="open = !open">
+  <div class="section-card" :class="[statusKey, { 'section-card--blocked': blocked }]">
+    <div class="section-header" @click="!blocked && (open = !open)">
       <div class="section-header-left">
+        <span class="step-badge">{{ step }}</span>
         <span class="section-icon">{{ icon }}</span>
         <div>
           <span class="section-title">{{ title }}</span>
@@ -9,12 +10,14 @@
         </div>
       </div>
       <div class="section-header-right">
-        <span class="status-badge" :class="`status-badge--${statusKey}`">{{ statusLabel }}</span>
-        <i class="pi" :class="open ? 'pi-chevron-up' : 'pi-chevron-down'" />
+        <span v-if="blocked" class="status-badge status-badge--blocked">In attesa</span>
+        <span v-else class="status-badge" :class="`status-badge--${statusKey}`">{{ statusLabel }}</span>
+        <i v-if="!blocked" class="pi" :class="open ? 'pi-chevron-up' : 'pi-chevron-down'" />
+        <i v-else class="pi pi-lock" style="color:var(--text-muted);font-size:0.85rem" />
       </div>
     </div>
 
-    <div v-if="open" class="section-body">
+    <div v-if="open && !blocked" class="section-body">
       <div
         v-for="(c, i) in section?.checks ?? []"
         :key="i"
@@ -40,12 +43,14 @@
 import { ref, computed } from 'vue'
 
 const props = defineProps({
+  step:      Number,
   title:     String,
   icon:      String,
   desc:      String,
   section:   Object,   // { status: 0|1|2|3, checks: [{isOk, isWarn, label, detail}] }
   link:      String,
   linkLabel: String,
+  blocked:   { type: Boolean, default: false },
 })
 
 const open = ref(true)
@@ -84,6 +89,27 @@ function checkIconClass(c) {
 .section-card.warn  { border-left-color: #f59e0b; }
 .section-card.error { border-left-color: #ef4444; }
 .section-card.na    { border-left-color: var(--border); }
+.section-card--blocked {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+}
+.section-card--blocked .section-header { cursor: default; }
+
+/* ── STEP BADGE ──────────────────────────────────────────────────────────── */
+.step-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
 
 /* ── HEADER ──────────────────────────────────────────────────────────────── */
 .section-header {
@@ -117,10 +143,11 @@ function checkIconClass(c) {
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
-.status-badge--ok    { background: rgba(34,197,94,.15);   color: #22c55e; }
-.status-badge--warn  { background: rgba(245,158,11,.15);  color: #f59e0b; }
-.status-badge--error { background: rgba(239,68,68,.15);   color: #ef4444; }
-.status-badge--na    { background: rgba(120,120,120,.12); color: var(--text-muted); }
+.status-badge--ok      { background: rgba(34,197,94,.15);   color: #22c55e; }
+.status-badge--warn    { background: rgba(245,158,11,.15);  color: #f59e0b; }
+.status-badge--error   { background: rgba(239,68,68,.15);   color: #ef4444; }
+.status-badge--na      { background: rgba(120,120,120,.12); color: var(--text-muted); }
+.status-badge--blocked { background: rgba(120,120,120,.12); color: var(--text-muted); }
 
 /* ── SECTION BODY ────────────────────────────────────────────────────────── */
 .section-body {

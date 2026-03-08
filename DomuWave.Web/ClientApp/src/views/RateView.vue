@@ -561,58 +561,70 @@ onMounted(async () => {
 .expand-cell { width: 2rem; text-align: center; }
 .expand-icon { font-size: 0.72rem; color: var(--text-muted); }
 
+/* Riga rata: font leggermente più grande e peso maggiore per distinguerla */
+.inst-row td { font-size: 0.9rem; }
+
 /* Pannello quote inline */
 .fees-row > td { padding: 0; }
 .fees-body {
-  background: var(--bg-inset, rgba(0,0,0,0.15));
+  background: var(--bg-inset, rgba(0,0,0,0.22));
+  border-left: 3px solid var(--accent-blue, #4299e1);
   border-bottom: 2px solid var(--border);
-  padding: 0 0 0.75rem 0;
+  padding: 0 0 0.5rem 0;
 }
 
 .fees-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.6rem 1rem 0.5rem 2.5rem;
+  padding: 0.5rem 1rem 0.45rem 1.5rem;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0;
+  background: rgba(66, 153, 225, 0.06);
 }
 .fees-title {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.02em;
+  color: var(--accent-blue, #4299e1);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 /* Tabella quote interna */
 .inner-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.82rem;
 }
 .inner-table th {
-  padding: 0.3rem 0.9rem;
-  font-size: 0.73rem;
+  padding: 0.28rem 0.9rem 0.28rem 1.5rem;
+  font-size: 0.68rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   border-bottom: 1px solid var(--border);
   background: transparent;
 }
+.inner-table th:first-child { padding-left: 1.5rem; }
 .inner-table td {
-  padding: 0.4rem 0.9rem;
-  border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.05));
+  padding: 0.35rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle, rgba(255,255,255,0.04));
+  color: var(--text-secondary);
 }
+.inner-table td:first-child { padding-left: 1.5rem; }
+.inner-table tbody tr:hover td { background: rgba(255,255,255,0.02); }
 .inner-table tr:last-child td { border-bottom: none; }
 
 /* Riga totali */
 .fees-total-row td {
+  font-size: 0.8rem;
   font-weight: 600;
   border-top: 1px solid var(--border);
-  background: var(--bg-surface-2, rgba(255,255,255,0.04));
-  padding: 0.35rem 0.9rem;
+  background: rgba(0,0,0,0.15);
+  padding: 0.3rem 0.9rem;
 }
+.fees-total-row td:first-child { padding-left: 1.5rem; }
 
 /* Cella unità */
 .unit-number { font-family: var(--font-mono, monospace); font-size: 0.85rem; color: var(--text-secondary); margin-right: 0.4rem; }
