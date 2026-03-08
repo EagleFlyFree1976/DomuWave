@@ -147,7 +147,7 @@
                 <select class="form-select" v-model.number="entryForm.unitId" @change="clearEntryError('unitId')">
                   <option :value="null" disabled>Seleziona unità…</option>
                   <option v-for="u in availableUnits" :key="u.id" :value="u.id">
-                    {{ u.internalNumber }}
+                    {{ u.internalNumber }}{{ u.displayName ? ' – ' + u.displayName : '' }}
                     <template v-if="u.staircase"> · Scala {{ u.staircase }}</template>
                     · Piano {{ u.floor }}
                   </option>
@@ -194,7 +194,7 @@
               </thead>
               <tbody>
                 <tr v-for="e in entries" :key="e.id">
-                  <td class="mono">{{ e.unitNumber }}</td>
+                  <td class="mono">{{ e.unitNumber }}<span v-if="e.unitDisplayName" class="unit-displayname"> – {{ e.unitDisplayName }}</span></td>
                   <td class="text-secondary">{{ e.unitStaircase || '—' }}</td>
                   <td class="text-secondary">{{ e.unitFloor }}</td>
                   <td class="mono text-right">{{ fmtMillesimal(e.millesimal) }}</td>
@@ -491,4 +491,5 @@ onMounted(loadTables)
 .has-error .form-input,
 .has-error .form-select { border-color: var(--accent-red, #e53e3e); }
 .field-error { font-size: .78rem; color: var(--accent-red, #e53e3e); margin-top: .2rem; display: block; }
+.unit-displayname { font-size: .82rem; color: var(--text-muted); font-style: italic; font-family: inherit; }
 </style>

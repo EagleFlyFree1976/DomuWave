@@ -11,6 +11,12 @@
         <router-link to="/categorie-piano-dei-conti" class="btn btn-ghost">
           <i class="pi pi-tags"></i> Gestisci Categorie
         </router-link>
+        <router-link to="/template-piano-dei-conti" class="btn btn-ghost">
+          <i class="pi pi-th-large"></i> Gestisci Template
+        </router-link>
+        <button class="btn btn-ghost" @click="openApplyTemplate" :disabled="!store.selectedCondominioId">
+          <i class="pi pi-star"></i> Applica template
+        </button>
         <button class="btn btn-ghost" @click="openCopy" :disabled="!store.selectedCondominioId">
           <i class="pi pi-copy"></i> Copia da…
         </button>
@@ -262,6 +268,46 @@
       </div>
     </Teleport>
 
+    <!-- Apply Template Modal -->
+    <Teleport to="body">
+      <div v-if="showApplyTemplate" class="modal-overlay" @click.self="showApplyTemplate = false">
+        <div class="modal modal-sm">
+          <div class="modal-header">
+            <h2>Applica Template Piano dei Conti</h2>
+            <button class="icon-btn" @click="showApplyTemplate = false"><i class="pi pi-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-stack">
+              <div class="form-group" :class="{ 'has-error': applyTemplateError }">
+                <label class="form-label">Seleziona template *</label>
+                <div v-if="loadingTemplates" class="state-box" style="padding:.75rem">
+                  <i class="pi pi-spin pi-spinner"></i> Caricamento…
+                </div>
+                <select v-else class="form-select" v-model.number="selectedTemplateId">
+                  <option :value="null">— Seleziona —</option>
+                  <option v-for="t in availableTemplates" :key="t.id" :value="t.id">
+                    {{ t.name }} ({{ t.itemCount }} voci)
+                  </option>
+                </select>
+                <span class="field-error" v-if="applyTemplateError">{{ applyTemplateError }}</span>
+              </div>
+              <p class="copy-hint">
+                <i class="pi pi-info-circle"></i>
+                Verranno aggiunti i conti del template selezionato. I codici già esistenti verranno ignorati.
+              </p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-ghost" @click="showApplyTemplate = false">Annulla</button>
+            <button class="btn btn-primary" @click="doApplyTemplate" :disabled="applyingTemplate || !selectedTemplateId">
+              <i class="pi pi-spin pi-spinner" v-if="applyingTemplate"></i>
+              {{ applyingTemplate ? 'Applicazione…' : 'Applica' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
     <!-- Confirm delete conto -->
     <Teleport to="body">
       <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
@@ -293,7 +339,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { chartOfAccountsApi, chartOfAccountsCategoryApi, millesimalTableApi } from '@/services/api'
+import { chartOfAccountsApi, chartOfAccountsCategoryApi, millesimalTableApi, chartOfAccountsTemplateApi } from '@/services/api'
 
 const otherCondomini = computed(() =>
   (store.condomini ?? []).filter(c => c.id !== store.selectedCondominioId)
@@ -310,9 +356,15 @@ const filterCategory = ref('')
 const showModal      = ref(false)
 const editing        = ref(null)
 const saving         = ref(false)
-const deleteTarget   = ref(null)
-const deleting       = ref(false)
-const errors         = ref({})
+const deleteTarget    = ref(null)
+const deleting        = ref(false)
+const applyingTemplate    = ref(false)
+const showApplyTemplate   = ref(false)
+const availableTemplates  = ref([])
+const loadingTemplates    = ref(false)
+const selectedTemplateId  = ref(null)
+const applyTemplateError  = ref('')
+const errors              = ref({})
 
 // ── Categorie (solo per il dropdown) ──────────────────────────
 const categories = ref([])
@@ -506,6 +558,31 @@ const showCopy     = ref(false)
 const copySourceId = ref(null)
 const copying      = ref(false)
 const copyError    = ref('')
+
+async function openApplyTemplate() {
+  selectedTemplateId.value = null
+  applyTemplateError.value = ''
+  showApplyTemplate.value  = true
+  loadingTemplates.value   = true
+  try {
+    const { data } = await chartOfAccountsTemplateApi.getAll()
+    availableTemplates.value = (data ?? []).filter(t => t.isActive)
+  } catch { availableTemplates.value = [] } finally { loadingTemplates.value = false }
+}
+
+async function doApplyTemplate() {
+  if (!selectedTemplateId.value) { applyTemplateError.value = 'Seleziona un template'; return }
+  applyingTemplate.value = true
+  try {
+    const { data: created } = await chartOfAccountsTemplateApi.apply(selectedTemplateId.value, store.selectedCondominioId)
+    const msg = created > 0 ? `Template applicato: ${created} voci aggiunte.` : 'Nessuna voce aggiunta (tutte già presenti).'
+    store.toast(msg, created > 0 ? 'success' : 'warn')
+    showApplyTemplate.value = false
+    await load()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { applyingTemplate.value = false }
+}
 
 function openCopy() {
   copySourceId.value = null

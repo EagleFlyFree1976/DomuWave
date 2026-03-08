@@ -7,6 +7,8 @@
     <None Remove="Models\Mappings\ChartOfAccounts.hbm.xml" />
     <None Remove="Models\Mappings\ChartOfAccountsCategory.hbm.xml" />
     <None Remove="Models\Mappings\ChartOfAccountsCategoryTemplate.hbm.xml" />
+    <None Remove="Models\Mappings\ChartOfAccountsTemplate.hbm.xml" />
+    <None Remove="Models\Mappings\ChartOfAccountsTemplateItem.hbm.xml" />
     <None Remove="Models\Mappings\Communication.hbm.xml" />
     <None Remove="Models\Mappings\CommunicationRead.hbm.xml" />
     <None Remove="Models\Mappings\Condominium.hbm.xml" />
@@ -48,6 +50,8 @@
     <EmbeddedResource Include="Models\Mappings\ChartOfAccounts.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ChartOfAccountsCategory.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ChartOfAccountsCategoryTemplate.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ChartOfAccountsTemplate.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ChartOfAccountsTemplateItem.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Communication.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\CommunicationRead.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Condominium.hbm.xml" />

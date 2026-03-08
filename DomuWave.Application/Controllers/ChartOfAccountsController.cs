@@ -71,4 +71,14 @@ public class ChartOfAccountsController(
             new CopyChartOfAccountsCommand(CurrentUser.Id, dto.SourceCondominiumId, dto.TargetCondominiumId), ct);
         return Ok(copied);
     }
+
+    [HttpPost("apply-template/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ApplyTemplate(int condominiumId, CancellationToken ct)
+    {
+        var created = await _mediator.GetResponse(
+            new ApplyChartOfAccountsTemplateCommand(CurrentUser.Id, condominiumId), ct);
+        return Ok(created);
+    }
 }

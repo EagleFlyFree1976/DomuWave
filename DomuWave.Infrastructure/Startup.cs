@@ -55,6 +55,7 @@ public static class Startup
         services.AddScoped<IChartOfAccountsCategoryTemplateService, ChartOfAccountsCategoryTemplateService>();
         services.AddScoped<IChartOfAccountsCategoryService, ChartOfAccountsCategoryService>();
         services.AddScoped<IChartOfAccountsService, ChartOfAccountsService>();
+        services.AddScoped<IChartOfAccountsTemplateSeedService, ChartOfAccountsTemplateSeedService>();
         services.AddScoped<ICommunicationReadService, CommunicationReadService>();
         services.AddScoped<ICommunicationService, CommunicationService>();
         services.AddScoped<ICondominiumAddressService, CondominiumAddressService>();

@@ -14,6 +14,7 @@ public static class UnitMillesimalMappingExtensions
             MillesimalTableId = entity.MillesimalTable?.Id ?? 0,
             UnitId            = entity.Unit?.Id ?? 0,
             UnitNumber        = entity.Unit?.InternalNumber ?? string.Empty,
+            UnitDisplayName   = entity.Unit?.DisplayName,
             UnitFloor         = entity.Unit?.Floor ?? 0,
             UnitStaircase     = entity.Unit?.Staircase,
             Millesimal        = entity.Millesimal,

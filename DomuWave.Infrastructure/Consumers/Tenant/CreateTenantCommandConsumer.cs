@@ -19,18 +19,21 @@ public class CreateTenantCommandConsumer
     private readonly IUserService                            _userService;
     private readonly IChartOfAccountsCategoryService         _categoryService;
     private readonly IChartOfAccountsCategoryTemplateService _templateService;
+    private readonly IChartOfAccountsTemplateSeedService     _coaTemplateSeed;
 
     public CreateTenantCommandConsumer(
         ISessionFactoryProvider                  sessionFactoryProvider,
         ITenantService                           tenantService,
         IUserService                             userService,
         IChartOfAccountsCategoryService          categoryService,
-        IChartOfAccountsCategoryTemplateService  templateService) : base(sessionFactoryProvider)
+        IChartOfAccountsCategoryTemplateService  templateService,
+        IChartOfAccountsTemplateSeedService      coaTemplateSeed) : base(sessionFactoryProvider)
     {
         _tenantService   = tenantService;
         _userService     = userService;
         _categoryService = categoryService;
         _templateService = templateService;
+        _coaTemplateSeed = coaTemplateSeed;
     }
 
     protected override async Task<TenantReadDto> Consume(
@@ -75,6 +78,9 @@ public class CreateTenantCommandConsumer
                 .CreateAsync(category, currentUser, cancellationToken)
                 .ConfigureAwait(false);
         }
+
+        // Seed template piano dei conti standard
+        await _coaTemplateSeed.SeedAsync(created, cancellationToken).ConfigureAwait(false);
 
         return created.ToReadDto();
     }

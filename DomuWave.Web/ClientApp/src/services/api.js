@@ -163,6 +163,20 @@ export const chartOfAccountsApi = {
   update:              (id, data) => api.put(`/chart-of-accounts/${id}`, data),
   delete:              (id)       => api.delete(`/chart-of-accounts/${id}`),
   copyFromCondominium: (data)     => api.post('/chart-of-accounts/copy-from-condominium', data),
+  applyTemplate:       (condId)   => api.post(`/chart-of-accounts/apply-template/${condId}`),
+}
+
+// ─── Template Piano dei conti ──────────────────────────────────
+export const chartOfAccountsTemplateApi = {
+  getAll:       ()                           => api.get('/chart-of-accounts-templates'),
+  create:       (data)                       => api.post('/chart-of-accounts-templates', data),
+  update:       (id, data)                   => api.put(`/chart-of-accounts-templates/${id}`, data),
+  delete:       (id)                         => api.delete(`/chart-of-accounts-templates/${id}`),
+  getItems:     (templateId)                 => api.get(`/chart-of-accounts-templates/${templateId}/items`),
+  createItem:   (templateId, data)           => api.post(`/chart-of-accounts-templates/${templateId}/items`, data),
+  updateItem:   (templateId, itemId, data)   => api.put(`/chart-of-accounts-templates/${templateId}/items/${itemId}`, data),
+  deleteItem:   (templateId, itemId)         => api.delete(`/chart-of-accounts-templates/${templateId}/items/${itemId}`),
+  apply:        (templateId, condominiumId)  => api.post(`/chart-of-accounts-templates/${templateId}/apply/${condominiumId}`),
 }
 
 // ─── Categorie piano dei conti ────────────────────────────────
