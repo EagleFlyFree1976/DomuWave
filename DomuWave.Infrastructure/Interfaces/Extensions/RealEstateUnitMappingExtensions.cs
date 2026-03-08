@@ -1,6 +1,7 @@
 using CPQ.Core.Extensions;
 using DomuWave.Services.Dto.RealEstateUnit;
 using DomuWave.Services.Models;
+using System.Linq;
 
 namespace DomuWave.Services.Interfaces.Extensions;
 
@@ -31,6 +32,7 @@ public static class RealEstateUnitMappingExtensions
             UnitType        = unit.UnitType,
             OccupancyStatus = unit.OccupancyStatus,
             Notes           = unit.Notes,
+            DisplayName     = unit.DisplayName,
             NumeroAbitanti  = unit.NumeroAbitanti,
             IsActive        = unit.IsActive,
         };
@@ -67,6 +69,32 @@ public static class RealEstateUnitMappingExtensions
     }
 
     /// <summary>
+    /// Ricalcola il DisplayName dell'unità in base ai cognomi dei proprietari attivi.
+    /// Se <paramref name="overrideName"/> è valorizzato, usa quello invece.
+    /// </summary>
+    public static void RefreshDisplayName(this RealEstateUnit unit, string overrideName = null)
+    {
+        if (!string.IsNullOrWhiteSpace(overrideName))
+        {
+            unit.DisplayName = overrideName.Trim();
+            return;
+        }
+
+        var activeOwners = unit.Owners?
+            .Where(o => o.IsActive && !o.IsDeleted)
+            .OrderBy(o => o.LastName)
+            .ToList();
+
+        if (activeOwners == null || !activeOwners.Any())
+            return; // lascia il DisplayName esistente invariato
+
+        unit.DisplayName = string.Join(" / ",
+            activeOwners.Select(o => string.IsNullOrWhiteSpace(o.LastName)
+                ? o.FirstName
+                : o.LastName).Where(n => !string.IsNullOrWhiteSpace(n)));
+    }
+
+    /// <summary>
     /// Applica i campi del DTO di aggiornamento all'entità <see cref="RealEstateUnit"/> esistente.
     /// </summary>
     public static void ApplyUpdate(this RealEstateUnit entity, UpdateRealEstateUnitDto dto)
@@ -82,6 +110,7 @@ public static class RealEstateUnitMappingExtensions
         entity.UnitType        = dto.UnitType ?? string.Empty;
         entity.OccupancyStatus = dto.OccupancyStatus ?? string.Empty;
         entity.Notes           = dto.Notes;
+        entity.DisplayName     = dto.DisplayName;
         entity.NumeroAbitanti  = dto.NumeroAbitanti;
         entity.IsActive        = dto.IsActive;
     }

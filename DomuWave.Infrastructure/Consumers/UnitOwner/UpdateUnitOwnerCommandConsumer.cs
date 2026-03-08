@@ -7,28 +7,30 @@ using DomuWave.Services.Command.UnitOwner;
 using DomuWave.Services.Dto.UnitOwner;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
+using DomuWave.Services.Models;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
 public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwnerCommand, UnitOwnerReadDto>
 {
-    private readonly IUnitOwnerService    _unitOwnerService;
-    private readonly IUserService         _userService;
-    
-    private readonly IAuthorizationClient _authorizationClient;
+    private readonly IUnitOwnerService      _unitOwnerService;
+    private readonly IRealEstateUnitService _realEstateUnitService;
+    private readonly IUserService           _userService;
+    private readonly IAuthorizationClient   _authorizationClient;
 
     public UpdateUnitOwnerCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUnitOwnerService unitOwnerService,
+        IRealEstateUnitService realEstateUnitService,
         IUserService userService,
-    
         IAuthorizationClient authorizationClient) : base(sessionFactoryProvider)
     {
-        _unitOwnerService    = unitOwnerService;
-        _userService         = userService;
-    
-        _authorizationClient = authorizationClient;
+        _unitOwnerService      = unitOwnerService;
+        _realEstateUnitService = realEstateUnitService;
+        _userService           = userService;
+        _authorizationClient   = authorizationClient;
     }
 
     protected override async Task<UnitOwnerReadDto> Consume(
@@ -65,6 +67,23 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
                 cancellationToken).ConfigureAwait(false);
         }
 
+        // Ricalcola DisplayName dell'unità solo se non è stato personalizzato
+        var unitId = existing.Unit?.Id ?? 0;
+        if (unitId > 0)
+            await RefreshUnitDisplayName(unitId, currentUser, cancellationToken).ConfigureAwait(false);
+
         return updated.ToReadDto();
+    }
+
+    private async Task RefreshUnitDisplayName(int unitId, CPQ.Core.Memberships.IUser currentUser, CancellationToken ct)
+    {
+        var unit = await _realEstateUnitService.GetByIdAsync(unitId, currentUser, ct).ConfigureAwait(false);
+        if (unit == null) return;
+        var owners = await session.Query<UnitOwner>()
+            .Where(o => o.Unit.Id == unitId && o.IsActive && !o.IsDeleted)
+            .ToListAsync(ct).ConfigureAwait(false);
+        unit.Owners = owners;
+        unit.RefreshDisplayName();
+        await _realEstateUnitService.UpdateAsync(unit, currentUser, ct).ConfigureAwait(false);
     }
 }

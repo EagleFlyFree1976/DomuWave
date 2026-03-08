@@ -6,6 +6,7 @@ using DomuWave.Services.Command.UnitOwner;
 using DomuWave.Services.Dto.UnitOwner;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -47,6 +48,22 @@ public class CreateUnitOwnerCommandConsumer : InMemoryConsumerBase<CreateUnitOwn
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        // Ricalcola DisplayName dell'unità dai proprietari attivi (se non già personalizzato)
+        await RefreshUnitDisplayName(unit.Id, currentUser, cancellationToken).ConfigureAwait(false);
+
         return created.ToReadDto();
+    }
+
+    private async Task RefreshUnitDisplayName(int unitId, CPQ.Core.Memberships.IUser currentUser, CancellationToken ct)
+    {
+        var unit = await _realEstateUnitService.GetByIdAsync(unitId, currentUser, ct).ConfigureAwait(false);
+        if (unit == null) return;
+        // Carica i proprietari attivi freschi dalla sessione
+        var owners = await session.Query<DomuWave.Services.Models.UnitOwner>()
+            .Where(o => o.Unit.Id == unitId && o.IsActive && !o.IsDeleted)
+            .ToListAsync(ct).ConfigureAwait(false);
+        unit.Owners = owners;
+        unit.RefreshDisplayName();
+        await _realEstateUnitService.UpdateAsync(unit, currentUser, ct).ConfigureAwait(false);
     }
 }

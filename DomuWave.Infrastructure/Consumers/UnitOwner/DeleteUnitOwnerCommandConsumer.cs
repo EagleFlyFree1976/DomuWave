@@ -9,21 +9,25 @@ using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
 using NHibernate.Linq;
 using SimpleMediator.Core;
+using System.Linq;
 
 namespace DomuWave.Services.Consumers;
 
 public class DeleteUnitOwnerCommandConsumer : InMemoryConsumerBase<DeleteUnitOwnerCommand, UnitOwnerReadDto>
 {
-    private readonly IUnitOwnerService _unitOwnerService;
-    private readonly IUserService      _userService;
+    private readonly IUnitOwnerService      _unitOwnerService;
+    private readonly IRealEstateUnitService _realEstateUnitService;
+    private readonly IUserService           _userService;
 
     public DeleteUnitOwnerCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUnitOwnerService unitOwnerService,
+        IRealEstateUnitService realEstateUnitService,
         IUserService userService) : base(sessionFactoryProvider)
     {
-        _unitOwnerService = unitOwnerService;
-        _userService      = userService;
+        _unitOwnerService      = unitOwnerService;
+        _realEstateUnitService = realEstateUnitService;
+        _userService           = userService;
     }
 
     protected override async Task<UnitOwnerReadDto> Consume(
@@ -64,6 +68,21 @@ public class DeleteUnitOwnerCommandConsumer : InMemoryConsumerBase<DeleteUnitOwn
             .DeleteAsync(command.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        // Ricalcola DisplayName rimanente dopo rimozione proprietario
+        await RefreshUnitDisplayName(unitId, currentUser, cancellationToken).ConfigureAwait(false);
+
         return null;
+    }
+
+    private async Task RefreshUnitDisplayName(int unitId, CPQ.Core.Memberships.IUser currentUser, CancellationToken ct)
+    {
+        var unit = await _realEstateUnitService.GetByIdAsync(unitId, currentUser, ct).ConfigureAwait(false);
+        if (unit == null) return;
+        var owners = await session.Query<UnitOwner>()
+            .Where(o => o.Unit.Id == unitId && o.IsActive && !o.IsDeleted)
+            .ToListAsync(ct).ConfigureAwait(false);
+        unit.Owners = owners;
+        unit.RefreshDisplayName();
+        await _realEstateUnitService.UpdateAsync(unit, currentUser, ct).ConfigureAwait(false);
     }
 }

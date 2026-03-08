@@ -64,6 +64,15 @@ public class CondominiumFeesController(
         return StatusCode(StatusCodes.Status201Created, result);
     }
 
+    [HttpPut("{id:long}")]
+    public async Task<IActionResult> Update(long id, [FromBody] UpdateCondominiumFeeDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(new UpdateCondominiumFeeCommand(CurrentUser.Id, id, dto), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpPatch("{feeId:long}/pay")]
     public async Task<IActionResult> RecordPayment(
         long feeId, [FromBody] RecordFeePaymentRequest request, CancellationToken ct)

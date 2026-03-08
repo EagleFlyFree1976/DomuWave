@@ -207,7 +207,7 @@ namespace DomuWave.Services.Implementations
             IUser currentUser, CancellationToken cancellationToken)
         {
             var fee = await session.Query<CondominiumFee>()
-                .FirstOrDefaultAsync(x => x.Id == feeId && x.UserId == userId, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == feeId && !x.IsDeleted, cancellationToken);
 
             if (fee == null)
                 return false;
@@ -216,7 +216,7 @@ namespace DomuWave.Services.Implementations
             fee.AmountPaid += amount;
             fee.Balance = fee.AmountDue - fee.AmountPaid;
 
-            // Se il saldo è <= 0, marca come pagato
+            // Se il saldo ï¿½ <= 0, marca come pagato
             if (fee.Balance <= 0)
             {
                 fee.PaymentStatus = "Paid";

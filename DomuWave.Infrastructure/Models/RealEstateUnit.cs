@@ -18,6 +18,11 @@ namespace DomuWave.Services.Models
         public virtual string UnitType { get; set; }
         public virtual string OccupancyStatus { get; set; }
         public virtual string Notes { get; set; }
+        /// <summary>
+        /// Etichetta visualizzata (es. cognomi proprietari). Editabile dall'utente;
+        /// viene ricalcolata automaticamente quando si aggiungono/modificano proprietari.
+        /// </summary>
+        public virtual string DisplayName { get; set; }
         public virtual int    NumeroAbitanti { get; set; } = 1;
         public virtual bool IsActive { get; set; }
 

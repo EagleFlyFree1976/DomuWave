@@ -241,6 +241,7 @@ export const feeApi = {
   getOverdue:         (condId)        => api.get(`/condominium-fees/by-condominium/${condId}/overdue`),
   getTotalDue:        (userId)        => api.get(`/condominium-fees/total-due/${userId}`),
   getBalance:         (userId)        => api.get(`/condominium-fees/balance/${userId}`),
+  update:             (id, data)      => api.put(`/condominium-fees/${id}`, data),
   recordPayment:      (feeId, amount, paymentDate, paymentMethod) => api.patch(`/condominium-fees/${feeId}/pay`, { amount, paymentDate, paymentMethod }),
   create:             (data)          => api.post('/condominium-fees', data),
   delete:             (id)            => api.delete(`/condominium-fees/${id}`),
