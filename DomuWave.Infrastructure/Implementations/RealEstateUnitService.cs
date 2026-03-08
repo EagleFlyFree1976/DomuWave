@@ -38,7 +38,7 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<RealEstateUnit>> GetByTenantIdAsync(Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<RealEstateUnit>()
-                .Where(x => x.Tenant.Id == tenantId && !x.IsDeleted)
+                .Where(x => x.Tenant.Id == tenantId && !x.IsDeleted) 
                 .ToListAsync(cancellationToken);
         }
 

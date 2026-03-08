@@ -19,6 +19,11 @@ public class UnitTenantsController(
 {
     private readonly IMediator _mediator = mediator;
 
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(IList<UnitTenantReadDto>), 200)]
+    public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new SearchUnitTenantsCommand(CurrentUser.Id, q ?? string.Empty, TenantId.GetValueOrDefault()), ct));
+
     [HttpGet("by-unit/{unitId:int}")]
     [ProducesResponseType(typeof(IList<UnitTenantReadDto>), 200)]
     public async Task<IActionResult> GetByUnit(int unitId, CancellationToken ct)

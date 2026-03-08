@@ -157,7 +157,7 @@ public class CondominiumInstallmentServiceTests : TestBase
     [Fact]
     public async Task GetOpenInstallmentsAsync_ReturnsOpenInstallments()
     {
-        var open = new List<CondominiumInstallment> { new() { Id = 1, Status = "Open" } };
+        var open = new List<CondominiumInstallment> { new() { Id = 1, Status = new CondominiumInstallmentStatus() } };
         _serviceMock.Setup(s => s.GetOpenInstallmentsAsync(CondominiumId, _currentUser, _ct))
                     .ReturnsAsync(open);
 

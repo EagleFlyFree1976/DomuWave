@@ -15,9 +15,14 @@ public class UnitOwnersController(
     ILogger<UnitOwnersController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
     IMediator mediator)
-    : PrivateControllerBase(logger, configuration)
+    : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
+
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(IList<UnitOwnerReadDto>), 200)]
+    public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new SearchUnitOwnersCommand(CurrentUser.Id, q ?? string.Empty, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-unit/{unitId:int}")]
     [ProducesResponseType(typeof(IList<UnitOwnerReadDto>), 200)]

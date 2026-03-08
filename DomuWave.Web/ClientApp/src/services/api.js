@@ -126,6 +126,7 @@ export const unitApi = {
 
 // ─── Proprietari unità ────────────────────────────────────────
 export const unitOwnerApi = {
+  search:     (q)           => api.get(`/unit-owners/search`, { params: { q } }),
   getByUnit:  (unitId)      => api.get(`/unit-owners/by-unit/${unitId}`),
   getByUser:  (userId)      => api.get(`/unit-owners/by-user/${userId}`),
   create:     (data)        => api.post('/unit-owners', data),
@@ -135,6 +136,7 @@ export const unitOwnerApi = {
 
 // ─── Inquilini unità ──────────────────────────────────────────
 export const unitTenantApi = {
+  search:     (q)           => api.get(`/unit-tenants/search`, { params: { q } }),
   getByUnit:  (unitId)      => api.get(`/unit-tenants/by-unit/${unitId}`),
   create:     (data)        => api.post('/unit-tenants', data),
   update:     (id, data)    => api.put(`/unit-tenants/${id}`, data),

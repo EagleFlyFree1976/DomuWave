@@ -16,7 +16,8 @@ namespace DomuWave.Application.Code
             {
                 if (HttpContext.Items.ContainsKey("TenantId"))
                 {
-                    return (Guid)HttpContext.Items["TenantId"];
+                    
+                    return Guid.Parse(HttpContext.Items["TenantId"].ToString());
                 }
                 return null;
             }

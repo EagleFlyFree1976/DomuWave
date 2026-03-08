@@ -117,6 +117,26 @@
       </div>
       <div class="modal-body">
 
+        <!-- Ricerca anagrafica esistente (solo in creazione) -->
+        <template v-if="!ownerModal.editing">
+          <fieldset class="form-fieldset" style="margin-top:1rem">
+            <legend class="form-fieldset-legend">Cerca tra proprietari esistenti <span class="badge-optional">opzionale</span></legend>
+            <p class="platform-access-hint" style="margin:0 0 0.5rem">Seleziona un proprietario già registrato per pre-compilare i dati anagrafici.</p>
+            <div class="user-search-row">
+              <input class="form-input" v-model="anagrSearch" placeholder="Cerca per nome, cognome o email…"
+                     @input="searchAnagr(unitOwnerApi.search)" />
+            </div>
+            <div v-if="loadingAnagr" class="loading-state small"><div class="spinner"></div></div>
+            <div v-else-if="anagrSearch && !anagrResults.length" class="empty-state small">Nessun risultato</div>
+            <div v-else-if="anagrResults.length" class="user-list">
+              <div v-for="p in anagrResults" :key="p.id" class="user-item" @click="selectAnagr(p, 'owner')">
+                <span class="user-name">{{ p.firstName }} {{ p.lastName }}</span>
+                <span class="user-email text-secondary">{{ p.email || '—' }}</span>
+              </div>
+            </div>
+          </fieldset>
+        </template>
+
         <!-- Dati anagrafici (sempre visibili, pre-popolati dalla selezione utente) -->
         <fieldset class="form-fieldset" style="margin-top:1rem">
           <legend class="form-fieldset-legend">{{ ownerModal.editing ? 'Dati anagrafici' : '1 · Dati anagrafici' }}</legend>
@@ -282,6 +302,26 @@
       </div>
       <div class="modal-body">
 
+        <!-- Ricerca anagrafica esistente (solo in creazione) -->
+        <template v-if="!tenantModal.editing">
+          <fieldset class="form-fieldset">
+            <legend class="form-fieldset-legend">Cerca tra inquilini esistenti <span class="badge-optional">opzionale</span></legend>
+            <p class="platform-access-hint" style="margin:0 0 0.5rem">Seleziona un inquilino già registrato per pre-compilare i dati anagrafici.</p>
+            <div class="user-search-row">
+              <input class="form-input" v-model="anagrSearch" placeholder="Cerca per nome, cognome o email…"
+                     @input="searchAnagr(unitTenantApi.search)" />
+            </div>
+            <div v-if="loadingAnagr" class="loading-state small"><div class="spinner"></div></div>
+            <div v-else-if="anagrSearch && !anagrResults.length" class="empty-state small">Nessun risultato</div>
+            <div v-else-if="anagrResults.length" class="user-list">
+              <div v-for="p in anagrResults" :key="p.id" class="user-item" @click="selectAnagr(p, 'tenant')">
+                <span class="user-name">{{ p.firstName }} {{ p.lastName }}</span>
+                <span class="user-email text-secondary">{{ p.email || '—' }}</span>
+              </div>
+            </div>
+          </fieldset>
+        </template>
+
         <!-- Dati anagrafici -->
         <fieldset class="form-fieldset">
           <legend class="form-fieldset-legend">Dati anagrafici</legend>
@@ -389,6 +429,41 @@ const loadingTenants = ref(false)
 
 const ownerTypes = ['Proprietario', 'Comproprietario', 'Nudo Proprietario', 'Usufruttuario']
 
+// ─── Anagrafica search (existing owners/tenants in system) ────
+const anagrSearch       = ref('')
+const anagrResults      = ref([])
+const loadingAnagr      = ref(false)
+let   anagrSearchTimer  = null
+
+function searchAnagr(api) {
+  clearTimeout(anagrSearchTimer)
+  if (!anagrSearch.value.trim()) { anagrResults.value = []; return }
+  anagrSearchTimer = setTimeout(async () => {
+    loadingAnagr.value = true
+    try {
+      const { data } = await api(anagrSearch.value)
+      anagrResults.value = Array.isArray(data) ? data : []
+    } catch { anagrResults.value = [] }
+    finally { loadingAnagr.value = false }
+  }, 300)
+}
+
+function selectAnagr(person, target) {
+  if (target === 'owner') {
+    ownerModal.form.firstName = person.firstName ?? ''
+    ownerModal.form.lastName  = person.lastName ?? ''
+    ownerModal.form.email     = person.email ?? ''
+  } else {
+    tenantModal.form.firstName = person.firstName ?? ''
+    tenantModal.form.lastName  = person.lastName ?? ''
+    tenantModal.form.email     = person.email ?? ''
+    tenantModal.form.phone     = person.phone ?? ''
+    tenantModal.form.taxCode   = person.taxCode ?? ''
+  }
+  anagrResults.value = []
+  anagrSearch.value  = ''
+}
+
 // ─── User search (for owners) ─────────────────────────────────
 const userSearch      = ref('')
 const userResults     = ref([])
@@ -487,6 +562,8 @@ function searchUsers() {
 
 // ─── Owner modal actions ──────────────────────────────────────
 function openAddOwner() {
+  anagrSearch.value  = ''
+  anagrResults.value = []
   ownerModal.editing          = null
   ownerModal.selectedUserName = ''
   ownerModal.form.userId         = 0
@@ -629,6 +706,8 @@ async function deleteOwner(id) {
 
 // ─── Tenant modal actions ─────────────────────────────────────
 function openAddTenant() {
+  anagrSearch.value  = ''
+  anagrResults.value = []
   tenantModal.editing             = null
   tenantModal.form.firstName      = ''
   tenantModal.form.lastName       = ''
