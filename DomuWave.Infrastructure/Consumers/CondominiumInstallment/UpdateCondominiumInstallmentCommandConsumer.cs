@@ -5,6 +5,8 @@ using DomuWave.Services.Command.CondominiumInstallment;
 using DomuWave.Services.Dto.CondominiumInstallment;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
+using DomuWave.Services.Models;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -37,7 +39,11 @@ public class UpdateCondominiumInstallmentCommandConsumer : InMemoryConsumerBase<
             .ConfigureAwait(false);
         if (entity == null) return null;
 
-        entity.ApplyUpdate(command.Dto);
+        var status = await session.Query<CondominiumInstallmentStatus>()
+            .FirstOrDefaultAsync(x => x.Id == command.Dto.StatusId, cancellationToken)
+            .ConfigureAwait(false);
+
+        entity.ApplyUpdate(command.Dto, status);
         var updated = await _condominiumInstallmentService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

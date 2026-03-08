@@ -32,7 +32,7 @@ public class GenerateInstallmentsCommandConsumer : InMemoryConsumerBase<Generate
             .ConfigureAwait(false);
 
         return await _condominiumInstallmentService
-            .GenerateInstallmentsAsync(command.CondominiumId, command.Year, command.BudgetId,
+            .GenerateInstallmentsAsync(command.CondominiumId, command.FiscalYearId, command.BudgetId,
                 currentUser.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
     }

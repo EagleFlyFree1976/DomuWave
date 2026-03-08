@@ -17,5 +17,6 @@ public class RealEstateUnitReadDto : TraceEntityDTO<int>
     public string UnitType { get; set; }
     public string OccupancyStatus { get; set; }
     public string Notes { get; set; }
+    public int    NumeroAbitanti { get; set; }
     public bool IsActive { get; set; }
 }

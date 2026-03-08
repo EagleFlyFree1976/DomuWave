@@ -27,6 +27,11 @@
     <property name="Level" column="Level" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
 
+    <property name="AllocationMethod"    column="AllocationMethod"    type="Int32"   not-null="true" />
+    <property name="MillesimalPercentage" column="MillesimalPercentage" type="Decimal" />
+    <property name="FloorWeight"         column="FloorWeight"         type="Decimal" />
+    <property name="InhabitantsWeight"   column="InhabitantsWeight"   type="Decimal" />
+
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
     <property name="LastUpdatedBy" column="LastUpdatedById" type="Int32" />

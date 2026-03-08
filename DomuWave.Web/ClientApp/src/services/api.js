@@ -187,9 +187,10 @@ export const budgetApi = {
   getById:            (id)      => api.get(`/budgets/${id}`),
   create:             (data)    => api.post('/budgets', data),
   update:             (id, data)=> api.put(`/budgets/${id}`, data),
-  approve:            (id, opts) => api.post(`/budgets/${id}/approve`, opts ?? {}),
-  close:              (id)      => api.post(`/budgets/${id}/close`),
-  delete:             (id)      => api.delete(`/budgets/${id}`),
+  approve:              (id, opts) => api.post(`/budgets/${id}/approve`, opts ?? {}),
+  close:                (id)      => api.post(`/budgets/${id}/close`),
+  generateInstallments: (id, opts) => api.post(`/budgets/${id}/generate-installments`, opts ?? {}),
+  delete:               (id)      => api.delete(`/budgets/${id}`),
 }
 
 // ─── Voci di budget ───────────────────────────────────────────
@@ -219,15 +220,15 @@ export const expenseApi = {
 // ─── Rate ─────────────────────────────────────────────────────
 // Backend: api/condominium-installments  (CondominiumInstallmentsController)
 export const installmentApi = {
-  getByCondominium:   (condId)              => api.get(`/condominium-installments/by-condominium/${condId}`),
-  getByYear:          (condId, year)        => api.get(`/condominium-installments/by-condominium/${condId}`, { params: { year } }),
-  getByYearAndNumber: (condId, year, number)=> api.get(`/condominium-installments/by-condominium/${condId}/year/${year}/number/${number}`),
-  getOpen:            (condId)              => api.get(`/condominium-installments/by-condominium/${condId}/open`),
-  getOverdue:         (condId)              => api.get(`/condominium-installments/by-condominium/${condId}/overdue`),
-  generate:           (condId, year, budgetId) => api.post(`/condominium-installments/by-condominium/${condId}/generate`, { year, budgetId }),
-  create:             (data)                => api.post('/condominium-installments', data),
-  update:             (id, data)            => api.put(`/condominium-installments/${id}`, data),
-  delete:             (id)                  => api.delete(`/condominium-installments/${id}`),
+  getByCondominium:   (condId)                      => api.get(`/condominium-installments/by-condominium/${condId}`),
+  getByFiscalYear:    (condId, fiscalYearId)         => api.get(`/condominium-installments/by-fiscal-year/${fiscalYearId}`, { params: { condominiumId: condId } }),
+  getByYearAndNumber: (condId, year, number)         => api.get(`/condominium-installments/by-condominium/${condId}/year/${year}/number/${number}`),
+  getOpen:            (condId)                       => api.get(`/condominium-installments/by-condominium/${condId}/open`),
+  getOverdue:         (condId)                       => api.get(`/condominium-installments/by-condominium/${condId}/overdue`),
+  generate:           (condId, fiscalYearId, budgetId) => api.post(`/condominium-installments/by-condominium/${condId}/generate`, { fiscalYearId, budgetId }),
+  create:             (data)                         => api.post('/condominium-installments', data),
+  update:             (id, data)                     => api.put(`/condominium-installments/${id}`, data),
+  delete:             (id)                           => api.delete(`/condominium-installments/${id}`),
 }
 
 // ─── Quote ────────────────────────────────────────────────────

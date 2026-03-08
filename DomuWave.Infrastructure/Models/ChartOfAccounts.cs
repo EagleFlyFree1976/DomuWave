@@ -16,6 +16,11 @@ namespace DomuWave.Services.Models
 
         public virtual MillesimalTable? DefaultMillesimalTable { get; set; }
 
+        public virtual AllocationMethod AllocationMethod   { get; set; } = AllocationMethod.Standard;
+        public virtual decimal?         MillesimalPercentage { get; set; }
+        public virtual decimal?         FloorWeight          { get; set; }
+        public virtual decimal?         InhabitantsWeight    { get; set; }
+
         public virtual IList<ChartOfAccounts> ChildAccounts { get; set; } = new List<ChartOfAccounts>();
         public virtual IList<BudgetItem> BudgetItems { get; set; } = new List<BudgetItem>();
         public virtual IList<Expense> Expenses { get; set; } = new List<Expense>();

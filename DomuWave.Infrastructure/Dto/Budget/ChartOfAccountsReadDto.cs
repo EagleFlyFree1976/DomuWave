@@ -15,4 +15,8 @@ public class ChartOfAccountsReadDto
     public int?                 ParentAccountId             { get; set; }
     public int?                 DefaultMillesimalTableId    { get; set; }
     public string?              DefaultMillesimalTableName  { get; set; }
+    public AllocationMethod     AllocationMethod            { get; set; }
+    public decimal?             MillesimalPercentage        { get; set; }
+    public decimal?             FloorWeight                 { get; set; }
+    public decimal?             InhabitantsWeight           { get; set; }
 }

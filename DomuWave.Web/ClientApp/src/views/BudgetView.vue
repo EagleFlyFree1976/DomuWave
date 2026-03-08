@@ -73,6 +73,9 @@
                     </span>
                     <button v-if="canEdit && b.statusId === 2" class="btn btn-sm btn-ghost"
                             @click="closeBudget(b)">Chiudi</button>
+                    <button v-if="canEdit && (b.statusId === 2 || b.statusId === 3)"
+                            class="btn btn-sm btn-ghost"
+                            @click="openGenerateModal(b)">Genera rate</button>
                     <button v-if="canEdit && b.statusId === 1" class="btn-icon"
                             @click="openBudgetModal(b)" title="Modifica">✎</button>
                     <button v-if="canDelete && b.statusId === 1" class="btn-icon"
@@ -185,6 +188,45 @@
           <button class="btn btn-primary" @click="confirmApprove" :disabled="savingApprove">
             <span v-if="savingApprove" class="spinner" style="width:14px;height:14px"></span>
             Approva e genera rate
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         MODAL — Genera rate da budget
+    ══════════════════════════════════════════════════ -->
+    <div class="modal-overlay" v-if="showGenerateModal" @click.self="showGenerateModal = false">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Genera rate</h2>
+          <button class="btn-icon" @click="showGenerateModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <p class="approve-info">
+            Verranno generate le rate e le relative quote per ogni unità
+            in base alla tabella millesimale attiva.
+          </p>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Numero di rate *</label>
+              <input class="form-input" type="number" min="1" max="24"
+                     v-model.number="generateForm.numberOfInstallments" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prima scadenza *</label>
+              <input class="form-input" type="date" v-model="generateForm.firstDueDate" />
+            </div>
+          </div>
+          <p class="approve-hint">
+            Le scadenze successive saranno distanziate di un mese l'una dall'altra.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="showGenerateModal = false">Annulla</button>
+          <button class="btn btn-primary" @click="confirmGenerate" :disabled="savingGenerate">
+            <span v-if="savingGenerate" class="spinner" style="width:14px;height:14px"></span>
+            Genera rate
           </button>
         </div>
       </div>
@@ -559,6 +601,37 @@ async function closeBudget(b) {
     `Dopo la chiusura sarà possibile approvare un nuovo budget dello stesso tipo.`
   )) return
   try { await budgetApi.close(b.id); await loadBudgets() } catch {}
+}
+
+// ─── Genera rate da budget ─────────────────────────────────────
+const showGenerateModal  = ref(false)
+const generatingBudget   = ref(null)
+const savingGenerate     = ref(false)
+const generateForm       = ref({ numberOfInstallments: 4, firstDueDate: '' })
+
+function openGenerateModal(b) {
+  generatingBudget.value = b
+  const next = new Date()
+  next.setDate(1)
+  next.setMonth(next.getMonth() + 1)
+  generateForm.value = {
+    numberOfInstallments: 4,
+    firstDueDate: next.toISOString().slice(0, 10),
+  }
+  showGenerateModal.value = true
+}
+
+async function confirmGenerate() {
+  if (!generatingBudget.value) return
+  savingGenerate.value = true
+  try {
+    await budgetApi.generateInstallments(generatingBudget.value.id, {
+      numberOfInstallments: generateForm.value.numberOfInstallments,
+      firstDueDate: generateForm.value.firstDueDate,
+    })
+    showGenerateModal.value = false
+    generatingBudget.value  = null
+  } catch { /* global */ } finally { savingGenerate.value = false }
 }
 
 async function deleteBudget(id) {

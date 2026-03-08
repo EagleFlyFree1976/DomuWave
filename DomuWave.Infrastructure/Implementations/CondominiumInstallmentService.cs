@@ -144,12 +144,13 @@ namespace DomuWave.Services.Implementations
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IList<CondominiumInstallment>> GetByYearAsync(int condominiumId, int year, User currentUser, CancellationToken cancellationToken)
+        public async Task<IList<CondominiumInstallment>> GetByFiscalYearIdAsync(int condominiumId, int fiscalYearId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<CondominiumInstallment>()
-                .Where(x => x.Condominium.Id == condominiumId 
-                    && x.FiscalYear.StartDate.Year == year 
+                .Where(x => x.Condominium.Id == condominiumId
+                    && x.FiscalYear.Id == fiscalYearId
                     && !x.IsDeleted)
+                .OrderBy(x => x.InstallmentNumber)
                 .ToListAsync(cancellationToken);
         }
 
@@ -166,8 +167,8 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<CondominiumInstallment>> GetOpenInstallmentsAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<CondominiumInstallment>()
-                .Where(x => x.Condominium.Id == condominiumId 
-                    && x.Status != "Paid" 
+                .Where(x => x.Condominium.Id == condominiumId
+                    && x.Status.Id != CondominiumInstallmentStatus.Paid
                     && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
@@ -176,14 +177,14 @@ namespace DomuWave.Services.Implementations
         {
             var today = DateTime.Now;
             return await session.Query<CondominiumInstallment>()
-                .Where(x => x.Condominium.Id == condominiumId 
-                    && x.DueDate < today 
-                    && x.Status != "Paid" 
+                .Where(x => x.Condominium.Id == condominiumId
+                    && x.DueDate < today
+                    && x.Status.Id != CondominiumInstallmentStatus.Paid
                     && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<bool> GenerateInstallmentsAsync(int condominiumId, int year, int budgetId, long userId, IUser currentUser,
+        public async Task<bool> GenerateInstallmentsAsync(int condominiumId, int fiscalYearId, int budgetId, long userId, IUser currentUser,
             CancellationToken cancellationToken)
         {
             var condominium = await session.Query<Condominium>()
@@ -192,45 +193,54 @@ namespace DomuWave.Services.Implementations
             if (condominium == null)
                 return false;
 
+            var fiscalYear = await session.Query<FiscalYear>()
+                .FirstOrDefaultAsync(x => x.Id == fiscalYearId && x.Condominium.Id == condominiumId && !x.IsDeleted, cancellationToken);
+
+            if (fiscalYear == null)
+                return false;
+
             var budget = await session.Query<Budget>()
                 .FirstOrDefaultAsync(x => x.Id == budgetId && x.Condominium.Id == condominiumId, cancellationToken);
 
             if (budget == null)
                 return false;
 
-            // Verifica se le rate sono gi� state generate
+            // Verifica se le rate sono già state generate per questo esercizio
             var existingInstallments = await session.Query<CondominiumInstallment>()
-                .Where(x => x.Condominium.Id == condominiumId && x.FiscalYear.StartDate.Year == year && !x.IsDeleted)
+                .Where(x => x.Condominium.Id == condominiumId && x.FiscalYear.Id == fiscalYearId && !x.IsDeleted)
                 .CountAsync(cancellationToken);
 
             if (existingInstallments > 0)
                 return false;
 
-            // Genera le rate (es. 4 rate per anno, una ogni 3 mesi)
+            var openStatus = await session.Query<CondominiumInstallmentStatus>()
+                .FirstOrDefaultAsync(x => x.Id == CondominiumInstallmentStatus.Open, cancellationToken);
+
+            // Genera 4 rate equamente distribuite nell'esercizio fiscale
+            var totalDays   = (fiscalYear.EndDate - fiscalYear.StartDate).Days;
             var installments = new List<CondominiumInstallment>();
             var amountPerInstallment = budget.TotalIncome / 4;
-            
+
             for (int i = 1; i <= 4; i++)
             {
-                var dueDate = new DateTime(year, i * 3, 1);
-                
+                var dueDate = fiscalYear.StartDate.AddDays((int)(totalDays * i / 4.0));
+
                 var installment = new CondominiumInstallment
                 {
-                    Condominium = condominium,
-                    Budget = budget,
-                     
+                    Condominium       = condominium,
+                    Budget            = budget,
+                    FiscalYear        = fiscalYear,
                     InstallmentNumber = i,
-                    DueDate = dueDate,
-                    TotalAmount = amountPerInstallment,
-                    Status = "Open",
-                    Notes = $"Installment {i} for year {year}"
+                    DueDate           = dueDate,
+                    TotalAmount       = amountPerInstallment,
+                    Status            = openStatus,
+                    Notes             = $"Rata {i} – esercizio {fiscalYear.Code}",
                 };
 
                 installment.Trace(currentUser);
                 installments.Add(installment);
             }
 
-            // Salva tutte le rate
             foreach (var installment in installments)
             {
                 await session.SaveOrUpdateAsync(installment, cancellationToken);

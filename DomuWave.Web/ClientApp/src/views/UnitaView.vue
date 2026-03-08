@@ -129,6 +129,10 @@
                 <label class="form-label">Rendita catastale (€)</label>
                 <input class="form-input" type="number" min="0" step="0.01" v-model.number="form.cadastralIncome" />
               </div>
+              <div class="form-group">
+                <label class="form-label">Numero abitanti</label>
+                <input class="form-input" type="number" min="0" step="1" v-model.number="form.numeroAbitanti" />
+              </div>
             </div>
           </fieldset>
 
@@ -206,6 +210,7 @@ const defaultForm = () => ({
   areaSqm:         null,
   rooms:           null,
   cadastralIncome: null,
+  numeroAbitanti:  1,
   notes:           '',
   isActive:        true,
 })

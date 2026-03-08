@@ -98,6 +98,20 @@ public class BudgetsController(
         return NoContent();
     }
 
+    [HttpPost("{id:int}/generate-installments")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    public async Task<IActionResult> GenerateInstallments(
+        int id, [FromBody] GenerateInstallmentsFromBudgetRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GenerateInstallmentsFromBudgetCommand(
+                CurrentUser.Id, id,
+                request?.NumberOfInstallments ?? 4,
+                request?.FirstDueDate ?? DateTime.Today), ct);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
@@ -108,3 +122,5 @@ public class BudgetsController(
         return NoContent();
     }
 }
+
+public record GenerateInstallmentsFromBudgetRequest(int NumberOfInstallments, DateTime FirstDueDate);

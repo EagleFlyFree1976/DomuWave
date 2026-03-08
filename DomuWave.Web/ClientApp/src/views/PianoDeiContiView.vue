@@ -54,6 +54,7 @@
             <th>Livello</th>
             <th>Conto padre</th>
             <th>Tab. millesimale</th>
+            <th>Ripartizione</th>
             <th>Stato</th>
             <th></th>
           </tr>
@@ -67,6 +68,12 @@
             <td class="text-center">{{ a.level }}</td>
             <td class="text-secondary mono">{{ parentCode(a.parentAccountId) }}</td>
             <td class="text-secondary">{{ a.defaultMillesimalTableName ?? '—' }}</td>
+            <td>
+              <span v-if="a.allocationMethod === 1" class="badge badge-mixed" :title="`${a.millesimalPercentage}% millesimale + ${100 - a.millesimalPercentage}% piano/abitanti`">
+                Misto {{ a.millesimalPercentage }}%
+              </span>
+              <span v-else class="badge badge-standard">Standard</span>
+            </td>
             <td>
               <span class="badge" :class="a.isActive ? 'badge-open' : 'badge-muted'">
                 {{ a.isActive ? 'Attivo' : 'Inattivo' }}
@@ -137,6 +144,49 @@
                   <option v-for="t in millesimalTables" :key="t.id" :value="t.id">{{ t.name }}</option>
                 </select>
               </div>
+
+              <div class="form-group" style="grid-column: 1 / -1">
+                <label class="form-label">Metodo di calcolo ripartizione</label>
+                <div class="radio-group">
+                  <label class="radio-label">
+                    <input type="radio" v-model.number="form.allocationMethod" :value="0" />
+                    Standard (100% millesimale)
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" v-model.number="form.allocationMethod" :value="1" />
+                    Misto (millesimale + piano/abitanti)
+                  </label>
+                </div>
+              </div>
+
+              <template v-if="form.allocationMethod === 1">
+                <div class="form-group" style="grid-column: 1 / -1">
+                  <div class="mixed-hint">
+                    <i class="pi pi-info-circle"></i>
+                    L'importo viene diviso in due parti: Y% ripartito via tabella millesimale,
+                    il restante (100-Y)% via fattore = <strong>PesoFloor × Piano + PesoAbitanti × N.Abitanti</strong>.
+                  </div>
+                </div>
+                <div class="form-group" :class="{ 'has-error': errors.millesimalPercentage }">
+                  <label class="form-label">% Millesimale (Y) *</label>
+                  <input class="form-input" type="number" min="0" max="100" step="0.01"
+                    v-model.number="form.millesimalPercentage" @input="clearError('millesimalPercentage')" />
+                  <span class="field-error" v-if="errors.millesimalPercentage">{{ errors.millesimalPercentage }}</span>
+                </div>
+                <div></div>
+                <div class="form-group" :class="{ 'has-error': errors.floorWeight }">
+                  <label class="form-label">Peso Piano (FloorWeight) *</label>
+                  <input class="form-input" type="number" min="0" step="0.0001"
+                    v-model.number="form.floorWeight" @input="clearError('floorWeight')" />
+                  <span class="field-error" v-if="errors.floorWeight">{{ errors.floorWeight }}</span>
+                </div>
+                <div class="form-group" :class="{ 'has-error': errors.inhabitantsWeight }">
+                  <label class="form-label">Peso Abitanti (InhabitantsWeight) *</label>
+                  <input class="form-input" type="number" min="0" step="0.0001"
+                    v-model.number="form.inhabitantsWeight" @input="clearError('inhabitantsWeight')" />
+                  <span class="field-error" v-if="errors.inhabitantsWeight">{{ errors.inhabitantsWeight }}</span>
+                </div>
+              </template>
 
               <div class="form-group" v-if="!editing">
                 <label class="form-label">Conto padre</label>
@@ -282,6 +332,7 @@ const typeLabel = (v) => typeOptions.find(o => o.value === v)?.label ?? v
 const emptyForm = () => ({
   code: '', name: '', type: 2, categoryId: null, description: '',
   parentAccountId: null, isActive: true, defaultMillesimalTableId: null,
+  allocationMethod: 0, millesimalPercentage: null, floorWeight: null, inhabitantsWeight: null,
 })
 const form = ref(emptyForm())
 
@@ -339,6 +390,17 @@ function validate() {
   errors.value = {}
   if (!form.value.code?.trim()) errors.value.code = 'Codice obbligatorio'
   if (!form.value.name?.trim()) errors.value.name = 'Nome obbligatorio'
+  if (form.value.allocationMethod === 1) {
+    const pct = form.value.millesimalPercentage
+    if (pct === null || pct === '' || pct === undefined)
+      errors.value.millesimalPercentage = 'Percentuale obbligatoria'
+    else if (pct < 0 || pct > 100)
+      errors.value.millesimalPercentage = 'Deve essere tra 0 e 100'
+    if (form.value.floorWeight === null || form.value.floorWeight === '')
+      errors.value.floorWeight = 'Peso piano obbligatorio'
+    if (form.value.inhabitantsWeight === null || form.value.inhabitantsWeight === '')
+      errors.value.inhabitantsWeight = 'Peso abitanti obbligatorio'
+  }
   return Object.keys(errors.value).length === 0
 }
 
@@ -353,6 +415,10 @@ function openModal(a = null) {
       parentAccountId: a.parentAccountId ?? null,
       isActive: a.isActive,
       defaultMillesimalTableId: a.defaultMillesimalTableId ?? null,
+      allocationMethod: a.allocationMethod ?? 0,
+      millesimalPercentage: a.millesimalPercentage ?? null,
+      floorWeight: a.floorWeight ?? null,
+      inhabitantsWeight: a.inhabitantsWeight ?? null,
     }
   } else {
     editing.value = null
@@ -365,13 +431,17 @@ function cloneAccount(a) {
   errors.value  = {}
   editing.value = null   // nuovo conto, non modifica
   form.value = {
-    code:            '',                      // da compilare — deve essere univoco
-    name:            a.name,
-    type:            a.type,
-    categoryId:      a.categoryId ?? null,
-    description:     a.description ?? '',
-    parentAccountId: a.parentAccountId ?? null,
-    isActive:        a.isActive,
+    code:                     '',
+    name:                     a.name,
+    type:                     a.type,
+    categoryId:               a.categoryId ?? null,
+    description:              a.description ?? '',
+    parentAccountId:          a.parentAccountId ?? null,
+    isActive:                 a.isActive,
+    allocationMethod:         a.allocationMethod ?? 0,
+    millesimalPercentage:     a.millesimalPercentage ?? null,
+    floorWeight:              a.floorWeight ?? null,
+    inhabitantsWeight:        a.inhabitantsWeight ?? null,
   }
   showModal.value = true
 }
@@ -389,6 +459,10 @@ async function save() {
         description:              form.value.description || null,
         isActive:                 form.value.isActive,
         defaultMillesimalTableId: form.value.defaultMillesimalTableId,
+        allocationMethod:         form.value.allocationMethod,
+        millesimalPercentage:     form.value.allocationMethod === 1 ? form.value.millesimalPercentage : null,
+        floorWeight:              form.value.allocationMethod === 1 ? form.value.floorWeight : null,
+        inhabitantsWeight:        form.value.allocationMethod === 1 ? form.value.inhabitantsWeight : null,
       })
     } else {
       await chartOfAccountsApi.create({
@@ -401,6 +475,10 @@ async function save() {
         description:              form.value.description || null,
         isActive:                 form.value.isActive,
         defaultMillesimalTableId: form.value.defaultMillesimalTableId,
+        allocationMethod:         form.value.allocationMethod,
+        millesimalPercentage:     form.value.allocationMethod === 1 ? form.value.millesimalPercentage : null,
+        floorWeight:              form.value.allocationMethod === 1 ? form.value.floorWeight : null,
+        inhabitantsWeight:        form.value.allocationMethod === 1 ? form.value.inhabitantsWeight : null,
       })
     }
     showModal.value = false
@@ -497,9 +575,11 @@ async function doCopy() {
 .actions { display: flex; gap: .4rem; justify-content: flex-end; }
 
 .badge { display: inline-block; padding: .2rem .55rem; border-radius: 4px; font-size: .72rem; font-weight: 600; }
-.badge-type  { background: rgba(99,102,241,.12); color: #818cf8; }
-.badge-open  { background: rgba(52,211,153,.12); color: #34d399; }
-.badge-muted { background: rgba(100,116,139,.12); color: #64748b; }
+.badge-type     { background: rgba(99,102,241,.12); color: #818cf8; }
+.badge-open     { background: rgba(52,211,153,.12); color: #34d399; }
+.badge-muted    { background: rgba(100,116,139,.12); color: #64748b; }
+.badge-standard { background: rgba(100,116,139,.10); color: #64748b; }
+.badge-mixed    { background: rgba(251,191,36,.12);  color: #f59e0b; cursor: help; }
 
 .icon-btn {
   background: transparent; border: none; cursor: pointer;
@@ -558,13 +638,13 @@ textarea.form-input { resize: vertical; min-height: 60px; }
 .btn:disabled { opacity: .55; cursor: not-allowed; }
 
 .form-stack { display: flex; flex-direction: column; gap: .9rem; }
-.copy-hint {
+.copy-hint, .mixed-hint {
   display: flex; align-items: flex-start; gap: .5rem;
   font-size: .8rem; color: var(--text-muted);
   background: var(--bg-surface); border-radius: 7px;
   padding: .65rem .85rem; line-height: 1.45;
 }
-.copy-hint .pi { margin-top: .1rem; flex-shrink: 0; }
+.copy-hint .pi, .mixed-hint .pi { margin-top: .1rem; flex-shrink: 0; }
 
 .radio-group {
   display: flex; gap: 1.25rem; flex-wrap: wrap;

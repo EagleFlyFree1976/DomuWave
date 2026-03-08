@@ -1,3 +1,5 @@
+using DomuWave.Services.Models;
+
 namespace DomuWave.Services.Dto.CondominiumInstallment;
 
 public class CreateCondominiumInstallmentDto
@@ -8,6 +10,6 @@ public class CreateCondominiumInstallmentDto
     public int      InstallmentNumber { get; set; }
     public DateTime DueDate           { get; set; }
     public decimal  TotalAmount       { get; set; }
-    public string   Status            { get; set; } = "Open";
+    public int      StatusId          { get; set; } = CondominiumInstallmentStatus.Open;
     public string?  Notes             { get; set; }
 }

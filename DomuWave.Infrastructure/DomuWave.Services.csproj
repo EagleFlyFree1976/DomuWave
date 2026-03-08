@@ -14,6 +14,7 @@
     <None Remove="Models\Mappings\CondominiumCadastralData.hbm.xml" />
     <None Remove="Models\Mappings\CondominiumFee.hbm.xml" />
     <None Remove="Models\Mappings\CondominiumInstallment.hbm.xml" />
+    <None Remove="Models\Mappings\CondominiumInstallmentStatus.hbm.xml" />
     <None Remove="Models\Mappings\Document.hbm.xml" />
     <None Remove="Models\Mappings\DocumentAccess.hbm.xml" />
     <None Remove="Models\Mappings\Expense.hbm.xml" />
@@ -54,6 +55,7 @@
     <EmbeddedResource Include="Models\Mappings\CondominiumCadastralData.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\CondominiumFee.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\CondominiumInstallment.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\CondominiumInstallmentStatus.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Document.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\DocumentAccess.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Expense.hbm.xml" />

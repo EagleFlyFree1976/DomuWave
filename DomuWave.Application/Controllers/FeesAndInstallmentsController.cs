@@ -101,6 +101,10 @@ public class CondominiumInstallmentsController(
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetInstallmentsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
+    [HttpGet("by-fiscal-year/{fiscalYearId:int}")]
+    public async Task<IActionResult> GetByFiscalYear(int fiscalYearId, [FromQuery] int condominiumId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetInstallmentsByFiscalYearCommand(CurrentUser.Id, condominiumId, fiscalYearId), ct));
+
     [HttpGet("by-condominium/{condominiumId:int}/year/{year:int}/number/{number:int}")]
     public async Task<IActionResult> GetByYearAndNumber(int condominiumId, int year, int number, CancellationToken ct)
     {
@@ -123,9 +127,9 @@ public class CondominiumInstallmentsController(
         int condominiumId, [FromBody] GenerateInstallmentsRequest request, CancellationToken ct)
     {
         var success = await _mediator.GetResponse(
-            new GenerateInstallmentsCommand(CurrentUser.Id, condominiumId, request.Year, request.BudgetId), ct);
+            new GenerateInstallmentsCommand(CurrentUser.Id, condominiumId, request.FiscalYearId, request.BudgetId), ct);
         if (!success) return BadRequest(new { error = "Impossibile generare le rate per i parametri forniti." });
-        return Ok(new { condominiumId, year = request.Year, generated = true });
+        return Ok(new { condominiumId, fiscalYearId = request.FiscalYearId, generated = true });
     }
 
     [HttpPost]
@@ -155,4 +159,4 @@ public class CondominiumInstallmentsController(
     }
 }
 
-public record GenerateInstallmentsRequest(int Year, int BudgetId);
+public record GenerateInstallmentsRequest(int FiscalYearId, int BudgetId);

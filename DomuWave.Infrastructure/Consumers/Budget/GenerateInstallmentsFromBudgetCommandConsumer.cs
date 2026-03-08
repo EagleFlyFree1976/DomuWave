@@ -11,23 +11,20 @@ using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class ApproveBudgetCommandConsumer
-    : InMemoryConsumerBase<ApproveBudgetCommand, bool>
+public class GenerateInstallmentsFromBudgetCommandConsumer
+    : InMemoryConsumerBase<GenerateInstallmentsFromBudgetCommand, bool>
 {
-    private readonly IBudgetService _budgetService;
-    private readonly IUserService   _userService;
+    private readonly IUserService _userService;
 
-    public ApproveBudgetCommandConsumer(
+    public GenerateInstallmentsFromBudgetCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
-        IBudgetService budgetService,
         IUserService userService) : base(sessionFactoryProvider)
     {
-        _budgetService = budgetService;
-        _userService   = userService;
+        _userService = userService;
     }
 
     protected override async Task<bool> Consume(
-        ApproveBudgetCommand command,
+        GenerateInstallmentsFromBudgetCommand command,
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
     {
@@ -36,53 +33,14 @@ public class ApproveBudgetCommandConsumer
             .ConfigureAwait(false);
 
         var budget = await session.Query<Budget>()
-            .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == command.BudgetId && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
 
         if (budget == null)
             throw new NotFoundException("Budget non trovato.");
 
-        if (budget.Status?.Id != BudgetStatus.Draft)
-            throw new ValidatorException("Solo i budget in stato Bozza possono essere approvati.");
-
-        var tipoLabel = budget.Type == BudgetType.Preventivo ? "preventivo" : "consuntivo";
-        var conflicting = await session.Query<Budget>()
-            .AnyAsync(x => x.Id             != command.Id
-                        && x.Condominium.Id == budget.Condominium.Id
-                        && x.FiscalYear.Id  == budget.FiscalYear.Id
-                        && x.Type           == budget.Type
-                        && (x.Status.Id == BudgetStatus.Approved || x.Status.Id == BudgetStatus.Closed)
-                        && !x.IsDeleted, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (conflicting)
-            throw new ValidatorException(
-                $"Esiste già un budget {tipoLabel} approvato o chiuso per questo esercizio e condominio. " +
-                "Non è possibile approvarne un altro.");
-
-        // Approva il budget
-        var approved = await _budgetService
-            .ApproveBudgetAsync(command.Id, command.CurrentUserId, currentUser, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (!approved)
-            return false;
-
-        // Genera le rate e le quote
-        await GenerateInstallmentsAndFees(budget, command, currentUser, cancellationToken)
-            .ConfigureAwait(false);
-
-        return true;
-    }
-
-    private async Task GenerateInstallmentsAndFees(
-        Budget budget,
-        ApproveBudgetCommand command,
-        object currentUser,
-        CancellationToken cancellationToken)
-    {
-        var n            = command.NumberOfInstallments > 0 ? command.NumberOfInstallments : 4;
-        var firstDueDate = command.FirstDueDate == default ? DateTime.Today : command.FirstDueDate;
+        if (budget.Status?.Id != BudgetStatus.Approved && budget.Status?.Id != BudgetStatus.Closed)
+            throw new ValidatorException("Le rate possono essere generate solo da un budget approvato o chiuso.");
 
         // Verifica che non esistano già rate per questo budget
         var existingCount = await session.Query<CondominiumInstallment>()
@@ -90,7 +48,10 @@ public class ApproveBudgetCommandConsumer
             .ConfigureAwait(false);
 
         if (existingCount > 0)
-            return; // già generate, skip
+            throw new ValidatorException("Le rate per questo budget sono già state generate.");
+
+        var n            = command.NumberOfInstallments > 0 ? command.NumberOfInstallments : 4;
+        var firstDueDate = command.FirstDueDate == default ? DateTime.Today : command.FirstDueDate;
 
         // Carica la tabella millesimale attiva del condominio
         var millesimalTable = await session.Query<MillesimalTable>()
@@ -98,7 +59,6 @@ public class ApproveBudgetCommandConsumer
                                    && x.IsActive && !x.IsDraft && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
 
-        // Carica le voci millesimali (quote per unità)
         var unitMillesimals = millesimalTable != null
             ? await session.Query<UnitMillesimal>()
                 .Where(x => x.MillesimalTable.Id == millesimalTable.Id && !x.IsDeleted)
@@ -106,15 +66,16 @@ public class ApproveBudgetCommandConsumer
                 .ConfigureAwait(false)
             : new List<UnitMillesimal>();
 
-        var totalMillesimal = millesimalTable?.TotalMillesimal ?? 0m;
+        var totalMillesimal      = millesimalTable?.TotalMillesimal ?? 0m;
         var amountPerInstallment = n > 0 ? Math.Round(budget.TotalIncome / n, 2) : 0m;
-        var user = currentUser as CPQ.Core.Memberships.IUser;
+        var user                 = currentUser as CPQ.Core.Memberships.IUser;
+
         var openStatus = await session.Query<CondominiumInstallmentStatus>()
-            .FirstOrDefaultAsync(x => x.Id == CondominiumInstallmentStatus .Open , cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == CondominiumInstallmentStatus.Open, cancellationToken)
             .ConfigureAwait(false);
+
         for (int i = 1; i <= n; i++)
         {
-            // Scadenza: ogni rata a distanza di 30 giorni (approssimazione mensile)
             var dueDate = firstDueDate.AddMonths(i - 1);
 
             var installment = new CondominiumInstallment
@@ -135,14 +96,12 @@ public class ApproveBudgetCommandConsumer
             await session.SaveOrUpdateAsync(installment, cancellationToken).ConfigureAwait(false);
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-            // Genera una quota per ogni unità della tabella millesimale
             foreach (var um in unitMillesimals)
             {
                 var share = totalMillesimal > 0
                     ? Math.Round(amountPerInstallment * um.Millesimal / totalMillesimal, 2)
                     : 0m;
 
-                // Recupera il proprietario dell'unità (UnitOwner attivo)
                 var owner = await session.Query<UnitOwner>()
                     .FirstOrDefaultAsync(x => x.Unit.Id == um.Unit.Id && !x.IsDeleted, cancellationToken)
                     .ConfigureAwait(false);
@@ -166,5 +125,7 @@ public class ApproveBudgetCommandConsumer
 
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
+
+        return true;
     }
 }

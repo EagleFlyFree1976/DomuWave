@@ -51,7 +51,11 @@ public class CreateCondominiumInstallmentCommandConsumer : InMemoryConsumerBase<
                 .FirstOrDefaultAsync(x => x.Id == dto.FiscalYearId.Value && !x.IsDeleted, cancellationToken)
                 .ConfigureAwait(false);
 
-        var entity  = dto.ToEntity(condominium, budget, fiscalYear);
+        var status = await session.Query<CondominiumInstallmentStatus>()
+            .FirstOrDefaultAsync(x => x.Id == dto.StatusId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var entity  = dto.ToEntity(condominium, budget, fiscalYear, status);
         var created = await _condominiumInstallmentService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

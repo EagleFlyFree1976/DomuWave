@@ -14,10 +14,13 @@ public static class CondominiumInstallmentMappingExtensions
             CondominiumId     = entity.Condominium?.Id ?? 0,
             BudgetId          = entity.Budget?.Id,
             FiscalYearId      = entity.FiscalYear?.Id,
+            FiscalYearCode    = entity.FiscalYear?.Code,
+            FiscalYearName    = entity.FiscalYear?.Description,
             InstallmentNumber = entity.InstallmentNumber,
             DueDate           = entity.DueDate,
             TotalAmount       = entity.TotalAmount,
-            Status            = entity.Status ?? string.Empty,
+            StatusId          = entity.Status?.Id ?? CondominiumInstallmentStatus.Open,
+            StatusName        = entity.Status?.Name ?? string.Empty,
             Notes             = entity.Notes,
         };
         dto.SetTraceInfo(entity);
@@ -25,7 +28,8 @@ public static class CondominiumInstallmentMappingExtensions
     }
 
     public static CondominiumInstallment ToEntity(this CreateCondominiumInstallmentDto dto,
-        Condominium condominium, Budget? budget, FiscalYear? fiscalYear)
+        Condominium condominium, Budget? budget, FiscalYear? fiscalYear,
+        CondominiumInstallmentStatus status)
     {
         return new CondominiumInstallment
         {
@@ -36,17 +40,18 @@ public static class CondominiumInstallmentMappingExtensions
             InstallmentNumber = dto.InstallmentNumber,
             DueDate           = dto.DueDate,
             TotalAmount       = dto.TotalAmount,
-            Status            = dto.Status ?? "Open",
+            Status            = status,
             Notes             = dto.Notes,
         };
     }
 
-    public static void ApplyUpdate(this CondominiumInstallment entity, UpdateCondominiumInstallmentDto dto)
+    public static void ApplyUpdate(this CondominiumInstallment entity,
+        UpdateCondominiumInstallmentDto dto, CondominiumInstallmentStatus status)
     {
         entity.InstallmentNumber = dto.InstallmentNumber;
         entity.DueDate           = dto.DueDate;
         entity.TotalAmount       = dto.TotalAmount;
-        entity.Status            = dto.Status;
+        entity.Status            = status;
         entity.Notes             = dto.Notes;
     }
 }

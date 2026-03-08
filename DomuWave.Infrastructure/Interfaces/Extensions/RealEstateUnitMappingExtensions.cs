@@ -31,6 +31,7 @@ public static class RealEstateUnitMappingExtensions
             UnitType        = unit.UnitType,
             OccupancyStatus = unit.OccupancyStatus,
             Notes           = unit.Notes,
+            NumeroAbitanti  = unit.NumeroAbitanti,
             IsActive        = unit.IsActive,
         };
 
@@ -60,6 +61,7 @@ public static class RealEstateUnitMappingExtensions
             UnitType        = dto.UnitType ?? string.Empty,
             OccupancyStatus = dto.OccupancyStatus ?? string.Empty,
             Notes           = dto.Notes,
+            NumeroAbitanti  = dto.NumeroAbitanti,
             IsActive        = dto.IsActive,
         };
     }
@@ -80,6 +82,7 @@ public static class RealEstateUnitMappingExtensions
         entity.UnitType        = dto.UnitType ?? string.Empty;
         entity.OccupancyStatus = dto.OccupancyStatus ?? string.Empty;
         entity.Notes           = dto.Notes;
+        entity.NumeroAbitanti  = dto.NumeroAbitanti;
         entity.IsActive        = dto.IsActive;
     }
 }

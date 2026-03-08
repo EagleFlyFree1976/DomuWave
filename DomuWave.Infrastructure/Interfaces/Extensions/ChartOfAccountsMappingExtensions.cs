@@ -23,6 +23,10 @@ public static class ChartOfAccountsMappingExtensions
             ParentAccountId             = account.ParentAccount?.Id,
             DefaultMillesimalTableId    = account.DefaultMillesimalTable?.Id,
             DefaultMillesimalTableName  = account.DefaultMillesimalTable?.Name,
+            AllocationMethod            = account.AllocationMethod,
+            MillesimalPercentage        = account.MillesimalPercentage,
+            FloorWeight                 = account.FloorWeight,
+            InhabitantsWeight           = account.InhabitantsWeight,
         };
     }
 
@@ -47,6 +51,10 @@ public static class ChartOfAccountsMappingExtensions
             IsActive               = dto.IsActive,
             IsDeleted              = false,
             DefaultMillesimalTable = defaultMillesimalTable,
+            AllocationMethod       = dto.AllocationMethod,
+            MillesimalPercentage   = dto.AllocationMethod == AllocationMethod.Mixed ? dto.MillesimalPercentage : null,
+            FloorWeight            = dto.AllocationMethod == AllocationMethod.Mixed ? dto.FloorWeight : null,
+            InhabitantsWeight      = dto.AllocationMethod == AllocationMethod.Mixed ? dto.InhabitantsWeight : null,
         };
     }
 
@@ -59,5 +67,9 @@ public static class ChartOfAccountsMappingExtensions
         entity.Description            = dto.Description;
         entity.IsActive               = dto.IsActive;
         entity.DefaultMillesimalTable = defaultMillesimalTable;
+        entity.AllocationMethod       = dto.AllocationMethod;
+        entity.MillesimalPercentage   = dto.AllocationMethod == AllocationMethod.Mixed ? dto.MillesimalPercentage : null;
+        entity.FloorWeight            = dto.AllocationMethod == AllocationMethod.Mixed ? dto.FloorWeight : null;
+        entity.InhabitantsWeight      = dto.AllocationMethod == AllocationMethod.Mixed ? dto.InhabitantsWeight : null;
     }
 }

@@ -29,6 +29,7 @@
     <property name="UnitType" column="UnitType" type="String" length="50" not-null="true" />
     <property name="OccupancyStatus" column="OccupancyStatus" type="String" length="50" not-null="true" />
     <property name="Notes" column="Notes" type="String" length="1000" insert="false" update="false" />
+    <property name="NumeroAbitanti" column="NumeroAbitanti" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />

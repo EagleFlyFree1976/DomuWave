@@ -62,7 +62,7 @@ public class GetDashboardSummaryCommandConsumer
 
                 dto.OpenInstallmentsCount = await session.Query<CondominiumInstallment>()
                     .CountAsync(i => condominiumIds.Contains(i.Condominium.Id)
-                        && i.Status != "Paid"
+                        && i.Status.Id != CondominiumInstallmentStatus.Paid
                         && !i.IsDeleted, cancellationToken)
                     .ConfigureAwait(false);
 

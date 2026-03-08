@@ -11,4 +11,8 @@ public class UpdateChartOfAccountsDto
     public string?             Description { get; set; }
     public bool                IsActive                  { get; set; } = true;
     public int?                DefaultMillesimalTableId  { get; set; }
+    public AllocationMethod    AllocationMethod          { get; set; } = AllocationMethod.Standard;
+    public decimal?            MillesimalPercentage      { get; set; }
+    public decimal?            FloorWeight               { get; set; }
+    public decimal?            InhabitantsWeight         { get; set; }
 }

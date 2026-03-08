@@ -174,7 +174,6 @@ namespace DomuWave.Services.Implementations
             if (millesimalTable == null)
                 return false;
 
-            // Recupera tutte le unità con i millesimi della tabella
             var units = await session.Query<RealEstateUnit>()
                 .Where(x => x.Condominium.Id == expense.Condominium.Id && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
@@ -182,51 +181,98 @@ namespace DomuWave.Services.Implementations
             if (!units.Any())
                 return false;
 
-            // Calcola le allocazioni basate sui millesimi
-            decimal totalMillesimal = 0;
-            var allocations = new List<ExpenseAllocation>();
+            var account = expense.Account;
+            var allocationMethod = account?.AllocationMethod ?? AllocationMethod.Standard;
 
-            foreach (var unit in units)
-            {
-                var millesimalEntry = millesimalTable.Expenses.SelectMany(l=>l.Allocations)
-                    .FirstOrDefault(x => x.Unit.Id == unit.Id && !x.IsDeleted);
+            // Mappa unit -> millesimalEntry per evitare doppi loop
+            var millesimalMap = units.ToDictionary(
+                u => u.Id,
+                u => millesimalTable.Expenses.SelectMany(l => l.Allocations)
+                         .FirstOrDefault(x => x.Unit.Id == u.Id && !x.IsDeleted));
 
-                if (millesimalEntry != null)
-                {
-                    totalMillesimal += millesimalEntry.Millesimal;
-                }
-            }
+            decimal totalMillesimal = millesimalMap.Values
+                .Where(e => e != null)
+                .Sum(e => e.Millesimal);
 
             if (totalMillesimal == 0)
                 return false;
 
-            // Crea le allocazioni per ogni unità
-            foreach (var unit in units)
-            {
-                var millesimalEntry = millesimalTable.Expenses.SelectMany(l => l.Allocations)
-                    .FirstOrDefault(x => x.Unit.Id == unit.Id && !x.IsDeleted);
+            var allocations = new List<ExpenseAllocation>();
 
-                if (millesimalEntry != null)
+            if (allocationMethod == AllocationMethod.Mixed
+                && account.MillesimalPercentage.HasValue
+                && account.FloorWeight.HasValue
+                && account.InhabitantsWeight.HasValue)
+            {
+                decimal millesimalPct = account.MillesimalPercentage.Value / 100m;
+                decimal factorPct     = 1m - millesimalPct;
+                decimal floorW        = account.FloorWeight.Value;
+                decimal inhabW        = account.InhabitantsWeight.Value;
+
+                decimal millesimalPart = expense.NetAmount * millesimalPct;
+                decimal factorPart     = expense.NetAmount * factorPct;
+
+                // Calcola il fattore per ogni unitÃ  (floor 0 trattato come 1)
+                var factorMap = units.ToDictionary(
+                    u => u.Id,
+                    u => floorW * Math.Max(u.Floor, 1) + inhabW * Math.Max(u.NumeroAbitanti, 0));
+
+                decimal totalFactor = factorMap.Values.Sum();
+
+                foreach (var unit in units)
                 {
-                    decimal allocationPercentage = (millesimalEntry.Millesimal / totalMillesimal) * 100;
-                    decimal allocatedAmount = (expense.NetAmount * millesimalEntry.Millesimal) / totalMillesimal;
+                    if (!millesimalMap.TryGetValue(unit.Id, out var millesimalEntry) || millesimalEntry == null)
+                        continue;
+
+                    decimal millesimalShare = totalMillesimal > 0
+                        ? millesimalPart * millesimalEntry.Millesimal / totalMillesimal
+                        : 0m;
+
+                    decimal factorShare = totalFactor > 0
+                        ? factorPart * factorMap[unit.Id] / totalFactor
+                        : 0m;
+
+                    decimal allocatedAmount    = millesimalShare + factorShare;
+                    decimal allocationPct      = expense.NetAmount > 0 ? allocatedAmount / expense.NetAmount * 100m : 0m;
 
                     var allocation = new ExpenseAllocation
                     {
-                        Expense = expense,
-                        Unit = unit,
-                        Millesimal = millesimalEntry.Millesimal,
-                        AllocatedAmount = allocatedAmount,
-                        AllocationPercentage = allocationPercentage,
-                        Notes = $"Auto-allocated based on millesimal table"
+                        Expense              = expense,
+                        Unit                 = unit,
+                        Millesimal           = millesimalEntry.Millesimal,
+                        AllocatedAmount      = allocatedAmount,
+                        AllocationPercentage = allocationPct,
+                        Notes                = $"Auto-allocated: {account.MillesimalPercentage}% millesimale + {100 - account.MillesimalPercentage}% fattore piano/abitanti",
                     };
+                    allocation.Trace(currentUser);
+                    allocations.Add(allocation);
+                }
+            }
+            else
+            {
+                // Standard: 100% millesimale
+                foreach (var unit in units)
+                {
+                    if (!millesimalMap.TryGetValue(unit.Id, out var millesimalEntry) || millesimalEntry == null)
+                        continue;
 
+                    decimal allocationPercentage = (millesimalEntry.Millesimal / totalMillesimal) * 100;
+                    decimal allocatedAmount       = (expense.NetAmount * millesimalEntry.Millesimal) / totalMillesimal;
+
+                    var allocation = new ExpenseAllocation
+                    {
+                        Expense              = expense,
+                        Unit                 = unit,
+                        Millesimal           = millesimalEntry.Millesimal,
+                        AllocatedAmount      = allocatedAmount,
+                        AllocationPercentage = allocationPercentage,
+                        Notes                = "Auto-allocated based on millesimal table",
+                    };
                     allocation.Trace(currentUser);
                     allocations.Add(allocation);
                 }
             }
 
-            // Salva tutte le allocazioni
             foreach (var allocation in allocations)
             {
                 await session.SaveOrUpdateAsync(allocation, cancellationToken);

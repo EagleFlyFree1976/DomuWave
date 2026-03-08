@@ -141,7 +141,7 @@ namespace DomuWave.Services.Implementations
         {
             return await session.Query<CondominiumFee>()
                 .Where(x => x.Installment.Id == installmentId && !x.IsDeleted)
-                .OrderBy(x => x.Unit.Name)
+                .OrderBy(x => x.Unit.InternalNumber)
                 .ToListAsync(cancellationToken);
         }
 

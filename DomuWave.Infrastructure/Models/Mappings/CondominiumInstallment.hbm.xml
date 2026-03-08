@@ -17,14 +17,18 @@
     <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
     <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
     <many-to-one name="Budget" class="DomuWave.Services.Models.Budget, DomuWave.Services" column="BudgetId" />
+    <many-to-one name="FiscalYear" class="DomuWave.Services.Models.FiscalYear, DomuWave.Services" column="FiscalYearId" />
 
-    <property name="Name" column="Description" type="String" length="200" not-null="true" />
-    <property name="Description" column="Notes" type="String" length="500" />
+    
+    <property name="Description" column="Description" type="String" length="200" />
+    <property name="Notes" column="Notes" type="String" length="500" insert="false" update="false" />
+	  
         <property name="InstallmentNumber" column="InstallmentNumber" type="Int32" not-null="true" />
     <property name="DueDate" column="DueDate" type="DateTime" not-null="true" />
     <property name="TotalAmount" column="TotalAmount" type="Decimal" not-null="true" />
-    <property name="Status" column="Status" type="String" length="50" not-null="true" />
-    <property name="Notes" column="Notes" type="String" length="500" insert="false" update="false" />
+    <many-to-one name="Status" class="DomuWave.Services.Models.CondominiumInstallmentStatus, DomuWave.Services"
+                 column="StatusId" not-null="true" lazy="false" fetch="join" />
+    
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
