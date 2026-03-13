@@ -31,6 +31,7 @@
     <property name="MillesimalPercentage" column="MillesimalPercentage" type="Decimal" />
     <property name="FloorWeight"         column="FloorWeight"         type="Decimal" />
     <property name="InhabitantsWeight"   column="InhabitantsWeight"   type="Decimal" />
+    <many-to-one name="ChargeabilityType" class="DomuWave.Services.Models.ChargeabilityType, DomuWave.Services" column="ChargeabilityType" not-null="true" lazy="false" fetch="join" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />

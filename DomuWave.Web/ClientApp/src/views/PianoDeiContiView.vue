@@ -216,6 +216,24 @@
                 </label>
               </div>
 
+              <div class="form-group" style="grid-column: 1 / -1">
+                <label class="form-label">A carico di</label>
+                <div class="radio-group">
+                  <label class="radio-label">
+                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="0" />
+                    Proprietario
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="1" />
+                    Inquilino (se presente)
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="2" />
+                    Automatico (inquilino se attivo, altrimenti proprietario)
+                  </label>
+                </div>
+              </div>
+
             </div>
           </div>
           <div class="modal-footer">
@@ -385,6 +403,7 @@ const emptyForm = () => ({
   code: '', name: '', type: 2, categoryId: null, description: '',
   parentAccountId: null, isActive: true, defaultMillesimalTableId: null,
   allocationMethod: 0, millesimalPercentage: null, floorWeight: null, inhabitantsWeight: null,
+  chargeabilityTypeId: 0,
 })
 const form = ref(emptyForm())
 
@@ -471,6 +490,7 @@ function openModal(a = null) {
       millesimalPercentage: a.millesimalPercentage ?? null,
       floorWeight: a.floorWeight ?? null,
       inhabitantsWeight: a.inhabitantsWeight ?? null,
+      chargeabilityTypeId: a.chargeabilityTypeId ?? 0,
     }
   } else {
     editing.value = null
@@ -494,6 +514,7 @@ function cloneAccount(a) {
     millesimalPercentage:     a.millesimalPercentage ?? null,
     floorWeight:              a.floorWeight ?? null,
     inhabitantsWeight:        a.inhabitantsWeight ?? null,
+    chargeabilityTypeId:        a.chargeabilityTypeId ?? 0,
   }
   showModal.value = true
 }
@@ -515,6 +536,7 @@ async function save() {
         millesimalPercentage:     form.value.allocationMethod === 1 ? form.value.millesimalPercentage : null,
         floorWeight:              form.value.allocationMethod === 1 ? form.value.floorWeight : null,
         inhabitantsWeight:        form.value.allocationMethod === 1 ? form.value.inhabitantsWeight : null,
+        chargeabilityTypeId:        form.value.chargeabilityTypeId,
       })
     } else {
       await chartOfAccountsApi.create({
@@ -531,6 +553,7 @@ async function save() {
         millesimalPercentage:     form.value.allocationMethod === 1 ? form.value.millesimalPercentage : null,
         floorWeight:              form.value.allocationMethod === 1 ? form.value.floorWeight : null,
         inhabitantsWeight:        form.value.allocationMethod === 1 ? form.value.inhabitantsWeight : null,
+        chargeabilityTypeId:        form.value.chargeabilityTypeId,
       })
     }
     showModal.value = false

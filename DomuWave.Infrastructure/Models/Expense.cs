@@ -24,6 +24,7 @@ namespace DomuWave.Services.Models
         public virtual string PaymentMethod { get; set; }
         public virtual string DocumentPath { get; set; }
         public virtual string Notes { get; set; }
+        public virtual ChargeabilityType ChargeabilityType { get; set; }
 
         public virtual IList<ExpenseAllocation> Allocations { get; set; } = new List<ExpenseAllocation>();
         public override int GetHashCode()

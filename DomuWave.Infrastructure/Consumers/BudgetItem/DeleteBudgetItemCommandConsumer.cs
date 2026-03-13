@@ -3,6 +3,7 @@ using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.BudgetItem;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Models;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -44,11 +45,12 @@ public class DeleteBudgetItemCommandConsumer
             .DeleteAsync(command.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
-        // Ricalcola totale spese del budget
+        // Ricalcola totali del budget in base al tipo conto
         var allItems = await _budgetItemService
             .GetByBudgetIdAsync(budget.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        budget.TotalExpenses = allItems.Sum(i => i.Amount);
+        budget.TotalExpenses = allItems.Where(i => i.Account?.Type == ChartOfAccountsType.Uscita).Sum(i => i.Amount);
+        budget.TotalIncome   = allItems.Where(i => i.Account?.Type != ChartOfAccountsType.Uscita).Sum(i => i.Amount);
         await _budgetService.UpdateAsync(budget, currentUser, cancellationToken).ConfigureAwait(false);
 
         return result;

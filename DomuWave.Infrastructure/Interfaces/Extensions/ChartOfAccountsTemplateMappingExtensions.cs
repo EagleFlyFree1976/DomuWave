@@ -14,6 +14,7 @@ public static class ChartOfAccountsTemplateMappingExtensions
             Name        = t.Name ?? string.Empty,
             Description = t.Description,
             IsActive    = t.IsActive,
+            IsDefault   = t.IsDefault,
             ItemCount   = t.Items?.Count(i => !i.IsDeleted) ?? 0,
         };
 
@@ -24,6 +25,7 @@ public static class ChartOfAccountsTemplateMappingExtensions
             Name        = dto.Name.Trim(),
             Description = dto.Description,
             IsActive    = dto.IsActive,
+            IsDefault   = dto.IsDefault,
             IsDeleted   = false,
         };
 
@@ -32,6 +34,7 @@ public static class ChartOfAccountsTemplateMappingExtensions
         entity.Name        = dto.Name.Trim();
         entity.Description = dto.Description;
         entity.IsActive    = dto.IsActive;
+        entity.IsDefault   = dto.IsDefault;
     }
 
     // ── TemplateItem ──────────────────────────────────────────────────────────

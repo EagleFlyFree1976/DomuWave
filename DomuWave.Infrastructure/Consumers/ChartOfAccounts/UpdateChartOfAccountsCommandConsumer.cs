@@ -78,7 +78,9 @@ public class UpdateChartOfAccountsCommandConsumer
                 throw new NotFoundException("Tabella millesimale non trovata.");
         }
 
-        entity.ApplyUpdate(dto, category, defaultMillesimalTable);
+        var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
+
+        entity.ApplyUpdate(dto, chargeabilityType, category, defaultMillesimalTable);
         var updated = await _accountService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

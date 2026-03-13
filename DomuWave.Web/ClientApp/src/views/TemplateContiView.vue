@@ -37,15 +37,26 @@
         >
           <div class="template-card__header">
             <span class="template-card__name">{{ t.name }}</span>
-            <span class="badge" :class="t.isActive ? 'badge-active' : 'badge-inactive'">
-              {{ t.isActive ? 'Attivo' : 'Inattivo' }}
-            </span>
+            <div class="template-card__badges">
+              <span v-if="t.isDefault" class="badge badge-default">Predefinito</span>
+              <span class="badge" :class="t.isActive ? 'badge-active' : 'badge-inactive'">
+                {{ t.isActive ? 'Attivo' : 'Inattivo' }}
+              </span>
+            </div>
           </div>
           <div class="template-card__meta">
             <span>{{ t.itemCount }} voci</span>
             <span v-if="t.description" class="template-card__desc">{{ t.description }}</span>
           </div>
           <div class="template-card__actions" @click.stop>
+            <button
+              v-if="!t.isDefault"
+              class="icon-btn"
+              title="Imposta come predefinito"
+              @click="doSetDefault(t)"
+            >
+              <i class="pi pi-star"></i>
+            </button>
             <button class="icon-btn" title="Modifica template" @click="openTemplateModal(t)">
               <i class="pi pi-pencil"></i>
             </button>
@@ -394,6 +405,15 @@ async function saveTemplate() {
   } finally { savingTemplate.value = false }
 }
 
+async function doSetDefault(t) {
+  try {
+    await chartOfAccountsTemplateApi.setDefault(t.id)
+    await load()
+  } catch (err) {
+    if (!err?.response) throw err
+  }
+}
+
 function confirmDeleteTemplate(t) { deleteTemplateTarget.value = t }
 
 async function doDeleteTemplate() {
@@ -497,7 +517,8 @@ async function doDeleteItem() {
   display: flex; align-items: center; justify-content: space-between; gap: .5rem;
   margin-bottom: .3rem;
 }
-.template-card__name { font-weight: 600; font-size: .9rem; color: var(--text-primary); }
+.template-card__name   { font-weight: 600; font-size: .9rem; color: var(--text-primary); }
+.template-card__badges { display: flex; gap: .3rem; align-items: center; flex-wrap: wrap; }
 .template-card__meta { display: flex; gap: .5rem; flex-wrap: wrap; font-size: .78rem; color: var(--text-muted); }
 .template-card__desc { font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
 .template-card__actions {
@@ -550,6 +571,7 @@ async function doDeleteItem() {
 .badge { display: inline-block; padding: .2rem .55rem; border-radius: 4px; font-size: .72rem; font-weight: 600; }
 .badge-active   { background: rgba(52,211,153,.12); color: #34d399; }
 .badge-inactive { background: rgba(100,116,139,.12); color: #64748b; }
+.badge-default  { background: rgba(251,191,36,.15);  color: #f59e0b; }
 .badge-type     { background: rgba(99,102,241,.12);  color: #818cf8; }
 
 /* ── Icon buttons ── */

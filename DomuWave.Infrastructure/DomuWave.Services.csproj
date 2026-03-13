@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <None Remove="Models\Mappings\AccountBalance.hbm.xml" />
     <None Remove="Models\Mappings\Budget.hbm.xml" />
     <None Remove="Models\Mappings\BudgetItem.hbm.xml" />
     <None Remove="Models\Mappings\BudgetStatus.hbm.xml" />
@@ -19,6 +20,7 @@
     <None Remove="Models\Mappings\CondominiumInstallmentStatus.hbm.xml" />
     <None Remove="Models\Mappings\Document.hbm.xml" />
     <None Remove="Models\Mappings\DocumentAccess.hbm.xml" />
+    <None Remove="Models\Mappings\ChargeabilityType.hbm.xml" />
     <None Remove="Models\Mappings\Expense.hbm.xml" />
     <None Remove="Models\Mappings\ExpenseAllocation.hbm.xml" />
     <None Remove="Models\Mappings\ExpensePaymentStatus.hbm.xml" />
@@ -44,9 +46,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Models\Mappings\AccountBalance.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Budget.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\BudgetItem.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\BudgetStatus.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ChargeabilityType.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ChartOfAccounts.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ChartOfAccountsCategory.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ChartOfAccountsCategoryTemplate.hbm.xml" />

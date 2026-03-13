@@ -219,6 +219,8 @@ namespace DomuWave.Services.Implementations
 
                 decimal totalFactor = factorMap.Values.Sum();
 
+                // Prima passata: calcola importi grezzi e arrotonda
+                var rawAmounts = new Dictionary<int, (decimal raw, decimal rounded, decimal millesimal)>();
                 foreach (var unit in units)
                 {
                     if (!millesimalMap.TryGetValue(unit.Id, out var millesimalEntry) || millesimalEntry == null)
@@ -232,16 +234,34 @@ namespace DomuWave.Services.Implementations
                         ? factorPart * factorMap[unit.Id] / totalFactor
                         : 0m;
 
-                    decimal allocatedAmount    = millesimalShare + factorShare;
-                    decimal allocationPct      = expense.NetAmount > 0 ? allocatedAmount / expense.NetAmount * 100m : 0m;
+                    decimal raw     = millesimalShare + factorShare;
+                    decimal rounded = Math.Round(raw, 2, MidpointRounding.AwayFromZero);
+                    rawAmounts[unit.Id] = (raw, rounded, millesimalEntry.Millesimal);
+                }
+
+                // Arrotondamento: il residuo va all'unità con la quota millesimale maggiore
+                decimal roundedSum = rawAmounts.Values.Sum(x => x.rounded);
+                decimal remainder  = Math.Round(expense.NetAmount - roundedSum, 2, MidpointRounding.AwayFromZero);
+                int? largestUnitId = rawAmounts.Count > 0
+                    ? rawAmounts.OrderByDescending(kv => kv.Value.millesimal).First().Key
+                    : (int?)null;
+
+                foreach (var unit in units)
+                {
+                    if (!rawAmounts.TryGetValue(unit.Id, out var ra)) continue;
+
+                    decimal roundingAdj    = (unit.Id == largestUnitId) ? remainder : 0m;
+                    decimal allocatedAmount = ra.rounded + roundingAdj;
+                    decimal allocationPct   = expense.NetAmount > 0 ? allocatedAmount / expense.NetAmount * 100m : 0m;
 
                     var allocation = new ExpenseAllocation
                     {
                         Expense              = expense,
                         Unit                 = unit,
-                        Millesimal           = millesimalEntry.Millesimal,
+                        Millesimal           = ra.millesimal,
                         AllocatedAmount      = allocatedAmount,
                         AllocationPercentage = allocationPct,
+                        RoundingAdjustment   = roundingAdj,
                         Notes                = $"Auto-allocated: {account.MillesimalPercentage}% millesimale + {100 - account.MillesimalPercentage}% fattore piano/abitanti",
                     };
                     allocation.Trace(currentUser);
@@ -251,21 +271,41 @@ namespace DomuWave.Services.Implementations
             else
             {
                 // Standard: 100% millesimale
+                // Prima passata: calcola e arrotonda
+                var rawAmounts = new Dictionary<int, (decimal rounded, decimal millesimal)>();
                 foreach (var unit in units)
                 {
                     if (!millesimalMap.TryGetValue(unit.Id, out var millesimalEntry) || millesimalEntry == null)
                         continue;
 
-                    decimal allocationPercentage = (millesimalEntry.Millesimal / totalMillesimal) * 100;
-                    decimal allocatedAmount       = (expense.NetAmount * millesimalEntry.Millesimal) / totalMillesimal;
+                    decimal raw     = expense.NetAmount * millesimalEntry.Millesimal / totalMillesimal;
+                    decimal rounded = Math.Round(raw, 2, MidpointRounding.AwayFromZero);
+                    rawAmounts[unit.Id] = (rounded, millesimalEntry.Millesimal);
+                }
+
+                // Residuo all'unità con il millesimo maggiore
+                decimal roundedSum = rawAmounts.Values.Sum(x => x.rounded);
+                decimal remainder  = Math.Round(expense.NetAmount - roundedSum, 2, MidpointRounding.AwayFromZero);
+                int? largestUnitId = rawAmounts.Count > 0
+                    ? rawAmounts.OrderByDescending(kv => kv.Value.millesimal).First().Key
+                    : (int?)null;
+
+                foreach (var unit in units)
+                {
+                    if (!rawAmounts.TryGetValue(unit.Id, out var ra)) continue;
+
+                    decimal roundingAdj    = (unit.Id == largestUnitId) ? remainder : 0m;
+                    decimal allocatedAmount = ra.rounded + roundingAdj;
+                    decimal allocationPct   = totalMillesimal > 0 ? ra.millesimal / totalMillesimal * 100m : 0m;
 
                     var allocation = new ExpenseAllocation
                     {
                         Expense              = expense,
                         Unit                 = unit,
-                        Millesimal           = millesimalEntry.Millesimal,
+                        Millesimal           = ra.millesimal,
                         AllocatedAmount      = allocatedAmount,
-                        AllocationPercentage = allocationPercentage,
+                        AllocationPercentage = allocationPct,
+                        RoundingAdjustment   = roundingAdj,
                         Notes                = "Auto-allocated based on millesimal table",
                     };
                     allocation.Trace(currentUser);

@@ -92,7 +92,9 @@ public class CreateChartOfAccountsCommandConsumer
                 throw new NotFoundException("Tabella millesimale non trovata.");
         }
 
-        var entity  = dto.ToEntity(condominium, parent, category, defaultMillesimalTable);
+        var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
+
+        var entity  = dto.ToEntity(condominium, chargeabilityType, parent, category, defaultMillesimalTable);
         var created = await _accountService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

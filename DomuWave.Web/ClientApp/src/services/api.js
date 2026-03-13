@@ -156,6 +156,12 @@ export const fiscalYearApi = {
   lock:               (id, notes)     => api.post(`/fiscal-years/${id}/lock`, { notes }),
 }
 
+// ─── Saldi contabili (AccountBalance) ─────────────────────────
+export const accountBalanceApi = {
+  getByFiscalYear: (fiscalYearId)      => api.get(`/account-balances/by-fiscal-year/${fiscalYearId}`),
+  updateOpening:   (id, data)          => api.put(`/account-balances/${id}`, data),
+}
+
 // ─── Piano dei conti ──────────────────────────────────────────
 export const chartOfAccountsApi = {
   getByCondominium:    (condId)   => api.get(`/chart-of-accounts/by-condominium/${condId}`),
@@ -177,6 +183,7 @@ export const chartOfAccountsTemplateApi = {
   updateItem:   (templateId, itemId, data)   => api.put(`/chart-of-accounts-templates/${templateId}/items/${itemId}`, data),
   deleteItem:   (templateId, itemId)         => api.delete(`/chart-of-accounts-templates/${templateId}/items/${itemId}`),
   apply:        (templateId, condominiumId)  => api.post(`/chart-of-accounts-templates/${templateId}/apply/${condominiumId}`),
+  setDefault:   (id)                        => api.patch(`/chart-of-accounts-templates/${id}/set-default`),
 }
 
 // ─── Categorie piano dei conti ────────────────────────────────

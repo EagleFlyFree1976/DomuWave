@@ -81,7 +81,7 @@
                 </td>
               </tr>
 
-              <!-- Riga espansa: riepilogo finanziario -->
+              <!-- Riga espansa: riepilogo finanziario + saldi -->
               <tr v-if="expandedId === fy.id" class="detail-row">
                 <td colspan="6">
                   <div class="detail-panel">
@@ -89,6 +89,7 @@
                       <div class="spinner"></div>
                     </div>
                     <template v-else-if="detail">
+                      <!-- Riepilogo finanziario -->
                       <div class="detail-grid">
                         <div class="detail-card">
                           <div class="detail-label">Spese totali</div>
@@ -120,6 +121,80 @@
                         <template v-if="detail.createdByFullName">
                           da <strong>{{ detail.createdByFullName }}</strong>
                         </template>
+                      </div>
+
+                      <!-- Saldi per conto -->
+                      <div class="balances-section">
+                        <div class="balances-header">
+                          <span class="balances-title">Saldi per conto</span>
+                          <span v-if="loadingBalances" class="spinner" style="width:14px;height:14px"></span>
+                        </div>
+
+                        <div v-if="!loadingBalances && !balances.length" class="balances-empty">
+                          Nessun saldo disponibile. I saldi vengono generati all'apertura dell'esercizio.
+                        </div>
+
+                        <div v-else-if="!loadingBalances" class="balances-table-wrap">
+                          <table class="balances-table">
+                            <thead>
+                              <tr>
+                                <th>Codice</th>
+                                <th>Conto</th>
+                                <th>Tipo</th>
+                                <th class="col-num">Saldo Iniziale</th>
+                                <th class="col-num">Movimenti</th>
+                                <th class="col-num">Saldo Totale</th>
+                                <th v-if="fy.statusId >= 4" class="col-num">Saldo Finale</th>
+                                <th v-if="balances.some(b => b.isOpeningBalanceEditable)"></th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr v-for="b in balances" :key="b.id">
+                                <td class="mono text-secondary">{{ b.accountCode }}</td>
+                                <td>{{ b.accountName }}</td>
+                                <td>
+                                  <span class="badge-type-sm" :class="typeClass(b.accountType)">
+                                    {{ b.accountTypeLabel }}
+                                  </span>
+                                </td>
+                                <td class="col-num">
+                                  <!-- Editing inline saldo iniziale -->
+                                  <template v-if="editingBalanceId === b.id">
+                                    <div class="inline-edit">
+                                      <input
+                                        class="inline-input"
+                                        type="number"
+                                        step="0.01"
+                                        v-model.number="balanceEditValue"
+                                        @keyup.enter="saveBalanceOpening(b)"
+                                        @keyup.escape="cancelBalanceEdit"
+                                      />
+                                      <button class="inline-btn ok" @click="saveBalanceOpening(b)" :disabled="savingBalance">✓</button>
+                                      <button class="inline-btn cancel" @click="cancelBalanceEdit">✕</button>
+                                    </div>
+                                  </template>
+                                  <template v-else>
+                                    {{ fmt(b.openingBalance) }}
+                                  </template>
+                                </td>
+                                <td class="col-num text-secondary">{{ fmt(b.movementsTotal) }}</td>
+                                <td class="col-num" :class="b.totalBalance >= 0 ? 'text-green' : 'text-red'">
+                                  {{ fmt(b.totalBalance) }}
+                                </td>
+                                <td v-if="fy.statusId >= 4" class="col-num"
+                                    :class="b.closingBalance >= 0 ? 'text-green' : 'text-red'">
+                                  {{ fmt(b.closingBalance) }}
+                                </td>
+                                <td v-if="b.isOpeningBalanceEditable" class="col-action">
+                                  <button v-if="editingBalanceId !== b.id"
+                                          class="btn-icon" title="Modifica saldo iniziale"
+                                          @click="startBalanceEdit(b)">✎</button>
+                                </td>
+                                <td v-else-if="balances.some(x => x.isOpeningBalanceEditable)"></td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </template>
                   </div>
@@ -210,7 +285,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { fiscalYearApi } from '@/services/api'
+import { fiscalYearApi, accountBalanceApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import BaseModal from '@/components/BaseModal.vue'
 
@@ -235,19 +310,58 @@ const expandedId     = ref(null)
 const detail         = ref(null)
 const loadingSummary = ref(false)
 
+// Saldi per conto
+const balances         = ref([])
+const loadingBalances  = ref(false)
+const editingBalanceId = ref(null)
+const balanceEditValue = ref(0)
+const savingBalance    = ref(false)
+
 async function toggleDetail(fy) {
   if (expandedId.value === fy.id) {
-    expandedId.value = null
-    detail.value = null
+    expandedId.value  = null
+    detail.value      = null
+    balances.value    = []
+    editingBalanceId.value = null
     return
   }
-  expandedId.value = fy.id
-  detail.value = null
-  loadingSummary.value = true
+  expandedId.value  = fy.id
+  detail.value      = null
+  balances.value    = []
+  loadingSummary.value  = true
+  loadingBalances.value = true
   try {
-    const { data } = await fiscalYearApi.getById(fy.id)
-    detail.value = data
-  } catch { detail.value = null } finally { loadingSummary.value = false }
+    const [summaryRes, balancesRes] = await Promise.allSettled([
+      fiscalYearApi.getById(fy.id),
+      accountBalanceApi.getByFiscalYear(fy.id),
+    ])
+    if (summaryRes.status  === 'fulfilled') detail.value   = summaryRes.value.data
+    if (balancesRes.status === 'fulfilled') balances.value = balancesRes.value.data ?? []
+  } finally {
+    loadingSummary.value  = false
+    loadingBalances.value = false
+  }
+}
+
+function startBalanceEdit(b) {
+  editingBalanceId.value = b.id
+  balanceEditValue.value = b.openingBalance
+}
+
+function cancelBalanceEdit() {
+  editingBalanceId.value = null
+}
+
+async function saveBalanceOpening(b) {
+  savingBalance.value = true
+  try {
+    const { data } = await accountBalanceApi.updateOpening(b.id, { openingBalance: balanceEditValue.value })
+    const idx = balances.value.findIndex(x => x.id === b.id)
+    if (idx !== -1) balances.value[idx] = data
+    editingBalanceId.value = null
+  } catch (err) {
+    if (!err?.response) throw err
+  } finally { savingBalance.value = false }
 }
 
 // ── Crea / Modifica ───────────────────────────────────────────────────────
@@ -380,6 +494,8 @@ const fmtDate     = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 const fmtDateTime = (d) => d ? new Date(d).toLocaleString('it-IT') : '—'
 const fmt         = (v) => v != null ? '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
 
+const typeClass = (type) => ({ 1: 'type-entrata', 2: 'type-uscita', 3: 'type-patrimoniale' }[type] ?? '')
+
 const statusBadge = (id) => ({
   1: 'badge-draft',
   2: 'badge-green',
@@ -398,8 +514,10 @@ const statusLabel = (id) => ({
 
 // ── Watchers / Init ────────────────────────────────────────────────────────
 watch(() => store.selectedCondominioId, () => {
-  expandedId.value = null
-  detail.value     = null
+  expandedId.value       = null
+  detail.value           = null
+  balances.value         = []
+  editingBalanceId.value = null
   loadFiscalYears()
 })
 onMounted(loadFiscalYears)
@@ -466,4 +584,37 @@ onMounted(loadFiscalYears)
 /* Form validation */
 .has-error .form-input { border-color: var(--accent-red, #e53e3e); }
 .field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; display: block; }
+
+/* ── Saldi per conto ── */
+.balances-section     { margin-top: 1.25rem; }
+.balances-header      { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
+.balances-title       { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-muted); }
+.balances-empty       { font-size: 0.85rem; color: var(--text-muted); padding: 0.5rem 0; }
+.balances-table-wrap  { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; }
+.balances-table       { width: 100%; border-collapse: collapse; font-size: 0.825rem; }
+.balances-table th    { background: var(--bg); color: var(--text-muted); font-size: 0.72rem; font-weight: 600;
+                        text-transform: uppercase; letter-spacing: 0.5px;
+                        padding: 0.45rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+.balances-table td    { padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.balances-table tbody tr:last-child td { border-bottom: none; }
+.balances-table tbody tr:hover         { background: var(--bg); }
+.col-num    { text-align: right; font-family: monospace; }
+.col-action { width: 32px; text-align: center; }
+
+.badge-type-sm { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 3px; font-size: 0.68rem; font-weight: 600; }
+.type-entrata      { background: rgba(52,211,153,.12); color: #34d399; }
+.type-uscita       { background: rgba(248,113,113,.12); color: #f87171; }
+.type-patrimoniale { background: rgba(99,102,241,.12);  color: #818cf8; }
+
+/* Inline editing saldo iniziale */
+.inline-edit  { display: flex; align-items: center; gap: 0.25rem; justify-content: flex-end; }
+.inline-input { width: 110px; padding: 0.2rem 0.4rem; border: 1px solid var(--border); border-radius: 4px;
+                background: var(--bg-surface); color: var(--text-primary); font-size: 0.82rem;
+                font-family: monospace; text-align: right; }
+.inline-input:focus { outline: none; border-color: #34d399; }
+.inline-btn   { width: 22px; height: 22px; border: none; border-radius: 4px; cursor: pointer;
+                font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+.inline-btn.ok     { background: #34d399; color: #0f172a; }
+.inline-btn.cancel { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+.inline-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

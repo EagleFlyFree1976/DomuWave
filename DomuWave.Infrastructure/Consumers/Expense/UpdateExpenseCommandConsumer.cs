@@ -82,10 +82,11 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
                 throw new NotFoundException("Fornitore non trovato.");
         }
 
-        var expenseType   = session.Load<ExpenseType>(dto.ExpenseTypeId);
-        var paymentStatus = session.Load<ExpensePaymentStatus>(dto.PaymentStatusId > 0 ? dto.PaymentStatusId : entity.PaymentStatus?.Id ?? ExpensePaymentStatus.DaPagare);
+        var expenseType       = session.Load<ExpenseType>(dto.ExpenseTypeId);
+        var paymentStatus     = session.Load<ExpensePaymentStatus>(dto.PaymentStatusId > 0 ? dto.PaymentStatusId : entity.PaymentStatus?.Id ?? ExpensePaymentStatus.DaPagare);
+        var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
 
-        entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType, paymentStatus);
+        entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType, paymentStatus, chargeabilityType);
         var updated = await _expenseService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

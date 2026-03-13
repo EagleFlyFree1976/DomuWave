@@ -88,6 +88,16 @@ public class ChartOfAccountsTemplatesController(
         return NoContent();
     }
 
+    // ── Set default ───────────────────────────────────────────────────────────
+
+    [HttpPatch("{id:int}/set-default")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> SetDefault(int id, CancellationToken ct)
+    {
+        await _mediator.GetResponse(new SetDefaultChartOfAccountsTemplateCommand(CurrentUser.Id, id), ct);
+        return NoContent();
+    }
+
     // ── Apply ─────────────────────────────────────────────────────────────────
 
     [HttpPost("{templateId:int}/apply/{condominiumId:int}")]

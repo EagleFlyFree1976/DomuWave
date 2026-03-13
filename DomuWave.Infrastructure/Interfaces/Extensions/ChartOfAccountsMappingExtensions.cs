@@ -27,12 +27,15 @@ public static class ChartOfAccountsMappingExtensions
             MillesimalPercentage        = account.MillesimalPercentage,
             FloorWeight                 = account.FloorWeight,
             InhabitantsWeight           = account.InhabitantsWeight,
+            ChargeabilityTypeId         = account.ChargeabilityType?.Id ?? ChargeabilityType.Owner,
+            ChargeabilityTypeName       = account.ChargeabilityType?.Name ?? string.Empty,
         };
     }
 
     public static ChartOfAccounts ToEntity(
         this CreateChartOfAccountsDto dto,
         Condominium condominium,
+        ChargeabilityType chargeabilityType,
         ChartOfAccounts? parentAccount = null,
         ChartOfAccountsCategory? category = null,
         MillesimalTable? defaultMillesimalTable = null)
@@ -55,10 +58,14 @@ public static class ChartOfAccountsMappingExtensions
             MillesimalPercentage   = dto.AllocationMethod == AllocationMethod.Mixed ? dto.MillesimalPercentage : null,
             FloorWeight            = dto.AllocationMethod == AllocationMethod.Mixed ? dto.FloorWeight : null,
             InhabitantsWeight      = dto.AllocationMethod == AllocationMethod.Mixed ? dto.InhabitantsWeight : null,
+            ChargeabilityType      = chargeabilityType,
         };
     }
 
-    public static void ApplyUpdate(this ChartOfAccounts entity, UpdateChartOfAccountsDto dto, ChartOfAccountsCategory? category = null, MillesimalTable? defaultMillesimalTable = null)
+    public static void ApplyUpdate(this ChartOfAccounts entity, UpdateChartOfAccountsDto dto,
+        ChargeabilityType chargeabilityType,
+        ChartOfAccountsCategory? category = null,
+        MillesimalTable? defaultMillesimalTable = null)
     {
         entity.Code                   = dto.Code.Trim();
         entity.Name                   = dto.Name.Trim();
@@ -71,5 +78,6 @@ public static class ChartOfAccountsMappingExtensions
         entity.MillesimalPercentage   = dto.AllocationMethod == AllocationMethod.Mixed ? dto.MillesimalPercentage : null;
         entity.FloorWeight            = dto.AllocationMethod == AllocationMethod.Mixed ? dto.FloorWeight : null;
         entity.InhabitantsWeight      = dto.AllocationMethod == AllocationMethod.Mixed ? dto.InhabitantsWeight : null;
+        entity.ChargeabilityType      = chargeabilityType;
     }
 }

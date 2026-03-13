@@ -61,7 +61,7 @@
                     {{ t.isEnabled ? 'Disabilita' : 'Abilita' }}
                   </button>
                   <button v-if="canEdit" class="btn-icon" @click="openTableModal(t)" title="Modifica">✎</button>
-                  <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
+                  <button v-if="canDelete && t.code !== 'DEF'" class="btn-icon" style="color:var(--accent-red)"
                           @click="deleteTable(t.id)" title="Elimina">✕</button>
                 </div>
               </td>
@@ -84,12 +84,14 @@
           <div class="form-grid">
             <div class="form-group" :class="{ 'has-error': tableErrors.code }">
               <label class="form-label">Codice *</label>
-              <input class="form-input" v-model="tableForm.code" placeholder="es. TAB-A" @input="clearTableError('code')" />
+              <input class="form-input" v-model="tableForm.code" placeholder="es. TAB-A"
+                     :disabled="isDefaultTable" @input="clearTableError('code')" />
               <span v-if="tableErrors.code" class="field-error">{{ tableErrors.code }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">Nome</label>
-              <input class="form-input" v-model="tableForm.name" placeholder="es. Tabella proprietà" />
+              <input class="form-input" v-model="tableForm.name" placeholder="es. Tabella proprietà"
+                     :disabled="isDefaultTable" />
             </div>
             <div class="form-group" :class="{ 'has-error': tableErrors.totalMillesimal }">
               <label class="form-label">Totale millesimi *</label>
@@ -242,11 +244,14 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 // ─── Tabelle ──────────────────────────────────────────────────
 const tables      = ref([])
 const loading     = ref(false)
-const showTableModal = ref(false)
-const editingTable   = ref(null)
-const savingTable    = ref(false)
-const tableErrors    = ref({})
-const tableForm      = ref({ code: '', name: '', description: '', totalMillesimal: 1000 })
+const showTableModal    = ref(false)
+const editingTable      = ref(null)
+const editingTableCode  = ref(null)   // original code of the table being edited
+const savingTable       = ref(false)
+const tableErrors       = ref({})
+const tableForm         = ref({ code: '', name: '', description: '', totalMillesimal: 1000 })
+
+const isDefaultTable = computed(() => editingTable.value !== null && editingTableCode.value === 'DEF')
 
 function clearTableError(field) { delete tableErrors.value[field] }
 
@@ -270,7 +275,8 @@ async function loadTables() {
 
 function openTableModal(t = null) {
   tableErrors.value = {}
-  editingTable.value = t?.id ?? null
+  editingTable.value     = t?.id ?? null
+  editingTableCode.value = t?.code ?? null
   tableForm.value = t
     ? { code: t.code, name: t.name ?? '', description: t.description ?? '', totalMillesimal: t.totalMillesimal }
     : { code: '', name: '', description: '', totalMillesimal: 1000 }

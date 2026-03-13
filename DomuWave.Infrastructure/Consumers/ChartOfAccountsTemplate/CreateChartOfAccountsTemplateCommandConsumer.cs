@@ -51,8 +51,22 @@ public class CreateChartOfAccountsTemplateCommandConsumer
         if (nameExists)
             throw new ValidatorException($"Esiste già un template con nome '{dto.Name}'.");
 
+        // Se IsDefault=true, togli il flag agli altri template dello stesso tenant
+        if (dto.IsDefault)
+        {
+            var currentDefaults = await session.Query<ChartOfAccountsTemplate>()
+                .Where(t => t.Tenant.Id == command.TenantId && t.IsDefault && !t.IsDeleted)
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+            foreach (var other in currentDefaults)
+            {
+                other.IsDefault = false;
+                other.Trace(currentUser);
+                await session.UpdateAsync(other, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         var entity = dto.ToEntity(tenant);
-        entity.Trace(await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false));
+        entity.Trace(currentUser);
         await session.SaveAsync(entity, cancellationToken).ConfigureAwait(false);
 
         return entity.ToReadDto();

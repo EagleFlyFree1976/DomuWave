@@ -33,6 +33,13 @@ public class DeleteMillesimalTableCommandConsumer : InMemoryConsumerBase<DeleteM
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
+        var table = await _millesimalTableService
+            .GetByIdAsync(command.TableId, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+        if (table == null) return false;
+        if (table.Code == "DEF")
+            throw new ValidatorException("Impossibile eliminare la tabella millesimale predefinita (DEF).");
+
         var usedInAccount = await session.Query<ChartOfAccounts>()
             .AnyAsync(a => a.DefaultMillesimalTable != null
                         && a.DefaultMillesimalTable.Id == command.TableId

@@ -12,14 +12,18 @@ public static class BudgetItemMappingExtensions
 
         var dto = new BudgetItemReadDto
         {
-            BudgetId    = item.Budget?.Id ?? 0,
-            AccountId   = item.Account?.Id ?? 0,
-            AccountCode = item.Account?.Code,
-            AccountName = item.Account?.Name,
-            AccountType = item.Account?.Type.ToString(),
-            Description = item.Description,
-            Amount      = item.Amount,
-            Notes       = item.Notes,
+            BudgetId          = item.Budget?.Id ?? 0,
+            AccountId         = item.Account?.Id ?? 0,
+            AccountCode       = item.Account?.Code,
+            AccountName       = item.Account?.Name,
+            AccountType       = item.Account?.Type.ToString(),
+            AccountLevel      = item.Account?.Level ?? 0,
+            ParentAccountId   = item.Account?.ParentAccount?.Id,
+            ParentAccountCode = item.Account?.ParentAccount?.Code,
+            ParentAccountName = item.Account?.ParentAccount?.Name,
+            Description       = item.Description,
+            Amount            = item.Amount,
+            Notes             = item.Notes,
         };
 
         dto.SetTraceInfo(item);

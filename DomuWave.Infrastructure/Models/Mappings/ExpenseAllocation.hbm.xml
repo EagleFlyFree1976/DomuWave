@@ -19,8 +19,9 @@
     <many-to-one name="Unit" class="DomuWave.Services.Models.RealEstateUnit, DomuWave.Services" column="UnitId" not-null="true" />
 
     <property name="Millesimal" column="Millesimal" type="Decimal" not-null="true" />
-    <property name="AllocatedAmount" column="AllocatedAmount" type="Decimal" not-null="true" />
+    <property name="AllocatedAmount"      column="AllocatedAmount"      type="Decimal" not-null="true" />
     <property name="AllocationPercentage" column="AllocationPercentage" type="Decimal" not-null="true" />
+    <property name="RoundingAdjustment"   column="RoundingAdjustment"   type="Decimal" not-null="true" />
     <property name="Name" column="Notes" type="String" length="500" />
     <property name="Description" column="Notes" type="String" length="500" insert="false" update="false" />
     <property name="Notes" column="Notes" type="String" length="500" insert="false" update="false" />

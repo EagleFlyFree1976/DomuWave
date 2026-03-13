@@ -82,10 +82,11 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
                 throw new NotFoundException("Fornitore non trovato.");
         }
 
-        var expenseType   = session.Load<ExpenseType>(dto.ExpenseTypeId);
-        var paymentStatus = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
+        var expenseType       = session.Load<ExpenseType>(dto.ExpenseTypeId);
+        var paymentStatus     = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
+        var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
 
-        var entity  = dto.ToEntity(condominium, account, millesimalTable, supplier, expenseType, paymentStatus);
+        var entity  = dto.ToEntity(condominium, account, millesimalTable, supplier, expenseType, paymentStatus, chargeabilityType);
         var created = await _expenseService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

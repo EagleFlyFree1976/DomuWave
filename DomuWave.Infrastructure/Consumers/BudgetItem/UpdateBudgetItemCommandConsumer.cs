@@ -5,6 +5,7 @@ using DomuWave.Services.Command.BudgetItem;
 using DomuWave.Services.Dto.Budget;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
+using DomuWave.Services.Models;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -54,12 +55,13 @@ public class UpdateBudgetItemCommandConsumer
             .UpdateAsync(existing, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
-        // Ricalcola totale spese del budget
+        // Ricalcola totali del budget in base al tipo conto
         var budget = existing.Budget;
         var allItems = await _budgetItemService
             .GetByBudgetIdAsync(budget.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        budget.TotalExpenses = allItems.Sum(i => i.Amount);
+        budget.TotalExpenses = allItems.Where(i => i.Account?.Type == ChartOfAccountsType.Uscita).Sum(i => i.Amount);
+        budget.TotalIncome   = allItems.Where(i => i.Account?.Type != ChartOfAccountsType.Uscita).Sum(i => i.Amount);
         await _budgetService.UpdateAsync(budget, currentUser, cancellationToken).ConfigureAwait(false);
 
         return updated.ToReadDto();

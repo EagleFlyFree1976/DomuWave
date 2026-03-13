@@ -21,7 +21,13 @@
       "Bash(tr '}' '\\\\n')",
       "Bash(ls \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\docs\\\\migrations\"\" 2>/dev/null || echo \"NOT FOUND \")",
       "Bash(xargs grep -l \"class TenantEntity\")",
-      "Bash(xargs grep -l \"class GenericEntity\\\\|class TraceEntity\")"
+      "Bash(xargs grep -l \"class GenericEntity\\\\|class TraceEntity\")",
+      "Bash(find /c/Projects/Works/DomuWave -type f -iname *millesimal* -o -iname *millesimals*)",
+      "Bash(find /c/Projects/Works/DomuWave -type f -path *ClientApp* -name *[Cc]hart*)",
+      "Bash(grep -r \"CreateTenantCommandConsumer\\\\|TenantCreated\" /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers --include=*.cs)",
+      "Bash(find /c/Projects/Works/DomuWave/DomuWave.Web/ClientApp/src/views -type f -name *.vue)",
+      "Bash(find /c/Projects/Works/DomuWave/DomuWave.Web/ClientApp/src -type f -name *.vue)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

@@ -17,4 +17,5 @@ public class CreateChartOfAccountsDto
     public decimal?            MillesimalPercentage      { get; set; }
     public decimal?            FloorWeight               { get; set; }
     public decimal?            InhabitantsWeight         { get; set; }
+    public int                 ChargeabilityTypeId       { get; set; } = ChargeabilityType.Owner;
 }

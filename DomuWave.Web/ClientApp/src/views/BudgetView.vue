@@ -47,8 +47,8 @@
             <thead>
               <tr>
                 <th>Tipo</th>
-                <th class="text-right">Entrate</th>
-                <th class="text-right">Uscite</th>
+                <th class="text-right">Entrate prev.</th>
+                <th class="text-right">Uscite prev.</th>
                 <th>Approvazione</th>
                 <th>Stato</th>
                 <th></th>
@@ -249,10 +249,6 @@
             <option value="2">Consuntivo</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Totale entrate (€)</label>
-          <input class="form-input" type="number" step="0.01" v-model.number="budgetForm.totalIncome" />
-        </div>
       </div>
       <div class="form-group">
         <label class="form-label">Note</label>
@@ -268,102 +264,106 @@
     </BaseModal>
 
     <!-- ══════════════════════════════════════════════════
-         MODAL — Voci di Budget
+         MODAL — Voci di Budget (Piano dei conti completo)
     ══════════════════════════════════════════════════ -->
     <BaseModal :show="showItemsModal" @close="closeItemsModal" size="lg">
       <template #title>Voci di budget</template>
       <template #subtitle>
         <span v-if="store.selectedCondominio" class="modal-condominium">{{ store.selectedCondominio.name }}</span>
         <span v-if="store.selectedCondominio && selectedBudget"> · </span>
-        <span v-if="selectedBudget">{{ selectedBudget.type }}</span>
+        <span v-if="selectedBudget">{{ selectedBudget.type === 1 ? 'Preventivo' : 'Consuntivo' }}</span>
         <span v-if="selectedBudget?.fiscalYearCode"> · {{ selectedBudget.fiscalYearCode }}</span>
         <span v-if="selectedBudget" class="badge ml-2" :class="statusBadge(selectedBudget.statusId)">
           {{ statusLabel(selectedBudget.statusId) }}
         </span>
       </template>
 
-      <!-- Add new item button -->
-      <div class="items-toolbar" v-if="canCreate && !showItemForm">
-        <button class="btn btn-primary btn-sm" @click="openItemForm()">+ Aggiungi voce</button>
-      </div>
+      <div v-if="loadingItems" class="loading-state"><div class="spinner"></div></div>
+      <div v-else-if="budgetTabs.length">
 
-      <!-- Item form (inline) -->
-      <div class="item-form-panel" v-if="showItemForm">
-        <div class="form-grid form-grid-3">
-          <div class="form-group" style="grid-column: span 2">
-            <label class="form-label">Conto *</label>
-            <select class="form-select" v-model.number="itemForm.accountId">
-              <option :value="null" disabled>Seleziona conto…</option>
-              <optgroup v-for="grp in accountGroups" :key="grp.type" :label="grp.type">
-                <option v-for="a in grp.accounts" :key="a.id" :value="a.id">
-                  {{ a.code }} – {{ a.name }}
-                </option>
-              </optgroup>
-            </select>
+        <!-- ── Riepilogo totali (fisso in cima) ── -->
+        <div class="budget-summary-top">
+          <div class="summary-pill summary-pill-green">
+            <span class="summary-pill-label">Entrate + Patrim.</span>
+            <span class="summary-pill-value mono">{{ fmt(totalIncome) }}</span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Importo (€) *</label>
-            <input class="form-input" type="number" step="0.01" v-model.number="itemForm.amount" />
+          <div class="summary-pill summary-pill-red">
+            <span class="summary-pill-label">Uscite</span>
+            <span class="summary-pill-value mono">{{ fmt(totalExpenses) }}</span>
           </div>
-          <div class="form-group" style="grid-column: span 2">
-            <label class="form-label">Descrizione</label>
-            <input class="form-input" v-model="itemForm.description" placeholder="Descrizione voce…" />
+          <div class="summary-pill" :class="totalBalance >= 0 ? 'summary-pill-green' : 'summary-pill-red'">
+            <span class="summary-pill-label">Saldo</span>
+            <span class="summary-pill-value mono">{{ fmt(totalBalance) }}</span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Note</label>
-            <input class="form-input" v-model="itemForm.notes" />
+          <!-- Salva bar inline -->
+          <div v-if="hasDirtyRows && canEdit && selectedBudget?.statusId === 1" class="summary-save-actions">
+            <button class="btn btn-ghost btn-sm" @click="discardChanges">Annulla</button>
+            <button class="btn btn-primary btn-sm" @click="saveAllItems" :disabled="savingItem">
+              <span v-if="savingItem" class="spinner" style="width:12px;height:12px"></span>
+              Salva
+            </button>
           </div>
         </div>
-        <div class="item-form-actions">
-          <button class="btn btn-ghost btn-sm" @click="cancelItemForm">Annulla</button>
-          <button class="btn btn-primary btn-sm" @click="saveItem" :disabled="savingItem">
-            <span v-if="savingItem" class="spinner" style="width:12px;height:12px"></span>
-            {{ editingItem ? 'Salva' : 'Aggiungi' }}
+
+        <!-- ── Tab: voci di 1° livello ── -->
+        <div class="budget-tabs">
+          <button
+            v-for="tab in budgetTabs" :key="tab.id"
+            class="budget-tab-btn"
+            :class="{ active: activeItemTab === tab.id }"
+            @click="activeItemTab = tab.id"
+          >
+            <span class="tab-label">{{ tab.code }} – {{ tab.name }}</span>
+            <span class="tab-total mono" :class="tab.typeId === 'Uscita' ? 'text-red' : 'text-green'">
+              {{ fmt(tab.total) }}
+            </span>
           </button>
         </div>
-      </div>
 
-      <!-- Items table -->
-      <div v-if="loadingItems" class="loading-state"><div class="spinner"></div></div>
-      <div v-else-if="!budgetItems.length && !showItemForm" class="empty-state" style="padding:1.5rem">
-        <div class="empty-icon">◎</div>
-        <div>Nessuna voce di budget. Clicca "+ Aggiungi voce" per iniziare.</div>
+        <!-- ── Tabella righe del tab attivo ── -->
+        <div class="budget-tab-content">
+          <table class="budget-accounts-table" v-if="activeTabRows.length">
+            <thead>
+              <tr>
+                <th style="width:90px">Codice</th>
+                <th>Voce</th>
+                <th style="width:160px" class="text-right">Importo prev. (€)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in activeTabRows" :key="row.accountId"
+                  :class="{ 'row-edited': row.dirty }">
+                <td class="mono text-secondary" style="font-size:0.82em">{{ row.accountCode }}</td>
+                <td>{{ row.accountName }}</td>
+                <td class="text-right">
+                  <input
+                    v-if="canEdit && selectedBudget?.statusId === 1"
+                    class="form-input budget-amount-input"
+                    type="number" step="0.01" min="0"
+                    :value="row.amount"
+                    @change="onAmountChange(row, $event)"
+                    @focus="$event.target.select()"
+                  />
+                  <span v-else class="mono">{{ fmt(row.amount) }}</span>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="section-total-row">
+                <td colspan="2" class="text-secondary">Totale sezione</td>
+                <td class="mono text-right">{{ fmt(activeTabRows.reduce((s, r) => s + (r.amount || 0), 0)) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+          <div v-else class="empty-state" style="padding:1rem">
+            <div class="empty-icon">◎</div>
+            <div>Nessuna voce di dettaglio in questa sezione</div>
+          </div>
+        </div>
       </div>
-      <div v-else-if="budgetItems.length" class="table-wrap" style="margin-top:0.5rem">
-        <table>
-          <thead>
-            <tr>
-              <th>Conto</th>
-              <th>Descrizione</th>
-              <th class="text-right">Importo</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in budgetItems" :key="item.id">
-              <td>
-                <span class="mono text-secondary" style="font-size:0.8em">{{ item.accountCode }}</span>
-                {{ item.accountName }}
-              </td>
-              <td class="text-secondary">{{ item.description || '—' }}</td>
-              <td class="mono text-right">{{ fmt(item.amount) }}</td>
-              <td>
-                <div class="row-actions">
-                  <button v-if="canEdit" class="btn-icon" @click="openItemForm(item)" title="Modifica">✎</button>
-                  <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
-                          @click="deleteItem(item.id)" title="Elimina">✕</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="items-total-row">
-              <td colspan="2" class="text-secondary">Totale voci</td>
-              <td class="mono text-right text-red">{{ fmt(totalItems) }}</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
+      <div v-else class="empty-state" style="padding:2rem">
+        <div class="empty-icon">◎</div>
+        <div>Nessuna voce di budget</div>
       </div>
 
       <template #footer>
@@ -427,8 +427,8 @@
           <label class="form-label">Conto *</label>
           <select class="form-select" v-model.number="expForm.accountId" @change="clearExpError('accountId')">
             <option :value="null" disabled>Seleziona conto…</option>
-            <optgroup v-for="grp in accountGroups" :key="grp.type" :label="grp.type">
-              <option v-for="a in grp.accounts" :key="a.id" :value="a.id">{{ a.code }} – {{ a.name }}</option>
+            <optgroup v-for="grp in expenseAccountGroups" :key="grp.typeLabel" :label="grp.typeLabel">
+              <option v-for="r in grp.rows" :key="r.accountId" :value="r.accountId">{{ r.accountCode }} – {{ r.accountName }}</option>
             </optgroup>
           </select>
           <span v-if="expErrors.accountId" class="field-error">{{ expErrors.accountId }}</span>
@@ -466,6 +466,23 @@
         <label class="form-label">Note</label>
         <textarea class="form-textarea" v-model="expForm.description" rows="2"></textarea>
       </div>
+      <div class="form-group" style="margin-top:0.5rem">
+        <label class="form-label">A carico di</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="0" />
+            Proprietario
+          </label>
+          <label class="radio-label">
+            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="1" />
+            Inquilino (se presente)
+          </label>
+          <label class="radio-label">
+            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="2" />
+            Automatico
+          </label>
+        </div>
+      </div>
       <template #footer>
         <button class="btn btn-ghost" @click="showExpenseModal = false">Annulla</button>
         <button class="btn btn-primary" @click="saveExpense" :disabled="savingExp">
@@ -490,7 +507,7 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 const activeTab = ref('budget')
 
 // ─── Fiscal Years ─────────────────────────────────────────────
-const fiscalYears        = ref([])
+const fiscalYears          = ref([])
 const selectedFiscalYearId = ref(null)
 
 async function loadFiscalYears() {
@@ -498,7 +515,6 @@ async function loadFiscalYears() {
   try {
     const { data } = await fiscalYearApi.getByCondominium(store.selectedCondominioId)
     fiscalYears.value = data ?? []
-    // Pre-select active or first
     const active = fiscalYears.value.find(f => f.isActive) ?? fiscalYears.value[0]
     selectedFiscalYearId.value = active?.id ?? null
   } catch {
@@ -507,12 +523,12 @@ async function loadFiscalYears() {
 }
 
 // ─── Budget ───────────────────────────────────────────────────
-const budgets       = ref([])
-const loadingBudget = ref(false)
+const budgets        = ref([])
+const loadingBudget  = ref(false)
 const showBudgetModal = ref(false)
-const editingBudget  = ref(null)
-const savingBudget   = ref(false)
-const budgetForm     = ref({ type: 1, totalIncome: 0, notes: '' })
+const editingBudget   = ref(null)
+const savingBudget    = ref(false)
+const budgetForm      = ref({ type: 1, notes: '' })
 
 async function loadBudgets() {
   if (!selectedFiscalYearId.value) { budgets.value = []; return }
@@ -526,8 +542,8 @@ async function loadBudgets() {
 function openBudgetModal(b = null) {
   editingBudget.value = b?.id ?? null
   budgetForm.value = b
-    ? { totalIncome: b.totalIncome, notes: b.notes ?? '' }
-    : { type: 1, totalIncome: 0, notes: '' }
+    ? { notes: b.notes ?? '' }
+    : { type: 1, notes: '' }
   showBudgetModal.value = true
 }
 
@@ -535,17 +551,13 @@ async function saveBudget() {
   savingBudget.value = true
   try {
     if (editingBudget.value) {
-      await budgetApi.update(editingBudget.value, {
-        totalIncome: budgetForm.value.totalIncome,
-        notes: budgetForm.value.notes,
-      })
+      await budgetApi.update(editingBudget.value, { notes: budgetForm.value.notes })
     } else {
       await budgetApi.create({
-        condominiumId:  store.selectedCondominioId,
-        fiscalYearId:   selectedFiscalYearId.value,
-        type:           budgetForm.value.type,
-        totalIncome:    budgetForm.value.totalIncome,
-        notes:          budgetForm.value.notes,
+        condominiumId: store.selectedCondominioId,
+        fiscalYearId:  selectedFiscalYearId.value,
+        type:          budgetForm.value.type,
+        notes:         budgetForm.value.notes,
       })
     }
     showBudgetModal.value = false
@@ -553,7 +565,6 @@ async function saveBudget() {
   } catch { /* toast handled globally */ } finally { savingBudget.value = false }
 }
 
-// Tipi di budget per cui esiste già un approvato o chiuso (non approvabili)
 const blockedTypes = computed(() => {
   const s = new Set()
   for (const b of budgets.value) {
@@ -562,21 +573,18 @@ const blockedTypes = computed(() => {
   return s
 })
 
-// ─── Approvazione con parametri rate ──────────────────────────
-const showApproveModal    = ref(false)
-const approvingBudget     = ref(null)
-const savingApprove       = ref(false)
-const approveForm         = ref({ numberOfInstallments: 4, firstDueDate: '' })
+// ─── Approvazione ─────────────────────────────────────────────
+const showApproveModal = ref(false)
+const approvingBudget  = ref(null)
+const savingApprove    = ref(false)
+const approveForm      = ref({ numberOfInstallments: 4, firstDueDate: '' })
 
 function openApproveModal(b) {
   approvingBudget.value = b
-  const today = new Date()
-  // prima scadenza: primo giorno del mese successivo
-  const next = new Date(today.getFullYear(), today.getMonth() + 1, 1)
-  approveForm.value = {
-    numberOfInstallments: 4,
-    firstDueDate: next.toISOString().slice(0, 10),
-  }
+  const next = new Date()
+  next.setDate(1)
+  next.setMonth(next.getMonth() + 1)
+  approveForm.value = { numberOfInstallments: 4, firstDueDate: next.toISOString().slice(0, 10) }
   showApproveModal.value = true
 }
 
@@ -596,28 +604,22 @@ async function confirmApprove() {
 
 async function closeBudget(b) {
   const tipo = b.type === 1 ? 'preventivo' : 'consuntivo'
-  if (!confirm(
-    `Chiudere il budget ${tipo}?\n\n` +
-    `Dopo la chiusura sarà possibile approvare un nuovo budget dello stesso tipo.`
-  )) return
+  if (!confirm(`Chiudere il budget ${tipo}?\n\nDopo la chiusura sarà possibile approvare un nuovo budget dello stesso tipo.`)) return
   try { await budgetApi.close(b.id); await loadBudgets() } catch {}
 }
 
-// ─── Genera rate da budget ─────────────────────────────────────
-const showGenerateModal  = ref(false)
-const generatingBudget   = ref(null)
-const savingGenerate     = ref(false)
-const generateForm       = ref({ numberOfInstallments: 4, firstDueDate: '' })
+// ─── Genera rate ──────────────────────────────────────────────
+const showGenerateModal = ref(false)
+const generatingBudget  = ref(null)
+const savingGenerate    = ref(false)
+const generateForm      = ref({ numberOfInstallments: 4, firstDueDate: '' })
 
 function openGenerateModal(b) {
   generatingBudget.value = b
   const next = new Date()
   next.setDate(1)
   next.setMonth(next.getMonth() + 1)
-  generateForm.value = {
-    numberOfInstallments: 4,
-    firstDueDate: next.toISOString().slice(0, 10),
-  }
+  generateForm.value = { numberOfInstallments: 4, firstDueDate: next.toISOString().slice(0, 10) }
   showGenerateModal.value = true
 }
 
@@ -639,59 +641,61 @@ async function deleteBudget(id) {
   try { await budgetApi.delete(id); await loadBudgets() } catch {}
 }
 
-// ─── Budget Items ─────────────────────────────────────────────
-const showItemsModal  = ref(false)
-const selectedBudget  = ref(null)
-const budgetItems     = ref([])
-const loadingItems    = ref(false)
+// ─── Budget Items — Piano dei conti gerarchico ───────────────
+const showItemsModal = ref(false)
+const selectedBudget = ref(null)
+const loadingItems   = ref(false)
+const savingItem     = ref(false)
 
-const showItemForm  = ref(false)
-const editingItem   = ref(null)
-const savingItem    = ref(false)
-const itemForm      = ref({ accountId: null, description: '', amount: 0, notes: '' })
+// budgetTabs = voci di livello 1 (capitoli), ognuna con .rows = voci di livello 2
+const budgetTabs    = ref([])
+const activeItemTab = ref(null)
 
-// ChartOfAccounts (loaded once per condominium on first items open)
-const chartOfAccounts = ref([])
-let   accountsLoaded  = false
-
-const accountGroups = computed(() => {
-  const map = {}
-  for (const a of chartOfAccounts.value) {
-    const t = a.type || 'Altro'
-    if (!map[t]) map[t] = []
-    map[t].push(a)
-  }
-  return Object.entries(map).map(([type, accounts]) => ({ type, accounts }))
+// Righe del tab attivo
+const activeTabRows = computed(() => {
+  const tab = budgetTabs.value.find(t => t.id === activeItemTab.value)
+  return tab?.rows ?? []
 })
 
-const totalItems = computed(() =>
-  budgetItems.value.reduce((s, i) => s + (i.amount ?? 0), 0)
+// Totali calcolati su tutte le righe di tutti i tab
+const allRows = computed(() => budgetTabs.value.flatMap(t => t.rows))
+
+const hasDirtyRows = computed(() => allRows.value.some(r => r.dirty))
+
+const totalIncome   = computed(() =>
+  allRows.value
+    .filter(r => r.accountType !== 'Uscita')
+    .reduce((s, r) => s + (r.amount || 0), 0)
 )
+const totalExpenses = computed(() =>
+  allRows.value
+    .filter(r => r.accountType === 'Uscita')
+    .reduce((s, r) => s + (r.amount || 0), 0)
+)
+const totalBalance = computed(() => totalIncome.value - totalExpenses.value)
+
+// snapshot per "discard"
+let originalAmounts = {}
+
+// ChartOfAccounts (per dropdown spese)
+const chartOfAccounts      = ref([])
+const accountGroups        = ref([])
+const expenseAccountGroups = ref([])
+let accountsLoaded = false
 
 async function openItemsModal(budget) {
   selectedBudget.value = budget
   showItemsModal.value = true
-  showItemForm.value   = false
-  editingItem.value    = null
-  budgetItems.value    = []
-
-  // Load chart of accounts (once)
-  if (!accountsLoaded && store.selectedCondominioId) {
-    try {
-      const { data } = await chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
-      chartOfAccounts.value = data ?? []
-      accountsLoaded = true
-    } catch { chartOfAccounts.value = [] }
-  }
-
+  budgetTabs.value     = []
+  activeItemTab.value  = null
   await loadBudgetItems()
 }
 
 function closeItemsModal() {
   showItemsModal.value = false
   selectedBudget.value = null
-  budgetItems.value    = []
-  showItemForm.value   = false
+  budgetTabs.value     = []
+  activeItemTab.value  = null
 }
 
 async function loadBudgetItems() {
@@ -699,69 +703,149 @@ async function loadBudgetItems() {
   loadingItems.value = true
   try {
     const { data } = await budgetItemApi.getByBudget(selectedBudget.value.id)
-    budgetItems.value = data ?? []
-  } catch { budgetItems.value = [] } finally { loadingItems.value = false }
-}
+    const items = data ?? []
 
-function openItemForm(item = null) {
-  editingItem.value = item?.id ?? null
-  itemForm.value = item
-    ? { accountId: item.accountId, description: item.description ?? '', amount: item.amount, notes: item.notes ?? '' }
-    : { accountId: null, description: '', amount: 0, notes: '' }
-  showItemForm.value = true
-}
+    // Separa voci di livello 1 (capitoli) da voci di livello 2 (dettaglio)
+    // Level=1 → tab; Level=2 → righe editabili dentro il tab del loro parent
+    const level1 = items.filter(i => i.accountLevel === 1)
+      .sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))
+    const level2 = items.filter(i => i.accountLevel === 2)
 
-function cancelItemForm() {
-  showItemForm.value = false
-  editingItem.value  = null
-}
-
-async function saveItem() {
-  if (!itemForm.value.accountId || !itemForm.value.amount) return
-  savingItem.value = true
-  try {
-    if (editingItem.value) {
-      await budgetItemApi.update(editingItem.value, {
-        accountId:   itemForm.value.accountId,
-        description: itemForm.value.description,
-        amount:      itemForm.value.amount,
-        notes:       itemForm.value.notes,
-      })
-    } else {
-      await budgetItemApi.create({
-        budgetId:    selectedBudget.value.id,
-        accountId:   itemForm.value.accountId,
-        description: itemForm.value.description,
-        amount:      itemForm.value.amount,
-        notes:       itemForm.value.notes,
+    // Mappa parentAccountId → righe figlie
+    const childrenMap = {}
+    for (const item of level2) {
+      const pid = item.parentAccountId ?? '__no_parent__'
+      if (!childrenMap[pid]) childrenMap[pid] = []
+      childrenMap[pid].push({
+        accountId:   item.accountId,
+        accountCode: item.accountCode,
+        accountName: item.accountName,
+        accountType: item.accountType,
+        itemId:      item.id,
+        amount:      item.amount ?? 0,
+        dirty:       false,
       })
     }
-    showItemForm.value = false
-    editingItem.value  = null
-    await loadBudgetItems()
-    // Refresh budgets list so TotalExpenses is updated
+
+    // Costruisce i tab dai capitoli di livello 1
+    budgetTabs.value = level1.map(item => {
+      const rows = (childrenMap[item.accountId] ?? [])
+        .sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))
+      const tabTotal = rows.reduce((s, r) => s + (r.amount || 0), 0)
+      return {
+        id:     item.accountId,
+        code:   item.accountCode,
+        name:   item.accountName,
+        typeId: item.accountType,
+        total:  tabTotal,
+        rows,
+      }
+    })
+
+    // Fallback: se non ci sono livelli distinti, tratta tutte le voci come righe
+    // raggruppate per tipo (retrocompatibilità con piani dei conti flat)
+    if (budgetTabs.value.length === 0 && level2.length === 0 && items.length > 0) {
+      const flat = items.sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))
+      budgetTabs.value = [{
+        id:     '__all__',
+        code:   '',
+        name:   'Tutte le voci',
+        typeId: null,
+        total:  flat.reduce((s, i) => s + (i.amount || 0), 0),
+        rows:   flat.map(i => ({
+          accountId:   i.accountId,
+          accountCode: i.accountCode,
+          accountName: i.accountName,
+          accountType: i.accountType,
+          itemId:      i.id,
+          amount:      i.amount ?? 0,
+          dirty:       false,
+        })),
+      }]
+    }
+
+    // Seleziona il primo tab
+    activeItemTab.value = budgetTabs.value[0]?.id ?? null
+
+    // Snapshot per discard
+    originalAmounts = {}
+    for (const row of allRows.value) {
+      originalAmounts[row.accountId] = row.amount
+    }
+
+    // Carica chartOfAccounts in background per il dropdown spese
+    if (!accountsLoaded && store.selectedCondominioId) {
+      chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
+        .then(r => { chartOfAccounts.value = r.data ?? []; accountsLoaded = true })
+        .catch(() => {})
+    }
+  } catch {
+    budgetTabs.value = []
+  } finally {
+    loadingItems.value = false
+  }
+}
+
+function onAmountChange(row, event) {
+  const val = parseFloat(event.target.value) || 0
+  row.amount = val
+  row.dirty  = val !== (originalAmounts[row.accountId] ?? 0)
+  // Aggiorna il totale del tab attivo in tempo reale
+  const tab = budgetTabs.value.find(t => t.id === activeItemTab.value)
+  if (tab) tab.total = tab.rows.reduce((s, r) => s + (r.amount || 0), 0)
+}
+
+function discardChanges() {
+  for (const row of allRows.value) {
+    row.amount = originalAmounts[row.accountId] ?? 0
+    row.dirty  = false
+  }
+  // Ricalcola i totali dei tab
+  for (const tab of budgetTabs.value) {
+    tab.total = tab.rows.reduce((s, r) => s + (r.amount || 0), 0)
+  }
+}
+
+async function saveAllItems() {
+  if (!selectedBudget.value) return
+  savingItem.value = true
+  try {
+    const dirtyRows = allRows.value.filter(r => r.dirty)
+
+    for (const row of dirtyRows) {
+      if (row.itemId) {
+        // Voce esistente: aggiorna
+        await budgetItemApi.update(row.itemId, {
+          accountId: row.accountId,
+          amount:    row.amount,
+        })
+      } else if (row.amount > 0) {
+        // Voce non esistente con importo > 0: crea
+        const { data } = await budgetItemApi.create({
+          budgetId:  selectedBudget.value.id,
+          accountId: row.accountId,
+          amount:    row.amount,
+        })
+        row.itemId = data?.id ?? null
+      }
+      row.dirty = false
+      originalAmounts[row.accountId] = row.amount
+    }
+
+    // Aggiorna i totali visualizzati nella lista budget
     await loadBudgets()
   } catch { /* global */ } finally { savingItem.value = false }
 }
 
-async function deleteItem(id) {
-  if (!confirm('Eliminare questa voce?')) return
-  try {
-    await budgetItemApi.delete(id)
-    await loadBudgetItems()
-    await loadBudgets()
-  } catch {}
-}
-
 // ─── Spese ────────────────────────────────────────────────────
-const expenses        = ref([])
-const loadingExp      = ref(false)
+const expenses         = ref([])
+const loadingExp       = ref(false)
 const showExpenseModal = ref(false)
-const editingExp      = ref(null)
-const savingExp       = ref(false)
-const expErrors       = ref({})
-const expFilter       = ref('')
-const expTypeFilter   = ref(0)
+const editingExp       = ref(null)
+const savingExp        = ref(false)
+const expErrors        = ref({})
+const expFilter        = ref('')
+const expTypeFilter    = ref(0)
 
 function clearExpError(field) { delete expErrors.value[field] }
 
@@ -778,7 +862,8 @@ function validateExpForm() {
   expErrors.value = e
   return Object.keys(e).length === 0
 }
-const today            = new Date().toISOString().slice(0, 10)
+
+const today   = new Date().toISOString().slice(0, 10)
 const suppliers        = ref([])
 const millesimalTables = ref([])
 const enabledMillesimalTables = computed(() => {
@@ -789,7 +874,8 @@ const enabledMillesimalTables = computed(() => {
 const emptyExpForm = () => ({
   name: '', documentNumber: '', documentDate: today, registrationDate: today,
   grossAmount: 0, vatAmount: 0, expenseTypeId: 0, paymentStatusId: 1,
-  paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: ''
+  paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: '',
+  chargeabilityTypeId: 0,
 })
 const expForm = ref(emptyExpForm())
 
@@ -810,25 +896,25 @@ async function loadExpenses() {
 }
 
 async function openExpenseModal(e = null) {
-  expErrors.value = {}
+  expErrors.value  = {}
   editingExp.value = e?.id ?? null
   expForm.value = e ? {
-    name:               e.name ?? '',
-    documentNumber:     e.documentNumber ?? '',
-    documentDate:       e.documentDate?.slice(0, 10) ?? today,
-    registrationDate:   e.registrationDate?.slice(0, 10) ?? today,
-    grossAmount:        e.grossAmount ?? 0,
-    vatAmount:          e.vatAmount ?? 0,
-    expenseTypeId:      e.expenseTypeId ?? 0,
-    paymentStatusId:    e.paymentStatusId ?? 1,
-    paymentMethod:      e.paymentMethod ?? '',
-    supplierId:         e.supplierId ?? null,
-    accountId:          e.accountId ?? null,
+    name:              e.name ?? '',
+    documentNumber:    e.documentNumber ?? '',
+    documentDate:      e.documentDate?.slice(0, 10) ?? today,
+    registrationDate:  e.registrationDate?.slice(0, 10) ?? today,
+    grossAmount:       e.grossAmount ?? 0,
+    vatAmount:         e.vatAmount ?? 0,
+    expenseTypeId:     e.expenseTypeId ?? 0,
+    paymentStatusId:   e.paymentStatusId ?? 1,
+    paymentMethod:     e.paymentMethod ?? '',
+    supplierId:        e.supplierId ?? null,
+    accountId:         e.accountId ?? null,
     millesimalTableId:  e.millesimalTableId ?? null,
     description:        e.description ?? '',
+    chargeabilityTypeId:  e.chargeabilityTypeId ?? 0,
   } : emptyExpForm()
 
-  // Load dropdowns (accounts already loaded when opening items modal; reload suppliers & millesimal tables)
   if (!accountsLoaded && store.selectedCondominioId) {
     try {
       const { data } = await chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
@@ -836,6 +922,8 @@ async function openExpenseModal(e = null) {
       accountsLoaded = true
     } catch { chartOfAccounts.value = [] }
   }
+  buildExpenseAccountGroups()
+
   if (store.selectedCondominioId) {
     try {
       const [supRes, mtRes] = await Promise.all([
@@ -849,26 +937,42 @@ async function openExpenseModal(e = null) {
   showExpenseModal.value = true
 }
 
+function buildExpenseAccountGroups() {
+  const TYPE_ORDER = ['Uscita', 'Entrata', 'Patrimoniale']
+  const TYPE_LABELS = { Uscita: 'Uscite', Entrata: 'Entrate', Patrimoniale: 'Patrimoniale' }
+  const groups = {}
+  for (const account of chartOfAccounts.value) {
+    const typeKey = account.type || 'Uscita'
+    if (!groups[typeKey]) groups[typeKey] = []
+    groups[typeKey].push({ accountId: account.id, accountCode: account.code, accountName: account.name })
+  }
+  expenseAccountGroups.value = TYPE_ORDER.filter(t => groups[t]?.length).map(t => ({
+    typeId: t, typeLabel: TYPE_LABELS[t] ?? t,
+    rows: groups[t].sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? '')),
+  }))
+}
+
 async function saveExpense() {
   if (!validateExpForm()) return
   savingExp.value = true
   try {
     const payload = {
-      name:             expForm.value.name,
-      documentNumber:   expForm.value.documentNumber || null,
-      documentDate:     expForm.value.documentDate,
-      registrationDate: expForm.value.registrationDate,
-      grossAmount:      expForm.value.grossAmount,
-      vatAmount:        expForm.value.vatAmount,
-      netAmount:        expForm.value.grossAmount - expForm.value.vatAmount,
-      expenseTypeId:    expForm.value.expenseTypeId,
-      paymentStatusId:  expForm.value.paymentStatusId || 1,
-      paymentMethod:    expForm.value.paymentMethod || null,
-      description:      expForm.value.description || null,
-      condominiumId:    store.selectedCondominioId,
-      accountId:        expForm.value.accountId         ?? null,
-      millesimalTableId: expForm.value.millesimalTableId ?? null,
-      supplierId:       expForm.value.supplierId        ?? null,
+      name:              expForm.value.name,
+      documentNumber:    expForm.value.documentNumber || null,
+      documentDate:      expForm.value.documentDate,
+      registrationDate:  expForm.value.registrationDate,
+      grossAmount:       expForm.value.grossAmount,
+      vatAmount:         expForm.value.vatAmount,
+      netAmount:         expForm.value.grossAmount - expForm.value.vatAmount,
+      expenseTypeId:     expForm.value.expenseTypeId,
+      paymentStatusId:   expForm.value.paymentStatusId || 1,
+      paymentMethod:     expForm.value.paymentMethod || null,
+      description:       expForm.value.description || null,
+      condominiumId:     store.selectedCondominioId,
+      accountId:          expForm.value.accountId         ?? null,
+      millesimalTableId:  expForm.value.millesimalTableId ?? null,
+      supplierId:         expForm.value.supplierId        ?? null,
+      chargeabilityTypeId:  expForm.value.chargeabilityTypeId ?? 0,
     }
     if (editingExp.value) {
       await expenseApi.update(editingExp.value, payload)
@@ -883,10 +987,7 @@ async function saveExpense() {
 }
 
 async function markPaid(id) {
-  try {
-    await expenseApi.markAsPaid(id, today, 'BankTransfer')
-    await loadExpenses()
-  } catch {}
+  try { await expenseApi.markAsPaid(id, today, 'BankTransfer'); await loadExpenses() } catch {}
 }
 
 async function deleteExpense(id) {
@@ -902,7 +1003,10 @@ const statusBadge  = (id) => ({ 1: 'badge-muted', 2: 'badge-green', 3: 'badge-pu
 const statusLabel  = (id) => ({ 1: 'Bozza', 2: 'Approvato', 3: 'Chiuso' }[id] ?? String(id ?? ''))
 const payBadge     = (id) => ({ 1: 'badge-amber', 2: 'badge-green', 3: 'badge-red' }[id] ?? 'badge-muted')
 
-// Auto-select DefaultMillesimalTable when account changes
+const TYPE_CLASS = { Uscita: 'type-uscita', Entrata: 'type-entrata', Patrimoniale: 'type-patrimoniale' }
+const typeClass  = (typeId) => ['type-badge', TYPE_CLASS[typeId] ?? ''].join(' ')
+
+// Auto-select DefaultMillesimalTable when account changes (expense form)
 watch(() => expForm.value.accountId, (accountId) => {
   if (!accountId) return
   const account = chartOfAccounts.value.find(a => a.id === accountId)
@@ -914,6 +1018,8 @@ watch(() => expForm.value.accountId, (accountId) => {
 // ─── Watchers / Init ──────────────────────────────────────────
 watch(() => store.selectedCondominioId, async () => {
   accountsLoaded = false
+  expenseAccountGroups.value = []
+  budgetTabs.value = []
   expTypeFilter.value = 0
   expFilter.value = ''
   await loadFiscalYears()
@@ -936,26 +1042,98 @@ onMounted(async () => {
 .text-red    { color: var(--accent-red,   #ef4444); }
 .ml-2        { margin-left: 0.5rem; }
 
-/* Items modal toolbar */
-.items-toolbar { margin-bottom: 0.75rem; }
-
-/* Item inline form */
-.item-form-panel {
+/* ── Riepilogo totali in cima al modal ── */
+.budget-summary-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.75rem;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
 }
-.form-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-.item-form-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+.summary-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 20px;
+  background: var(--bg-base, #1a1a2e);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.summary-pill-green { border-color: rgba(34,197,94,0.4);  }
+.summary-pill-red   { border-color: rgba(239,68,68,0.4); }
+.summary-pill-label { color: var(--text-muted); }
+.summary-pill-value { font-weight: 700; }
+.summary-save-actions { margin-left: auto; display: flex; gap: 0.4rem; }
 
-/* Items total row */
-.items-total-row td { font-weight: 600; border-top: 2px solid var(--border); }
+/* ── Tab capitoli ── */
+.budget-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 0;
+}
+.budget-tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  transition: background 0.15s;
+  position: relative;
+  bottom: -2px;
+}
+.budget-tab-btn:hover { background: var(--bg-surface); }
+.budget-tab-btn.active {
+  background: var(--bg-surface);
+  border-color: var(--border);
+  border-bottom-color: var(--bg-surface);
+  color: var(--text);
+  font-weight: 600;
+}
+.tab-label  { line-height: 1.2; }
+.tab-total  { font-size: 0.78rem; font-weight: 700; line-height: 1.2; }
+
+/* ── Contenuto tab ── */
+.budget-tab-content {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+/* ── Tabella voci ── */
+.budget-accounts-table { width: 100%; border-collapse: collapse; }
+.budget-accounts-table th,
+.budget-accounts-table td { padding: 0.45rem 0.65rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+.budget-accounts-table thead th { background: var(--bg-surface); font-weight: 600; }
+.budget-accounts-table tr.row-edited td { background: rgba(99,102,241,0.06); }
+.budget-accounts-table tbody tr:last-child td { border-bottom: none; }
+
+.budget-amount-input {
+  width: 120px;
+  padding: 0.25rem 0.4rem;
+  text-align: right;
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+.section-total-row td { font-weight: 600; background: var(--bg-surface); border-top: 2px solid var(--border); }
 
 /* Approve modal */
 .approve-info { font-size: .875rem; color: var(--text-secondary); margin-bottom: 1rem; }
-.approve-hint { font-size: .78rem; color: var(--text-muted); margin-top: .5rem; }
+.approve-hint { font-size: .78rem;  color: var(--text-muted);     margin-top: .5rem; }
 
 /* Form validation */
 .has-error .form-input,

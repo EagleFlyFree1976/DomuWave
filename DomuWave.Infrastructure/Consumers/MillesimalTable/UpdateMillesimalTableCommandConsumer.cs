@@ -37,7 +37,13 @@ public class UpdateMillesimalTableCommandConsumer : InMemoryConsumerBase<UpdateM
             .ConfigureAwait(false);
         if (entity == null) return null;
 
+        var originalCode = entity.Code;
         entity.ApplyUpdate(command.Dto);
+        if (originalCode == "DEF")
+        {
+            entity.Code = "DEF";
+            entity.Name = "Default";
+        }
         var updated = await _millesimalTableService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

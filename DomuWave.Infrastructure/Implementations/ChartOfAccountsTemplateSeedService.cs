@@ -80,6 +80,7 @@ public class ChartOfAccountsTemplateSeedService : BaseService, IChartOfAccountsT
             Name        = TemplateName,
             Description = "Template standard con le voci più comuni per la gestione condominiale italiana.",
             IsActive    = true,
+            IsDefault   = true,
             IsDeleted   = false,
         };
 

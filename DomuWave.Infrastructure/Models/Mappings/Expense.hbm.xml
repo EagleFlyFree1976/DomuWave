@@ -34,6 +34,7 @@
     <property name="PaymentMethod" column="PaymentMethod" type="String" length="50" />
     <property name="DocumentPath" column="DocumentPath" type="String" length="500" />
     <property name="Notes" column="Notes" type="String" length="1000" insert="false" update="false" />
+    <many-to-one name="ChargeabilityType" class="DomuWave.Services.Models.ChargeabilityType, DomuWave.Services" column="ChargeabilityType" not-null="true" lazy="false" fetch="join" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
