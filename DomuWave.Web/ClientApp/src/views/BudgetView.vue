@@ -25,8 +25,7 @@
           </option>
         </select>
 
-        <button v-if="canCreate" class="btn btn-primary" style="margin-left:auto"
-                :disabled="!selectedFiscalYearId"
+        <button v-if="canCreate && canCreateBudget" class="btn btn-primary" style="margin-left:auto"
                 @click="openBudgetModal()">
           + Nuovo budget
         </button>
@@ -245,8 +244,12 @@
         <div class="form-group" v-if="!editingBudget">
           <label class="form-label">Tipo *</label>
           <select class="form-select" v-model.number="budgetForm.type">
-            <option value="1">Preventivo</option>
-            <option value="2">Consuntivo</option>
+            <option :value="1" :disabled="existingTypes.has(1)">
+              Preventivo{{ existingTypes.has(1) ? ' (già presente)' : '' }}
+            </option>
+            <option :value="2" :disabled="existingTypes.has(2)">
+              Consuntivo{{ existingTypes.has(2) ? ' (già presente)' : '' }}
+            </option>
           </select>
         </div>
       </div>
@@ -541,9 +544,13 @@ async function loadBudgets() {
 
 function openBudgetModal(b = null) {
   editingBudget.value = b?.id ?? null
-  budgetForm.value = b
-    ? { notes: b.notes ?? '' }
-    : { type: 1, notes: '' }
+  if (b) {
+    budgetForm.value = { notes: b.notes ?? '' }
+  } else {
+    // Pre-seleziona il tipo mancante; se entrambi liberi, default Preventivo
+    const defaultType = !existingTypes.value.has(1) ? 1 : 2
+    budgetForm.value = { type: defaultType, notes: '' }
+  }
   showBudgetModal.value = true
 }
 
@@ -565,6 +572,7 @@ async function saveBudget() {
   } catch { /* toast handled globally */ } finally { savingBudget.value = false }
 }
 
+// Tipi già approvati o chiusi (non approvabili di nuovo)
 const blockedTypes = computed(() => {
   const s = new Set()
   for (const b of budgets.value) {
@@ -572,6 +580,18 @@ const blockedTypes = computed(() => {
   }
   return s
 })
+
+// Tipi già esistenti in qualsiasi stato (non creabili di nuovo)
+const existingTypes = computed(() => {
+  const s = new Set()
+  for (const b of budgets.value) s.add(b.type)
+  return s
+})
+
+// "Nuovo budget" ha senso solo se manca almeno un tipo
+const canCreateBudget = computed(() =>
+  !!selectedFiscalYearId.value && existingTypes.value.size < 2
+)
 
 // ─── Approvazione ─────────────────────────────────────────────
 const showApproveModal = ref(false)

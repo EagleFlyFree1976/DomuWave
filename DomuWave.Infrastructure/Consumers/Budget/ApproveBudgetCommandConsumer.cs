@@ -68,9 +68,18 @@ public class ApproveBudgetCommandConsumer
         if (!approved)
             return false;
 
-        // Genera le rate e le quote
-        await GenerateInstallmentsAndFees(budget, command, currentUser, cancellationToken)
-            .ConfigureAwait(false);
+        if (budget.Type == BudgetType.Preventivo)
+        {
+            // Genera rate di pagamento e quote per unità
+            await GenerateInstallmentsAndFees(budget, command, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            // Consuntivo: salva la ripartizione per unità (saldi), senza rate
+            await GenerateConsuntivoDistribution(budget, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         return true;
     }
@@ -166,5 +175,82 @@ public class ApproveBudgetCommandConsumer
 
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    // ── Consuntivo: ripartizione saldi per unità (senza rate) ────────────────
+
+    private async Task GenerateConsuntivoDistribution(
+        Budget budget,
+        object currentUser,
+        CancellationToken ct)
+    {
+        // Ricalcola TotalExpenses dalle voci del budget
+        var totalExpenses = await session.Query<BudgetItem>()
+            .Where(i => i.Budget.Id == budget.Id && !i.IsDeleted)
+            .SumAsync(i => i.Amount, ct)
+            .ConfigureAwait(false);
+
+        if (totalExpenses <= 0) return;
+
+        // Tabella millesimale attiva del condominio
+        var millesimalTable = await session.Query<MillesimalTable>()
+            .FirstOrDefaultAsync(x => x.Condominium.Id == budget.Condominium.Id
+                                   && x.IsActive && !x.IsDraft && !x.IsDeleted, ct)
+            .ConfigureAwait(false);
+
+        if (millesimalTable == null) return;
+
+        var unitMillesimals = await session.Query<UnitMillesimal>()
+            .Where(x => x.MillesimalTable.Id == millesimalTable.Id && !x.IsDeleted)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        if (!unitMillesimals.Any()) return;
+
+        var totalMillesimal = millesimalTable.TotalMillesimal;
+        var user = currentUser as CPQ.Core.Memberships.IUser;
+
+        // Recupera i saldi già pagati per unità (da CondominiumFee del Preventivo approvato)
+        // per calcolare il saldo residuo per ogni unità
+        var paidByUnit = await session.Query<CondominiumFee>()
+            .Where(f => f.Installment.Budget.Condominium.Id == budget.Condominium.Id
+                     && f.Installment.Budget.FiscalYear.Id  == budget.FiscalYear.Id
+                     && f.Installment.Budget.Type           == BudgetType.Preventivo
+                     && !f.IsDeleted)
+            .GroupBy(f => f.Unit.Id)
+            .Select(g => new { UnitId = g.Key, TotalPaid = g.Sum(f => f.AmountPaid) })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        var paidMap = paidByUnit.ToDictionary(x => x.UnitId, x => x.TotalPaid);
+
+        // Salva la ripartizione consuntiva su UnitOpeningBalance (saldo)
+        // Per ogni unità: quota consuntiva - già pagato = saldo residuo/credito
+        foreach (var um in unitMillesimals)
+        {
+            var quotaConsuntiva = totalMillesimal > 0
+                ? Math.Round(totalExpenses * um.Millesimal / totalMillesimal, 2)
+                : 0m;
+
+            var alreadyPaid = paidMap.TryGetValue(um.Unit.Id, out var p) ? p : 0m;
+            var saldo = quotaConsuntiva - alreadyPaid;  // positivo = deve ancora pagare, negativo = credito
+
+            // Aggiorna o crea il record UnitOpeningBalance con il saldo consuntivo
+            var uob = await session.Query<UnitOpeningBalance>()
+                .FirstOrDefaultAsync(x => x.Unit.Id       == um.Unit.Id
+                                       && x.FiscalYear.Id == budget.FiscalYear.Id
+                                       && !x.IsDeleted, ct)
+                .ConfigureAwait(false);
+
+            if (uob != null)
+            {
+                uob.TotalMovements  = quotaConsuntiva;
+                uob.ClosingBalance  = saldo;
+                if (user != null) uob.Trace(user);
+                await session.SaveOrUpdateAsync(uob, ct).ConfigureAwait(false);
+            }
+        }
+
+        await session.FlushAsync(ct).ConfigureAwait(false);
     }
 }

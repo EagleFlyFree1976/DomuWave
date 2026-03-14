@@ -1,4 +1,5 @@
 using CPQ.Core.Consumers;
+using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
@@ -50,6 +51,19 @@ public class CreateBudgetCommandConsumer
             .GetByIdAsync(command.Dto.FiscalYearId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        // Unicità: al massimo un budget per tipo per condominio per esercizio
+        var typeLabel = command.Dto.Type == BudgetType.Preventivo ? "previsionale" : "consuntivo";
+        var duplicate = await session.Query<Budget>()
+            .AnyAsync(b => b.Condominium.Id == command.Dto.CondominiumId
+                        && b.FiscalYear.Id  == command.Dto.FiscalYearId
+                        && b.Type           == command.Dto.Type
+                        && !b.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (duplicate)
+            throw new ValidatorException(
+                $"Esiste già un budget {typeLabel} per questo condominio ed esercizio fiscale.");
+
         var budget = new Budget
         {
             Condominium   = condominium,
@@ -66,29 +80,147 @@ public class CreateBudgetCommandConsumer
             .CreateAsync(budget, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
-        // Crea una voce di budget (Amount=0) per ogni conto attivo del condominio
-        var accounts = await session.Query<ChartOfAccounts>()
-            .Where(a => a.Condominium.Id == condominium.Id && !a.IsDeleted && a.IsActive)
-            .OrderBy(a => a.Code)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+        // ── Popolamento voci ───────────────────────────────────────────────────
+        // Per un budget Preventivo: cerca il Consuntivo dell'esercizio precedente
+        // e copia i suoi importi come punto di partenza.
+        // Se non esiste, crea voci vuote per tutti i conti attivi (comportamento base).
 
-        foreach (var account in accounts)
+        if (command.Dto.Type == BudgetType.Preventivo)
         {
-            var item = new BudgetItem
-            {
-                Budget = created,
-                Tenant = created.Tenant,
-                Account = account,
-                Name   = string.Empty,
-                Amount = 0,
-            };
-            item.Trace(currentUser);
-            await session.SaveAsync(item, cancellationToken).ConfigureAwait(false);
+            await CreatePreventivoItems(created, condominium, fiscalYear, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            await CreateConsuntivoItemsAndDistribute(created, condominium, fiscalYear, currentUser, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         return created.ToReadDto();
+    }
+
+    // ── Preventivo: copia dal Consuntivo precedente o crea voci vuote ─────────
+
+    private async Task CreatePreventivoItems(
+        Budget budget,
+        Models.Condominium condominium,
+        FiscalYear fiscalYear,
+        CPQ.Core.Memberships.IUser currentUser,
+        CancellationToken ct)
+    {
+        // Cerca il Consuntivo più recente tra gli esercizi precedenti
+        var previousConsuntivo = await session.Query<Budget>()
+            .Where(b => b.Condominium.Id == condominium.Id
+                     && b.Type           == BudgetType.Consuntivo
+                     && b.FiscalYear.EndDate < fiscalYear.StartDate
+                     && !b.IsDeleted)
+            .OrderByDescending(b => b.FiscalYear.EndDate)
+            .Take(1)
+            .FetchMany(b => b.Items)
+            .ThenFetch(i => i.Account)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+
+        var sourceItems = previousConsuntivo?.Items
+            .Where(i => !i.IsDeleted && i.Account != null && i.Account.IsActive)
+            .OrderBy(i => i.Account.Code)
+            .ToList();
+
+        if (sourceItems != null && sourceItems.Count > 0)
+        {
+            foreach (var src in sourceItems)
+            {
+                var item = new BudgetItem
+                {
+                    Budget  = budget,
+                    Tenant  = budget.Tenant,
+                    Account = src.Account,
+                    Name    = src.Name ?? string.Empty,
+                    Amount  = src.Amount,
+                    Notes   = src.Notes,
+                };
+                item.Trace(currentUser);
+                await session.SaveAsync(item, ct).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            // Nessun Consuntivo precedente: voci vuote per ogni conto attivo
+            var accounts = await session.Query<ChartOfAccounts>()
+                .Where(a => a.Condominium.Id == condominium.Id && !a.IsDeleted && a.IsActive)
+                .OrderBy(a => a.Code)
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+
+            foreach (var account in accounts)
+            {
+                var item = new BudgetItem
+                {
+                    Budget  = budget,
+                    Tenant  = budget.Tenant,
+                    Account = account,
+                    Name    = string.Empty,
+                    Amount  = 0,
+                };
+                item.Trace(currentUser);
+                await session.SaveAsync(item, ct).ConfigureAwait(false);
+            }
+        }
+    }
+
+    // ── Consuntivo: aggrega le spese per conto, calcola i totali ─────────────
+    // La ripartizione per unità viene generata solo all'approvazione.
+
+    private async Task CreateConsuntivoItemsAndDistribute(
+        Budget budget,
+        Models.Condominium condominium,
+        FiscalYear fiscalYear,
+        CPQ.Core.Memberships.IUser currentUser,
+        CancellationToken ct)
+    {
+        // 1. Tutti i conti attivi del condominio
+        var accounts = await session.Query<ChartOfAccounts>()
+            .Where(a => a.Condominium.Id == condominium.Id && !a.IsDeleted && a.IsActive)
+            .OrderBy(a => a.Code)
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        // 2. Totale spese (NetAmount) per conto nell'esercizio
+        var expensesByAccount = await session.Query<Expense>()
+            .Where(e => e.FiscalYear.Id  == fiscalYear.Id
+                     && e.Condominium.Id == condominium.Id
+                     && !e.IsDeleted)
+            .GroupBy(e => e.Account.Id)
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(e => e.NetAmount) })
+            .ToListAsync(ct)
+            .ConfigureAwait(false);
+
+        var movementMap = expensesByAccount.ToDictionary(x => x.AccountId, x => x.Total);
+        decimal totalExpenses = 0m;
+
+        // 3. Crea un BudgetItem per ogni conto con il totale dei movimenti
+        foreach (var account in accounts)
+        {
+            var amount = movementMap.TryGetValue(account.Id, out var m) ? m : 0m;
+            totalExpenses += amount;
+
+            var item = new BudgetItem
+            {
+                Budget  = budget,
+                Tenant  = budget.Tenant,
+                Account = account,
+                Name    = string.Empty,
+                Amount  = amount,
+            };
+            item.Trace(currentUser);
+            await session.SaveAsync(item, ct).ConfigureAwait(false);
+        }
+
+        // 4. Aggiorna il totale uscite sul budget
+        budget.TotalExpenses = totalExpenses;
+        await session.SaveOrUpdateAsync(budget, ct).ConfigureAwait(false);
+        // La ripartizione per unità viene generata all'approvazione (ApproveBudgetCommandConsumer)
     }
 }
