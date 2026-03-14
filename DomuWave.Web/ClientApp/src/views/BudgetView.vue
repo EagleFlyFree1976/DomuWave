@@ -773,12 +773,6 @@ async function loadBudgetItems() {
       originalAmounts[row.accountId] = row.amount
     }
 
-    // Carica chartOfAccounts in background per il dropdown spese
-    if (!accountsLoaded && store.selectedCondominioId) {
-      chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
-        .then(r => { chartOfAccounts.value = r.data ?? []; accountsLoaded = true })
-        .catch(() => {})
-    }
   } catch {
     budgetTabs.value = []
   } finally {

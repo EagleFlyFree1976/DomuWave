@@ -27,7 +27,8 @@
       "Bash(grep -r \"CreateTenantCommandConsumer\\\\|TenantCreated\" /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers --include=*.cs)",
       "Bash(find /c/Projects/Works/DomuWave/DomuWave.Web/ClientApp/src/views -type f -name *.vue)",
       "Bash(find /c/Projects/Works/DomuWave/DomuWave.Web/ClientApp/src -type f -name *.vue)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(ls -1 /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Models/*.cs)"
     ]
   }
 }

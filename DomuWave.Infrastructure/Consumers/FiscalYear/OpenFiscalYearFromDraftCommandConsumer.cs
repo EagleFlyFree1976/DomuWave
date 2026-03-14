@@ -7,6 +7,7 @@ using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using NHibernate.Linq;
 using SimpleMediator.Core;
+using Models = DomuWave.Services.Models;
 
 namespace DomuWave.Services.Consumers;
 
@@ -113,6 +114,68 @@ public class OpenFiscalYearFromDraftCommandConsumer : InMemoryConsumerBase<OpenF
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
+        // ── Propagazione UnitOpeningBalance dal ClosingBalance dell'esercizio precedente ──
+        if (!isFirstFiscalYear)
+        {
+            await PropagateUnitOpeningBalances(fiscalYear, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         return true;
+    }
+
+    private async Task PropagateUnitOpeningBalances(
+        FiscalYear fiscalYear,
+        object currentUser,
+        CancellationToken cancellationToken)
+    {
+        // Esercizio precedente più recente (chiuso o bloccato)
+        var previousFiscalYear = await session.Query<FiscalYear>()
+            .Where(f => f.Condominium.Id == fiscalYear.Condominium.Id
+                     && f.Id != fiscalYear.Id
+                     && f.EndDate <= fiscalYear.StartDate
+                     && (f.Status.Id == FiscalYearStatus.Closed || f.Status.Id == FiscalYearStatus.Locked)
+                     && !f.IsDeleted)
+            .OrderByDescending(f => f.EndDate)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (previousFiscalYear == null) return;
+
+        // ClosingBalance precedente per unità
+        var previousBalances = await session.Query<Models.UnitOpeningBalance>()
+            .Where(b => b.FiscalYear.Id == previousFiscalYear.Id && !b.IsDeleted)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!previousBalances.Any()) return;
+
+        // Evita duplicati
+        var existingUnitIds = await session.Query<Models.UnitOpeningBalance>()
+            .Where(b => b.FiscalYear.Id == fiscalYear.Id && !b.IsDeleted)
+            .Select(b => b.Unit.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var user = currentUser as CPQ.Core.Memberships.IUser;
+
+        foreach (var prev in previousBalances)
+        {
+            if (existingUnitIds.Contains(prev.Unit.Id)) continue;
+
+            var newBalance = new Models.UnitOpeningBalance
+            {
+                Unit           = prev.Unit,
+                FiscalYear     = fiscalYear,
+                Tenant         = fiscalYear.Tenant,
+                OpeningBalance = prev.ClosingBalance,   // propagazione automatica
+                TotalMovements = 0m,
+                ClosingBalance = 0m,
+            };
+            if (user != null) newBalance.Trace(user);
+            await session.SaveAsync(newBalance, cancellationToken).ConfigureAwait(false);
+        }
+
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 }

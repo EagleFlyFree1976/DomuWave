@@ -2,7 +2,9 @@ using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.RealEstateUnit;
+using DomuWave.Services.Command.UnitOpeningBalance;
 using DomuWave.Services.Dto.RealEstateUnit;
+using DomuWave.Services.Dto.UnitOpeningBalance;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -80,5 +82,25 @@ public class RealEstateUnitsController(
         var deleted = await _mediator.GetResponse(new DeleteRealEstateUnitCommand(CurrentUser.Id, id), ct);
         if (!deleted) return NotFound();
         return NoContent();
+    }
+
+    // ── Bilancio iniziale ──────────────────────────────────────────────────
+
+    [HttpGet("{unitId:int}/opening-balance")]
+    [ProducesResponseType(typeof(UnitOpeningBalanceReadDto), 200)]
+    public async Task<IActionResult> GetOpeningBalance(int unitId, [FromQuery] int fiscalYearId, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new GetUnitOpeningBalanceCommand(CurrentUser.Id, unitId, fiscalYearId), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpPut("{unitId:int}/opening-balance")]
+    [ProducesResponseType(typeof(UnitOpeningBalanceReadDto), 200)]
+    public async Task<IActionResult> SetOpeningBalance(int unitId, [FromBody] SetUnitOpeningBalanceDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(new SetUnitOpeningBalanceCommand(CurrentUser.Id, unitId, dto), ct);
+        return Ok(result);
     }
 }

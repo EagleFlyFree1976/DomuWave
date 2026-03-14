@@ -1,6 +1,6 @@
 /**
  * userStore.js
- * Pinia store per la gestione degli Utenti (sezione SuperAdmin).
+ * Pinia store per la gestione degli Utenti.
  *
  * Gli errori API sono gestiti centralmente dall'interceptor in api.js
  * (CustomEvent 'api:error'). Lo store ri-lancia solo le eccezioni che
@@ -10,6 +10,7 @@
 import { defineStore } from 'pinia'
 import { ref, reactive } from 'vue'
 import { userApi } from '@/services/userService'
+import { userTenantApi } from '@/services/userService'
 
 export const useUserStore = defineStore('user', () => {
 
@@ -28,6 +29,9 @@ export const useUserStore = defineStore('user', () => {
 
   // ─── ACTIONS ───────────────────────────────────────────────────────────────
 
+  /**
+   * Carica tutti gli utenti (SuperAdmin): nessun filtro per tenant.
+   */
   async function fetchList() {
     loading.value = true
     try {
@@ -37,7 +41,52 @@ export const useUserStore = defineStore('user', () => {
         params.isActive = query.isActive
 
       const { data } = await userApi.search(params)
-      users.value     = Array.isArray(data) ? data : (data.items ?? [])
+      users.value      = Array.isArray(data) ? data : (data.items ?? [])
+      totalCount.value = users.value.length
+    } catch {
+      users.value     = []
+      totalCount.value = 0
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * Carica gli utenti del tenant corrente (TenantAdmin).
+   * Recupera prima la lista degli userId associati al tenant,
+   * poi carica i dettagli via search filtrando solo quelli del tenant.
+   *
+   * @param {string|number} tenantId  - ID del tenant attivo
+   * @param {string[]} allowedRoles   - solo questi roleCode vengono mostrati
+   */
+  async function fetchListByTenant(tenantId, allowedRoles) {
+    loading.value = true
+    try {
+      // 1. Recupera le associazioni utente-tenant per questo tenant
+      const { data: tenantUsers } = await userTenantApi.getByTenantId(tenantId)
+      const tenantUserIds = new Set(
+        (Array.isArray(tenantUsers) ? tenantUsers : []).map(tu => String(tu.userId))
+      )
+
+      if (tenantUserIds.size === 0) {
+        users.value      = []
+        totalCount.value = 0
+        return
+      }
+
+      // 2. Cerca gli utenti (con filtri testo/stato) limitandosi ai ruoli consentiti
+      const params = {}
+      if (query.search)   params.search   = query.search
+      if (query.isActive !== null && query.isActive !== undefined)
+        params.isActive = query.isActive
+      if (allowedRoles?.length)
+        params.roles = allowedRoles.join(',')
+
+      const { data } = await userApi.search(params)
+      const allUsers = Array.isArray(data) ? data : (data.items ?? [])
+
+      // 3. Filtra solo quelli associati al tenant
+      users.value      = allUsers.filter(u => tenantUserIds.has(String(u.id)))
       totalCount.value = users.value.length
     } catch {
       users.value     = []
@@ -99,11 +148,8 @@ export const useUserStore = defineStore('user', () => {
       }
 
       if (u.id) {
-        // UPDATE: il PUT può restituire corpo vuoto (204) — non sovrascrivere
-        // currentUser che è già in formato normalizzato
         await userApi.update(u.id, payload)
       } else {
-        // CREATE: normalizza la risposta con gli stessi nomi campi di fetchById
         const { data } = await userApi.create(payload)
         currentUser.value = data ? {
           id:        data.id,
@@ -129,7 +175,7 @@ export const useUserStore = defineStore('user', () => {
     loading.value = true
     try {
       await userApi.delete(id)
-      users.value     = users.value.filter(u => u.id !== id)
+      users.value      = users.value.filter(u => u.id !== id)
       totalCount.value = Math.max(0, totalCount.value - 1)
     } catch (err) {
       throw err
@@ -161,7 +207,7 @@ export const useUserStore = defineStore('user', () => {
 
   return {
     users, currentUser, totalCount, loading, saving, query,
-    fetchList, fetchById, initNew, save, remove, resetPassword,
+    fetchList, fetchListByTenant, fetchById, initNew, save, remove, resetPassword,
     setQueryParams, reset,
   }
 })

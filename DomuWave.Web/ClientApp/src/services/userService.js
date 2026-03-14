@@ -24,6 +24,8 @@ export const rolesApi = {
 export const userTenantApi = {
   /** Tutti i tenant di un utente */
   getByUserId:  (userId)   => api.get(`/user-tenants/user/${userId}`),
+  /** Tutti i condomini (con tenant) ai quali l'utente è associato (SuperAdmin) */
+  getCondominiumsByUser: (userId) => api.get(`/user-tenants/user/${userId}/condominiums`),
   /** Tenant di default di un utente */
   getDefault:   (userId)   => api.get(`/user-tenants/user/${userId}/default`),
   /** Tutti gli utenti associati a un tenant */

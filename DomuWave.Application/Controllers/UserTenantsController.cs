@@ -2,13 +2,13 @@ using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.UserTenant;
+using DomuWave.Services.Dto.Condominium;
 using DomuWave.Services.Dto.UserTenants;
 using DomuWave.Services.Extensions;
 using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
-using CPQ.Core.Extensions;
 namespace DomuWave.Microservice.Controllers;
 
 [ApiExplorerSettings(IgnoreApi = false)]
@@ -94,5 +94,15 @@ public class UserTenantsController(
         return deleted ? NoContent() : NotFound($"UserTenant {id} non trovato.");
     }
 
-     
+    /// <summary>
+    /// Restituisce tutti i condomini (raggruppati per tenant) ai quali l'utente è associato.
+    /// Usato dalla pagina di gestione utenti per SuperAdmin.
+    /// </summary>
+    [HttpGet("user/{userId:long}/condominiums")]
+    [ProducesResponseType(typeof(IList<UserCondominiumDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCondominiumsByUser(long userId, CancellationToken ct)
+    {
+        var items = await _mediator.GetResponse(new GetCondominiumsByUserCommand(CurrentUser.Id, userId), ct);
+        return Ok(items);
+    }
 }

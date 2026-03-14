@@ -1,3 +1,4 @@
+using CPQ.Core.Memberships;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
@@ -67,7 +68,7 @@ public class UsersController(
         var created = await authorizationClient.CreateUserAsync(
             CommonKeys.SystemUserToken, dto, ct);
 
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        return Ok(created);
     }
 
     // ─── PUT /api/users/{id} ──────────────────────────────────────────────────

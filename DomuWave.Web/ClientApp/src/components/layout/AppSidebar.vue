@@ -129,7 +129,7 @@
     if (!session.isSuperAdmin) return []
     const existing = menuStore.menuItems
     return [
-      { key: 'sa-auth', label: 'Autorizzazioni', path: '/autorizzazioni', icon: 'pi-shield', order: 998, tags: [] },
+      /*{ key: 'sa-auth', label: 'Autorizzazioni', path: '/autorizzazioni', icon: 'pi-shield', order: 998, tags: [] },*/
     ].filter(item => !existing.some(m => m.path === item.path))
   })
 

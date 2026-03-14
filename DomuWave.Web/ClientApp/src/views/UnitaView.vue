@@ -61,6 +61,7 @@
               <td>
                 <div class="row-actions">
                   <button class="btn-icon" @click="openOccupanti(u)" title="Occupanti">👤</button>
+                  <button v-if="canEdit" class="btn-icon" @click="openBalanceModal(u)" title="Bilancio iniziale">₿</button>
                   <button v-if="canCreate" class="btn-icon" @click="cloneUnit(u)" title="Clona unità">⧉</button>
                   <button v-if="canEdit" class="btn-icon" @click="openModal(u)" title="Modifica">✎</button>
                   <button v-if="canDelete" class="btn-icon" @click="deleteItem(u.id)" title="Elimina" style="color:var(--accent-red)">✕</button>
@@ -187,13 +188,101 @@
     :unit-label="occupantiUnit.internalNumber || `#${occupantiUnit.id}`"
     @close="onOccupantiClose"
   />
+
+  <!-- Bilancio esercizio modal -->
+  <div class="modal-overlay" v-if="showBalanceModal" @click.self="showBalanceModal=false">
+    <div class="modal modal--wide">
+      <div class="modal-header">
+        <h2>Bilancio esercizio — {{ balanceUnit?.displayName || balanceUnit?.internalNumber }}</h2>
+        <button class="btn-icon" @click="showBalanceModal=false">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="form-group">
+          <label class="form-label">Esercizio *</label>
+          <select class="form-select" v-model.number="balanceForm.fiscalYearId" @change="onBalanceFiscalYearChange">
+            <option :value="null">— Seleziona —</option>
+            <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">
+              {{ fy.code }}{{ fy.isActive ? ' (attivo)' : '' }}
+            </option>
+          </select>
+        </div>
+
+        <div v-if="balanceLoading" class="loading-state" style="padding:1rem 0"><div class="spinner"></div></div>
+
+        <template v-else-if="balanceForm.fiscalYearId">
+
+          <!-- Info: non modificabile (propagato da esercizio precedente o già chiuso) -->
+          <div v-if="balanceData && !balanceData.isEditable" class="info-banner">
+            <span>&#9432;</span>
+            <span v-if="balanceData.isClosed">
+              L'esercizio è chiuso. Il bilancio è definitivo e non modificabile.
+            </span>
+            <span v-else>
+              Il saldo di apertura è propagato automaticamente dal saldo di chiusura dell'esercizio precedente e non è modificabile.
+            </span>
+          </div>
+
+          <!-- Riepilogo saldi (read-only se esercizio chiuso) -->
+          <div v-if="balanceData?.isClosed" class="balance-summary">
+            <div class="balance-row">
+              <span class="balance-label">Saldo apertura</span>
+              <span class="balance-value" :class="balanceData.openingBalance >= 0 ? 'text-green' : 'text-red'">
+                {{ fmtCurrency(balanceData.openingBalance) }}
+              </span>
+            </div>
+            <div class="balance-row">
+              <span class="balance-label">Totale movimenti (quote - pagamenti)</span>
+              <span class="balance-value" :class="balanceData.totalMovements >= 0 ? 'text-red' : 'text-green'">
+                {{ fmtCurrency(balanceData.totalMovements) }}
+              </span>
+            </div>
+            <div class="balance-row balance-row--total">
+              <span class="balance-label">Saldo chiusura</span>
+              <span class="balance-value" :class="balanceData.closingBalance >= 0 ? 'text-green' : 'text-red'">
+                {{ fmtCurrency(balanceData.closingBalance) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Form modifica (solo primo esercizio aperto) -->
+          <template v-else>
+            <div class="form-group" style="margin-top:1rem">
+              <label class="form-label">Saldo di apertura (€)</label>
+              <input class="form-input" type="number" step="0.01"
+                v-model.number="balanceForm.openingBalance"
+                :disabled="balanceData && !balanceData.isEditable" />
+              <span class="field-hint">Positivo = credito verso il condominio; negativo = debito.</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Note</label>
+              <textarea class="form-textarea" v-model="balanceForm.notes" rows="2"
+                :disabled="balanceData && !balanceData.isEditable"></textarea>
+            </div>
+          </template>
+
+        </template>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" @click="showBalanceModal=false">Chiudi</button>
+        <button v-if="balanceData && !balanceData.isClosed && balanceData.isEditable"
+          class="btn btn-primary"
+          @click="saveBalance"
+          :disabled="balanceSaving || !balanceForm.fiscalYearId">
+          <span v-if="balanceSaving" class="spinner" style="width:14px;height:14px"></span>
+          Salva
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { unitApi, unitOwnerApi, unitTenantApi } from '@/services/api'
+import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 import { usePermissions } from '@/composables/usePermissions'
 
@@ -218,6 +307,20 @@ const filterActive    = ref('')
 const errors          = ref({})
 const units           = ref([])
 const occupantCounts  = reactive({}) // { [unitId]: { owners: number, tenants: number } }
+
+// ── Bilancio esercizio ─────────────────────────────────────────────────────
+const showBalanceModal  = ref(false)
+const balanceUnit       = ref(null)
+const fiscalYears       = ref([])
+const balanceForm       = ref({ fiscalYearId: null, openingBalance: 0, notes: '' })
+const balanceData       = ref(null)   // UnitOpeningBalanceReadDto
+const balanceSaving     = ref(false)
+const balanceLoading    = ref(false)
+
+function fmtCurrency(v) {
+  if (v == null) return '—'
+  return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(v)
+}
 
 const unitTypes = [
   'Residenziale', 'Commerciale', 'Artigianale', 'Direzionale',
@@ -364,6 +467,64 @@ async function deleteItem(id) {
   }
 }
 
+// ── Bilancio esercizio: logica ─────────────────────────────────────────────
+async function openBalanceModal(unit) {
+  balanceUnit.value  = unit
+  balanceData.value  = null
+  balanceForm.value  = { fiscalYearId: null, openingBalance: 0, notes: '' }
+  showBalanceModal.value = true
+
+  try {
+    const { data } = await fiscalYearApi.getByCondominium(condominiumId)
+    fiscalYears.value = (data ?? []).filter(f => !f.isDeleted)
+    const active = fiscalYears.value.find(f => f.isActive) ?? fiscalYears.value[0]
+    if (active) {
+      balanceForm.value.fiscalYearId = active.id
+      await loadBalance(unit.id, active.id)
+    }
+  } catch { /* handled by interceptor */ }
+}
+
+async function loadBalance(unitId, fiscalYearId) {
+  if (!fiscalYearId) return
+  balanceLoading.value = true
+  try {
+    const { data } = await unitApi.getOpeningBalance(unitId, fiscalYearId)
+    balanceData.value                = data
+    balanceForm.value.openingBalance = data.openingBalance ?? 0
+    balanceForm.value.notes          = data.notes  ?? ''
+  } catch {
+    balanceData.value = null
+  } finally {
+    balanceLoading.value = false
+  }
+}
+
+async function onBalanceFiscalYearChange() {
+  if (balanceUnit.value && balanceForm.value.fiscalYearId) {
+    await loadBalance(balanceUnit.value.id, balanceForm.value.fiscalYearId)
+  }
+}
+
+async function saveBalance() {
+  if (!balanceUnit.value || !balanceForm.value.fiscalYearId) return
+  balanceSaving.value = true
+  try {
+    const { data } = await unitApi.setOpeningBalance(balanceUnit.value.id, {
+      fiscalYearId:   balanceForm.value.fiscalYearId,
+      openingBalance: balanceForm.value.openingBalance,
+      notes:          balanceForm.value.notes,
+    })
+    balanceData.value = data
+    store.toast('Bilancio di apertura salvato', 'success')
+    showBalanceModal.value = false
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    balanceSaving.value = false
+  }
+}
+
 onMounted(loadData)
 </script>
 
@@ -382,4 +543,18 @@ onMounted(loadData)
 .has-error .form-input,
 .has-error .form-select { border-color: var(--accent-red, #e53e3e); }
 .field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; }
+
+.info-banner { display:flex; align-items:flex-start; gap:0.5rem; background:var(--bg-surface); border:1px solid var(--border); border-radius:6px; padding:0.75rem 1rem; font-size:0.875rem; color:var(--text-muted); margin-top:0.5rem; }
+.field-hint  { font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem; }
+
+.modal--wide { min-width: 520px; }
+
+.balance-summary { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.balance-row { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+.balance-row:last-child { border-bottom: none; }
+.balance-row--total { background: var(--bg-surface); font-weight: 600; }
+.balance-label { color: var(--text-secondary); }
+.balance-value { font-family: monospace; font-size: 1rem; }
+.text-green { color: var(--accent-green, #22c55e); }
+.text-red   { color: var(--accent-red,   #ef4444); }
 </style>

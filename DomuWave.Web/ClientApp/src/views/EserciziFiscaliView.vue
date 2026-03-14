@@ -145,7 +145,6 @@
                                 <th class="col-num">Movimenti</th>
                                 <th class="col-num">Saldo Totale</th>
                                 <th v-if="fy.statusId >= 4" class="col-num">Saldo Finale</th>
-                                <th v-if="balances.some(b => b.isOpeningBalanceEditable)"></th>
                               </tr>
                             </thead>
                             <tbody>
@@ -157,7 +156,9 @@
                                     {{ b.accountTypeLabel }}
                                   </span>
                                 </td>
-                                <td class="col-num">
+                                <td class="col-num"
+                                    :class="b.isOpeningBalanceEditable && editingBalanceId !== b.id ? 'cell-editable' : ''"
+                                    @click="b.isOpeningBalanceEditable && editingBalanceId !== b.id ? startBalanceEdit(b) : null">
                                   <!-- Editing inline saldo iniziale -->
                                   <template v-if="editingBalanceId === b.id">
                                     <div class="inline-edit">
@@ -168,13 +169,16 @@
                                         v-model.number="balanceEditValue"
                                         @keyup.enter="saveBalanceOpening(b)"
                                         @keyup.escape="cancelBalanceEdit"
+                                        @click.stop
+                                        ref="inlineInputRef"
                                       />
-                                      <button class="inline-btn ok" @click="saveBalanceOpening(b)" :disabled="savingBalance">✓</button>
-                                      <button class="inline-btn cancel" @click="cancelBalanceEdit">✕</button>
+                                      <button class="inline-btn ok" @click.stop="saveBalanceOpening(b)" :disabled="savingBalance">✓</button>
+                                      <button class="inline-btn cancel" @click.stop="cancelBalanceEdit">✕</button>
                                     </div>
                                   </template>
                                   <template v-else>
-                                    {{ fmt(b.openingBalance) }}
+                                    <span>{{ fmt(b.openingBalance) }}</span>
+                                    <span v-if="b.isOpeningBalanceEditable" class="edit-hint">✎</span>
                                   </template>
                                 </td>
                                 <td class="col-num text-secondary">{{ fmt(b.movementsTotal) }}</td>
@@ -185,12 +189,6 @@
                                     :class="b.closingBalance >= 0 ? 'text-green' : 'text-red'">
                                   {{ fmt(b.closingBalance) }}
                                 </td>
-                                <td v-if="b.isOpeningBalanceEditable" class="col-action">
-                                  <button v-if="editingBalanceId !== b.id"
-                                          class="btn-icon" title="Modifica saldo iniziale"
-                                          @click="startBalanceEdit(b)">✎</button>
-                                </td>
-                                <td v-else-if="balances.some(x => x.isOpeningBalanceEditable)"></td>
                               </tr>
                             </tbody>
                           </table>
@@ -617,4 +615,11 @@ onMounted(loadFiscalYears)
 .inline-btn.ok     { background: #34d399; color: #0f172a; }
 .inline-btn.cancel { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
 .inline-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Inline editing — cella cliccabile */
+.cell-editable        { cursor: pointer; }
+.cell-editable:hover  { background: var(--bg-surface); }
+.edit-hint            { margin-left: 0.4rem; font-size: 0.7rem; color: var(--text-muted);
+                        opacity: 0; transition: opacity 0.15s; }
+.cell-editable:hover .edit-hint { opacity: 1; }
 </style>

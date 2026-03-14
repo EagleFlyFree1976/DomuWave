@@ -22,7 +22,7 @@
         <Button :label="store.saving ? 'Salvataggio...' : 'Salva'"
                 icon="pi pi-check" class="btn-primary"
                 :loading="store.saving"
-                :disabled="store.saving || store.loading"
+                :disabled="store.saving || store.loading || isReadOnly"
                 @click="handleSave" />
       </div>
     </div>
@@ -35,6 +35,12 @@
 
     <!-- ── FORM ──────────────────────────────────────────────────────────── -->
     <template v-else-if="store.currentUser">
+
+      <!-- Banner sola lettura per TenantAdmin su ruoli non gestibili -->
+      <div v-if="isReadOnly" class="readonly-banner">
+        <i class="pi pi-lock" />
+        <span>Questo utente ha un ruolo che non puoi modificare. Visualizzazione in sola lettura.</span>
+      </div>
 
       <!-- ── CARD: Informazioni principali ──────────────────────────────── -->
       <div class="form-grid">
@@ -54,6 +60,7 @@
               <InputText id="firstName" v-model="store.currentUser.firstName"
                          class="field__input" placeholder="Nome"
                          maxlength="100"
+                         :disabled="isReadOnly"
                          @blur="v$.firstName.$touch()" />
               <small v-if="v$.firstName.$error" class="field__error">
                 {{ v$.firstName.$errors[0].$message }}
@@ -68,6 +75,7 @@
               <InputText id="lastName" v-model="store.currentUser.lastName"
                          class="field__input" placeholder="Cognome"
                          maxlength="100"
+                         :disabled="isReadOnly"
                          @blur="v$.lastName.$touch()" />
               <small v-if="v$.lastName.$error" class="field__error">
                 {{ v$.lastName.$errors[0].$message }}
@@ -83,6 +91,7 @@
                          type="email"
                          class="field__input" placeholder="utente@esempio.it"
                          maxlength="200"
+                         :disabled="isReadOnly"
                          @blur="v$.email.$touch()" />
               <small v-if="v$.email.$error" class="field__error">
                 {{ v$.email.$errors[0].$message }}
@@ -133,6 +142,7 @@
                       placeholder="Seleziona un ruolo..."
                       class="field__input"
                       :loading="loadingRoles"
+                      :disabled="isReadOnly"
                       @blur="v$.roleCode.$touch()" />
               <small v-if="v$.roleCode.$error" class="field__error">
                 {{ v$.roleCode.$errors[0].$message }}
@@ -171,8 +181,8 @@
 
       </div>
 
-      <!-- ── SEZIONE TENANT (solo per utenti esistenti) ─────────────────── -->
-      <div v-if="!isNew" class="form-card form-card--tenants">
+      <!-- ── SEZIONE TENANT (solo SuperAdmin su utenti esistenti) ─────── -->
+      <div v-if="!isNew && session.isSuperAdmin" class="form-card form-card--tenants">
         <div class="form-card__header">
           <i class="pi pi-building" />
           <span>Tenant associati</span>
@@ -315,6 +325,7 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useUserStore } from '@/stores/userStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useSessionStore } from '@/stores/sessionStore'
 import { userTenantApi, rolesApi } from '@/services/userService'
 import { tenantApi } from '@/services/tenantService'
 
@@ -337,14 +348,29 @@ const router  = useRouter()
 const route   = useRoute()
 const toast   = useToast()
 const confirm = useConfirm()
-const store  = useUserStore()
-const auth   = useAuthStore()
+const store   = useUserStore()
+const auth    = useAuthStore()
+const session = useSessionStore()
+
+// Ruoli gestibili da TenantAdmin
+const TENANT_ADMIN_ROLES = ['Collaboratore', 'Condomino']
 
 const isSelf = computed(() => {
   if (!auth.user || !store.currentUser) return false
   if (auth.user.username && store.currentUser.email)
     return auth.user.username === store.currentUser.email
   return String(auth.user.id) === String(store.currentUser.id)
+})
+
+/**
+ * TenantAdmin può modificare solo utenti con ruolo in TENANT_ADMIN_ROLES.
+ * SuperAdmin può sempre modificare.
+ */
+const isReadOnly = computed(() => {
+  if (session.isSuperAdmin) return false
+  if (isNew.value) return false   // creazione: sempre editabile
+  const rc = store.currentUser?.roleCode
+  return !TENANT_ADMIN_ROLES.includes(rc)
 })
 
 // ─── COMPUTED ────────────────────────────────────────────────────────────────
@@ -427,7 +453,11 @@ async function loadRoles() {
   loadingRoles.value = true
   try {
     const { data } = await rolesApi.getByModule('DomuWeb')
-    availableRoles.value = Array.isArray(data) ? data : []
+    const allRoles = Array.isArray(data) ? data : []
+    // TenantAdmin può assegnare solo Collaboratore e Condomino
+    availableRoles.value = session.isTenantAdmin
+      ? allRoles.filter(r => TENANT_ADMIN_ROLES.includes(r.code))
+      : allRoles
   } catch {
     availableRoles.value = []
   } finally {
@@ -917,6 +947,20 @@ function roleSeverity(roleCode) {
 }
 .loading-state__icon { font-size: 36px; color: var(--accent); }
 .error-state__icon   { font-size: 36px; color: #ff6b6b; }
+
+/* ── READ-ONLY BANNER ────────────────────────────────────────────────────── */
+.readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 8px;
+  font-size: 13px;
+  color: #b45309;
+}
+.readonly-banner .pi { font-size: 15px; flex-shrink: 0; }
 
 /* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {

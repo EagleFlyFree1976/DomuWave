@@ -7,6 +7,7 @@ using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using NHibernate.Linq;
 using SimpleMediator.Core;
+using Models = DomuWave.Services.Models;
 
 namespace DomuWave.Services.Consumers;
 
@@ -78,6 +79,82 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
+        // ── Calcolo ClosingBalance per ogni UnitOpeningBalance dell'esercizio ──────
+        await ComputeUnitClosingBalances(command.FiscalYearId, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
         return true;
+    }
+
+    private async Task ComputeUnitClosingBalances(
+        int fiscalYearId,
+        object currentUser,
+        CancellationToken cancellationToken)
+    {
+        // Somma quote addebitate e pagate per unità nell'esercizio
+        // CondominiumFee → Installment → FiscalYear
+        var feesByUnit = await session.Query<CondominiumFee>()
+            .Where(f => f.Installment.FiscalYear.Id == fiscalYearId && !f.IsDeleted)
+            .GroupBy(f => f.Unit.Id)
+            .Select(g => new
+            {
+                UnitId     = g.Key,
+                TotalDue   = g.Sum(f => f.AmountDue),
+                TotalPaid  = g.Sum(f => f.AmountPaid),
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // Carica i record UnitOpeningBalance esistenti per l'esercizio
+        var unitBalances = await session.Query<Models.UnitOpeningBalance>()
+            .Where(b => b.FiscalYear.Id == fiscalYearId && !b.IsDeleted)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var feeMap = feesByUnit.ToDictionary(f => f.UnitId);
+        var user   = currentUser as CPQ.Core.Memberships.IUser;
+
+        foreach (var balance in unitBalances)
+        {
+            if (feeMap.TryGetValue(balance.Unit.Id, out var fees))
+                balance.TotalMovements = fees.TotalDue - fees.TotalPaid;
+            else
+                balance.TotalMovements = 0m;
+
+            balance.ClosingBalance = balance.OpeningBalance + balance.TotalMovements;
+            if (user != null) balance.Trace(user);
+            await session.UpdateAsync(balance, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Per le unità che hanno fee ma non ancora un record UnitOpeningBalance,
+        // crearlo con OpeningBalance=0
+        var existingUnitIds = unitBalances.Select(b => b.Unit.Id).ToHashSet();
+
+        var fiscalYear = await session.Query<FiscalYear>()
+            .FirstOrDefaultAsync(f => f.Id == fiscalYearId && !f.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var fee in feesByUnit.Where(f => !existingUnitIds.Contains(f.UnitId)))
+        {
+            var unit = await session.Query<RealEstateUnit>()
+                .FirstOrDefaultAsync(u => u.Id == fee.UnitId && !u.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (unit == null || fiscalYear == null) continue;
+
+            var newBalance = new Models.UnitOpeningBalance
+            {
+                Unit           = unit,
+                FiscalYear     = fiscalYear,
+                Tenant         = unit.Tenant,
+                OpeningBalance = 0m,
+                TotalMovements = fee.TotalDue - fee.TotalPaid,
+                ClosingBalance = fee.TotalDue - fee.TotalPaid,
+            };
+            if (user != null) newBalance.Trace(user);
+            await session.SaveAsync(newBalance, cancellationToken).ConfigureAwait(false);
+        }
+
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 }
