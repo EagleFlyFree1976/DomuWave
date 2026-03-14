@@ -122,9 +122,9 @@
         </Column>
 
         <!-- Colonna: Ruolo -->
-        <Column field="roleCode" header="Ruolo" sortable style="width: 160px">
+        <Column field="role" header="Ruolo" sortable style="width: 160px">
           <template #body="{ data }">
-            <Tag :value="formatRole(data.roleCode)"
+            <Tag :value="data.role"
                  :severity="roleSeverity(data.roleCode)"
                  class="role-tag" />
           </template>
@@ -282,11 +282,12 @@ const auth    = useAuthStore()
 const session = useSessionStore()
 
 // Ruoli gestibili da TenantAdmin
-const TENANT_ADMIN_ROLES = ['Collaboratore', 'Condomino']
+const TENANT_ADMIN_ROLES = ['CLB', 'Condomino']
 
 function canManage(userData) {
   if (session.isSuperAdmin) return true
-  return TENANT_ADMIN_ROLES.includes(userData.roleCode)
+  const role = userData.roleCode ?? userData.role ?? ''
+  return TENANT_ADMIN_ROLES.includes(role)
 }
 
 function isCurrentUser(userData) {

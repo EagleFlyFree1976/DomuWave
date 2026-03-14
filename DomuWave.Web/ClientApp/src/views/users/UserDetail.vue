@@ -133,6 +133,9 @@
             <div class="field" :class="{ 'field--error': v$.roleCode.$error }">
               <label class="field__label" for="roleCode">
                 Ruolo <span class="required">*</span>
+
+             
+
               </label>
               <Select id="roleCode"
                       v-model="store.currentUser.roleCode"
@@ -353,7 +356,7 @@ const auth    = useAuthStore()
 const session = useSessionStore()
 
 // Ruoli gestibili da TenantAdmin
-const TENANT_ADMIN_ROLES = ['Collaboratore', 'Condomino']
+const TENANT_ADMIN_ROLES = ['CLB', 'Condomino']
 
 const isSelf = computed(() => {
   if (!auth.user || !store.currentUser) return false
@@ -369,7 +372,7 @@ const isSelf = computed(() => {
 const isReadOnly = computed(() => {
   if (session.isSuperAdmin) return false
   if (isNew.value) return false   // creazione: sempre editabile
-  const rc = store.currentUser?.roleCode
+  const rc = store.currentUser?.roleCode ?? store.currentUser?.role ?? ''
   return !TENANT_ADMIN_ROLES.includes(rc)
 })
 
@@ -481,6 +484,7 @@ async function handleSave() {
   const valid = await v$.value.$validate()
   if (!valid) return
 
+  const wasNew = isNew.value
   try {
     const saved = await store.save()
     toast.add({
@@ -489,7 +493,7 @@ async function handleSave() {
       detail: `Utente "${saved?.firstName ?? ''} ${saved?.lastName ?? ''}" salvato con successo.`,
       life: 3000,
     })
-    if (isNew.value) {
+    if (wasNew) {
       router.replace({ name: 'user-detail', params: { id: saved.id } })
     }
   } catch {

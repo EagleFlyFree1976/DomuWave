@@ -1,14 +1,18 @@
+using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Clients;
 using DomuWave.Services.Clients.Request;
+using DomuWave.Services.Command.UserTenant;
 using DomuWave.Services.Dto.UserTenants;
 using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using SimpleMediator.Core;
 
 namespace DomuWave.Microservice.Controllers;
 
@@ -22,9 +26,12 @@ public class UsersController(
     IOptionsMonitor<OxCoreSettings> configuration,
     IAuthorizationClient authorizationClient,
     IUserTenantService userTenantService,
-    IUserService userService)
+    ITenantService tenantService,
+    IUserService userService,
+    IMediator mediator)
     : PrivateControllerBase(logger, configuration)
 {
+    private readonly IMediator _mediator = mediator;
     // ─── GET /api/users/search ────────────────────────────────────────────────
 
     [HttpGet("search")]
@@ -37,6 +44,14 @@ public class UsersController(
     {
         var users = await authorizationClient.SearchUsersAsync(
             CommonKeys.SystemUserToken, search, isActive, roles, ct);
+
+        if (!this.CurrentUser.IsSystemUser)
+        {
+            var items = await _mediator.GetResponse(new GetUserTenantsByTenantCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
+            var user = users.Where(k => k.Id == 356).FirstOrDefault();
+            users = users.Where(u => items.Any(k => k.UserId == u.Id && k.IsActive && !k.IsDeleted)).ToList();
+
+        }
 
         return Ok(users ?? new List<CPQ.Core.DTO.UserDto>());
     }
@@ -65,8 +80,35 @@ public class UsersController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
+        // 1. Crea l'utente sull'auth service tramite Refit
         var created = await authorizationClient.CreateUserAsync(
             CommonKeys.SystemUserToken, dto, ct);
+
+        // 2. Se il chiamante ha un tenant nel contesto, associa automaticamente
+        //    il nuovo utente a quel tenant — senza delegare al client.
+        if (created != null && TenantId.HasValue)
+        {
+            var currentUser = await userService.GetByIdAsync(CurrentUser.Id, ct)
+                .ConfigureAwait(false);
+
+            var tenant = await tenantService.GetByIdAsync(TenantId.Value, currentUser, ct)
+                .ConfigureAwait(false);
+
+            if (tenant != null)
+            {
+                var userTenant = new UserTenant
+                {
+                    UserId    = created.Id,
+                    Tenant    = tenant,
+                    IsDefault = false,
+                    IsActive  = true,
+                };
+                userTenant.Trace(currentUser);
+
+                await userTenantService.CreateAsync(userTenant, currentUser, ct)
+                    .ConfigureAwait(false);
+            }
+        }
 
         return Ok(created);
     }

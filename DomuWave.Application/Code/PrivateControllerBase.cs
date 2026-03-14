@@ -14,11 +14,12 @@ namespace DomuWave.Application.Code
             get
 
             {
-                if (HttpContext.Items.ContainsKey("TenantId"))
+
+                if (Request.Headers.TryGetValue("X-Tenant-Id", out var tenantIdValue))
                 {
-                    
-                    return Guid.Parse(HttpContext.Items["TenantId"].ToString());
+                    return Guid.Parse(tenantIdValue);
                 }
+                
                 return null;
             }
         }

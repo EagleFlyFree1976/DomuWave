@@ -108,7 +108,8 @@ export const useUserStore = defineStore('user', () => {
         lastName:  data.lastName,
         email:     data.email,
         fullName:  data.fullName,
-        roleCode:  data.role,
+        roleCode: data.roleCode,
+        role:data.role,
         isActive:  data.isActive,
         login:     data.login,
       } : null
@@ -127,7 +128,8 @@ export const useUserStore = defineStore('user', () => {
       name:      '',
       email:     '',
       password:  '',
-      roleCode:  '',
+      roleCode: '',
+      role:'',
       isActive:  true,
     }
   }
@@ -141,6 +143,7 @@ export const useUserStore = defineStore('user', () => {
         name:     u.firstName,
         surName:  u.lastName,
         roleCode: u.roleCode,
+        role: u.role,
         isActive: u.isActive,
         ...(u.id
           ? {}
@@ -151,13 +154,15 @@ export const useUserStore = defineStore('user', () => {
         await userApi.update(u.id, payload)
       } else {
         const { data } = await userApi.create(payload)
+        console.log("Data", data);
         currentUser.value = data ? {
           id:        data.id,
           firstName: data.name,
           lastName:  data.lastName,
           email:     data.email,
           fullName:  data.fullName,
-          roleCode:  data.role,
+          roleCode:  data.roleCode,
+          role:  data.role,
           isActive:  data.isActive ?? true,
           login:     data.login,
         } : null
