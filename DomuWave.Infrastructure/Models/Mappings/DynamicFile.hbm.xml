@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.DynamicFile, DomuWave.Services" table="DynamicFile" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='DynamicFile'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant"      class="DomuWave.Services.Models.Tenant, DomuWave.Services"                  column="TenantId"     not-null="true" />
+    <many-to-one name="StorageType" class="DomuWave.Services.Models.DynamicFileStorageType, DomuWave.Services"  column="StorageTypeId" not-null="true" lazy="false" fetch="join" />
+
+    <property name="EntityFullName"   column="EntityFullName"   type="String" length="500"  not-null="true" />
+    <property name="EntityName"       column="EntityName"       type="String" length="200"  not-null="true" />
+    <property name="EntityId"         column="EntityId"         type="Int32"                not-null="true" />
+
+    <property name="Name"             column="FileName"         type="String" length="500"  not-null="true" />
+    <property name="FileName"         column="FileName"         type="String" length="500"  not-null="true"  insert="false" update="false" />
+    <property name="FileExtension"    column="FileExtension"    type="String" length="20" />
+    <property name="ContentType"      column="ContentType"      type="String" length="200"  not-null="true" />
+    <property name="FileSize"         column="FileSize"         type="Int64"                not-null="true" />
+    <property name="Description"      column="Description"      type="String" length="1000" />
+    <property name="Tags"             column="Tags"             type="String" length="500" />
+    <property name="StorageReference" column="StorageReference" type="String" length="2000" />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"  length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean" not-null="true" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+  </class>
+
+</hibernate-mapping>

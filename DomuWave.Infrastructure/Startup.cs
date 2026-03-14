@@ -2,7 +2,10 @@ using System.Net.Http.Headers;
 using DomuWave.Services.Clients;
 using DomuWave.Services.Consumers.Tenant;
 using DomuWave.Services.Implementations;
+using DomuWave.Services.Implementations.FileStorage;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.FileStorage;
+using DomuWave.Services.Settings;
 using CPQ.Core;
 using CPQ.Core.Handlers;
 using CPQ.Core.Services;
@@ -36,9 +39,17 @@ public static class Startup
 
     public static IServiceCollection AddDomuWaveAppServices(
         this IServiceCollection services,
-        OxCoreSettings coreSettings)
+        OxCoreSettings coreSettings,
+        Action<DynamicFileSettings>? configureDynamicFile = null)
     {
         _initClient(services, coreSettings);
+
+        // ─── Dynamic File Repository ───────────────────────────────────────────
+        services.Configure<DynamicFileSettings>(opts => configureDynamicFile?.Invoke(opts));
+        services.AddScoped<IFileStorageProvider, DatabaseFileStorageProvider>();
+        services.AddScoped<IFileStorageProvider, FileSystemStorageProvider>();
+        services.AddScoped<IFileStorageProviderFactory, FileStorageProviderFactory>();
+        services.AddScoped<IDynamicFileService, DynamicFileService>();
 
         // ─── Services (repository layer) ──────────────────────────────────────
 
