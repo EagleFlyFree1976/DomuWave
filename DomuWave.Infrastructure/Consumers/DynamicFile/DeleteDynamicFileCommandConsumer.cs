@@ -51,7 +51,7 @@ public class DeleteDynamicFileCommandConsumer
         }
 
         await _dynamicFileService
-            .DeleteAsync(existing, currentUser, cancellationToken)
+            .DeleteAsync(existing.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return true;

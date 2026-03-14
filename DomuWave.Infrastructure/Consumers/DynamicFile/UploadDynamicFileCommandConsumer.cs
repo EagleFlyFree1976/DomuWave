@@ -1,5 +1,6 @@
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
+using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.DynamicFile;

@@ -1,3 +1,4 @@
+using CPQ.Core.Extensions;
 using DomuWave.Services.Dto.DynamicFile;
 using DomuWave.Services.Models;
 
@@ -42,7 +43,6 @@ public static class DynamicFileMappingExtensions
             EntityFullName  = dto.EntityFullName,
             EntityName      = dto.EntityName,
             EntityId        = dto.EntityId,
-            Name            = dto.FileName,
             FileName        = dto.FileName,
             FileExtension   = string.IsNullOrWhiteSpace(extension) ? null : extension,
             ContentType     = dto.ContentType,

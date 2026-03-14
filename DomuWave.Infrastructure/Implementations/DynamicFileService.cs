@@ -1,3 +1,4 @@
+using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
@@ -34,4 +35,33 @@ public class DynamicFileService : BaseService, IDynamicFileService
         => await session.Query<DynamicFileContent>()
             .FirstOrDefaultAsync(x => x.File.Id == fileId && !x.IsDeleted, ct)
             .ConfigureAwait(false);
+
+    public async Task<DynamicFile> UpdateAsync(DynamicFile entity, IUser currentUser, CancellationToken cancellationToken)
+    {
+        entity.Trace(currentUser);
+        await session.SaveOrUpdateAsync(entity, cancellationToken);
+        await session.FlushAsync(cancellationToken);
+        return entity;
+    }
+
+    public async Task<DynamicFile> GetByIdAsync(int id, IUser currentUser, CancellationToken cancellationToken)
+    {
+        return await session.Query<DynamicFile>()
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
+    }
+
+    public async Task<bool> DeleteAsync(int id, IUser currentUser, CancellationToken cancellationToken)
+    {
+        var document = await session.Query<DynamicFile>()
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (document == null)
+            return false;
+
+        document.Trace(currentUser);
+        document.IsDeleted = true;
+        await session.SaveOrUpdateAsync(document, cancellationToken);
+        await session.FlushAsync(cancellationToken);
+        return true;
+    }
 }

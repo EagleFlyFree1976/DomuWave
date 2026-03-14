@@ -1,3 +1,4 @@
+using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.DynamicFile;

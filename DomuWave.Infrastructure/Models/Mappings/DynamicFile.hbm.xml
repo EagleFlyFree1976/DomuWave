@@ -21,7 +21,7 @@
     <property name="EntityName"       column="EntityName"       type="String" length="200"  not-null="true" />
     <property name="EntityId"         column="EntityId"         type="Int32"                not-null="true" />
 
-    <property name="Name"             column="FileName"         type="String" length="500"  not-null="true" />
+    
     <property name="FileName"         column="FileName"         type="String" length="500"  not-null="true"  insert="false" update="false" />
     <property name="FileExtension"    column="FileExtension"    type="String" length="20" />
     <property name="ContentType"      column="ContentType"      type="String" length="200"  not-null="true" />

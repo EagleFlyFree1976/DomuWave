@@ -3,7 +3,7 @@ using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Interfaces;
 
-public interface IDynamicFileService : IBaseService<DynamicFile, int>
+public interface IDynamicFileService : IService<DynamicFile, int>
 {
     Task<IList<DynamicFile>> GetByEntityAsync(string entityName, int entityId, IUser currentUser, CancellationToken ct);
     Task<IList<DynamicFile>> GetByEntityFullNameAsync(string entityFullName, int entityId, IUser currentUser, CancellationToken ct);

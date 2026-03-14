@@ -61,6 +61,7 @@ public static class Startup
         
 
 
+        
         services.AddScoped<IBudgetItemService, BudgetItemService>();
         services.AddScoped<IBudgetService, BudgetService>();
         services.AddScoped<IChartOfAccountsCategoryTemplateService, ChartOfAccountsCategoryTemplateService>();
