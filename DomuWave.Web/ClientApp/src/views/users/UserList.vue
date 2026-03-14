@@ -296,15 +296,17 @@ function isCurrentUser(userData) {
   return String(auth.user.id) === String(userData.id)
 }
 
-// ─── FILTRI STATE ────────────────────────────────────────────────────────────
+// ─── FILTRI STATE ─────────────────────────────────────────────────────────────
+// Tutti i filtri sono inizializzati dallo store e vi vengono riscritti ad ogni
+// modifica, così sopravvivono alla navigazione dettaglio → lista.
 let searchDebounce = null
 
-const searchText           = ref(store.query.search)
-const selectedStatus       = ref(store.query.isActive)
-const selectedTenantId     = ref(null)
-const selectedCondominiumId = ref(null)
-const sortField            = ref('firstName')
-const sortOrder            = ref(1)
+const searchText            = ref(store.query.search)
+const selectedStatus        = ref(store.query.isActive)
+const selectedTenantId      = ref(store.query.tenantId)
+const selectedCondominiumId = ref(store.query.condominiumId)
+const sortField             = ref('firstName')
+const sortOrder             = ref(1)
 
 // Opzioni condomini per il filtro (caricate quando si sceglie un tenant)
 const condominiumOptions  = ref([])
@@ -368,10 +370,26 @@ const paginationInfo = computed(() => {
 
 // ─── LIFECYCLE ───────────────────────────────────────────────────────────────
 onMounted(async () => {
+  // Azzera i filtri se non si arriva dal dettaglio utente
+  const prevRoute = window.history.state?.back ?? ''
+  const comingFromDetail = prevRoute.startsWith('/users/')
+  if (!comingFromDetail) {
+    store.setQueryParams({ search: '', isActive: null, tenantId: null, condominiumId: null })
+    searchText.value            = ''
+    selectedStatus.value        = null
+    selectedTenantId.value      = null
+    selectedCondominiumId.value = null
+    condominiumOptions.value    = []
+  }
+
   if (session.isSuperAdmin && !session.availableTenants.length) {
     await session.loadTenants()
   }
-  loadList()
+  await loadList()
+  // Ricostruisce le opzioni condominio se il filtro tenant era già attivo
+  if (selectedTenantId.value) {
+    buildCondominiumOptionsFromCache()
+  }
 })
 
 // ─── METHODS ────────────────────────────────────────────────────────────────
@@ -446,8 +464,7 @@ async function onTenantChange() {
   selectedCondominiumId.value = null
   condominiumOptions.value    = []
 
-  store.setQueryParams({ search: searchText.value })
-  // Carica prima gli utenti del tenant, poi estrae i condomini dalla cache
+  store.setQueryParams({ tenantId: selectedTenantId.value, condominiumId: null })
   await loadList()
   buildCondominiumOptionsFromCache()
 }
@@ -468,7 +485,7 @@ function buildCondominiumOptionsFromCache() {
 }
 
 async function onCondominiumChange() {
-  store.setQueryParams({ search: searchText.value })
+  store.setQueryParams({ condominiumId: selectedCondominiumId.value })
   await loadList()
 }
 
@@ -496,7 +513,7 @@ function resetFilters() {
   selectedTenantId.value      = null
   selectedCondominiumId.value = null
   condominiumOptions.value    = []
-  store.setQueryParams({ search: '', isActive: null })
+  store.setQueryParams({ search: '', isActive: null, tenantId: null, condominiumId: null })
   loadList()
 }
 

@@ -23,8 +23,10 @@ export const useUserStore = defineStore('user', () => {
   const saving       = ref(false)
 
   const query = reactive({
-    search:   '',
-    isActive: null,   // null = tutti, true = attivi, false = inattivi
+    search:          '',
+    isActive:        null,   // null = tutti, true = attivi, false = inattivi
+    tenantId:        null,   // filtro tenant (SuperAdmin)
+    condominiumId:   null,   // filtro condominio (SuperAdmin)
   })
 
   // ─── ACTIONS ───────────────────────────────────────────────────────────────
@@ -207,7 +209,7 @@ export const useUserStore = defineStore('user', () => {
     totalCount.value  = 0
     loading.value     = false
     saving.value      = false
-    Object.assign(query, { search: '', isActive: null })
+    Object.assign(query, { search: '', isActive: null, tenantId: null, condominiumId: null })
   }
 
   return {
