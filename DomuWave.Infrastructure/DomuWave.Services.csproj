@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <None Remove="Models\Mappings\DynamicFile.hbm.xml" />
+    <None Remove="Models\Mappings\DynamicFileContent.hbm.xml" />
+    <None Remove="Models\Mappings\DynamicFileStorageType.hbm.xml" />
     <None Remove="Models\Mappings\AccountBalance.hbm.xml" />
     <None Remove="Models\Mappings\Budget.hbm.xml" />
     <None Remove="Models\Mappings\BudgetItem.hbm.xml" />
@@ -91,6 +94,9 @@
     <EmbeddedResource Include="Models\Mappings\UnitOwner.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UserTenant.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UnitTenant.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\DynamicFile.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\DynamicFileContent.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\DynamicFileStorageType.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>

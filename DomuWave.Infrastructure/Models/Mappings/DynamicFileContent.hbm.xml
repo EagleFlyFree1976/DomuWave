@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.DynamicFileContent, DomuWave.Services" table="DynamicFileContent" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='DynamicFileContent'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="File" class="DomuWave.Services.Models.DynamicFile, DomuWave.Services" column="FileId" not-null="true" />
+
+    <property name="Base64Data" column="Base64Data" type="StringClob" not-null="true" />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"  length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean" not-null="true" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+  </class>
+
+</hibernate-mapping>

@@ -370,4 +370,30 @@ export const communicationApi = {
   delete:             (id)            => api.delete(`/communications/${id}`),
 }
 
+// ─── Dynamic File Repository ──────────────────────────────────
+export const dynamicFileApi = {
+  /**
+   * Lista file collegati a un'entita'.
+   * @param {string} entityName       - Nome semplice (es. "Expense")
+   * @param {number} entityId         - Id dell'entita'
+   * @param {string} [entityFullName] - Nome completo opzionale per ricerca esatta
+   */
+  getByEntity:  (entityName, entityId, entityFullName) =>
+    api.get('/dynamic-files/by-entity', { params: { entityName, entityId, entityFullName } }),
+
+  /** Metadati del file (senza contenuto base64) */
+  getById:      (id)       => api.get(`/dynamic-files/${id}`),
+
+  /** Metadati + contenuto base64 (per download) */
+  download:     (id)       => api.get(`/dynamic-files/${id}/download`),
+
+  /** Carica un nuovo file. dto: { entityFullName, entityName, entityId, fileName, contentType, base64Data, description?, tags? } */
+  upload:       (data)     => api.post('/dynamic-files', data),
+
+  /** Aggiorna descrizione e tag */
+  update:       (id, data) => api.put(`/dynamic-files/${id}`, data),
+
+  delete:       (id)       => api.delete(`/dynamic-files/${id}`),
+}
+
 export default api
