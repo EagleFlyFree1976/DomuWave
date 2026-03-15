@@ -762,9 +762,9 @@ async function loadBudgetItems() {
       }
     })
 
-    // Fallback: se non ci sono livelli distinti, tratta tutte le voci come righe
-    // raggruppate per tipo (retrocompatibilità con piani dei conti flat)
-    if (budgetTabs.value.length === 0 && level2.length === 0 && items.length > 0) {
+    // Fallback: se non ci sono capitoli di livello 1 (es. dati migrati piatti),
+    // tratta tutte le voci come righe in un unico tab
+    if (budgetTabs.value.length === 0 && items.length > 0) {
       const flat = items.sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))
       budgetTabs.value = [{
         id:     '__all__',

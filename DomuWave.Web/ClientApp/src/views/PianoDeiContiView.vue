@@ -194,11 +194,11 @@
                 </div>
               </template>
 
-              <div class="form-group" v-if="!editing">
+              <div class="form-group">
                 <label class="form-label">Conto padre</label>
                 <select class="form-select" v-model.number="form.parentAccountId">
                   <option :value="null">— Nessuno (radice) —</option>
-                  <option v-for="a in accounts" :key="a.id" :value="a.id">
+                  <option v-for="a in parentAccountOptions" :key="a.id" :value="a.id">
                     {{ a.code }} – {{ a.name }}
                   </option>
                 </select>
@@ -410,6 +410,11 @@ const form = ref(emptyForm())
 const condominioName = computed(() =>
   store.condomini?.find(c => c.id === store.selectedCondominioId)?.name ?? '')
 
+// Esclude il conto stesso dalla lista dei parent selezionabili (evita cicli)
+const parentAccountOptions = computed(() =>
+  accounts.value.filter(a => a.id !== editing.value)
+)
+
 const filtered = computed(() => {
   let list = accounts.value
   if (filterType.value !== '') list = list.filter(a => a.type === filterType.value)
@@ -528,6 +533,7 @@ async function save() {
         code:                     form.value.code,
         name:                     form.value.name,
         type:                     form.value.type,
+        parentAccountId:          form.value.parentAccountId,
         categoryId:               form.value.categoryId,
         description:              form.value.description || null,
         isActive:                 form.value.isActive,

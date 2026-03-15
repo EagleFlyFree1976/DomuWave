@@ -1,0 +1,30 @@
+{
+  "servers": {
+    "domuwave-sqlserver": {
+      "type": "stdio",
+      "command": "mcp-sqlserver",
+      "env": {
+        "SQLSERVER_HOST": "eaglefly",
+        "SQLSERVER_PORT": "1433",
+        "SQLSERVER_DATABASE": "DomuWave",
+        "SQLSERVER_USER": "Cashflow",
+        "SQLSERVER_PASSWORD": "XiBw$2aun.J!2vt",
+        "SQLSERVER_ENCRYPT": "false",
+        "SQLSERVER_TRUST_CERT": "true"
+      }
+    },
+    "vzcondominio-sqlserver": {
+      "type": "stdio",
+      "command": "mcp-sqlserver",
+      "env": {
+        "SQLSERVER_HOST": "eaglefly",
+        "SQLSERVER_PORT": "1433",
+        "SQLSERVER_DATABASE": "MSSql217693",
+        "SQLSERVER_USER": "Cashflow",
+        "SQLSERVER_PASSWORD": "XiBw$2aun.J!2vt",
+        "SQLSERVER_ENCRYPT": "false",
+        "SQLSERVER_TRUST_CERT": "true"
+      }
+    }
+  }
+}

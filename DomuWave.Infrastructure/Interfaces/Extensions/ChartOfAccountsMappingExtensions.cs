@@ -65,11 +65,14 @@ public static class ChartOfAccountsMappingExtensions
     public static void ApplyUpdate(this ChartOfAccounts entity, UpdateChartOfAccountsDto dto,
         ChargeabilityType chargeabilityType,
         ChartOfAccountsCategory? category = null,
-        MillesimalTable? defaultMillesimalTable = null)
+        MillesimalTable? defaultMillesimalTable = null,
+        ChartOfAccounts? parentAccount = null)
     {
         entity.Code                   = dto.Code.Trim();
         entity.Name                   = dto.Name.Trim();
         entity.Type                   = dto.Type;
+        entity.ParentAccount          = parentAccount;
+        entity.Level                  = parentAccount != null ? parentAccount.Level + 1 : 1;
         entity.Category               = category;
         entity.Description            = dto.Description;
         entity.IsActive               = dto.IsActive;
