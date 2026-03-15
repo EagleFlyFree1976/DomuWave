@@ -123,6 +123,10 @@ public class CondominiumInstallmentsController(
         return Ok(result);
     }
 
+    [HttpGet("by-budget/{budgetId:int}")]
+    public async Task<IActionResult> GetByBudget(int budgetId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetInstallmentsByBudgetCommand(CurrentUser.Id, budgetId), ct));
+
     [HttpGet("by-condominium/{condominiumId:int}/open")]
     public async Task<IActionResult> GetOpen(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetOpenInstallmentsCommand(CurrentUser.Id, condominiumId), ct));

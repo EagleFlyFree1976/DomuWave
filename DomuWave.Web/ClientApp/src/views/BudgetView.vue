@@ -63,6 +63,8 @@
                 <td>
                   <div class="row-actions">
                     <button class="btn btn-sm btn-ghost" @click="openItemsModal(b)">Voci</button>
+                    <button v-if="b.type === 1 && (b.statusId === 2 || b.statusId === 3)"
+                            class="btn btn-sm btn-ghost" @click="goToRate(b)" title="Vai alle rate generate">Rate ↗</button>
                     <button v-if="canEdit && b.statusId === 1 && !blockedTypes.has(b.type)"
                             class="btn btn-sm btn-ghost"
                             @click="openApproveModal(b)">Approva</button>
@@ -72,7 +74,9 @@
                     </span>
                     <button v-if="canEdit && b.statusId === 2" class="btn btn-sm btn-ghost"
                             @click="closeBudget(b)">Chiudi</button>
-                    <button v-if="canEdit && (b.statusId === 2 || b.statusId === 3)"
+                    <button v-if="session.isSuperAdmin && b.statusId === 2" class="btn btn-sm btn-ghost btn-reopen"
+                            @click="reopenBudget(b)" title="Riapri in bozza (SuperAdmin)">Riapri</button>
+                    <button v-if="canEdit && b.statusId === 2 && b.type === 1"
                             class="btn btn-sm btn-ghost"
                             @click="openGenerateModal(b)">Genera rate</button>
                     <button v-if="canEdit && b.statusId === 1" class="btn-icon"
@@ -202,7 +206,15 @@
           <button class="btn-icon" @click="showGenerateModal = false">✕</button>
         </div>
         <div class="modal-body">
-          <p class="approve-info">
+          <div v-if="generateHasExisting" class="generate-warning">
+            <span class="generate-warning-icon">⚠</span>
+            <div>
+              <strong>Attenzione: rate già generate</strong><br>
+              Le rate esistenti per questo budget verranno eliminate e rigenerate.
+              Questa operazione non può essere annullata.
+            </div>
+          </div>
+          <p v-else class="approve-info">
             Verranno generate le rate e le relative quote per ogni unità
             in base alla tabella millesimale attiva.
           </p>
@@ -223,9 +235,10 @@
         </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" @click="showGenerateModal = false">Annulla</button>
-          <button class="btn btn-primary" @click="confirmGenerate" :disabled="savingGenerate">
+          <button class="btn btn-primary" :class="{ 'btn-danger': generateHasExisting }"
+                  @click="confirmGenerate" :disabled="savingGenerate">
             <span v-if="savingGenerate" class="spinner" style="width:14px;height:14px"></span>
-            Genera rate
+            {{ generateHasExisting ? 'Rigenera rate' : 'Genera rate' }}
           </button>
         </div>
       </div>
@@ -331,6 +344,7 @@
                 <th style="width:90px">Codice</th>
                 <th>Voce</th>
                 <th style="width:160px" class="text-right">Importo prev. (€)</th>
+                <th v-if="canEdit && selectedBudget?.statusId === 1" style="width:36px"></th>
               </tr>
             </thead>
             <tbody>
@@ -348,6 +362,14 @@
                     @focus="$event.target.select()"
                   />
                   <span v-else class="mono">{{ fmt(row.amount) }}</span>
+                </td>
+                <td v-if="canEdit && selectedBudget?.statusId === 1">
+                  <button
+                    v-if="row.itemId"
+                    class="btn-icon btn-delete-row"
+                    title="Rimuovi voce"
+                    @click="deleteItem(row)"
+                  >✕</button>
                 </td>
               </tr>
             </tbody>
@@ -499,31 +521,30 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { budgetApi, budgetItemApi, fiscalYearApi, chartOfAccountsApi, expenseApi, supplierApi, millesimalTableApi } from '@/services/api'
+import { useSessionStore } from '@/stores/sessionStore'
+import { budgetApi, budgetItemApi, chartOfAccountsApi, expenseApi, supplierApi, millesimalTableApi, installmentApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import BaseModal from '@/components/BaseModal.vue'
 
-const store = useAppStore()
+const router  = useRouter()
+const store   = useAppStore()
+const session = useSessionStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
+
+function goToRate(b) {
+  router.push({ path: '/rate', query: { budgetId: b.id } })
+}
 
 const activeTab = ref('budget')
 
-// ─── Fiscal Years ─────────────────────────────────────────────
-const fiscalYears          = ref([])
-const selectedFiscalYearId = ref(null)
-
-async function loadFiscalYears() {
-  if (!store.selectedCondominioId) return
-  try {
-    const { data } = await fiscalYearApi.getByCondominium(store.selectedCondominioId)
-    fiscalYears.value = data ?? []
-    const active = fiscalYears.value.find(f => f.isActive) ?? fiscalYears.value[0]
-    selectedFiscalYearId.value = active?.id ?? null
-  } catch {
-    fiscalYears.value = []
-  }
-}
+// ─── Fiscal Years — dallo store globale ───────────────────────
+const fiscalYears          = computed(() => store.fiscalYears)
+const selectedFiscalYearId = computed({
+  get: () => store.selectedFiscalYearId,
+  set: (v) => { store.selectedFiscalYearId = v },
+})
 
 // ─── Budget ───────────────────────────────────────────────────
 const budgets        = ref([])
@@ -629,17 +650,23 @@ async function closeBudget(b) {
 }
 
 // ─── Genera rate ──────────────────────────────────────────────
-const showGenerateModal = ref(false)
-const generatingBudget  = ref(null)
-const savingGenerate    = ref(false)
-const generateForm      = ref({ numberOfInstallments: 4, firstDueDate: '' })
+const showGenerateModal    = ref(false)
+const generatingBudget     = ref(null)
+const savingGenerate       = ref(false)
+const generateHasExisting  = ref(false)
+const generateForm         = ref({ numberOfInstallments: 4, firstDueDate: '' })
 
-function openGenerateModal(b) {
-  generatingBudget.value = b
+async function openGenerateModal(b) {
+  generatingBudget.value   = b
+  generateHasExisting.value = false
   const next = new Date()
   next.setDate(1)
   next.setMonth(next.getMonth() + 1)
   generateForm.value = { numberOfInstallments: 4, firstDueDate: next.toISOString().slice(0, 10) }
+  try {
+    const { data } = await installmentApi.getByBudget(b.id)
+    generateHasExisting.value = Array.isArray(data) && data.length > 0
+  } catch { /* ignore */ }
   showGenerateModal.value = true
 }
 
@@ -650,15 +677,31 @@ async function confirmGenerate() {
     await budgetApi.generateInstallments(generatingBudget.value.id, {
       numberOfInstallments: generateForm.value.numberOfInstallments,
       firstDueDate: generateForm.value.firstDueDate,
+      force: generateHasExisting.value,
     })
+    store.toast('Rate generate con successo', 'success')
     showGenerateModal.value = false
     generatingBudget.value  = null
-  } catch { /* global */ } finally { savingGenerate.value = false }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { savingGenerate.value = false }
 }
 
 async function deleteBudget(id) {
   if (!confirm('Eliminare il budget?')) return
   try { await budgetApi.delete(id); await loadBudgets() } catch {}
+}
+
+async function reopenBudget(b) {
+  const tipo = b.type === 1 ? 'preventivo' : 'consuntivo'
+  if (!confirm(`Riaprire il budget ${tipo}?\n\nVerrà riportato in stato Bozza e sarà nuovamente modificabile.`)) return
+  try {
+    await budgetApi.reopen(b.id)
+    store.toast('Budget riaperto', 'success')
+    await loadBudgets()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
 }
 
 // ─── Budget Items — Piano dei conti gerarchico ───────────────
@@ -851,6 +894,24 @@ async function saveAllItems() {
   } catch { /* global */ } finally { savingItem.value = false }
 }
 
+async function deleteItem(row) {
+  if (!row.itemId) return
+  if (!confirm(`Rimuovere la voce "${row.accountName}"?`)) return
+  try {
+    await budgetItemApi.delete(row.itemId)
+    row.itemId = null
+    row.amount = 0
+    row.dirty  = false
+    delete originalAmounts[row.accountId]
+    // Aggiorna totale del tab
+    const tab = budgetTabs.value.find(t => t.rows.includes(row))
+    if (tab) tab.total = tab.rows.reduce((s, r) => s + (r.amount || 0), 0)
+    await loadBudgets()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
 // ─── Spese ────────────────────────────────────────────────────
 const expenses         = ref([])
 const loadingExp       = ref(false)
@@ -952,11 +1013,13 @@ async function openExpenseModal(e = null) {
 }
 
 function buildExpenseAccountGroups() {
+  // type dal backend è int: Entrata=1, Uscita=2, Patrimoniale=3
+  const TYPE_MAP   = { 1: 'Entrata', 2: 'Uscita', 3: 'Patrimoniale' }
   const TYPE_ORDER = ['Uscita', 'Entrata', 'Patrimoniale']
   const TYPE_LABELS = { Uscita: 'Uscite', Entrata: 'Entrate', Patrimoniale: 'Patrimoniale' }
   const groups = {}
   for (const account of chartOfAccounts.value) {
-    const typeKey = account.type || 'Uscita'
+    const typeKey = TYPE_MAP[account.type] ?? 'Uscita'
     if (!groups[typeKey]) groups[typeKey] = []
     groups[typeKey].push({ accountId: account.id, accountCode: account.code, accountName: account.name })
   }
@@ -983,6 +1046,7 @@ async function saveExpense() {
       paymentMethod:     expForm.value.paymentMethod || null,
       description:       expForm.value.description || null,
       condominiumId:     store.selectedCondominioId,
+      fiscalYearId:      selectedFiscalYearId.value       ?? null,
       accountId:          expForm.value.accountId         ?? null,
       millesimalTableId:  expForm.value.millesimalTableId ?? null,
       supplierId:         expForm.value.supplierId        ?? null,
@@ -1036,19 +1100,21 @@ watch(() => store.selectedCondominioId, async () => {
   budgetTabs.value = []
   expTypeFilter.value = 0
   expFilter.value = ''
-  await loadFiscalYears()
+  // loadFiscalYears è già gestito dal watch in appStore
   await loadExpenses()
 })
-watch(selectedFiscalYearId, loadBudgets)
+watch(() => store.selectedFiscalYearId, loadBudgets)
 
 onMounted(async () => {
-  await loadFiscalYears()
+  if (!store.fiscalYears.length) await store.loadFiscalYears()
+  await loadBudgets()
   await loadExpenses()
 })
 </script>
 
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.btn-reopen  { color: var(--accent-amber, #f59e0b) !important; border-color: rgba(245,158,11,0.3) !important; }
 .btn-active  { background: var(--accent-glow) !important; color: var(--accent) !important; border-color: var(--border-active) !important; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
 .text-right  { text-align: right; }
@@ -1144,9 +1210,19 @@ onMounted(async () => {
   font-size: 0.875rem;
 }
 .section-total-row td { font-weight: 600; background: var(--bg-surface); border-top: 2px solid var(--border); }
+.btn-delete-row { color: var(--text-muted); font-size: 0.75rem; opacity: 0.5; transition: opacity 0.15s, color 0.15s; }
+.btn-delete-row:hover { color: var(--accent-red); opacity: 1; }
 
 /* Approve modal */
 .approve-info { font-size: .875rem; color: var(--text-secondary); margin-bottom: 1rem; }
+.generate-warning {
+  display: flex; gap: .75rem; align-items: flex-start;
+  background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.3);
+  border-radius: 6px; padding: .75rem 1rem; margin-bottom: 1rem;
+  font-size: .875rem; color: var(--accent-red);
+}
+.generate-warning-icon { font-size: 1.25rem; flex-shrink: 0; margin-top: .05rem; }
+.btn-danger { background: var(--accent-red) !important; color: #fff !important; border-color: var(--accent-red) !important; }
 .approve-hint { font-size: .78rem;  color: var(--text-muted);     margin-top: .5rem; }
 
 /* Form validation */

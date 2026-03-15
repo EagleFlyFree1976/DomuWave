@@ -40,7 +40,7 @@ public static class ExpenseMappingExtensions
     }
 
     public static Expense ToEntity(this CreateExpenseDto dto,
-        Condominium condominium, ChartOfAccounts account,
+        Condominium condominium, FiscalYear fiscalYear, ChartOfAccounts account,
         MillesimalTable millesimalTable, Supplier? supplier,
         ExpenseType expenseType, ExpensePaymentStatus paymentStatus,
         ChargeabilityType chargeabilityType)
@@ -49,6 +49,7 @@ public static class ExpenseMappingExtensions
         {
             Tenant             = condominium.Tenant,
             Condominium        = condominium,
+            FiscalYear         = fiscalYear,
             Account            = account,
             MillesimalTable    = millesimalTable,
             Supplier           = supplier,

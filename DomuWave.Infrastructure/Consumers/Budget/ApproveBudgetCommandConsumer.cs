@@ -101,10 +101,11 @@ public class ApproveBudgetCommandConsumer
         if (existingCount > 0)
             return; // già generate, skip
 
-        // Carica la tabella millesimale attiva del condominio
+        // Carica la tabella millesimale abilitata del condominio (preferisce la DEF se presente)
         var millesimalTable = await session.Query<MillesimalTable>()
-            .FirstOrDefaultAsync(x => x.Condominium.Id == budget.Condominium.Id
-                                   && x.IsActive && !x.IsDraft && !x.IsDeleted, cancellationToken)
+            .Where(x => x.Condominium.Id == budget.Condominium.Id && x.IsEnabled && !x.IsDeleted)
+            .OrderBy(x => x.Code)
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
         // Carica le voci millesimali (quote per unità)
@@ -115,16 +116,32 @@ public class ApproveBudgetCommandConsumer
                 .ConfigureAwait(false)
             : new List<UnitMillesimal>();
 
-        var totalMillesimal = millesimalTable?.TotalMillesimal ?? 0m;
-        var amountPerInstallment = n > 0 ? Math.Round(budget.TotalIncome / n, 2) : 0m;
+        // Ricalcola TotalIncome live dalle voci budget (somma tutto: include Entrata + Patrimoniale)
+        // Nota: per il preventivo il totale da ripartire è la somma di tutte le voci (non solo le Entrate)
+        var totalIncome = await session.Query<BudgetItem>()
+            .Where(x => x.Budget.Id == budget.Id && !x.IsDeleted)
+            .SumAsync(x => (decimal?)x.Amount, cancellationToken)
+            .ConfigureAwait(false) ?? 0m;
+
+        var totalMillesimal = unitMillesimals.Count > 0
+            ? unitMillesimals.Sum(x => x.Millesimal)
+            : (millesimalTable?.TotalMillesimal ?? 0m);
         var user = currentUser as CPQ.Core.Memberships.IUser;
         var openStatus = await session.Query<CondominiumInstallmentStatus>()
-            .FirstOrDefaultAsync(x => x.Id == CondominiumInstallmentStatus .Open , cancellationToken)
+            .FirstOrDefaultAsync(x => x.Id == CondominiumInstallmentStatus.Open, cancellationToken)
             .ConfigureAwait(false);
+
+        // Pre-calcola gli importi delle rate distribuendo il residuo sull'ultima
+        var installmentAmounts = new decimal[n];
+        var baseAmount = n > 0 ? Math.Round(totalIncome / n, 2) : 0m;
+        var allocated = 0m;
+        for (int i = 0; i < n - 1; i++) { installmentAmounts[i] = baseAmount; allocated += baseAmount; }
+        installmentAmounts[n - 1] = totalIncome - allocated;
+
         for (int i = 1; i <= n; i++)
         {
-            // Scadenza: ogni rata a distanza di 30 giorni (approssimazione mensile)
-            var dueDate = firstDueDate.AddMonths(i - 1);
+            var dueDate    = firstDueDate.AddMonths(i - 1);
+            var instAmount = installmentAmounts[i - 1];
 
             var installment = new CondominiumInstallment
             {
@@ -134,7 +151,7 @@ public class ApproveBudgetCommandConsumer
                 Tenant            = budget.Tenant,
                 InstallmentNumber = i,
                 DueDate           = dueDate,
-                TotalAmount       = amountPerInstallment,
+                TotalAmount       = instAmount,
                 Status            = openStatus,
                 Notes             = $"Rata {i}/{n} – {budget.FiscalYear?.Code ?? dueDate.Year.ToString()}",
             };
@@ -144,14 +161,23 @@ public class ApproveBudgetCommandConsumer
             await session.SaveOrUpdateAsync(installment, cancellationToken).ConfigureAwait(false);
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-            // Genera una quota per ogni unità della tabella millesimale
-            foreach (var um in unitMillesimals)
+            // Distribuisce le quote tra le unità, residuo sull'ultima unità
+            var feeAllocated = 0m;
+            for (int j = 0; j < unitMillesimals.Count; j++)
             {
-                var share = totalMillesimal > 0
-                    ? Math.Round(amountPerInstallment * um.Millesimal / totalMillesimal, 2)
-                    : 0m;
+                var um         = unitMillesimals[j];
+                var isLastUnit = j == unitMillesimals.Count - 1;
+                decimal share;
+                if (isLastUnit)
+                    share = instAmount - feeAllocated;
+                else
+                {
+                    share = totalMillesimal > 0
+                        ? Math.Round(instAmount * um.Millesimal / totalMillesimal, 2)
+                        : 0m;
+                    feeAllocated += share;
+                }
 
-                // Recupera il proprietario dell'unità (UnitOwner attivo)
                 var owner = await session.Query<UnitOwner>()
                     .FirstOrDefaultAsync(x => x.Unit.Id == um.Unit.Id && !x.IsDeleted, cancellationToken)
                     .ConfigureAwait(false);
@@ -192,10 +218,11 @@ public class ApproveBudgetCommandConsumer
 
         if (totalExpenses <= 0) return;
 
-        // Tabella millesimale attiva del condominio
+        // Tabella millesimale abilitata del condominio
         var millesimalTable = await session.Query<MillesimalTable>()
-            .FirstOrDefaultAsync(x => x.Condominium.Id == budget.Condominium.Id
-                                   && x.IsActive && !x.IsDraft && !x.IsDeleted, ct)
+            .Where(x => x.Condominium.Id == budget.Condominium.Id && x.IsEnabled && !x.IsDeleted)
+            .OrderBy(x => x.Code)
+            .FirstOrDefaultAsync(ct)
             .ConfigureAwait(false);
 
         if (millesimalTable == null) return;
@@ -207,7 +234,9 @@ public class ApproveBudgetCommandConsumer
 
         if (!unitMillesimals.Any()) return;
 
-        var totalMillesimal = millesimalTable.TotalMillesimal;
+        var totalMillesimal = unitMillesimals.Any()
+            ? unitMillesimals.Sum(x => x.Millesimal)
+            : millesimalTable.TotalMillesimal;
         var user = currentUser as CPQ.Core.Memberships.IUser;
 
         // Recupera i saldi già pagati per unità (da CondominiumFee del Preventivo approvato)

@@ -5,8 +5,17 @@
       <button v-if="canCreate" class="btn btn-primary" @click="openInstModal()">+ Nuova rata</button>
     </div>
 
+    <!-- ── Banner filtro budget ────────────────────── -->
+    <div v-if="budgetIdFilter" class="budget-filter-banner">
+      <span>Stai visualizzando le rate del budget #{{ budgetIdFilter }}</span>
+      <div class="budget-filter-actions">
+        <router-link to="/budget" class="btn btn-sm btn-ghost">← Torna al budget</router-link>
+        <button class="btn btn-sm btn-ghost" @click="clearBudgetFilter">Mostra tutte le rate</button>
+      </div>
+    </div>
+
     <!-- ── Toolbar ─────────────────────────────────── -->
-    <div class="tab-toolbar">
+    <div v-if="!budgetIdFilter" class="tab-toolbar">
       <select class="form-select" v-model.number="selectedFiscalYearId" style="width:280px">
         <option :value="null">— Tutti gli esercizi —</option>
         <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">
@@ -56,9 +65,14 @@
                 </td>
                 <td class="mono text-muted">
                   {{ inst.installmentNumber }}
-                  <span class="origin-badge" :class="inst.budgetId ? 'origin-auto' : 'origin-manual'" :title="inst.budgetId ? 'Generata automaticamente da budget' : 'Inserita manualmente'">
-                    {{ inst.budgetId ? 'AUTO' : 'MAN' }}
-                  </span>
+                  <router-link v-if="inst.budgetId"
+                    :to="{ path: '/rate', query: { budgetId: inst.budgetId } }"
+                    class="origin-badge origin-auto"
+                    title="Generata automaticamente da budget — clicca per filtrare"
+                    @click.stop>
+                    AUTO
+                  </router-link>
+                  <span v-else class="origin-badge origin-manual" title="Inserita manualmente">MAN</span>
                 </td>
                 <td class="text-secondary">{{ inst.fiscalYearCode ?? '—' }}</td>
                 <td class="mono" :class="isOverdue(inst.dueDate) && inst.statusId !== 3 ? 'text-red' : 'text-secondary'">
@@ -303,27 +317,28 @@
 
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { installmentApi, feeApi, fiscalYearApi, unitApi } from '@/services/api'
+import { installmentApi, feeApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 
-const store = useAppStore()
+const route  = useRoute()
+const router = useRouter()
+const store  = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
 
-// ── Esercizi fiscali ──────────────────────────────────────────
-const fiscalYears          = ref([])
-const selectedFiscalYearId = ref(null)
+// ── Esercizi fiscali — dallo store globale ────────────────────
+const fiscalYears          = computed(() => store.fiscalYears)
+const selectedFiscalYearId = computed({
+  get: () => store.selectedFiscalYearId,
+  set: (v) => { store.selectedFiscalYearId = v },
+})
 
-async function loadFiscalYears() {
-  if (!store.selectedCondominioId) { fiscalYears.value = []; return }
-  try {
-    const { data } = await fiscalYearApi.getByCondominium(store.selectedCondominioId)
-    fiscalYears.value = data ?? []
-    if (!selectedFiscalYearId.value) {
-      const active = fiscalYears.value.find(fy => fy.isActive)
-      selectedFiscalYearId.value = active?.id ?? null
-    }
-  } catch { fiscalYears.value = [] }
+// ── Filtro budget (da query param ?budgetId=) ─────────────────
+const budgetIdFilter = computed(() => route.query.budgetId ? Number(route.query.budgetId) : null)
+
+function clearBudgetFilter() {
+  router.replace({ query: {} })
 }
 
 // ── Rate ──────────────────────────────────────────────────────
@@ -374,7 +389,9 @@ async function loadInstallments() {
   fees.value = []
   try {
     let data
-    if (instFilter.value === 'open') {
+    if (budgetIdFilter.value) {
+      ({ data } = await installmentApi.getByBudget(budgetIdFilter.value))
+    } else if (instFilter.value === 'open') {
       ({ data } = await installmentApi.getOpen(store.selectedCondominioId))
     } else if (instFilter.value === 'overdue') {
       ({ data } = await installmentApi.getOverdue(store.selectedCondominioId))
@@ -533,19 +550,34 @@ async function deleteFee(id) {
 
 // ── Watchers / Init ───────────────────────────────────────────
 watch(() => store.selectedCondominioId, async () => {
-  selectedFiscalYearId.value = null
   feeSummaries.value = {}
-  await loadFiscalYears()
+  // loadFiscalYears è gestito dal watch in appStore; attende che si aggiorni
   await loadInstallments()
 })
-watch([selectedFiscalYearId, instFilter], loadInstallments)
+watch(() => [store.selectedFiscalYearId, instFilter.value, route.query.budgetId], loadInstallments)
 onMounted(async () => {
-  await loadFiscalYears()
+  if (!store.fiscalYears.length) await store.loadFiscalYears()
   await loadInstallments()
 })
 </script>
 
 <style scoped>
+.budget-filter-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  margin-bottom: 0.75rem;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.budget-filter-actions { display: flex; gap: 0.4rem; }
+
 .tab-toolbar {
   display: flex;
   align-items: center;

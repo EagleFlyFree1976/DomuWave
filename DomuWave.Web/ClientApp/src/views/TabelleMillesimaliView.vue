@@ -111,22 +111,41 @@
           <table>
             <thead>
               <tr>
-                <th>Unità</th>
-                <th>Scala</th>
-                <th>Piano</th>
-                <th class="text-right col-millesimal">Millesimi</th>
+                <th class="th-sortable" @click="toggleSort('unit')">
+                  Unità <span class="sort-icon">{{ sortIcon('unit') }}</span>
+                </th>
+                <th class="th-sortable text-right col-millesimal" @click="toggleSort('millesimal')">
+                  Millesimi <span class="sort-icon">{{ sortIcon('millesimal') }}</span>
+                </th>
+                <th class="th-sortable" @click="toggleSort('staircase')">
+                  Scala <span class="sort-icon">{{ sortIcon('staircase') }}</span>
+                </th>
+                <th class="th-sortable" @click="toggleSort('floor')">
+                  Piano <span class="sort-icon">{{ sortIcon('floor') }}</span>
+                </th>
                 <th>Note</th>
+              </tr>
+              <tr class="filter-row">
+                <th>
+                  <input class="filter-input" v-model="filterUnit" placeholder="Filtra unità…" />
+                </th>
+                <th></th>
+                <th>
+                  <input class="filter-input" v-model="filterStaircase" placeholder="Filtra scala…" />
+                </th>
+                <th>
+                  <input class="filter-input" v-model="filterFloor" placeholder="Filtra piano…" />
+                </th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in unitRows" :key="row.unit.id"
+              <tr v-for="row in filteredSortedRows" :key="row.unit.id"
                   :class="{ 'row-assigned': row.millesimal > 0 }">
                 <td class="mono">
                   {{ row.unit.internalNumber }}
                   <span v-if="row.unit.displayName" class="unit-displayname"> – {{ row.unit.displayName }}</span>
                 </td>
-                <td class="text-secondary">{{ row.unit.staircase || '—' }}</td>
-                <td class="text-secondary">{{ row.unit.floor }}</td>
                 <td class="col-millesimal">
                   <input
                     class="mill-input"
@@ -140,6 +159,8 @@
                   />
                   <span v-if="row.saving" class="saving-indicator">…</span>
                 </td>
+                <td class="text-secondary">{{ row.unit.staircase || '—' }}</td>
+                <td class="text-secondary">{{ row.unit.floor }}</td>
                 <td>
                   <input
                     class="notes-input"
@@ -154,12 +175,12 @@
             </tbody>
             <tfoot>
               <tr class="total-row">
-                <td colspan="3" class="text-secondary">Totale assegnato</td>
+                <td class="text-secondary">Totale assegnato</td>
                 <td class="mono text-right col-millesimal"
                     :class="totalOk ? 'text-success' : 'text-error'">
                   {{ fmtMillesimal(totalAssigned) }}
                 </td>
-                <td></td>
+                <td colspan="3"></td>
               </tr>
             </tfoot>
           </table>
@@ -221,6 +242,23 @@ import { usePermissions } from '@/composables/usePermissions'
 
 const store = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
+
+// ─── Filtri e ordinamento voci ─────────────────────────────
+const filterUnit      = ref('')
+const filterStaircase = ref('')
+const filterFloor     = ref('')
+const sortKey         = ref('unit')   // 'unit' | 'millesimal' | 'staircase' | 'floor'
+const sortDir         = ref(1)        // 1 = asc, -1 = desc
+
+function toggleSort(key) {
+  if (sortKey.value === key) sortDir.value = -sortDir.value
+  else { sortKey.value = key; sortDir.value = 1 }
+}
+
+function sortIcon(key) {
+  if (sortKey.value !== key) return '↕'
+  return sortDir.value === 1 ? '↑' : '↓'
+}
 
 // ─── Tabelle (lista) ───────────────────────────────────────────
 const tables      = ref([])
@@ -317,6 +355,39 @@ const loadingEntries  = ref(false)
 
 // Per ogni unità un "row" reattivo: { unit, entryId, millesimal, notes, saving }
 const unitRows = ref([])
+
+const filteredSortedRows = computed(() => {
+  let rows = unitRows.value
+  const fu = filterUnit.value.trim().toLowerCase()
+  const fs = filterStaircase.value.trim().toLowerCase()
+  const ff = filterFloor.value.trim().toLowerCase()
+  if (fu) rows = rows.filter(r =>
+    (r.unit.internalNumber ?? '').toLowerCase().includes(fu) ||
+    (r.unit.displayName ?? '').toLowerCase().includes(fu)
+  )
+  if (fs) rows = rows.filter(r => (r.unit.staircase ?? '').toLowerCase().includes(fs))
+  if (ff) rows = rows.filter(r => String(r.unit.floor ?? '').toLowerCase().includes(ff))
+
+  return [...rows].sort((a, b) => {
+    let av, bv
+    if (sortKey.value === 'millesimal') {
+      av = Number(a.millesimal) || 0
+      bv = Number(b.millesimal) || 0
+    } else if (sortKey.value === 'staircase') {
+      av = (a.unit.staircase ?? '').toLowerCase()
+      bv = (b.unit.staircase ?? '').toLowerCase()
+    } else if (sortKey.value === 'floor') {
+      av = Number(a.unit.floor) || 0
+      bv = Number(b.unit.floor) || 0
+    } else {
+      av = (a.unit.internalNumber ?? '').toLowerCase()
+      bv = (b.unit.internalNumber ?? '').toLowerCase()
+    }
+    if (av < bv) return -sortDir.value
+    if (av > bv) return sortDir.value
+    return 0
+  })
+})
 
 const totalAssigned = computed(() =>
   unitRows.value.reduce((s, r) => s + (Number(r.millesimal) || 0), 0)
@@ -512,6 +583,31 @@ onMounted(loadTables)
   font-size: 1rem;
   margin-left: .2rem;
 }
+
+/* Sorting / filtering */
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.th-sortable:hover { color: var(--accent); }
+.sort-icon {
+  font-size: .75rem;
+  opacity: .55;
+  margin-left: .2rem;
+}
+.filter-row th { padding-top: 0; padding-bottom: .4rem; }
+.filter-input {
+  width: 100%;
+  padding: .2rem .4rem;
+  font-size: .8rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text);
+}
+.filter-input::placeholder { color: var(--text-muted); }
+.filter-input:focus { outline: none; border-color: var(--border-active); }
 
 /* Grid voci */
 .col-millesimal { text-align: right; min-width: 130px; }

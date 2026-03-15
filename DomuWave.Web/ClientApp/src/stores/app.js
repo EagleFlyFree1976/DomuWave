@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { condominiumApi } from '@/services/api'
+import { ref, computed, watch } from 'vue'
+import { condominiumApi, fiscalYearApi } from '@/services/api'
 
 export const useAppStore = defineStore('app', () => {
   const condomini = ref([])
@@ -31,6 +31,41 @@ export const useAppStore = defineStore('app', () => {
     selectedCondominioId.value = id
   }
 
+  // ─── Esercizio fiscale selezionato (persistente tra le pagine) ────────────
+  const fiscalYears          = ref([])
+  const selectedFiscalYearId = ref(null)
+
+  const selectedFiscalYear = computed(() =>
+    fiscalYears.value.find(f => f.id === selectedFiscalYearId.value) || null
+  )
+
+  async function loadFiscalYears() {
+    if (!selectedCondominioId.value) {
+      fiscalYears.value = []
+      selectedFiscalYearId.value = null
+      return
+    }
+    try {
+      const { data } = await fiscalYearApi.getByCondominium(selectedCondominioId.value)
+      fiscalYears.value = data ?? []
+      // Mantieni la selezione corrente se è ancora valida per il nuovo condominio
+      const stillValid = fiscalYears.value.find(f => f.id === selectedFiscalYearId.value)
+      if (!stillValid) {
+        const active = fiscalYears.value.find(f => f.isActive) ?? fiscalYears.value[0]
+        selectedFiscalYearId.value = active?.id ?? null
+      }
+    } catch {
+      fiscalYears.value = []
+      selectedFiscalYearId.value = null
+    }
+  }
+
+  // Al cambio condominio ricarica automaticamente gli esercizi
+  watch(selectedCondominioId, () => {
+    loadFiscalYears()
+  })
+
+  // ─── Toast ────────────────────────────────────────────────────────────────
   let toastId = 0
   function toast(message, type = 'info', duration = 3500) {
     const id = ++toastId
@@ -38,5 +73,9 @@ export const useAppStore = defineStore('app', () => {
     setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id) }, duration)
   }
 
-  return { condomini, selectedCondominioId, selectedCondominio, loading, toasts, loadCondomini, selectCondominio, toast }
+  return {
+    condomini, selectedCondominioId, selectedCondominio, loading, toasts,
+    loadCondomini, selectCondominio, toast,
+    fiscalYears, selectedFiscalYearId, selectedFiscalYear, loadFiscalYears,
+  }
 })

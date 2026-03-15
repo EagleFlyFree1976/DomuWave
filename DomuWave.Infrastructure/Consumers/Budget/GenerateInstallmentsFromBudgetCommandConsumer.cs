@@ -42,21 +42,49 @@ public class GenerateInstallmentsFromBudgetCommandConsumer
         if (budget.Status?.Id != BudgetStatus.Approved && budget.Status?.Id != BudgetStatus.Closed)
             throw new ValidatorException("Le rate possono essere generate solo da un budget approvato o chiuso.");
 
-        // Verifica che non esistano già rate per questo budget
-        var existingCount = await session.Query<CondominiumInstallment>()
-            .CountAsync(x => x.Budget.Id == budget.Id && !x.IsDeleted, cancellationToken)
+        if (budget.Status?.Id == BudgetStatus.Closed)
+            throw new ValidatorException("Non è possibile rigenerare le rate di un budget chiuso.");
+
+        // Elimina le rate (e quote) esistenti se force = true, altrimenti blocca
+        var existingInstallments = await session.Query<CondominiumInstallment>()
+            .Where(x => x.Budget.Id == budget.Id && !x.IsDeleted)
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        if (existingCount > 0)
-            throw new ValidatorException("Le rate per questo budget sono già state generate.");
+        if (existingInstallments.Count > 0)
+        {
+            if (!command.Force)
+                throw new ValidatorException("Le rate per questo budget sono già state generate.");
+
+            // Soft-delete quote e rate esistenti
+            foreach (var inst in existingInstallments)
+            {
+                var fees = await session.Query<CondominiumFee>()
+                    .Where(f => f.Installment.Id == inst.Id && !f.IsDeleted)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                foreach (var fee in fees)
+                {
+                    fee.IsDeleted = true;
+                    await session.SaveOrUpdateAsync(fee, cancellationToken).ConfigureAwait(false);
+                }
+
+                inst.IsDeleted = true;
+                await session.SaveOrUpdateAsync(inst, cancellationToken).ConfigureAwait(false);
+            }
+
+            await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         var n            = command.NumberOfInstallments > 0 ? command.NumberOfInstallments : 4;
         var firstDueDate = command.FirstDueDate == default ? DateTime.Today : command.FirstDueDate;
 
-        // Carica la tabella millesimale attiva del condominio
+        // Carica la tabella millesimale abilitata del condominio (preferisce la DEF se presente)
         var millesimalTable = await session.Query<MillesimalTable>()
-            .FirstOrDefaultAsync(x => x.Condominium.Id == budget.Condominium.Id
-                                   && x.IsActive && !x.IsDraft && !x.IsDeleted, cancellationToken)
+            .Where(x => x.Condominium.Id == budget.Condominium.Id && x.IsEnabled && !x.IsDeleted)
+            .OrderBy(x => x.Code)
+            .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
         var unitMillesimals = millesimalTable != null
@@ -66,17 +94,33 @@ public class GenerateInstallmentsFromBudgetCommandConsumer
                 .ConfigureAwait(false)
             : new List<UnitMillesimal>();
 
-        var totalMillesimal      = millesimalTable?.TotalMillesimal ?? 0m;
-        var amountPerInstallment = n > 0 ? Math.Round(budget.TotalIncome / n, 2) : 0m;
-        var user                 = currentUser as CPQ.Core.Memberships.IUser;
+        // Ricalcola TotalIncome live dalle voci budget
+        var totalIncome = await session.Query<BudgetItem>()
+            .Where(x => x.Budget.Id == budget.Id && !x.IsDeleted)
+            .SumAsync(x => (decimal?)x.Amount, cancellationToken)
+            .ConfigureAwait(false) ?? 0m;
+
+        var totalMillesimal = unitMillesimals.Count > 0
+            ? unitMillesimals.Sum(x => x.Millesimal)
+            : (millesimalTable?.TotalMillesimal ?? 0m);
+        var user = currentUser as CPQ.Core.Memberships.IUser;
 
         var openStatus = await session.Query<CondominiumInstallmentStatus>()
             .FirstOrDefaultAsync(x => x.Id == CondominiumInstallmentStatus.Open, cancellationToken)
             .ConfigureAwait(false);
 
+        // Pre-calcola gli importi delle rate distribuendo il residuo sull'ultima
+        var installmentAmounts = new decimal[n];
+        var baseAmount = n > 0 ? Math.Round(totalIncome / n, 2) : 0m;
+        var allocated = 0m;
+        for (int i = 0; i < n - 1; i++) { installmentAmounts[i] = baseAmount; allocated += baseAmount; }
+        installmentAmounts[n - 1] = totalIncome - allocated;
+
         for (int i = 1; i <= n; i++)
         {
-            var dueDate = firstDueDate.AddMonths(i - 1);
+            var dueDate             = firstDueDate.AddMonths(i - 1);
+            var instAmount          = installmentAmounts[i - 1];
+            var isLastInstallment   = i == n;
 
             var installment = new CondominiumInstallment
             {
@@ -86,7 +130,7 @@ public class GenerateInstallmentsFromBudgetCommandConsumer
                 Tenant            = budget.Tenant,
                 InstallmentNumber = i,
                 DueDate           = dueDate,
-                TotalAmount       = amountPerInstallment,
+                TotalAmount       = instAmount,
                 Status            = openStatus,
                 Notes             = $"Rata {i}/{n} – {budget.FiscalYear?.Code ?? dueDate.Year.ToString()}",
             };
@@ -96,11 +140,22 @@ public class GenerateInstallmentsFromBudgetCommandConsumer
             await session.SaveOrUpdateAsync(installment, cancellationToken).ConfigureAwait(false);
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-            foreach (var um in unitMillesimals)
+            // Distribuisce le quote tra le unità, residuo sull'ultima unità
+            var feeAllocated = 0m;
+            for (int j = 0; j < unitMillesimals.Count; j++)
             {
-                var share = totalMillesimal > 0
-                    ? Math.Round(amountPerInstallment * um.Millesimal / totalMillesimal, 2)
-                    : 0m;
+                var um            = unitMillesimals[j];
+                var isLastUnit    = j == unitMillesimals.Count - 1;
+                decimal share;
+                if (isLastUnit)
+                    share = instAmount - feeAllocated;
+                else
+                {
+                    share = totalMillesimal > 0
+                        ? Math.Round(instAmount * um.Millesimal / totalMillesimal, 2)
+                        : 0m;
+                    feeAllocated += share;
+                }
 
                 var owner = await session.Query<UnitOwner>()
                     .FirstOrDefaultAsync(x => x.Unit.Id == um.Unit.Id && !x.IsDeleted, cancellationToken)

@@ -5,6 +5,7 @@ namespace DomuWave.Services.Dto.Expense;
 public class CreateExpenseDto
 {
     public int      CondominiumId     { get; set; }
+    public int?     FiscalYearId      { get; set; }
     public int      AccountId         { get; set; }
     public int?     SupplierId        { get; set; }
     public int      MillesimalTableId { get; set; }

@@ -213,6 +213,7 @@ export const budgetApi = {
   create:             (data)    => api.post('/budgets', data),
   update:             (id, data)=> api.put(`/budgets/${id}`, data),
   approve:              (id, opts) => api.post(`/budgets/${id}/approve`, opts ?? {}),
+  reopen:               (id)      => api.post(`/budgets/${id}/reopen`),
   close:                (id)      => api.post(`/budgets/${id}/close`),
   generateInstallments: (id, opts) => api.post(`/budgets/${id}/generate-installments`, opts ?? {}),
   delete:               (id)      => api.delete(`/budgets/${id}`),
@@ -246,6 +247,7 @@ export const expenseApi = {
 // Backend: api/condominium-installments  (CondominiumInstallmentsController)
 export const installmentApi = {
   getByCondominium:   (condId)                      => api.get(`/condominium-installments/by-condominium/${condId}`),
+  getByBudget:        (budgetId)                     => api.get(`/condominium-installments/by-budget/${budgetId}`),
   getByFiscalYear:    (condId, fiscalYearId)         => api.get(`/condominium-installments/by-fiscal-year/${fiscalYearId}`, { params: { condominiumId: condId } }),
   getByYearAndNumber: (condId, year, number)         => api.get(`/condominium-installments/by-condominium/${condId}/year/${year}/number/${number}`),
   getOpen:            (condId)                       => api.get(`/condominium-installments/by-condominium/${condId}/open`),

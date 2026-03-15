@@ -82,11 +82,31 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
                 throw new NotFoundException("Fornitore non trovato.");
         }
 
+        FiscalYear? fiscalYear = null;
+        if (dto.FiscalYearId.HasValue)
+        {
+            fiscalYear = await session.Query<FiscalYear>()
+                .FirstOrDefaultAsync(x => x.Id == dto.FiscalYearId.Value && !x.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (fiscalYear == null)
+                throw new NotFoundException("Esercizio fiscale non trovato.");
+        }
+        else
+        {
+            fiscalYear = await session.Query<FiscalYear>()
+                .Where(x => x.Condominium.Id == dto.CondominiumId && !x.IsDeleted && x.Status.Id != FiscalYearStatus.Locked)
+                .OrderByDescending(x => x.StartDate)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+            if (fiscalYear == null)
+                throw new ValidatorException("Nessun esercizio fiscale attivo trovato per questo condominio.");
+        }
+
         var expenseType       = session.Load<ExpenseType>(dto.ExpenseTypeId);
         var paymentStatus     = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
         var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
 
-        var entity  = dto.ToEntity(condominium, account, millesimalTable, supplier, expenseType, paymentStatus, chargeabilityType);
+        var entity  = dto.ToEntity(condominium, fiscalYear, account, millesimalTable, supplier, expenseType, paymentStatus, chargeabilityType);
         var created = await _expenseService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

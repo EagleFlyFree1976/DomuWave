@@ -366,7 +366,7 @@ BEGIN TRY
             mc.TenantId,
             mc.DomuWaveId AS CondominiumId,
             N'MILLESIMISCALE' AS Code,
-            N'millesimiscale' AS Name,
+            N'Scale' AS Name,
             N'Tabella millesimale importata da VZ - millesimi scala' AS Description,
             CAST(
                 CASE
@@ -381,6 +381,7 @@ BEGIN TRY
     )
     UPDATE mt
        SET mt.TenantId = s.TenantId,
+           mt.Code = s.Code,
            mt.Name = s.Name,
            mt.Description = s.Description,
            mt.TotalMillesimal = s.TotalMillesimal,
@@ -439,7 +440,7 @@ BEGIN TRY
             mc.TenantId,
             mc.DomuWaveId AS CondominiumId,
             N'MILLESIMISCALE' AS Code,
-            N'millesimiscale' AS Name,
+            N'Scale' AS Name,
             N'Tabella millesimale importata da VZ - millesimi scala' AS Description,
             CAST(
                 CASE
