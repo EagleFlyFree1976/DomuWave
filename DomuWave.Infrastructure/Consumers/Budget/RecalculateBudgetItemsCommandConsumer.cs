@@ -203,20 +203,29 @@ public class RecalculateBudgetItemsCommandConsumer
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-        // ── 4. Aggiorna i totali del budget ─────────────────────────────────────
-        // Evita x.Account.Type nelle where (lazy proxy): recupera prima gli accountId per tipo.
-        var uscitaAccountIds = await session.Query<ChartOfAccounts>()
-            .Where(a => a.Condominium.Id == condominiumId && a.Type == ChartOfAccountsType.Uscita && !a.IsDeleted)
-            .Select(a => a.Id)
+        // ── 4. Aggiorna i totali del budget (solo foglie) ────────────────────────
+        // Un account è foglia se nessun altro account del condominio lo ha come ParentAccount.
+        var allAccountsForTotals = await session.Query<ChartOfAccounts>()
+            .Where(a => a.Condominium.Id == condominiumId && !a.IsDeleted)
+            .Select(a => new { a.Id, TypeId = (int)a.Type, ParentId = a.ParentAccount != null ? (int?)a.ParentAccount.Id : null })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
+        var parentIds    = allAccountsForTotals.Where(a => a.ParentId.HasValue).Select(a => a.ParentId!.Value).ToHashSet();
+        var leafIds      = allAccountsForTotals.Where(a => !parentIds.Contains(a.Id)).Select(a => a.Id).ToHashSet();
+        var uscitaLeafIds = allAccountsForTotals
+            .Where(a => leafIds.Contains(a.Id) && a.TypeId == (int)ChartOfAccountsType.Uscita)
+            .Select(a => a.Id).ToList();
+        var nonUscitaLeafIds = allAccountsForTotals
+            .Where(a => leafIds.Contains(a.Id) && a.TypeId != (int)ChartOfAccountsType.Uscita)
+            .Select(a => a.Id).ToList();
+
         budget.TotalExpenses = await session.Query<BudgetItem>()
-            .Where(x => x.Budget.Id == budget.Id && !x.IsDeleted && uscitaAccountIds.Contains(x.Account.Id))
+            .Where(x => x.Budget.Id == budget.Id && !x.IsDeleted && uscitaLeafIds.Contains(x.Account.Id))
             .SumAsync(x => (decimal?)x.Amount, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
         budget.TotalIncome = await session.Query<BudgetItem>()
-            .Where(x => x.Budget.Id == budget.Id && !x.IsDeleted && !uscitaAccountIds.Contains(x.Account.Id))
+            .Where(x => x.Budget.Id == budget.Id && !x.IsDeleted && nonUscitaLeafIds.Contains(x.Account.Id))
             .SumAsync(x => (decimal?)x.Amount, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
         budget.Trace(currentUser);

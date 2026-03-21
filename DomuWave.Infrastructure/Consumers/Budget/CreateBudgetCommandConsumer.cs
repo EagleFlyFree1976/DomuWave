@@ -87,7 +87,7 @@ public class CreateBudgetCommandConsumer
 
         if (command.Dto.Type == BudgetType.Preventivo)
         {
-            await CreatePreventivoItems(created, condominium, fiscalYear, currentUser, cancellationToken)
+            await CreatePreventivoItems(created, condominium, fiscalYear, command.Dto, currentUser, cancellationToken)
                 .ConfigureAwait(false);
         }
         else
@@ -107,39 +107,64 @@ public class CreateBudgetCommandConsumer
         Budget budget,
         Models.Condominium condominium,
         FiscalYear fiscalYear,
+        CreateBudgetDto dto,
         CPQ.Core.Memberships.IUser currentUser,
         CancellationToken ct)
     {
-        // Cerca il Consuntivo più recente tra gli esercizi precedenti
-        var previousConsuntivo = await session.Query<Budget>()
-            .Where(b => b.Condominium.Id == condominium.Id
-                     && b.Type           == BudgetType.Consuntivo
-                     && b.FiscalYear.EndDate < fiscalYear.StartDate
-                     && !b.IsDeleted)
-            .OrderByDescending(b => b.FiscalYear.EndDate)
-            .Take(1)
-            .FetchMany(b => b.Items)
-            .ThenFetch(i => i.Account)
-            .FirstOrDefaultAsync(ct)
-            .ConfigureAwait(false);
+        // Determina il budget consuntivo sorgente:
+        // 1. Se il client ha passato un SourceConsuntivoId esplicito, usa quello.
+        // 2. Altrimenti cerca l'ultimo consuntivo dell'esercizio precedente (comportamento legacy).
+        Budget? sourceConsuntivo = null;
 
-        var sourceItems = previousConsuntivo?.Items
+        if (dto.SourceConsuntivoId.HasValue)
+        {
+            sourceConsuntivo = await session.Query<Budget>()
+                .Where(b => b.Id == dto.SourceConsuntivoId.Value
+                         && b.Type == BudgetType.Consuntivo
+                         && b.Condominium.Id == condominium.Id
+                         && !b.IsDeleted)
+                .FetchMany(b => b.Items)
+                .ThenFetch(i => i.Account)
+                .FirstOrDefaultAsync(ct)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            sourceConsuntivo = await session.Query<Budget>()
+                .Where(b => b.Condominium.Id == condominium.Id
+                         && b.Type           == BudgetType.Consuntivo
+                         && b.FiscalYear.EndDate < fiscalYear.StartDate
+                         && !b.IsDeleted)
+                .OrderByDescending(b => b.FiscalYear.EndDate)
+                .Take(1)
+                .FetchMany(b => b.Items)
+                .ThenFetch(i => i.Account)
+                .FirstOrDefaultAsync(ct)
+                .ConfigureAwait(false);
+        }
+
+        var sourceItems = sourceConsuntivo?.Items
             .Where(i => !i.IsDeleted && i.Account != null && i.Account.IsActive)
             .OrderBy(i => i.Account.Code)
             .ToList();
 
         if (sourceItems != null && sourceItems.Count > 0)
         {
+            var multiplier = 1m + (dto.IncreasePercentage / 100m);
+
             foreach (var src in sourceItems)
             {
+                var amount = Math.Round(src.Amount * multiplier, 2);
                 var item = new BudgetItem
                 {
                     Budget  = budget,
                     Tenant  = budget.Tenant,
                     Account = src.Account,
                     Name    = src.Name ?? string.Empty,
-                    Amount  = src.Amount,
-                    Notes   = src.Notes,
+                    Amount  = amount,
+                    Notes   = dto.IncreasePercentage != 0
+                        ? $"Importato da consuntivo con maggiorazione {dto.IncreasePercentage:0.##}%"
+                        : src.Notes,
                 };
                 item.Trace(currentUser);
                 await session.SaveAsync(item, ct).ConfigureAwait(false);
@@ -147,7 +172,7 @@ public class CreateBudgetCommandConsumer
         }
         else
         {
-            // Nessun Consuntivo precedente: voci vuote per ogni conto attivo
+            // Nessun consuntivo sorgente: voci vuote per ogni conto attivo
             var accounts = await session.Query<ChartOfAccounts>()
                 .Where(a => a.Condominium.Id == condominium.Id && !a.IsDeleted && a.IsActive)
                 .OrderBy(a => a.Code)

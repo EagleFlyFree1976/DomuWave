@@ -269,7 +269,33 @@
           </select>
         </div>
       </div>
-      <div class="form-group">
+
+      <!-- ── Sezione base da consuntivo (solo Preventivo in creazione) ── -->
+      <template v-if="!editingBudget && budgetForm.type === 1">
+        <fieldset class="form-fieldset" style="margin-top:12px">
+          <legend class="form-fieldset-legend">Importa da consuntivo precedente (opzionale)</legend>
+          <div class="form-grid">
+            <div class="form-group form-group--full">
+              <label class="form-label">Budget consuntivo di base</label>
+              <select class="form-select" v-model.number="budgetForm.sourceConsuntivoId">
+                <option :value="null">— Nessuno (voci vuote) —</option>
+                <option v-for="c in availableConsuntivi" :key="c.id" :value="c.id">
+                  {{ c.fiscalYearCode || c.fiscalYearId }} · {{ c.statusName }}
+                  {{ c.totalExpenses != null ? ' · €' + c.totalExpenses.toLocaleString('it-IT', {minimumFractionDigits:2}) : '' }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group" v-if="budgetForm.sourceConsuntivoId">
+              <label class="form-label">Maggiorazione %</label>
+              <input class="form-input" type="number" step="0.1" min="-100" max="999"
+                     v-model.number="budgetForm.increasePercentage"
+                     placeholder="es. 5 = +5%" />
+            </div>
+          </div>
+        </fieldset>
+      </template>
+
+      <div class="form-group" style="margin-top:12px">
         <label class="form-label">Note</label>
         <textarea class="form-textarea" v-model="budgetForm.notes" rows="2"></textarea>
       </div>
@@ -560,10 +586,11 @@ const selectedFiscalYearId = computed({
 // ─── Budget ───────────────────────────────────────────────────
 const budgets        = ref([])
 const loadingBudget  = ref(false)
-const showBudgetModal = ref(false)
-const editingBudget   = ref(null)
-const savingBudget    = ref(false)
-const budgetForm      = ref({ type: 1, notes: '' })
+const showBudgetModal     = ref(false)
+const editingBudget       = ref(null)
+const savingBudget        = ref(false)
+const budgetForm          = ref({ type: 1, notes: '', sourceConsuntivoId: null, increasePercentage: 0 })
+const availableConsuntivi = ref([])
 
 async function loadBudgets() {
   if (!selectedFiscalYearId.value) { budgets.value = []; return }
@@ -574,14 +601,18 @@ async function loadBudgets() {
   } catch { budgets.value = [] } finally { loadingBudget.value = false }
 }
 
-function openBudgetModal(b = null) {
+async function openBudgetModal(b = null) {
   editingBudget.value = b?.id ?? null
   if (b) {
-    budgetForm.value = { notes: b.notes ?? '' }
+    budgetForm.value = { notes: b.notes ?? '', sourceConsuntivoId: null, increasePercentage: 0 }
   } else {
-    // Pre-seleziona il tipo mancante; se entrambi liberi, default Preventivo
     const defaultType = !existingTypes.value.has(1) ? 1 : 2
-    budgetForm.value = { type: defaultType, notes: '' }
+    budgetForm.value = { type: defaultType, notes: '', sourceConsuntivoId: null, increasePercentage: 0 }
+    // Carica i consuntivi disponibili come base (tutti gli esercizi del condominio)
+    try {
+      const { data } = await budgetApi.getByCondominium(store.selectedCondominioId)
+      availableConsuntivi.value = (data ?? []).filter(b => b.type === 2)
+    } catch { availableConsuntivi.value = [] }
   }
   showBudgetModal.value = true
 }
@@ -593,10 +624,12 @@ async function saveBudget() {
       await budgetApi.update(editingBudget.value, { notes: budgetForm.value.notes })
     } else {
       await budgetApi.create({
-        condominiumId: store.selectedCondominioId,
-        fiscalYearId:  selectedFiscalYearId.value,
-        type:          budgetForm.value.type,
-        notes:         budgetForm.value.notes,
+        condominiumId:       store.selectedCondominioId,
+        fiscalYearId:        selectedFiscalYearId.value,
+        type:                budgetForm.value.type,
+        notes:               budgetForm.value.notes,
+        sourceConsuntivoId:  budgetForm.value.type === 1 ? (budgetForm.value.sourceConsuntivoId || null) : null,
+        increasePercentage:  budgetForm.value.type === 1 ? (budgetForm.value.increasePercentage || 0) : 0,
       })
     }
     showBudgetModal.value = false

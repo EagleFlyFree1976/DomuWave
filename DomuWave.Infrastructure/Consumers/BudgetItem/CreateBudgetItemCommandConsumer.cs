@@ -66,8 +66,11 @@ public class CreateBudgetItemCommandConsumer
         var allItems = await _budgetItemService
             .GetByBudgetIdAsync(budget.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
-        budget.TotalExpenses = allItems.Where(i => i.Account?.Type == ChartOfAccountsType.Uscita).Sum(i => i.Amount);
-        budget.TotalIncome   = allItems.Where(i => i.Account?.Type != ChartOfAccountsType.Uscita).Sum(i => i.Amount);
+        var parentAccountIds = allItems.Where(i => i.Account?.ParentAccount != null)
+            .Select(i => i.Account.ParentAccount.Id).ToHashSet();
+        var leafItems = allItems.Where(i => i.Account != null && !parentAccountIds.Contains(i.Account.Id)).ToList();
+        budget.TotalExpenses = leafItems.Where(i => i.Account.Type == ChartOfAccountsType.Uscita).Sum(i => i.Amount);
+        budget.TotalIncome   = leafItems.Where(i => i.Account.Type != ChartOfAccountsType.Uscita).Sum(i => i.Amount);
         await _budgetService.UpdateAsync(budget, currentUser, cancellationToken).ConfigureAwait(false);
 
         return created.ToReadDto();
