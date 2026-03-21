@@ -79,6 +79,9 @@
                     <button v-if="canEdit && b.statusId === 2 && b.type === 1"
                             class="btn btn-sm btn-ghost"
                             @click="openGenerateModal(b)">Genera rate</button>
+                    <button v-if="canEdit && b.type === 2 && b.statusId !== 3"
+                            class="btn btn-sm btn-ghost"
+                            @click="recalculateConsuntivoItems(b)" title="Ricalcola voci da spese registrate">Ricalcola voci</button>
                     <button v-if="canEdit && b.statusId === 1" class="btn-icon"
                             @click="openBudgetModal(b)" title="Modifica">✎</button>
                     <button v-if="canDelete && b.statusId === 1" class="btn-icon"
@@ -698,6 +701,17 @@ async function reopenBudget(b) {
   try {
     await budgetApi.reopen(b.id)
     store.toast('Budget riaperto', 'success')
+    await loadBudgets()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+async function recalculateConsuntivoItems(b) {
+  if (!confirm('Ricalcolare le voci del consuntivo?\n\nLe voci esistenti verranno sostituite con quelle calcolate automaticamente dalle spese registrate e dai movimenti di entrata.')) return
+  try {
+    await budgetApi.recalculateItems(b.id)
+    store.toast('Voci ricalcolate', 'success')
     await loadBudgets()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')

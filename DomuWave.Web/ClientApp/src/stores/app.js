@@ -39,6 +39,25 @@ export const useAppStore = defineStore('app', () => {
     fiscalYears.value.find(f => f.id === selectedFiscalYearId.value) || null
   )
 
+  function pickDefaultFiscalYear(years) {
+    if (!years.length) return null
+    // 1. Esercizio con isActive = true
+    const active = years.find(f => f.isActive)
+    if (active) return active.id
+    // 2. Esercizio il cui periodo contiene oggi
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const covering = years.find(f => {
+      const start = new Date(f.startDate)
+      const end   = new Date(f.endDate)
+      return start <= today && today <= end
+    })
+    if (covering) return covering.id
+    // 3. Fallback: il più recente per data di inizio
+    const sorted = [...years].sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+    return sorted[0]?.id ?? null
+  }
+
   async function loadFiscalYears() {
     if (!selectedCondominioId.value) {
       fiscalYears.value = []
@@ -51,8 +70,7 @@ export const useAppStore = defineStore('app', () => {
       // Mantieni la selezione corrente se è ancora valida per il nuovo condominio
       const stillValid = fiscalYears.value.find(f => f.id === selectedFiscalYearId.value)
       if (!stillValid) {
-        const active = fiscalYears.value.find(f => f.isActive) ?? fiscalYears.value[0]
-        selectedFiscalYearId.value = active?.id ?? null
+        selectedFiscalYearId.value = pickDefaultFiscalYear(fiscalYears.value)
       }
     } catch {
       fiscalYears.value = []

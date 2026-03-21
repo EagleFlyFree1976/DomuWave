@@ -98,6 +98,16 @@ public class BudgetsController(
         return NoContent();
     }
 
+    [HttpPost("{id:int}/recalculate-items")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    public async Task<IActionResult> RecalculateItems(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new RecalculateBudgetItemsCommand(CurrentUser.Id, id), ct);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+
     [HttpPost("{id:int}/close")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     public async Task<IActionResult> Close(int id, CancellationToken ct)

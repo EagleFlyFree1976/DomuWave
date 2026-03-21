@@ -216,6 +216,7 @@ export const budgetApi = {
   reopen:               (id)      => api.post(`/budgets/${id}/reopen`),
   close:                (id)      => api.post(`/budgets/${id}/close`),
   generateInstallments: (id, opts) => api.post(`/budgets/${id}/generate-installments`, opts ?? {}),
+  recalculateItems:     (id)      => api.post(`/budgets/${id}/recalculate-items`),
   delete:               (id)      => api.delete(`/budgets/${id}`),
 }
 

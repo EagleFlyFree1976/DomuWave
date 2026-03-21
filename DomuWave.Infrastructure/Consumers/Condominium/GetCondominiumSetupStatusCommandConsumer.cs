@@ -110,26 +110,43 @@ public class GetCondominiumSetupStatusCommandConsumer
 
         // ── 3. Piano dei conti ────────────────────────────────────────────────
         var accounts = await session.Query<ChartOfAccounts>()
-            .Where(a => a.Condominium.Id == condId && !a.IsDeleted)
-            .Select(a => new { a.Id, a.IsActive })
+            .Where(a => a.Condominium.Id == condId && !a.IsDeleted && a.IsActive)
+            .Select(a => new { a.Id, a.Type })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        var activeAccounts = accounts.Count(a => a.IsActive);
+        var hasEntrata     = accounts.Any(a => a.Type == ChartOfAccountsType.Entrata);
+        var hasUscita      = accounts.Any(a => a.Type == ChartOfAccountsType.Uscita);
+        var hasPatrimoniale = accounts.Any(a => a.Type == ChartOfAccountsType.Patrimoniale);
 
         dto.ChartOfAccounts.Checks.Add(new SetupCheckDto
         {
             IsOk   = accounts.Count > 0,
-            Label  = $"{accounts.Count} conti configurati",
+            Label  = $"{accounts.Count} conti attivi configurati",
             Detail = accounts.Count == 0 ? "Aggiungi i conti o copia da un altro condominio." : null,
         });
         dto.ChartOfAccounts.Checks.Add(new SetupCheckDto
         {
-            IsOk   = activeAccounts > 0,
-            IsWarn = accounts.Count > 0 && activeAccounts == 0,
-            Label  = $"{activeAccounts} conti attivi",
+            IsOk   = hasEntrata,
+            IsWarn = !hasEntrata,
+            Label  = hasEntrata ? "Conti di tipo Entrata presenti" : "Nessun conto di tipo Entrata",
+            Detail = !hasEntrata ? "Aggiungi almeno un conto di tipo Entrata." : null,
         });
-        dto.ChartOfAccounts.Status = accounts.Count == 0 ? SetupSectionStatus.Error
-            : activeAccounts == 0                         ? SetupSectionStatus.Warn
+        dto.ChartOfAccounts.Checks.Add(new SetupCheckDto
+        {
+            IsOk   = hasUscita,
+            IsWarn = !hasUscita,
+            Label  = hasUscita ? "Conti di tipo Uscita presenti" : "Nessun conto di tipo Uscita",
+            Detail = !hasUscita ? "Aggiungi almeno un conto di tipo Uscita." : null,
+        });
+        dto.ChartOfAccounts.Checks.Add(new SetupCheckDto
+        {
+            IsOk   = hasPatrimoniale,
+            IsWarn = !hasPatrimoniale,
+            Label  = hasPatrimoniale ? "Conti di tipo Patrimoniale presenti" : "Nessun conto di tipo Patrimoniale",
+            Detail = !hasPatrimoniale ? "Aggiungi almeno un conto di tipo Patrimoniale." : null,
+        });
+        dto.ChartOfAccounts.Status = accounts.Count == 0       ? SetupSectionStatus.Error
+            : (!hasEntrata || !hasUscita || !hasPatrimoniale)   ? SetupSectionStatus.Error
             : SetupSectionStatus.Ok;
 
         // ── 4. Tabelle millesimali ────────────────────────────────────────────
@@ -190,37 +207,78 @@ public class GetCondominiumSetupStatusCommandConsumer
             : SetupSectionStatus.Ok;
 
         // ── 5. Esercizio fiscale ──────────────────────────────────────────────
+        var today = DateTime.Today;
         var fiscalYears = await session.Query<FiscalYear>()
             .Where(fy => fy.Condominium.Id == condId && !fy.IsDeleted)
-            .Select(fy => new { fy.Id, fy.Status })
+            .Select(fy => new { fy.Id, fy.Code, fy.StartDate, fy.EndDate, fy.IsActive, StatusId = fy.Status.Id })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        var hasOpen = fiscalYears.Any(fy => fy.Status.Id == FiscalYearStatus.Open);
+        var hasAny         = fiscalYears.Count > 0;
+        var activeYear     = fiscalYears.FirstOrDefault(fy => fy.IsActive);
+        var hasActive      = activeYear != null;
+        var activeCoverToday = hasActive && activeYear!.StartDate <= today && today <= activeYear.EndDate;
+        var anyCoversToday = fiscalYears.Any(fy => fy.StartDate <= today && today <= fy.EndDate);
+        var hasOpen        = fiscalYears.Any(fy => fy.StatusId == FiscalYearStatus.Open);
 
         dto.FiscalYear.Checks.Add(new SetupCheckDto
         {
-            IsOk   = fiscalYears.Count > 0,
+            IsOk   = hasAny,
             Label  = $"{fiscalYears.Count} esercizi fiscali",
-            Detail = fiscalYears.Count == 0 ? "Crea un esercizio fiscale." : null,
+            Detail = !hasAny ? "Crea un esercizio fiscale." : null,
+        });
+        dto.FiscalYear.Checks.Add(new SetupCheckDto
+        {
+            IsOk   = hasActive,
+            IsWarn = hasAny && !hasActive,
+            Label  = hasActive ? $"Esercizio attivo: «{activeYear!.Code}»" : "Nessun esercizio attivo",
+            Detail = hasAny && !hasActive ? "Imposta un esercizio come attivo." : null,
+        });
+        dto.FiscalYear.Checks.Add(new SetupCheckDto
+        {
+            IsOk   = !hasActive || activeCoverToday,
+            IsWarn = hasActive && !activeCoverToday,
+            Label  = !hasActive      ? "Nessun esercizio attivo da verificare"
+                   : activeCoverToday ? "L'esercizio attivo include la data odierna"
+                   : $"L'esercizio attivo «{activeYear!.Code}» non include la data odierna ({today:dd/MM/yyyy})",
+            Detail = hasActive && !activeCoverToday
+                ? $"Il periodo {activeYear!.StartDate:dd/MM/yyyy}–{activeYear.EndDate:dd/MM/yyyy} non copre oggi. Controlla le date o cambia l'esercizio attivo."
+                : null,
+        });
+        dto.FiscalYear.Checks.Add(new SetupCheckDto
+        {
+            IsOk   = anyCoversToday,
+            IsWarn = hasAny && !anyCoversToday,
+            Label  = anyCoversToday ? "La data odierna è coperta da un esercizio"
+                   : "La data odierna non è coperta da nessun esercizio",
+            Detail = hasAny && !anyCoversToday
+                ? $"Nessun esercizio definito include {today:dd/MM/yyyy}. Crea o modifica un esercizio per coprire il periodo corrente."
+                : null,
         });
         dto.FiscalYear.Checks.Add(new SetupCheckDto
         {
             IsOk   = hasOpen,
-            IsWarn = fiscalYears.Count > 0 && !hasOpen,
-            Label  = hasOpen ? "Esercizio aperto attivo" : "Nessun esercizio aperto",
-            Detail = !hasOpen ? "Apri o crea un esercizio fiscale per l'anno corrente." : null,
+            IsWarn = hasAny && !hasOpen,
+            Label  = hasOpen ? "Esercizio in stato Aperto presente" : "Nessun esercizio in stato Aperto",
+            Detail = hasAny && !hasOpen ? "Apri o crea un esercizio fiscale per l'anno corrente." : null,
         });
-        dto.FiscalYear.Status = fiscalYears.Count == 0 ? SetupSectionStatus.Error
-            : !hasOpen                                  ? SetupSectionStatus.Warn
+        dto.FiscalYear.Status = !hasAny                                       ? SetupSectionStatus.Error
+            : (!hasActive || !anyCoversToday)                                  ? SetupSectionStatus.Error
+            : (hasActive && !activeCoverToday) || !hasOpen                     ? SetupSectionStatus.Warn
             : SetupSectionStatus.Ok;
 
         // ── 6. Budget ─────────────────────────────────────────────────────────
         var budgets = await session.Query<Budget>()
             .Where(b => b.Condominium.Id == condId && !b.IsDeleted)
-            .Select(b => new { b.Id, b.Status })
+            .Select(b => new { b.Id, StatusId = b.Status.Id, FiscalYearId = b.FiscalYear.Id })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        var hasApproved = budgets.Any(b => b.Status.Id == BudgetStatus.Approved);
+        var hasApproved = budgets.Any(b => b.StatusId == BudgetStatus.Approved);
+
+        // Check budget approvato per l'esercizio attivo corrente
+        var activeFyId = activeYear?.Id;
+        var hasApprovedForActive = activeFyId.HasValue
+            && budgets.Any(b => b.FiscalYearId == activeFyId.Value
+                             && (b.StatusId == BudgetStatus.Approved || b.StatusId == BudgetStatus.Closed));
 
         dto.Budget.Checks.Add(new SetupCheckDto
         {
@@ -237,8 +295,23 @@ public class GetCondominiumSetupStatusCommandConsumer
                 ? "Approva il budget per procedere con la generazione delle rate."
                 : null,
         });
-        dto.Budget.Status = budgets.Count == 0 ? SetupSectionStatus.Error
-            : !hasApproved                      ? SetupSectionStatus.Warn
+        if (activeFyId.HasValue)
+        {
+            dto.Budget.Checks.Add(new SetupCheckDto
+            {
+                IsOk   = hasApprovedForActive,
+                IsWarn = !hasApprovedForActive,
+                Label  = hasApprovedForActive
+                    ? $"Budget approvato presente per l'esercizio attivo «{activeYear!.Code}»"
+                    : $"Nessun budget approvato per l'esercizio attivo «{activeYear!.Code}»",
+                Detail = !hasApprovedForActive
+                    ? "Crea e approva un budget preventivo per l'esercizio attivo."
+                    : null,
+            });
+        }
+        dto.Budget.Status = budgets.Count == 0     ? SetupSectionStatus.Error
+            : !hasApproved                          ? SetupSectionStatus.Warn
+            : !hasApprovedForActive                 ? SetupSectionStatus.Warn
             : SetupSectionStatus.Ok;
 
         return dto;

@@ -60,6 +60,28 @@ public class ApproveBudgetCommandConsumer
                 $"Esiste già un budget {tipoLabel} approvato o chiuso per questo esercizio e condominio. " +
                 "Non è possibile approvarne un altro.");
 
+        // Verifica che il piano dei conti abbia almeno un conto per ogni tipo
+        var hasEntrata     = await session.Query<ChartOfAccounts>()
+            .AnyAsync(a => a.Condominium.Id == budget.Condominium.Id && a.Type == ChartOfAccountsType.Entrata && a.IsActive && !a.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+        var hasUscita      = await session.Query<ChartOfAccounts>()
+            .AnyAsync(a => a.Condominium.Id == budget.Condominium.Id && a.Type == ChartOfAccountsType.Uscita && a.IsActive && !a.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+        var hasPatrimoniale = await session.Query<ChartOfAccounts>()
+            .AnyAsync(a => a.Condominium.Id == budget.Condominium.Id && a.Type == ChartOfAccountsType.Patrimoniale && a.IsActive && !a.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!hasEntrata || !hasUscita || !hasPatrimoniale)
+        {
+            var missing = new List<string>();
+            if (!hasEntrata)      missing.Add("Entrata");
+            if (!hasUscita)       missing.Add("Uscita");
+            if (!hasPatrimoniale) missing.Add("Patrimoniale");
+            throw new ValidatorException(
+                $"Il piano dei conti non è completo. Mancano conti di tipo: {string.Join(", ", missing)}. " +
+                "Configura il piano dei conti prima di approvare il budget.");
+        }
+
         // Approva il budget
         var approved = await _budgetService
             .ApproveBudgetAsync(command.Id, command.CurrentUserId, currentUser, cancellationToken)
