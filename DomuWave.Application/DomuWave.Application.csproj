@@ -71,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DomuWave.Infrastructure\DomuWave.Services.csproj" />
+    <ProjectReference Include="..\..\..\Blizio\Blizio.Auth\Auth.Services\Auth.Services.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Ox.Shared">

@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using Auth.Microservice;
+using Auth.Services;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
@@ -109,6 +110,8 @@ try
     );
 
     services.AddOxSimpleMediator(configuration);
+
+    services.AddAuthServices(configuration);
 
     services.AddDomuWaveAppServices(_oxCoreSettings);
 
