@@ -81,9 +81,36 @@ public class RecalculateBudgetItemsCommandConsumer
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        // Carica tutti i conti del condominio come proiezione scalare (evita lazy proxy)
+        var allAccountRows = await session.Query<ChartOfAccounts>()
+            .Where(a => a.Condominium.Id == condominiumId && !a.IsDeleted)
+            .Select(a => new { a.Id, ParentAccountId = a.ParentAccount != null ? (int?)a.ParentAccount.Id : null })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+        var parentMap = allAccountRows.ToDictionary(a => a.Id, a => a.ParentAccountId); // id → parentId?
+
+        // Accumula importi per account foglia + tutti gli antenati
+        var amountByAccountId = new Dictionary<int, (decimal Total, int Count)>();
         foreach (var group in expenseGroups)
         {
-            var account = await session.GetAsync<ChartOfAccounts>(group.AccountId, cancellationToken)
+            if (!parentMap.ContainsKey(group.AccountId)) continue;
+
+            // Percorri la catena: foglia → padre → nonno → …
+            int? currentId = group.AccountId;
+            while (currentId.HasValue && parentMap.ContainsKey(currentId.Value))
+            {
+                if (amountByAccountId.TryGetValue(currentId.Value, out var existing))
+                    amountByAccountId[currentId.Value] = (existing.Total + group.Total, existing.Count + group.Count);
+                else
+                    amountByAccountId[currentId.Value] = (group.Total, group.Count);
+
+                currentId = parentMap[currentId.Value]; // sale al padre (null se radice)
+            }
+        }
+
+        foreach (var (accountId, (total, count)) in amountByAccountId)
+        {
+            var account = await session.GetAsync<ChartOfAccounts>(accountId, cancellationToken)
                 .ConfigureAwait(false);
             if (account == null) continue;
 
@@ -93,8 +120,8 @@ public class RecalculateBudgetItemsCommandConsumer
                 Tenant  = budget.Tenant,
                 Account = account,
                 Name    = account.Name ?? string.Empty,
-                Amount  = group.Total,
-                Notes   = $"Ricalcolato automaticamente da {group.Count} spese",
+                Amount  = total,
+                Notes   = $"Ricalcolato automaticamente da {count} spese",
             };
             item.Trace(currentUser);
             await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);

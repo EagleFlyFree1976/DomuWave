@@ -55,7 +55,7 @@
             </thead>
             <tbody>
               <tr v-for="b in budgets" :key="b.id">
-                <td>{{ b.type === 1 ? 'Preventivo' : 'Consuntivo' }}</td>
+                <td><span class="text-muted mono">#{{ b.id }}</span> {{ b.type === 1 ? 'Preventivo' : 'Consuntivo' }}</td>
                 <td class="mono text-right text-green">{{ fmt(b.totalIncome) }}</td>
                 <td class="mono text-right text-red">{{ fmt(b.totalExpenses) }}</td>
                 <td class="text-secondary">{{ fmtDate(b.approvalDate) }}</td>
@@ -324,7 +324,7 @@
           </div>
         </div>
 
-        <!-- ── Tab: voci di 1° livello ── -->
+        <!-- ── Tab: Entrate / Uscite / Patrimoniale ── -->
         <div class="budget-tabs">
           <button
             v-for="tab in budgetTabs" :key="tab.id"
@@ -332,43 +332,51 @@
             :class="{ active: activeItemTab === tab.id }"
             @click="activeItemTab = tab.id"
           >
-            <span class="tab-label">{{ tab.code }} – {{ tab.name }}</span>
-            <span class="tab-total mono" :class="tab.typeId === 'Uscita' ? 'text-red' : 'text-green'">
+            <span class="tab-label">{{ tab.label }}</span>
+            <span class="tab-total mono" :class="tab.id === 'Uscita' ? 'text-red' : 'text-green'">
               {{ fmt(tab.total) }}
             </span>
           </button>
         </div>
 
-        <!-- ── Tabella righe del tab attivo ── -->
+        <!-- ── Tabella righe del tab attivo (gerarchica) ── -->
         <div class="budget-tab-content">
           <table class="budget-accounts-table" v-if="activeTabRows.length">
             <thead>
               <tr>
                 <th style="width:90px">Codice</th>
                 <th>Voce</th>
-                <th style="width:160px" class="text-right">Importo prev. (€)</th>
+                <th style="width:160px" class="text-right">Importo (€)</th>
                 <th v-if="canEdit && selectedBudget?.statusId === 1" style="width:36px"></th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="row in activeTabRows" :key="row.accountId"
-                  :class="{ 'row-edited': row.dirty }">
+                  :class="{
+                    'row-edited':  row.dirty,
+                    'row-header':  row.isHeader,
+                    'row-leaf':    !row.isHeader,
+                  }">
                 <td class="mono text-secondary" style="font-size:0.82em">{{ row.accountCode }}</td>
-                <td>{{ row.accountName }}</td>
+                <td :style="{ paddingLeft: (0.65 + (row.level - 1) * 1.25) + 'rem' }">
+                  {{ row.accountName }}
+                </td>
                 <td class="text-right">
                   <input
-                    v-if="canEdit && selectedBudget?.statusId === 1"
+                    v-if="!row.isHeader && canEdit && selectedBudget?.statusId === 1"
                     class="form-input budget-amount-input"
                     type="number" step="0.01" min="0"
                     :value="row.amount"
                     @change="onAmountChange(row, $event)"
                     @focus="$event.target.select()"
                   />
-                  <span v-else class="mono">{{ fmt(row.amount) }}</span>
+                  <span v-else class="mono" :class="row.isHeader ? 'row-header-amount' : ''">
+                    {{ fmt(row.amount) }}
+                  </span>
                 </td>
                 <td v-if="canEdit && selectedBudget?.statusId === 1">
                   <button
-                    v-if="row.itemId"
+                    v-if="!row.isHeader && row.itemId"
                     class="btn-icon btn-delete-row"
                     title="Rimuovi voce"
                     @click="deleteItem(row)"
@@ -378,14 +386,14 @@
             </tbody>
             <tfoot>
               <tr class="section-total-row">
-                <td colspan="2" class="text-secondary">Totale sezione</td>
-                <td class="mono text-right">{{ fmt(activeTabRows.reduce((s, r) => s + (r.amount || 0), 0)) }}</td>
+                <td colspan="2" class="text-secondary">Totale</td>
+                <td class="mono text-right">{{ fmt(activeTabRows.filter(r => !r.isHeader).reduce((s, r) => s + (r.amount || 0), 0)) }}</td>
               </tr>
             </tfoot>
           </table>
           <div v-else class="empty-state" style="padding:1rem">
             <div class="empty-icon">◎</div>
-            <div>Nessuna voce di dettaglio in questa sezione</div>
+            <div>Nessuna voce in questa sezione</div>
           </div>
         </div>
       </div>
@@ -456,7 +464,7 @@
           <select class="form-select" v-model.number="expForm.accountId" @change="clearExpError('accountId')">
             <option :value="null" disabled>Seleziona conto…</option>
             <optgroup v-for="grp in expenseAccountGroups" :key="grp.typeLabel" :label="grp.typeLabel">
-              <option v-for="r in grp.rows" :key="r.accountId" :value="r.accountId">{{ r.accountCode }} – {{ r.accountName }}</option>
+              <option v-for="r in grp.rows" :key="r.accountId" :value="r.accountId">{{ r.label }}</option>
             </optgroup>
           </select>
           <span v-if="expErrors.accountId" class="field-error">{{ expErrors.accountId }}</span>
@@ -724,30 +732,27 @@ const selectedBudget = ref(null)
 const loadingItems   = ref(false)
 const savingItem     = ref(false)
 
-// budgetTabs = voci di livello 1 (capitoli), ognuna con .rows = voci di livello 2
-const budgetTabs    = ref([])
+// 3 tab fissi: Uscite / Entrate / Patrimoniale
+const budgetTabs    = ref([])   // { id, label, rows, total }
 const activeItemTab = ref(null)
 
-// Righe del tab attivo
+// Righe del tab attivo (lista piatta ordinata gerarchicamente)
 const activeTabRows = computed(() => {
   const tab = budgetTabs.value.find(t => t.id === activeItemTab.value)
   return tab?.rows ?? []
 })
 
-// Totali calcolati su tutte le righe di tutti i tab
-const allRows = computed(() => budgetTabs.value.flatMap(t => t.rows))
+// Solo righe foglia (editabili) su tutti i tab
+const allLeafRows = computed(() => budgetTabs.value.flatMap(t => t.rows.filter(r => !r.isHeader)))
 
-const hasDirtyRows = computed(() => allRows.value.some(r => r.dirty))
+const hasDirtyRows = computed(() => allLeafRows.value.some(r => r.dirty))
 
 const totalIncome   = computed(() =>
-  allRows.value
-    .filter(r => r.accountType !== 'Uscita')
-    .reduce((s, r) => s + (r.amount || 0), 0)
+  (budgetTabs.value.find(t => t.id === 'Entrata')?.total ?? 0) +
+  (budgetTabs.value.find(t => t.id === 'Patrimoniale')?.total ?? 0)
 )
 const totalExpenses = computed(() =>
-  allRows.value
-    .filter(r => r.accountType === 'Uscita')
-    .reduce((s, r) => s + (r.amount || 0), 0)
+  budgetTabs.value.find(t => t.id === 'Uscita')?.total ?? 0
 )
 const totalBalance = computed(() => totalIncome.value - totalExpenses.value)
 
@@ -775,6 +780,75 @@ function closeItemsModal() {
   activeItemTab.value  = null
 }
 
+// Costruisce una lista piatta ordinata gerarchicamente a partire dai nodi radice del tipo dato.
+// Ogni elemento ha: accountId, accountCode, accountName, accountType, level, isHeader,
+//                   itemId, amount, dirty
+function buildHierarchyRows(items, typeLabel) {
+  const byParent  = {}
+  for (const i of items) {
+    const pid = i.parentAccountId ?? null
+    if (!byParent[pid]) byParent[pid] = []
+    byParent[pid].push(i)
+  }
+  for (const list of Object.values(byParent))
+    list.sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))
+
+  const result = []
+  function walk(parentId, level) {
+    for (const i of (byParent[parentId] ?? [])) {
+      const hasChildren = !!(byParent[i.accountId]?.length)
+      result.push({
+        accountId:   i.accountId,
+        accountCode: i.accountCode,
+        accountName: i.accountName,
+        accountType: typeLabel,
+        level,
+        isHeader:    hasChildren,   // nodi con figli = sola lettura, importo calcolato
+        itemId:      hasChildren ? null : (i.id ?? null),
+        amount:      i.amount ?? 0,
+        dirty:       false,
+      })
+      walk(i.accountId, level + 1)
+    }
+  }
+  // Parti dai nodi senza padre
+  walk(null, 1)
+  // Se non ci sono nodi con parentAccountId=null, usa tutti come radici piatte
+  if (result.length === 0) {
+    for (const i of items.sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))) {
+      result.push({
+        accountId: i.accountId, accountCode: i.accountCode,
+        accountName: i.accountName, accountType: typeLabel,
+        level: 1, isHeader: false,
+        itemId: i.id ?? null, amount: i.amount ?? 0, dirty: false,
+      })
+    }
+  }
+  return result
+}
+
+// Ricalcola l'importo di ogni nodo-header come somma dei figli foglia discendenti
+function recalcHeaders(rows) {
+  // Calcola per ogni accountId la somma delle foglie discendenti
+  const amountById = {}
+  // Prima passa: somma solo le foglie
+  for (const r of rows) if (!r.isHeader) amountById[r.accountId] = r.amount
+  // Seconda passa bottom-up: propaga ai parent
+  // Usiamo l'ordine inverso della lista (i figli vengono dopo i padri nella DFS)
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const r = rows[i]
+    if (!r.isHeader) continue
+    // Somma tutti i discendenti foglia che vengono dopo nella lista
+    // fino al prossimo nodo dello stesso livello o superiore
+    let total = 0
+    for (let j = i + 1; j < rows.length; j++) {
+      if (rows[j].level <= r.level) break
+      if (!rows[j].isHeader) total += rows[j].amount
+    }
+    r.amount = total
+  }
+}
+
 async function loadBudgetItems() {
   if (!selectedBudget.value) return
   loadingItems.value = true
@@ -782,71 +856,26 @@ async function loadBudgetItems() {
     const { data } = await budgetItemApi.getByBudget(selectedBudget.value.id)
     const items = data ?? []
 
-    // Separa voci di livello 1 (capitoli) da voci di livello 2 (dettaglio)
-    // Level=1 → tab; Level=2 → righe editabili dentro il tab del loro parent
-    const level1 = items.filter(i => i.accountLevel === 1)
-      .sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))
-    const level2 = items.filter(i => i.accountLevel === 2)
+    // Mappa type numerico → label stringa
+    const TYPE_LABEL = { 1: 'Entrata', 2: 'Uscita', 3: 'Patrimoniale' }
 
-    // Mappa parentAccountId → righe figlie
-    const childrenMap = {}
-    for (const item of level2) {
-      const pid = item.parentAccountId ?? '__no_parent__'
-      if (!childrenMap[pid]) childrenMap[pid] = []
-      childrenMap[pid].push({
-        accountId:   item.accountId,
-        accountCode: item.accountCode,
-        accountName: item.accountName,
-        accountType: item.accountType,
-        itemId:      item.id,
-        amount:      item.amount ?? 0,
-        dirty:       false,
-      })
-    }
-
-    // Costruisce i tab dai capitoli di livello 1
-    budgetTabs.value = level1.map(item => {
-      const rows = (childrenMap[item.accountId] ?? [])
-        .sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))
-      const tabTotal = rows.reduce((s, r) => s + (r.amount || 0), 0)
-      return {
-        id:     item.accountId,
-        code:   item.accountCode,
-        name:   item.accountName,
-        typeId: item.accountType,
-        total:  tabTotal,
-        rows,
-      }
+    budgetTabs.value = [
+      { id: 'Uscita',       label: 'Uscite' },
+      { id: 'Entrata',      label: 'Entrate' },
+      { id: 'Patrimoniale', label: 'Patrimoniale' },
+    ].map(def => {
+      const typeItems = items.filter(i => (TYPE_LABEL[i.accountType] ?? i.accountType) === def.id)
+      const rows = buildHierarchyRows(typeItems, def.id)
+      recalcHeaders(rows)
+      const total = rows.filter(r => !r.isHeader).reduce((s, r) => s + (r.amount || 0), 0)
+      return { ...def, rows, total }
     })
 
-    // Fallback: se non ci sono capitoli di livello 1 (es. dati migrati piatti),
-    // tratta tutte le voci come righe in un unico tab
-    if (budgetTabs.value.length === 0 && items.length > 0) {
-      const flat = items.sort((a, b) => (a.accountCode ?? '').localeCompare(b.accountCode ?? ''))
-      budgetTabs.value = [{
-        id:     '__all__',
-        code:   '',
-        name:   'Tutte le voci',
-        typeId: null,
-        total:  flat.reduce((s, i) => s + (i.amount || 0), 0),
-        rows:   flat.map(i => ({
-          accountId:   i.accountId,
-          accountCode: i.accountCode,
-          accountName: i.accountName,
-          accountType: i.accountType,
-          itemId:      i.id,
-          amount:      i.amount ?? 0,
-          dirty:       false,
-        })),
-      }]
-    }
+    activeItemTab.value = budgetTabs.value[0].id
 
-    // Seleziona il primo tab
-    activeItemTab.value = budgetTabs.value[0]?.id ?? null
-
-    // Snapshot per discard
+    // Snapshot per discard (solo foglie)
     originalAmounts = {}
-    for (const row of allRows.value) {
+    for (const row of allLeafRows.value) {
       originalAmounts[row.accountId] = row.amount
     }
 
@@ -861,19 +890,21 @@ function onAmountChange(row, event) {
   const val = parseFloat(event.target.value) || 0
   row.amount = val
   row.dirty  = val !== (originalAmounts[row.accountId] ?? 0)
-  // Aggiorna il totale del tab attivo in tempo reale
   const tab = budgetTabs.value.find(t => t.id === activeItemTab.value)
-  if (tab) tab.total = tab.rows.reduce((s, r) => s + (r.amount || 0), 0)
+  if (tab) {
+    recalcHeaders(tab.rows)
+    tab.total = tab.rows.filter(r => !r.isHeader).reduce((s, r) => s + (r.amount || 0), 0)
+  }
 }
 
 function discardChanges() {
-  for (const row of allRows.value) {
+  for (const row of allLeafRows.value) {
     row.amount = originalAmounts[row.accountId] ?? 0
     row.dirty  = false
   }
-  // Ricalcola i totali dei tab
   for (const tab of budgetTabs.value) {
-    tab.total = tab.rows.reduce((s, r) => s + (r.amount || 0), 0)
+    recalcHeaders(tab.rows)
+    tab.total = tab.rows.filter(r => !r.isHeader).reduce((s, r) => s + (r.amount || 0), 0)
   }
 }
 
@@ -881,17 +912,11 @@ async function saveAllItems() {
   if (!selectedBudget.value) return
   savingItem.value = true
   try {
-    const dirtyRows = allRows.value.filter(r => r.dirty)
-
+    const dirtyRows = allLeafRows.value.filter(r => r.dirty)
     for (const row of dirtyRows) {
       if (row.itemId) {
-        // Voce esistente: aggiorna
-        await budgetItemApi.update(row.itemId, {
-          accountId: row.accountId,
-          amount:    row.amount,
-        })
+        await budgetItemApi.update(row.itemId, { accountId: row.accountId, amount: row.amount })
       } else if (row.amount > 0) {
-        // Voce non esistente con importo > 0: crea
         const { data } = await budgetItemApi.create({
           budgetId:  selectedBudget.value.id,
           accountId: row.accountId,
@@ -902,8 +927,6 @@ async function saveAllItems() {
       row.dirty = false
       originalAmounts[row.accountId] = row.amount
     }
-
-    // Aggiorna i totali visualizzati nella lista budget
     await loadBudgets()
   } catch { /* global */ } finally { savingItem.value = false }
 }
@@ -917,9 +940,11 @@ async function deleteItem(row) {
     row.amount = 0
     row.dirty  = false
     delete originalAmounts[row.accountId]
-    // Aggiorna totale del tab
     const tab = budgetTabs.value.find(t => t.rows.includes(row))
-    if (tab) tab.total = tab.rows.reduce((s, r) => s + (r.amount || 0), 0)
+    if (tab) {
+      recalcHeaders(tab.rows)
+      tab.total = tab.rows.filter(r => !r.isHeader).reduce((s, r) => s + (r.amount || 0), 0)
+    }
     await loadBudgets()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
@@ -1028,14 +1053,23 @@ async function openExpenseModal(e = null) {
 
 function buildExpenseAccountGroups() {
   // type dal backend è int: Entrata=1, Uscita=2, Patrimoniale=3
-  const TYPE_MAP   = { 1: 'Entrata', 2: 'Uscita', 3: 'Patrimoniale' }
-  const TYPE_ORDER = ['Uscita', 'Entrata', 'Patrimoniale']
+  const TYPE_MAP    = { 1: 'Entrata', 2: 'Uscita', 3: 'Patrimoniale' }
+  const TYPE_ORDER  = ['Uscita', 'Entrata', 'Patrimoniale']
   const TYPE_LABELS = { Uscita: 'Uscite', Entrata: 'Entrate', Patrimoniale: 'Patrimoniale' }
+
+  const accountById = Object.fromEntries(chartOfAccounts.value.map(a => [a.id, a]))
+
   const groups = {}
+  // Solo conti di livello 2+ (esclude i capitoli di primo livello)
   for (const account of chartOfAccounts.value) {
+    if (account.level === 1) continue
     const typeKey = TYPE_MAP[account.type] ?? 'Uscita'
     if (!groups[typeKey]) groups[typeKey] = []
-    groups[typeKey].push({ accountId: account.id, accountCode: account.code, accountName: account.name })
+    const parent = account.parentAccountId ? accountById[account.parentAccountId] : null
+    const label = parent
+      ? `${parent.code} ${parent.name}  ›  ${account.code} ${account.name}`
+      : `${account.code} ${account.name}`
+    groups[typeKey].push({ accountId: account.id, accountCode: account.code, accountName: account.name, label })
   }
   expenseAccountGroups.value = TYPE_ORDER.filter(t => groups[t]?.length).map(t => ({
     typeId: t, typeLabel: TYPE_LABELS[t] ?? t,
@@ -1215,6 +1249,9 @@ onMounted(async () => {
 .budget-accounts-table thead th { background: var(--bg-surface); font-weight: 600; }
 .budget-accounts-table tr.row-edited td { background: rgba(99,102,241,0.06); }
 .budget-accounts-table tbody tr:last-child td { border-bottom: none; }
+.budget-accounts-table tr.row-header td { background: var(--bg-surface); font-weight: 600; border-top: 1px solid var(--border); }
+.budget-accounts-table tr.row-header td:first-child { color: var(--text-muted); }
+.row-header-amount { font-weight: 600; color: var(--text); }
 
 .budget-amount-input {
   width: 120px;

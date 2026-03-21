@@ -410,10 +410,23 @@ const form = ref(emptyForm())
 const condominioName = computed(() =>
   store.condomini?.find(c => c.id === store.selectedCondominioId)?.name ?? '')
 
-// Esclude il conto stesso dalla lista dei parent selezionabili (evita cicli)
-const parentAccountOptions = computed(() =>
-  accounts.value.filter(a => a.id !== editing.value)
-)
+// Esclude il conto stesso e tutti i suoi discendenti (evita cicli)
+const parentAccountOptions = computed(() => {
+  if (!editing.value) return accounts.value
+  const excluded = new Set()
+  excluded.add(editing.value)
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const a of accounts.value) {
+      if (!excluded.has(a.id) && excluded.has(a.parentAccountId)) {
+        excluded.add(a.id)
+        changed = true
+      }
+    }
+  }
+  return accounts.value.filter(a => !excluded.has(a.id))
+})
 
 const filtered = computed(() => {
   let list = accounts.value
@@ -434,6 +447,7 @@ function parentCode(parentId) {
 
 async function load() {
   if (!store.selectedCondominioId) { accounts.value = []; return }
+  accounts.value = []
   loading.value = true
   try {
     const res = await chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
