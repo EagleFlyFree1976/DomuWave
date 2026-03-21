@@ -749,7 +749,7 @@ async function reopenBudget(b) {
 }
 
 async function recalculateConsuntivoItems(b) {
-  if (!confirm('Ricalcolare le voci del consuntivo?\n\nLe voci esistenti verranno sostituite con quelle calcolate automaticamente dalle spese registrate e dai movimenti di entrata.')) return
+  if (!confirm('Ricalcolare le voci del consuntivo?\n\n⚠️ ATTENZIONE: tutte le modifiche manuali alle voci verranno annullate e sostituite con i valori calcolati automaticamente dalle spese registrate e dai movimenti di entrata.\n\nContinuare?')) return
   try {
     await budgetApi.recalculateItems(b.id)
     store.toast('Voci ricalcolate', 'success')
