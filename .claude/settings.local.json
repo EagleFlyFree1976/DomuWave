@@ -29,7 +29,8 @@
       "Bash(find /c/Projects/Works/DomuWave/DomuWave.Web/ClientApp/src -type f -name *.vue)",
       "Bash(xargs grep:*)",
       "Bash(ls -1 /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Models/*.cs)",
-      "Bash(find /c/Projects/Works/DomuWave -name *BudgetItem* -type f)"
+      "Bash(find /c/Projects/Works/DomuWave -name *BudgetItem* -type f)",
+      "Bash(grep -rn \"TotalExpenses\\\\|TotalIncome\\\\|budget\\\\.Total\" c:/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/BudgetItem --include=*.cs)"
     ]
   }
 }
