@@ -115,6 +115,10 @@ try
 
     services.AddDomuWaveAppServices(_oxCoreSettings);
 
+    // Sostituisce il Refit client con l'implementazione locale (Auth.Services embedded).
+    // Per tornare al microservizio esterno, rimuovere questa riga.
+    services.AddScoped<DomuWave.Services.Clients.IAuthorizationClient, DomuWave.Microservice.Clients.LocalAuthorizationClient>();
+
     #region Swagger
 
     services.AddSwaggerGen(c =>

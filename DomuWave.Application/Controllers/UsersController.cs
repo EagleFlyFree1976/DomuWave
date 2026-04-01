@@ -1,13 +1,12 @@
-using Auth.Services.Command;
-using Auth.Services.Extensions;
-using Auth.Services.Interfaces;
-using Auth.Services.Orchestators;
 using CPQ.Core.Extensions;
+using CPQ.Core.Memberships;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Clients;
 using DomuWave.Services.Clients.Request;
 using DomuWave.Services.Command.UserTenant;
+using DomuWave.Services.Dto.UserTenants;
 using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
@@ -18,14 +17,14 @@ using SimpleMediator.Core;
 namespace DomuWave.Microservice.Controllers;
 
 /// <summary>
-/// Gestione degli utenti tramite Auth.Services locale.
+/// Proxy per la gestione degli utenti: delega le operazioni CRUD all'AuthService
+/// e arricchisce le risposte con i tenant DomuWave associati.
 /// </summary>
 [Route("api/users")]
 public class UsersController(
     ILogger<UsersController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
-    IAuthUserService authUserService,
-    AuthOrchestator authOrchestator,
+    IAuthorizationClient authorizationClient,
     IUserTenantService userTenantService,
     ITenantService tenantService,
     IUserService userService,
@@ -33,7 +32,6 @@ public class UsersController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-
     // ─── GET /api/users/search ────────────────────────────────────────────────
 
     [HttpGet("search")]
@@ -44,19 +42,18 @@ public class UsersController(
         [FromQuery] string? roles,
         CancellationToken ct)
     {
-        var roleArray = roles?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var users = await authUserService.FindUser(search ?? string.Empty, roleArray, null, isActive, ct)
-            .ConfigureAwait(false);
+        var users = await authorizationClient.SearchUsersAsync(
+            CommonKeys.SystemUserToken, search, isActive, roles, ct);
 
-        var dtos = users.Select(u => u.ToDto()).ToList();
-
-        if (!CurrentUser.IsSystemUser)
+        if (!this.CurrentUser.IsSystemUser)
         {
             var items = await _mediator.GetResponse(new GetUserTenantsByTenantCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
-            dtos = dtos.Where(u => items.Any(k => k.UserId == u.Id && k.IsActive && !k.IsDeleted)).ToList();
+            var user = users.Where(k => k.Id == 356).FirstOrDefault();
+            users = users.Where(u => items.Any(k => k.UserId == u.Id && k.IsActive && !k.IsDeleted)).ToList();
+
         }
 
-        return Ok(dtos);
+        return Ok(users ?? new List<CPQ.Core.DTO.UserDto>());
     }
 
     // ─── GET /api/users/{id} ──────────────────────────────────────────────────
@@ -66,9 +63,12 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var user = await authUserService.GetByIdAsync(id, ct).ConfigureAwait(false);
+        var user = await authorizationClient.GetUserByIdAsync(
+            CommonKeys.SystemUserToken, id, ct);
+
         if (user == null) return NotFound();
-        return Ok(user.ToDto());
+
+        return Ok(user);
     }
 
     // ─── POST /api/users ──────────────────────────────────────────────────────
@@ -80,20 +80,19 @@ public class UsersController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var created = await authOrchestator.CreateUser(new CreateUser
-        {
-            Email      = dto.Email,
-            Name       = dto.Name,
-            SurName    = dto.SurName,
-            Password   = dto.Password,
-            RoleCode   = dto.RoleCode,
-            ModuleCode = dto.ModuleCode,
-        }, ct).ConfigureAwait(false);
+        // 1. Crea l'utente sull'auth service tramite IAuthorizationClient
+        var created = await authorizationClient.CreateUserAsync(
+            CommonKeys.SystemUserToken, dto, ct);
 
+        // 2. Se il chiamante ha un tenant nel contesto, associa automaticamente
+        //    il nuovo utente a quel tenant — senza delegare al client.
         if (created != null && TenantId.HasValue)
         {
-            var currentUser = await userService.GetByIdAsync(CurrentUser.Id, ct).ConfigureAwait(false);
-            var tenant = await tenantService.GetByIdAsync(TenantId.Value, currentUser, ct).ConfigureAwait(false);
+            var currentUser = await userService.GetByIdAsync(CurrentUser.Id, ct)
+                .ConfigureAwait(false);
+
+            var tenant = await tenantService.GetByIdAsync(TenantId.Value, currentUser, ct)
+                .ConfigureAwait(false);
 
             if (tenant != null)
             {
@@ -105,11 +104,13 @@ public class UsersController(
                     IsActive  = true,
                 };
                 userTenant.Trace(currentUser);
-                await userTenantService.CreateAsync(userTenant, currentUser, ct).ConfigureAwait(false);
+
+                await userTenantService.CreateAsync(userTenant, currentUser, ct)
+                    .ConfigureAwait(false);
             }
         }
 
-        return Ok(created?.ToDto());
+        return Ok(created);
     }
 
     // ─── PUT /api/users/{id} ──────────────────────────────────────────────────
@@ -121,14 +122,7 @@ public class UsersController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        await authUserService.UpdateUser(id, new UpdateUser
-        {
-            Email   = dto.Email,
-            Name    = dto.Name,
-            SurName = dto.SurName,
-            IsActive = dto.IsActive,
-            RoleCode = dto.RoleCode,
-        }, ct).ConfigureAwait(false);
+        await authorizationClient.UpdateUserAsync(CommonKeys.SystemUserToken, id, dto, ct);
 
         return NoContent();
     }
@@ -139,17 +133,7 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var user = await authUserService.GetByIdAsync(id, ct).ConfigureAwait(false);
-        if (user == null) return NotFound();
-        user.IsDeleted = true;
-        await authUserService.UpdateUser(id, new UpdateUser
-        {
-            Email    = user.Email,
-            Name     = user.FirstName,
-            SurName  = user.LastName,
-            IsActive = false,
-            RoleCode = user.Role?.Code,
-        }, ct).ConfigureAwait(false);
+        await authorizationClient.DeleteUserAsync(CommonKeys.SystemUserToken, id, ct);
         return NoContent();
     }
 
@@ -159,10 +143,8 @@ public class UsersController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetPassword(int id, CancellationToken ct)
     {
-        // reset-password is handled by AuthOrchestator.GeneratePasswordResetAsync via email
-        await authOrchestator.GeneratePasswordResetAsync(
-            (await authUserService.GetByIdAsync(id, ct).ConfigureAwait(false))?.Email ?? string.Empty,
-            ct).ConfigureAwait(false);
+        await authorizationClient.ResetPasswordByIdAsync(CommonKeys.SystemUserToken, id, ct);
         return Ok(new { message = "Email di reset password inviata" });
     }
+
 }
