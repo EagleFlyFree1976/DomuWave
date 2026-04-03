@@ -30,7 +30,10 @@
       "Bash(xargs grep:*)",
       "Bash(ls -1 /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Models/*.cs)",
       "Bash(find /c/Projects/Works/DomuWave -name *BudgetItem* -type f)",
-      "Bash(grep -rn \"TotalExpenses\\\\|TotalIncome\\\\|budget\\\\.Total\" c:/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/BudgetItem --include=*.cs)"
+      "Bash(grep -rn \"TotalExpenses\\\\|TotalIncome\\\\|budget\\\\.Total\" c:/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/BudgetItem --include=*.cs)",
+      "Bash(grep -rn \"class User\\\\b\\\\|public.*Token\\\\|public.*IsSystem\\\\|public.*FullName\\\\|public.*Password\" c:/Projects/Blizio/ --include=*.cs -l)",
+      "Bash(find c:/Projects/Blizio -name *.cs -path *Membership*)",
+      "Bash(dotnet build:*)"
     ]
   }
 }

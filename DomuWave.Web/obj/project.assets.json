@@ -96,7 +96,7 @@
           }
         }
       },
-      "CPQ.Core/1.3.8": {
+      "CPQ.Core/1.5.0": {
         "type": "package",
         "dependencies": {
           "AspNetCore.HealthChecks.Rabbitmq": "8.0.2",
@@ -3474,13 +3474,13 @@
         "lib/netstandard2.0/Azure.Identity.xml"
       ]
     },
-    "CPQ.Core/1.3.8": {
-      "sha512": "sJKqwl8nrl8r97mUpoyzuA0S5P9L8N1jbONqbPKs6bh2AucChVsFSWFUvfoxixkFO9K0H0e+r7oeK+7d8J2JAg==",
+    "CPQ.Core/1.5.0": {
+      "sha512": "fo5n9Ja8igtFLmk2X5iviwA1g/bTmTddncM2BY4ImD+Q2w8bEpphQdpydlchpHOnLDLUuO92uSCTO6vIjv0jDg==",
       "type": "package",
-      "path": "cpq.core/1.3.8",
+      "path": "cpq.core/1.5.0",
       "files": [
         ".nupkg.metadata",
-        "cpq.core.1.3.8.nupkg.sha512",
+        "cpq.core.1.5.0.nupkg.sha512",
         "cpq.core.nuspec",
         "lib/net8.0/CPQ.Core.dll"
       ]
@@ -9813,7 +9813,7 @@
   },
   "projectFileDependencyGroups": {
     "net9.0": [
-      "CPQ.Core >= 1.3.8",
+      "CPQ.Core >= 1.5.0",
       "Microsoft.Extensions.Logging.Abstractions >= 9.0.6",
       "Refit.HttpClientFactory >= 8.0.0"
     ]
@@ -9871,7 +9871,7 @@
         "dependencies": {
           "CPQ.Core": {
             "target": "Package",
-            "version": "[1.3.8, )"
+            "version": "[1.5.0, )"
           },
           "Microsoft.Extensions.Logging.Abstractions": {
             "target": "Package",

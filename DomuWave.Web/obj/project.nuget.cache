@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "zHRO/GngMhs=",
+  "dgSpecHash": "XsMMgGIdhvE=",
   "success": true,
   "projectFilePath": "C:\\Projects\\Works\\DomuWave\\DomuWave.Web\\DomuWave.Web.csproj",
   "expectedPackageFiles": [
@@ -9,7 +9,7 @@
     "C:\\Users\\orazi\\.nuget\\packages\\aspnetcore.healthchecks.sqlserver\\8.0.2\\aspnetcore.healthchecks.sqlserver.8.0.2.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\azure.core\\1.35.0\\azure.core.1.35.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\azure.identity\\1.10.3\\azure.identity.1.10.3.nupkg.sha512",
-    "C:\\Users\\orazi\\.nuget\\packages\\cpq.core\\1.3.8\\cpq.core.1.3.8.nupkg.sha512",
+    "C:\\Users\\orazi\\.nuget\\packages\\cpq.core\\1.5.0\\cpq.core.1.5.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\cpq.core.eventsource\\1.0.0\\cpq.core.eventsource.1.0.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\documentformat.openxml\\3.3.0\\documentformat.openxml.3.3.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\documentformat.openxml.framework\\3.3.0\\documentformat.openxml.framework.3.3.0.nupkg.sha512",

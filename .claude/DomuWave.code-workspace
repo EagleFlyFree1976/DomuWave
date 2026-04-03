@@ -2,7 +2,13 @@
 	"folders": [
 		{
 			"path": ".."
+		},
+		{
+			"path": "../../../Risto/Packages/CPQ.Core"
+		},
+		{
+			"path": "../../../Blizio/Blizio.Auth"
 		}
-  ],
+	],
   "settings": {}
 }
