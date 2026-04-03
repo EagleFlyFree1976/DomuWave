@@ -3,7 +3,7 @@
         "DomuWave.Application": {
             "commandName": "Executable",
             "executablePath": ".\\DomuWave.Application.exe",
-            "commandLineArgs": "--service --env Development --port 60103",
+            "commandLineArgs": "--service --env Development --port 40101",
             "environmentVariables": {
                 "ASPNETCORE_ENVIRONMENT": "Development"
             },
