@@ -21,7 +21,7 @@ using User = Auth.Services.Models.User;
 
 namespace DomuWave.Microservice.Controllers;
 
-[Route("api/users")]
+[Route("api/AuthUsers")]
 public class AuthUsersController(
     ILogger<UsersController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
@@ -100,7 +100,7 @@ public class AuthUsersController(
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(BaseDto))]
     public async Task<IActionResult> GetByID(int id, CancellationToken cancellationToken)
     {
-        CPQ.Core.Memberships.User user = await _userService.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
+        User user = (User)await _userService.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
         if (user == null) return NotFound();
         var dto = user.ToDto();
         return Ok(new { dto.Id, dto.Name, dto.LastName, dto.FullName, dto.Email, dto.Login, Role = user.Role.Description, RoleCode = user.Role.Code, dto.Token, IsActive = user?.IsActive });

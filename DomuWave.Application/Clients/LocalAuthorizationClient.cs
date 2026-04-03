@@ -2,12 +2,14 @@ using Auth.Services.Extensions;
 using Auth.Services.Interfaces;
 using Auth.Services.Orchestators;
 using Auth.Services.Command;
+using Auth.Services.Models;
 using CPQ.Core.Security;
 using CPQ.Core.Services;
 using DomuWave.Services.Clients;
 using DomuWave.Services.Clients.Request;
 using DomuWave.Services.Clients.Response;
 using NHibernate.Linq;
+using UserLogin = DomuWave.Services.Clients.Request.UserLogin;
 
 namespace DomuWave.Microservice.Clients;
 
@@ -72,7 +74,7 @@ public class LocalAuthorizationClient(
     public async Task<CPQ.Core.DTO.UserDto> GetUserByIdAsync(
         string token, int id, CancellationToken cancellationToken)
     {
-        var user = await authUserService.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
+        User user = await authUserService.GetByIdAsync(id, cancellationToken).ConfigureAwait(false);
         return user?.ToDto();
     }
 

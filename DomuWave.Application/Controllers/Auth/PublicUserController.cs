@@ -4,6 +4,7 @@ using Auth.Services.Models.Dto;
 using Auth.Services.Orchestators;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Controllers;
+using CPQ.Core.Memberships;
 using CPQ.Core.Security;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
@@ -32,7 +33,7 @@ public class AuthPublicController(
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(BaseDto))]
     public async Task<IActionResult> GetByLogin([FromBody] UserLogin logininfo, CancellationToken cancellationToken)
     {
-        var user = await _userService.GetByEmailAsync(logininfo.Email, cancellationToken).ConfigureAwait(false);
+        Auth.Services.Models.User user = (Auth.Services.Models.User)await _userService.GetByEmailAsync(logininfo.Email, cancellationToken).ConfigureAwait(false);
 
         if (user == null || user.Password != logininfo.Password.EncryptString())
             return NotFound();

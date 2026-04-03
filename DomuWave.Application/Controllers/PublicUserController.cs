@@ -1,11 +1,11 @@
 using Auth.Services.Interfaces;
+using Auth.Services.Models;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Security;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Application.Models;
-using DomuWave.Services.Clients.Request;
 using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Extensions;
 using DomuWave.Services.Interfaces;
@@ -13,6 +13,7 @@ using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using NHibernate.Linq;
+using UserLogin = DomuWave.Services.Clients.Request.UserLogin;
 
 namespace DomuWave.Microservice.Controllers;
 
@@ -57,7 +58,7 @@ public class PublicUserController(
             .ConfigureAwait(false);
         try
         {
-            var authUser = await _authUserService.GetQueryable()
+            User authUser = await _authUserService.GetQueryable()
                 .Where(u => u.Name == logininfo.Email && !u.IsDeleted)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);

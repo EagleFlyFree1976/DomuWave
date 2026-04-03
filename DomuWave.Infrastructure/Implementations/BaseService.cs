@@ -7,6 +7,12 @@ namespace DomuWave.Services.Implementations;
 public abstract class BaseService : ServiceBase, IService
 {
     protected readonly ICacheManager _cache;
+
+    protected override string SessionFactoryKey
+    {
+        get { return "DomuWave"; }
+    }
+
     protected BaseService(ISessionFactoryProvider sessionFactoryProvider, ICacheManager cache) : base(sessionFactoryProvider)
     {
         _cache = cache;
