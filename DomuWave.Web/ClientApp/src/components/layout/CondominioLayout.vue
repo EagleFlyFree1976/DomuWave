@@ -44,6 +44,7 @@ const quickNav = [
   { path: '/unita',         icon: '⊞', label: 'Unità' },
   { path: '/panoramica',    icon: '◫', label: 'Panoramica' },
   { path: '/budget',        icon: '◎', label: 'Budget' },
+  { path: '/spese',         icon: '◑', label: 'Spese' },
   { path: '/rate',          icon: '◷', label: 'Rate' },
   { path: '/fornitori',     icon: '◈', label: 'Fornitori' },
   { path: '/documenti',     icon: '▤', label: 'Documenti' },

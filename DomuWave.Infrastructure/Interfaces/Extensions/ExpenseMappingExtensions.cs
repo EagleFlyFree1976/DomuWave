@@ -12,6 +12,8 @@ public static class ExpenseMappingExtensions
         var dto = new ExpenseReadDto
         {
             CondominiumId           = entity.Condominium?.Id ?? 0,
+            FiscalYearId            = entity.FiscalYear?.Id,
+            FiscalYearCode          = entity.FiscalYear?.Code,
             SupplierId              = entity.Supplier?.Id,
             SupplierName            = entity.Supplier?.Name,
             AccountId               = entity.Account?.Id ?? 0,

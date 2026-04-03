@@ -285,6 +285,9 @@
               <div class="form-group">
                 <label class="form-label">Importo versamento (€) *</label>
                 <input class="form-input" type="number" step="0.01" min="0" v-model.number="feeForm.paymentAmount" />
+                <button type="button" class="btn btn-ghost btn-sm" style="margin-top:6px" @click="feeForm.paymentAmount = feeForm.amountDue - feeForm.amountPaid">
+                  Salda l'intero importo
+                </button>
               </div>
               <div class="form-group">
                 <label class="form-label">Data pagamento *</label>

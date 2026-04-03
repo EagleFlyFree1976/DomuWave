@@ -71,10 +71,11 @@ public class RecalculateBudgetItemsCommandConsumer
         }
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-        // ── 2. Uscite: raggruppa Expense per Account aggregando in SQL ───────
+        // ── 2. Uscite: raggruppa Expense PAGATE per Account aggregando in SQL ──
         var expenseGroups = await session.Query<Expense>()
-            .Where(x => x.Condominium.Id == condominiumId
-                     && x.FiscalYear.Id  == fiscalYearId
+            .Where(x => x.Condominium.Id        == condominiumId
+                     && x.FiscalYear.Id          == fiscalYearId
+                     && x.PaymentStatus.Id       == ExpensePaymentStatus.Pagata
                      && !x.IsDeleted)
             .GroupBy(x => x.Account.Id)
             .Select(g => new { AccountId = g.Key, Total = g.Sum(x => x.GrossAmount), Count = g.Count() })
@@ -121,7 +122,7 @@ public class RecalculateBudgetItemsCommandConsumer
                 Account = account,
                 Name    = account.Name ?? string.Empty,
                 Amount  = total,
-                Notes   = $"Ricalcolato automaticamente da {count} spese",
+                Notes   = $"Ricalcolato automaticamente da {count} spese pagate",
             };
             item.Trace(currentUser);
             await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
