@@ -4,6 +4,7 @@ namespace DomuWave.Services.Dto.CondominiumInstallment;
 
 public class CondominiumInstallmentReadDto : TraceEntityDTO<int>
 {
+    public Guid     TenantId          { get; set; }
     public int      CondominiumId     { get; set; }
     public int?     BudgetId          { get; set; }
     public int?     FiscalYearId      { get; set; }

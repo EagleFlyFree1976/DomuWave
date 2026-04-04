@@ -4,6 +4,7 @@ namespace DomuWave.Services.Dto.Supplier;
 
 public class SupplierReadDto : TraceEntityDTO<int>
 {
+    public Guid    TenantId      { get; set; }
     public string  CompanyName   { get; set; }
     public string? VatNumber     { get; set; }
     public string? TaxCode       { get; set; }

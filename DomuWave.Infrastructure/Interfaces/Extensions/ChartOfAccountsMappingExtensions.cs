@@ -13,6 +13,8 @@ public static class ChartOfAccountsMappingExtensions
         return new ChartOfAccountsReadDto
         {
             Id                          = account.Id,
+            TenantId                    = account.Tenant?.Id      ?? Guid.Empty,
+            CondominiumId               = account.Condominium?.Id ?? 0,
             Code                        = account.Code ?? string.Empty,
             Name                        = account.Name ?? string.Empty,
             Type                        = account.Type,

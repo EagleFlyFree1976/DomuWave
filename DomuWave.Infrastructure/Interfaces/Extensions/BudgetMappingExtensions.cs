@@ -12,6 +12,7 @@ public static class BudgetMappingExtensions
 
         var dto = new BudgetReadDto
         {
+            TenantId       = budget.Tenant?.Id     ?? Guid.Empty,
             CondominiumId  = budget.Condominium?.Id ?? 0,
             CondominiumName = budget.Condominium?.Name,
             FiscalYearId   = budget.FiscalYear?.Id ?? 0,

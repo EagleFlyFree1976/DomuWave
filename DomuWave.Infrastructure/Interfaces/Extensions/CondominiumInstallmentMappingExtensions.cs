@@ -11,6 +11,7 @@ public static class CondominiumInstallmentMappingExtensions
         if (entity == null) return null;
         var dto = new CondominiumInstallmentReadDto
         {
+            TenantId          = entity.Tenant?.Id      ?? Guid.Empty,
             CondominiumId     = entity.Condominium?.Id ?? 0,
             BudgetId          = entity.Budget?.Id,
             FiscalYearId      = entity.FiscalYear?.Id,

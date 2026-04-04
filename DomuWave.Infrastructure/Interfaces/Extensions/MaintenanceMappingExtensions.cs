@@ -12,6 +12,7 @@ public static class MaintenanceMappingExtensions
 
         var dto = new MaintenanceReadDto
         {
+            TenantId        = entity.Tenant?.Id      ?? Guid.Empty,
             CondominiumId   = entity.Condominium?.Id ?? 0,
             CondominiumName = entity.Condominium?.Name,
             SupplierId      = entity.Supplier?.Id,

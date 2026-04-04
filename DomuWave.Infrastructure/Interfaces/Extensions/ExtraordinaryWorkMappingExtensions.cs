@@ -14,6 +14,7 @@ public static class ExtraordinaryWorkMappingExtensions
 
         var dto = new ExtraordinaryWorkReadDto
         {
+            TenantId        = entity.Tenant?.Id      ?? Guid.Empty,
             CondominiumId   = entity.Condominium?.Id ?? 0,
             CondominiumName = entity.Condominium?.Name,
             Title           = entity.Title,

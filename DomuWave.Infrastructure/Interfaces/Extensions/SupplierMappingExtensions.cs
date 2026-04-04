@@ -12,6 +12,7 @@ public static class SupplierMappingExtensions
 
         var dto = new SupplierReadDto
         {
+            TenantId      = supplier.Tenant?.Id ?? Guid.Empty,
             CompanyName   = supplier.CompanyName,
             VatNumber     = supplier.VatNumber,
             TaxCode       = supplier.TaxCode,

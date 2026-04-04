@@ -4,6 +4,7 @@ namespace DomuWave.Services.Dto.RealEstateUnit;
 
 public class RealEstateUnitReadDto : TraceEntityDTO<int>
 {
+    public Guid TenantId { get; set; }
     public int CondominiumId { get; set; }
     public string CondominiumName { get; set; }
     public string Staircase { get; set; }

@@ -11,6 +11,7 @@ public static class MillesimalTableMappingExtensions
         if (entity == null) return null;
         var dto = new MillesimalTableReadDto
         {
+            TenantId             = entity.Tenant?.Id      ?? Guid.Empty,
             CondominiumId        = entity.Condominium?.Id ?? 0,
             Code                 = entity.Code ?? string.Empty,
             Name                 = entity.Name,

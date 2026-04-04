@@ -365,14 +365,17 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useSessionStore } from '@/stores/sessionStore'
 import { budgetApi, budgetItemApi, chartOfAccountsApi, installmentApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import { useDeepLink }   from '@/composables/useDeepLink'
 import BaseModal from '@/components/BaseModal.vue'
 
 const router  = useRouter()
+const route   = useRoute()
+const { resolveContext } = useDeepLink()
 const store   = useAppStore()
 const session = useSessionStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
@@ -606,12 +609,16 @@ async function openItemsModal(budget) {
   showItemsModal.value = true
   budgetTabs.value     = []
   activeItemTab.value  = null
+  router.replace({ query: { ...route.query, voci: budget.id } })
   await loadBudgetItems()
 }
 
 function closeItemsModal() {
   showItemsModal.value = false
   selectedBudget.value = null
+  const q = { ...route.query }
+  delete q.voci
+  router.replace({ query: q })
   budgetTabs.value     = []
   activeItemTab.value  = null
 }
@@ -807,6 +814,25 @@ watch(() => store.selectedFiscalYearId, loadBudgets)
 onMounted(async () => {
   if (!store.fiscalYears.length) await store.loadFiscalYears()
   await loadBudgets()
+  // Ripristina la modale voci se l'URL contiene ?voci=<id>
+  const vociId = Number(route.query.voci)
+  if (vociId) {
+    let b = budgets.value.find(b => b.id === vociId)
+    if (!b) {
+      try {
+        const { data: found } = await budgetApi.getById(vociId)
+        if (found) {
+          await resolveContext(found)
+          store.selectedFiscalYearId = found.fiscalYearId
+          await loadBudgets()
+          b = budgets.value.find(b => b.id === vociId)
+        }
+      } catch {
+        // Budget non trovato o accesso negato — ignora
+      }
+    }
+    if (b) await openItemsModal(b)
+  }
 })
 </script>
 

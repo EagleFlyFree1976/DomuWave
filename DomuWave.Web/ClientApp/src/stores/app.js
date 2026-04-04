@@ -2,9 +2,11 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { condominiumApi, fiscalYearApi } from '@/services/api'
 
+const SELECTED_CONDO_KEY = 'domuwave_selected_condo_id'
+
 export const useAppStore = defineStore('app', () => {
   const condomini = ref([])
-  const selectedCondominioId = ref(null)
+  const selectedCondominioId = ref(Number(localStorage.getItem(SELECTED_CONDO_KEY)) || null)
   const loading = ref(false)
   const toasts = ref([])
 
@@ -17,7 +19,9 @@ export const useAppStore = defineStore('app', () => {
     try {
       const { data } = await condominiumApi.getAll()
       condomini.value = data
-      if (!selectedCondominioId.value && data.length > 0) {
+      // Ripristina il condominio salvato se è ancora valido, altrimenti prendi il primo
+      const saved = data.find(c => c.id === selectedCondominioId.value)
+      if (!saved && data.length > 0) {
         selectedCondominioId.value = data[0].id
       }
     } catch (e) {
@@ -30,6 +34,12 @@ export const useAppStore = defineStore('app', () => {
   function selectCondominio(id) {
     selectedCondominioId.value = id
   }
+
+  // Persisti in localStorage ad ogni cambio
+  watch(selectedCondominioId, (id) => {
+    if (id) localStorage.setItem(SELECTED_CONDO_KEY, id)
+    else localStorage.removeItem(SELECTED_CONDO_KEY)
+  })
 
   // ─── Esercizio fiscale selezionato (persistente tra le pagine) ────────────
   const fiscalYears          = ref([])

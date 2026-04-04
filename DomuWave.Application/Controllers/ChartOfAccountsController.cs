@@ -21,6 +21,16 @@ public class ChartOfAccountsController(
 {
     private readonly IMediator _mediator = mediator;
 
+    [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(ChartOfAccountsReadDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new GetChartOfAccountsByIdCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpGet("by-condominium/{condominiumId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<ChartOfAccountsReadDto>), StatusCodes.Status200OK)]

@@ -17,6 +17,7 @@ namespace DomuWave.Services.Interfaces.Extensions
             return new FiscalYearReadDto
             {
                 Id                   = fy.Id,
+                TenantId             = fy.Tenant?.Id      ?? Guid.Empty,
                 CondominiumId        = fy.Condominium?.Id ?? 0,
                 CondominiumName      = fy.Condominium?.Name ?? string.Empty,
                 Code                 = fy.Code,

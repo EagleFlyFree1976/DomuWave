@@ -4,6 +4,7 @@ namespace DomuWave.Services.Dto.MillesimalTable;
 
 public class MillesimalTableReadDto : TraceEntityDTO<int>
 {
+    public Guid     TenantId        { get; set; }
     public int      CondominiumId   { get; set; }
     public string   Code            { get; set; } = string.Empty;
     public string?  Name            { get; set; }

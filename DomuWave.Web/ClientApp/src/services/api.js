@@ -166,6 +166,7 @@ export const accountBalanceApi = {
 
 // ─── Piano dei conti ──────────────────────────────────────────
 export const chartOfAccountsApi = {
+  getById:             (id)       => api.get(`/chart-of-accounts/${id}`),
   getByCondominium:    (condId)   => api.get(`/chart-of-accounts/by-condominium/${condId}`),
   create:              (data)     => api.post('/chart-of-accounts', data),
   update:              (id, data) => api.put(`/chart-of-accounts/${id}`, data),

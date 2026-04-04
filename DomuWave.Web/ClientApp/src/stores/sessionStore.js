@@ -32,7 +32,11 @@ export const useSessionStore = defineStore('session', () => {
   const availableTenants = ref([])
 
   /** Tenant attualmente selezionato per la sessione */
-  const activeTenant = ref(null)
+  const savedTenantId   = localStorage.getItem(STORAGE_KEY)
+  const savedTenantName = localStorage.getItem(STORAGE_TENANT_NAME_KEY)
+  const activeTenant = ref(
+    savedTenantId && savedTenantName ? { id: savedTenantId, name: savedTenantName } : null
+  )
 
   /** Loading della lista tenant */
   const loadingTenants = ref(false)
@@ -45,29 +49,13 @@ export const useSessionStore = defineStore('session', () => {
    * Adattare alla struttura del proprio authStore / oggetto utente.
    * Questo campo viene impostato da initFromAuth() al login.
    */
-  const currentUserRole = ref(null)
+  const currentUserRole = ref(localStorage.getItem(UserProfile))
 
   // ─── GETTERS ───────────────────────────────────────────────────────────────
 
-  const isSuperAdmin = computed(() => {
-    var localStor = localStorage.getItem(UserProfile);
-    var profile = currentUserRole.value != null ? currentUserRole.value : localStor;
-
-    return profile == 1
-    }
-  )
-
-  const isTenantAdmin = computed(() => {
-    const localStor = localStorage.getItem(UserProfile)
-    const profile = currentUserRole.value != null ? currentUserRole.value : localStor
-    return profile == 2
-  })
-
-  const isCondomino = computed(() => {
-    const localStor = localStorage.getItem(UserProfile)
-    const profile = currentUserRole.value != null ? currentUserRole.value : localStor
-    return profile == 3
-  })
+  const isSuperAdmin  = computed(() => currentUserRole.value == 1)
+  const isTenantAdmin = computed(() => currentUserRole.value == 2)
+  const isCondomino   = computed(() => currentUserRole.value == 3)
 
   const hasTenantSelected = computed(() => !!activeTenant.value)
 

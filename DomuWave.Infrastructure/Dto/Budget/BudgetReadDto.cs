@@ -5,6 +5,7 @@ namespace DomuWave.Services.Dto.Budget;
 
 public class BudgetReadDto : TraceEntityDTO<int>
 {
+    public Guid TenantId { get; set; }
     public int CondominiumId { get; set; }
     public string? CondominiumName { get; set; }
     public int FiscalYearId { get; set; }

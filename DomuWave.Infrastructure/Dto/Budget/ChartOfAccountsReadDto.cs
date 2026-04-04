@@ -5,6 +5,8 @@ namespace DomuWave.Services.Dto.Budget;
 public class ChartOfAccountsReadDto
 {
     public int                  Id              { get; set; }
+    public Guid                 TenantId        { get; set; }
+    public int                  CondominiumId   { get; set; }
     public string               Code            { get; set; } = string.Empty;
     public string               Name            { get; set; } = string.Empty;
     public ChartOfAccountsType  Type            { get; set; }

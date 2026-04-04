@@ -4,6 +4,7 @@ namespace DomuWave.Services.Dto.ExtraordinaryWork;
 
 public class ExtraordinaryWorkReadDto : TraceEntityDTO<int>
 {
+    public Guid    TenantId        { get; set; }
     public int     CondominiumId   { get; set; }
     public string? CondominiumName { get; set; }
     public string  Title           { get; set; } = string.Empty;

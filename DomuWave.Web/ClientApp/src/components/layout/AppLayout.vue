@@ -11,11 +11,20 @@
 </template>
 
 <script setup>
+  import { onMounted } from 'vue'
   import AppSidebar from '@/components/layout/AppSidebar.vue'
   import CondominiBreadcrumb from '@/components/layout/CondominiBreadcrumb.vue'
   import { useSessionStore } from '@/stores/sessionStore'
+  import { useAppStore } from '@/stores/app'
 
   const session = useSessionStore()
+  const appStore = useAppStore()
+
+  onMounted(async () => {
+    if (!appStore.condomini.length) {
+      await appStore.loadCondomini()
+    }
+  })
 </script>
 
 <style scoped>

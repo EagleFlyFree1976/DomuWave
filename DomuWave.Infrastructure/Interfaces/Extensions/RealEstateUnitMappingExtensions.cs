@@ -19,6 +19,7 @@ public static class RealEstateUnitMappingExtensions
 
         var dto = new RealEstateUnitReadDto
         {
+            TenantId        = unit.Tenant?.Id      ?? Guid.Empty,
             CondominiumId   = unit.Condominium?.Id ?? 0,
             CondominiumName = unit.Condominium?.Name,
             Staircase       = unit.Staircase,

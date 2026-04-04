@@ -9,6 +9,7 @@ namespace DomuWave.Services.Dto.Contabilita.FiscalYear
     public class FiscalYearReadDto
     {
         public int Id { get; set; }
+        public Guid TenantId { get; set; }
         public int CondominiumId { get; set; }
         public string CondominiumName { get; set; } = string.Empty;
 

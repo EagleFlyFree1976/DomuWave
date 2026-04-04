@@ -11,6 +11,7 @@ public static class ExpenseMappingExtensions
         if (entity == null) return null;
         var dto = new ExpenseReadDto
         {
+            TenantId                = entity.Tenant?.Id      ?? Guid.Empty,
             CondominiumId           = entity.Condominium?.Id ?? 0,
             FiscalYearId            = entity.FiscalYear?.Id,
             FiscalYearCode          = entity.FiscalYear?.Code,
