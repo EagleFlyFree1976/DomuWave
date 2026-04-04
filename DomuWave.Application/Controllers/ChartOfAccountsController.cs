@@ -21,6 +21,15 @@ public class ChartOfAccountsController(
 {
     private readonly IMediator _mediator = mediator;
 
+    [HttpGet("{id:int}/check-delete")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(CheckDeleteChartOfAccountsResult), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CheckDelete(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new CheckDeleteChartOfAccountsCommand(CurrentUser.Id, id), ct);
+        return Ok(result);
+    }
+
     [HttpGet("{id:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsReadDto), StatusCodes.Status200OK)]
@@ -64,10 +73,10 @@ public class ChartOfAccountsController(
     [HttpDelete("{id:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    public async Task<IActionResult> Delete(int id, [FromQuery] int? replacementAccountId, CancellationToken ct)
     {
         await _mediator.GetResponse(
-            new DeleteChartOfAccountsCommand(CurrentUser.Id, id), ct);
+            new DeleteChartOfAccountsCommand(CurrentUser.Id, id, replacementAccountId), ct);
         return NoContent();
     }
 

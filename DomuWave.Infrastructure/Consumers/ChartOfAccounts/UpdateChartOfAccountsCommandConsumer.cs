@@ -132,6 +132,10 @@ public class UpdateChartOfAccountsCommandConsumer
 
         var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
 
+        var previousIsActive = entity.IsActive;
+        var previousCode     = entity.Code;
+        var previousName     = entity.Name;
+
         entity.ApplyUpdate(dto, chargeabilityType, category, defaultMillesimalTable, parentAccount);
         var updated = await _accountService
             .UpdateAsync(entity, currentUser, cancellationToken)
@@ -141,6 +145,101 @@ public class UpdateChartOfAccountsCommandConsumer
         await RealignDescendantLevelsAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        // ── Sincronizza i budget in bozza dello stesso condominio ─────────────
+        await SyncDraftBudgetsAsync(entity, previousIsActive, previousCode, previousName, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
         return updated.ToReadDto();
+    }
+
+    /// <summary>
+    /// Dopo ogni modifica al piano dei conti, allinea i budget in stato Bozza:
+    /// - Se il codice o il nome è cambiato: aggiorna lo snapshot AccountCode/AccountName
+    ///   nelle voci di budget in bozza (i budget approvati/chiusi rimangono invariati).
+    /// - Se il conto è stato disattivato: soft-delete delle voci in bozza associate.
+    /// - Se il conto è stato riattivato o era già attivo: assicura che esista una voce
+    ///   (Amount = 0) in ogni budget in bozza che non la possiede ancora.
+    /// </summary>
+    private async Task SyncDraftBudgetsAsync(
+        ChartOfAccounts account,
+        bool previousIsActive,
+        string previousCode,
+        string previousName,
+        CPQ.Core.Memberships.IUser currentUser,
+        CancellationToken cancellationToken)
+    {
+        // Trova tutti i budget in bozza per questo condominio
+        var draftBudgets = await session.Query<Budget>()
+            .Where(b => b.Condominium.Id == account.Condominium.Id
+                     && b.Status.Id      == BudgetStatus.Draft
+                     && !b.IsDeleted)
+            .Select(b => new { b.Id, TenantId = b.Tenant.Id })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!draftBudgets.Any()) return;
+
+        var budgetIds = draftBudgets.Select(b => b.Id).ToList();
+
+        if (!account.IsActive)
+        {
+            // Conto disattivato: soft-delete delle voci in bozza
+            var itemsToDelete = await session.Query<BudgetItem>()
+                .Where(x => budgetIds.Contains(x.Budget.Id)
+                         && x.Account.Id == account.Id
+                         && !x.IsDeleted)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            foreach (var item in itemsToDelete)
+            {
+                item.IsDeleted = true;
+                item.TraceUpdate(currentUser);
+                await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            // Conto attivo: aggiorna snapshot o aggiunge voce mancante per ogni budget in bozza
+            foreach (var draft in draftBudgets)
+            {
+                var existing = await session.Query<BudgetItem>()
+                    .FirstOrDefaultAsync(x => x.Budget.Id  == draft.Id
+                                           && x.Account.Id == account.Id
+                                           && !x.IsDeleted, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (existing != null)
+                {
+                    // Voce già presente: aggiorna snapshot se codice o nome sono cambiati
+                    if (existing.AccountCode != account.Code || existing.AccountName != account.Name)
+                    {
+                        existing.AccountCode = account.Code;
+                        existing.AccountName = account.Name;
+                        existing.TraceUpdate(currentUser);
+                        await session.SaveOrUpdateAsync(existing, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+                else
+                {
+                    // Voce mancante: aggiunge con Amount = 0
+                    var budget = await session.GetAsync<Budget>(draft.Id, cancellationToken).ConfigureAwait(false);
+                    var newItem = new BudgetItem
+                    {
+                        Budget      = budget,
+                        Tenant      = budget.Tenant,
+                        Account     = account,
+                        AccountCode = account.Code,
+                        AccountName = account.Name,
+                        Name        = string.Empty,
+                        Amount      = 0,
+                    };
+                    newItem.Trace(currentUser);
+                    await session.SaveAsync(newItem, cancellationToken).ConfigureAwait(false);
+                }
+            }
+        }
+
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 }

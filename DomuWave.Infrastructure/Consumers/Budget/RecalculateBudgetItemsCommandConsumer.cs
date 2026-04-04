@@ -117,12 +117,14 @@ public class RecalculateBudgetItemsCommandConsumer
 
             var item = new BudgetItem
             {
-                Budget  = budget,
-                Tenant  = budget.Tenant,
-                Account = account,
-                Name    = account.Name ?? string.Empty,
-                Amount  = total,
-                Notes   = $"Ricalcolato automaticamente da {count} spese pagate",
+                Budget      = budget,
+                Tenant      = budget.Tenant,
+                Account     = account,
+                AccountCode = account.Code,
+                AccountName = account.Name,
+                Name        = account.Name ?? string.Empty,
+                Amount      = total,
+                Notes       = $"Ricalcolato automaticamente da {count} spese pagate",
             };
             item.Trace(currentUser);
             await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
@@ -190,12 +192,14 @@ public class RecalculateBudgetItemsCommandConsumer
 
                 var item = new BudgetItem
                 {
-                    Budget  = budget,
-                    Tenant  = budget.Tenant,
-                    Account = srcAcct,
-                    Name    = srcAcct.Name ?? string.Empty,
-                    Amount  = share,
-                    Notes   = "Entrate incassate (ricalcolo automatico)",
+                    Budget      = budget,
+                    Tenant      = budget.Tenant,
+                    Account     = srcAcct,
+                    AccountCode = srcAcct.Code,
+                    AccountName = srcAcct.Name,
+                    Name        = srcAcct.Name ?? string.Empty,
+                    Amount      = share,
+                    Notes       = "Entrate incassate (ricalcolo automatico)",
                 };
                 item.Trace(currentUser);
                 await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);

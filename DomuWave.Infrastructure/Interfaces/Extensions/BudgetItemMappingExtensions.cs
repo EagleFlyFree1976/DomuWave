@@ -14,8 +14,10 @@ public static class BudgetItemMappingExtensions
         {
             BudgetId          = item.Budget?.Id ?? 0,
             AccountId         = item.Account?.Id ?? 0,
-            AccountCode       = item.Account?.Code,
-            AccountName       = item.Account?.Name,
+            // Usa i valori denormalizzati (snapshot al momento della creazione/ricalcolo).
+            // Fallback sulla navigation property per le righe precedenti alla migration.
+            AccountCode       = item.AccountCode ?? item.Account?.Code,
+            AccountName       = item.AccountName ?? item.Account?.Name,
             AccountType       = item.Account?.Type.ToString(),
             AccountLevel      = item.Account?.Level ?? 0,
             ParentAccountId   = item.Account?.ParentAccount?.Id,

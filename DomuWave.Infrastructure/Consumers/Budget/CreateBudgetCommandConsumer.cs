@@ -157,12 +157,15 @@ public class CreateBudgetCommandConsumer
                 var amount = Math.Round(src.Amount * multiplier, 2);
                 var item = new BudgetItem
                 {
-                    Budget  = budget,
-                    Tenant  = budget.Tenant,
-                    Account = src.Account,
-                    Name    = src.Name ?? string.Empty,
-                    Amount  = amount,
-                    Notes   = dto.IncreasePercentage != 0
+                    Budget      = budget,
+                    Tenant      = budget.Tenant,
+                    Account     = src.Account,
+                    // Fotografa codice e nome del conto al momento della creazione
+                    AccountCode = src.Account.Code,
+                    AccountName = src.Account.Name,
+                    Name        = src.Name ?? string.Empty,
+                    Amount      = amount,
+                    Notes       = dto.IncreasePercentage != 0
                         ? $"Importato da consuntivo con maggiorazione {dto.IncreasePercentage:0.##}%"
                         : src.Notes,
                 };
@@ -183,11 +186,13 @@ public class CreateBudgetCommandConsumer
             {
                 var item = new BudgetItem
                 {
-                    Budget  = budget,
-                    Tenant  = budget.Tenant,
-                    Account = account,
-                    Name    = string.Empty,
-                    Amount  = 0,
+                    Budget      = budget,
+                    Tenant      = budget.Tenant,
+                    Account     = account,
+                    AccountCode = account.Code,
+                    AccountName = account.Name,
+                    Name        = string.Empty,
+                    Amount      = 0,
                 };
                 item.Trace(currentUser);
                 await session.SaveAsync(item, ct).ConfigureAwait(false);
@@ -233,11 +238,13 @@ public class CreateBudgetCommandConsumer
 
             var item = new BudgetItem
             {
-                Budget  = budget,
-                Tenant  = budget.Tenant,
-                Account = account,
-                Name    = string.Empty,
-                Amount  = amount,
+                Budget      = budget,
+                Tenant      = budget.Tenant,
+                Account     = account,
+                AccountCode = account.Code,
+                AccountName = account.Name,
+                Name        = string.Empty,
+                Amount      = amount,
             };
             item.Trace(currentUser);
             await session.SaveAsync(item, ct).ConfigureAwait(false);

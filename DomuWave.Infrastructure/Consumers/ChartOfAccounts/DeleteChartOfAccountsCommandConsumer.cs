@@ -1,5 +1,6 @@
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
+using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.ChartOfAccounts;
@@ -40,18 +41,156 @@ public class DeleteChartOfAccountsCommandConsumer
         if (entity == null)
             throw new NotFoundException("Conto non trovato.");
 
+        // Blocca sempre se ha sotto-conti: la gerarchia deve essere pulita dall'utente prima
         var hasChildren = await session.Query<ChartOfAccounts>()
             .AnyAsync(x => x.ParentAccount.Id == command.Id && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
         if (hasChildren)
             throw new ValidatorException("Impossibile eliminare: il conto ha sotto-conti associati.");
 
-        var hasItems = await session.Query<BudgetItem>()
-            .AnyAsync(x => x.Account.Id == command.Id && !x.IsDeleted, cancellationToken)
+        // ── Analisi degli usi per stato del budget ────────────────────────────
+        // Carica tutte le voci di budget non cancellate agganciata a questo conto,
+        // proiettando solo i campi necessari per la classificazione.
+        var budgetItemUsages = await session.Query<BudgetItem>()
+            .Where(x => x.Account.Id == command.Id && !x.IsDeleted)
+            .Select(x => new
+            {
+                ItemId   = x.Id,
+                BudgetId = x.Budget.Id,
+                StatusId = x.Budget.Status.Id,
+            })
+            .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        if (hasItems)
-            throw new ValidatorException("Impossibile eliminare: il conto è utilizzato in voci di budget.");
 
+        var hasDraftUsages    = budgetItemUsages.Any(x => x.StatusId == BudgetStatus.Draft);
+        var hasLockedUsages   = budgetItemUsages.Any(x => x.StatusId != BudgetStatus.Draft);
+
+        // Se ci sono voci in budget bozza, il sostitutivo è obbligatorio
+        if (hasDraftUsages && !command.ReplacementAccountId.HasValue)
+            throw new ValidatorException(
+                "Il conto è utilizzato in voci di budget in bozza. " +
+                "Seleziona un conto sostitutivo per procedere con l'eliminazione.");
+
+        ChartOfAccounts? replacement = null;
+        if (command.ReplacementAccountId.HasValue)
+        {
+            replacement = await _accountService
+                .GetByIdAsync(command.ReplacementAccountId.Value, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+            if (replacement == null)
+                throw new NotFoundException("Conto sostitutivo non trovato.");
+            if (replacement.Id == command.Id)
+                throw new ValidatorException("Il conto sostitutivo non può coincidere con il conto da eliminare.");
+        }
+
+        // ── Riassegna voci e spese dei budget in bozza al sostitutivo ─────────
+        if (hasDraftUsages && replacement != null)
+        {
+            var draftItemIds = budgetItemUsages
+                .Where(x => x.StatusId == BudgetStatus.Draft)
+                .Select(x => x.ItemId)
+                .ToList();
+
+            var draftItems = await session.Query<BudgetItem>()
+                .Where(x => draftItemIds.Contains(x.Id))
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            // Per ogni budget in bozza: riassegna o accorpa la voce al sostitutivo
+            var groupedByBudget = draftItems.GroupBy(x => x.Budget.Id);
+            foreach (var group in groupedByBudget)
+            {
+                // Verifica se esiste già una voce per il conto sostitutivo nello stesso budget
+                var existingReplacement = await session.Query<BudgetItem>()
+                    .FirstOrDefaultAsync(x => x.Budget.Id  == group.Key
+                                           && x.Account.Id == replacement.Id
+                                           && !x.IsDeleted, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (existingReplacement != null)
+                {
+                    // Accorpa: somma gli importi nella voce sostitutiva esistente, poi cancella le originali
+                    existingReplacement.Amount += group.Sum(x => x.Amount);
+                    existingReplacement.TraceUpdate(currentUser);
+                    await session.SaveOrUpdateAsync(existingReplacement, cancellationToken).ConfigureAwait(false);
+
+                    foreach (var item in group)
+                    {
+                        item.IsDeleted = true;
+                        item.TraceUpdate(currentUser);
+                        await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+                else
+                {
+                    // Riassegna: sposta le voci al conto sostitutivo (snapshot aggiornato)
+                    foreach (var item in group)
+                    {
+                        item.Account     = replacement;
+                        item.AccountCode = replacement.Code;
+                        item.AccountName = replacement.Name;
+                        item.TraceUpdate(currentUser);
+                        await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+            }
+
+            // Riassegna anche le spese dei budget in bozza al conto sostitutivo
+            // (le spese dei budget approvati/chiusi rimangono sul conto cancellato)
+            var draftBudgetIds = budgetItemUsages
+                .Where(x => x.StatusId == BudgetStatus.Draft)
+                .Select(x => x.BudgetId)
+                .Distinct()
+                .ToList();
+
+            // Le spese sono legate a condominio+esercizio, non direttamente al budget.
+            // Consideriamo spese "in bozza" quelle del condominio+esercizio dei budget in bozza
+            // che non siano già associate a un budget approvato/chiuso.
+            // Strategia conservativa: riassegna le spese il cui esercizio fiscale corrisponde
+            // a un budget in bozza e non a uno approvato/chiuso dello stesso condominio.
+            var draftBudgetFiscalYears = await session.Query<Budget>()
+                .Where(b => draftBudgetIds.Contains(b.Id))
+                .Select(b => new { FiscalYearId = b.FiscalYear.Id, CondominiumId = b.Condominium.Id })
+                .Distinct()
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            foreach (var ctx in draftBudgetFiscalYears)
+            {
+                // Verifica che non esista un budget approvato/chiuso per lo stesso esercizio+condominio:
+                // se esiste, le spese sono "bloccate" e non vanno riassegnate
+                var hasApprovedBudget = await session.Query<Budget>()
+                    .AnyAsync(b => b.Condominium.Id == ctx.CondominiumId
+                                && b.FiscalYear.Id  == ctx.FiscalYearId
+                                && (b.Status.Id == BudgetStatus.Approved || b.Status.Id == BudgetStatus.Closed)
+                                && !b.IsDeleted, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (!hasApprovedBudget)
+                {
+                    var expensesToReassign = await session.Query<Expense>()
+                        .Where(e => e.Condominium.Id == ctx.CondominiumId
+                                 && e.FiscalYear.Id  == ctx.FiscalYearId
+                                 && e.Account.Id     == command.Id
+                                 && !e.IsDeleted)
+                        .ToListAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                    foreach (var expense in expensesToReassign)
+                    {
+                        expense.Account = replacement;
+                        expense.TraceUpdate(currentUser);
+                        await session.SaveOrUpdateAsync(expense, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+            }
+
+            await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        // ── Cancellazione logica del conto ────────────────────────────────────
+        // Se ci sono voci in budget approvati/chiusi, la FK rimane valida perché
+        // IsDeleted non rompe la referenza — i movimenti storici restano agganciati.
         return await _accountService
             .DeleteAsync(command.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);

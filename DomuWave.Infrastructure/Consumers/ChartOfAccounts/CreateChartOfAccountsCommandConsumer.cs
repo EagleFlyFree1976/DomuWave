@@ -99,6 +99,37 @@ public class CreateChartOfAccountsCommandConsumer
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        // ── Aggiunge una voce vuota in ogni budget in bozza del condominio ────
+        // I budget approvati/chiusi non vengono toccati (la loro struttura è congelata).
+        if (created.IsActive)
+        {
+            var draftBudgets = await session.Query<Budget>()
+                .Where(b => b.Condominium.Id == dto.CondominiumId
+                         && b.Status.Id      == BudgetStatus.Draft
+                         && !b.IsDeleted)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            foreach (var budget in draftBudgets)
+            {
+                var newItem = new BudgetItem
+                {
+                    Budget      = budget,
+                    Tenant      = budget.Tenant,
+                    Account     = created,
+                    AccountCode = created.Code,
+                    AccountName = created.Name,
+                    Name        = string.Empty,
+                    Amount      = 0,
+                };
+                newItem.Trace(currentUser);
+                await session.SaveAsync(newItem, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (draftBudgets.Any())
+                await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+
         return created.ToReadDto();
     }
 }

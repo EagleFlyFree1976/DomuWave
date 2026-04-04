@@ -326,24 +326,68 @@
       </div>
     </Teleport>
 
-    <!-- Confirm delete conto -->
+    <!-- Modale eliminazione conto (con eventuale selezione sostitutivo) -->
     <Teleport to="body">
-      <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
+      <div v-if="showDeleteModal && deleteTarget" class="modal-overlay" @click.self="showDeleteModal = false">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>Elimina conto</h2>
-            <button class="icon-btn" @click="deleteTarget = null"><i class="pi pi-times"></i></button>
+            <button class="icon-btn" @click="showDeleteModal = false"><i class="pi pi-times"></i></button>
           </div>
           <div class="modal-body">
-            <p>Eliminare il conto <strong>{{ deleteTarget.code }} – {{ deleteTarget.name }}</strong>?</p>
-            <p class="text-secondary" style="margin-top:.5rem;font-size:.85rem">
-              L'operazione non è consentita se il conto ha sotto-conti o voci di budget associate.
-            </p>
+            <p>Conto: <strong>{{ deleteTarget.code }} – {{ deleteTarget.name }}</strong></p>
+
+            <!-- Caso 1: sotto-conti presenti → blocca -->
+            <template v-if="deleteCheck?.hasChildren">
+              <p class="text-danger" style="margin-top:.75rem">
+                Impossibile eliminare: il conto ha sotto-conti associati.
+                Elimina prima i sotto-conti.
+              </p>
+            </template>
+
+            <!-- Caso 2: usato in budget approvati/chiusi → avviso informativo -->
+            <template v-else-if="deleteCheck?.hasLockedUsages && !deleteCheck?.hasDraftUsages">
+              <p class="text-secondary" style="margin-top:.75rem;font-size:.875rem">
+                Il conto è utilizzato in voci di budget approvati o chiusi.
+                Verrà cancellato logicamente: i movimenti storici resteranno agganciati al conto eliminato.
+              </p>
+            </template>
+
+            <!-- Caso 3: usato in budget in bozza → sostitutivo obbligatorio -->
+            <template v-else-if="deleteCheck?.requiresReplacement">
+              <p class="text-secondary" style="margin-top:.75rem;font-size:.875rem">
+                Il conto è utilizzato in voci di budget in bozza.
+                Seleziona un conto sostitutivo: le voci e le spese di quei budget verranno riassegnate.
+              </p>
+              <div v-if="deleteCheck?.hasLockedUsages" class="info-box" style="margin-top:.5rem">
+                I movimenti dei budget approvati o chiusi resteranno agganciati al conto eliminato.
+              </div>
+              <div class="form-group" style="margin-top:1rem">
+                <label class="form-label">Conto sostitutivo *</label>
+                <select class="form-select" v-model="replacementId">
+                  <option :value="null" disabled>Seleziona un conto…</option>
+                  <option v-for="a in replacementOptions" :key="a.id" :value="a.id">
+                    {{ a.code }} – {{ a.name }}
+                  </option>
+                </select>
+              </div>
+            </template>
+
+            <!-- Caso 4: nessun uso → semplice conferma -->
+            <template v-else>
+              <p class="text-secondary" style="margin-top:.75rem;font-size:.875rem">
+                Il conto non ha voci di budget associate. Verrà cancellato definitivamente (cancellazione logica).
+              </p>
+            </template>
           </div>
           <div class="modal-footer">
-            <button class="btn btn-ghost" @click="deleteTarget = null">Annulla</button>
-            <button class="btn btn-danger" @click="doDelete" :disabled="deleting">
-              <i class="pi pi-spin pi-spinner" v-if="deleting"></i>
+            <button class="btn btn-ghost" @click="showDeleteModal = false">Annulla</button>
+            <button
+              v-if="deleteCheck?.canDelete"
+              class="btn btn-danger"
+              :disabled="deleting || (deleteCheck?.requiresReplacement && !replacementId)"
+              @click="doDelete">
+              <span v-if="deleting" class="spinner" style="width:14px;height:14px"></span>
               {{ deleting ? 'Eliminazione…' : 'Elimina' }}
             </button>
           </div>
@@ -583,16 +627,49 @@ async function save() {
   } finally { saving.value = false }
 }
 
-function confirmDelete(a) { deleteTarget.value = a }
+// ── Cancellazione con eventuale selezione sostitutivo ─────────��
+const deleteCheck        = ref(null)   // CheckDeleteChartOfAccountsResult
+const checkingDelete     = ref(false)
+const showDeleteModal    = ref(false)
+const replacementId      = ref(null)   // conto sostitutivo selezionato
+
+// Conti candidati sostitutivi: tutti i conti attivi tranne quello da cancellare
+const replacementOptions = computed(() =>
+  accounts.value.filter(a => a.id !== deleteTarget.value?.id && a.isActive)
+)
+
+async function confirmDelete(a) {
+  deleteTarget.value = a
+  checkingDelete.value = true
+  try {
+    const { data } = await chartOfAccountsApi.checkDelete(a.id)
+    deleteCheck.value = data
+    if (!data.canDelete) {
+      // Sotto-conti presenti: mostra solo il messaggio di blocco
+      showDeleteModal.value = true
+      return
+    }
+    replacementId.value = null
+    showDeleteModal.value = true
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { checkingDelete.value = false }
+}
 
 async function doDelete() {
   deleting.value = true
   try {
-    await chartOfAccountsApi.delete(deleteTarget.value.id)
-    deleteTarget.value = null
+    await chartOfAccountsApi.delete(
+      deleteTarget.value.id,
+      deleteCheck.value?.requiresReplacement ? replacementId.value : null
+    )
+    showDeleteModal.value = false
+    deleteTarget.value   = null
+    deleteCheck.value    = null
+    replacementId.value  = null
     await load()
   } catch (err) {
-    if (!err?.response) throw err
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally { deleting.value = false }
 }
 
@@ -650,6 +727,10 @@ async function doCopy() {
 </script>
 
 <style scoped>
+.text-danger { color: var(--accent-red, #ef4444); font-size: .875rem; }
+.info-box    { background: var(--accent-glow); border: 1px solid var(--border-active);
+               border-radius: 6px; padding: .5rem .75rem; font-size: .8rem;
+               color: var(--text-secondary); }
 .view-container { padding: 1.5rem 2rem; max-width: 1100px; }
 
 .view-header {

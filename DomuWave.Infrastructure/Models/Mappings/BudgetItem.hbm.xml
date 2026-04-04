@@ -20,8 +20,14 @@
 
     <property name="Name" column="Description" type="String" length="500" />
     <property name="Description" column="Description" type="String" length="500" insert="false" update="false" />
-    <property name="Amount" column="Amount" type="Decimal" not-null="true" />
-    <property name="Notes" column="Notes" type="String" length="500" />
+    <property name="Amount"      column="Amount"      type="Decimal" not-null="true" />
+    <property name="Notes"       column="Notes"       type="String"  length="500" />
+
+    <!-- Snapshot denormalizzato: fotografato alla creazione/ricalcolo.
+         Non si aggiorna quando il piano dei conti cambia, così i budget
+         approvati/chiusi mantengono la composizione originale. -->
+    <property name="AccountCode" column="AccountCode" type="String"  length="50" />
+    <property name="AccountName" column="AccountName" type="String"  length="200" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />

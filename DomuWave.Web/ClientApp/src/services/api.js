@@ -170,7 +170,13 @@ export const chartOfAccountsApi = {
   getByCondominium:    (condId)   => api.get(`/chart-of-accounts/by-condominium/${condId}`),
   create:              (data)     => api.post('/chart-of-accounts', data),
   update:              (id, data) => api.put(`/chart-of-accounts/${id}`, data),
-  delete:              (id)       => api.delete(`/chart-of-accounts/${id}`),
+  // Restituisce { requiresReplacement, hasDraftUsages, hasLockedUsages }
+  checkDelete:         (id)       => api.get(`/chart-of-accounts/${id}/check-delete`),
+  // replacementAccountId obbligatorio se il conto è usato in budget in bozza
+  delete:              (id, replacementAccountId) => api.delete(
+    `/chart-of-accounts/${id}`,
+    { params: replacementAccountId ? { replacementAccountId } : {} }
+  ),
   copyFromCondominium: (data)     => api.post('/chart-of-accounts/copy-from-condominium', data),
   applyTemplate:       (condId)   => api.post(`/chart-of-accounts/apply-template/${condId}`),
 }
