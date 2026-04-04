@@ -194,7 +194,7 @@ public class UpdateChartOfAccountsCommandConsumer
             foreach (var item in itemsToDelete)
             {
                 item.IsDeleted = true;
-                item.TraceUpdate(currentUser);
+                item.Trace(currentUser);
                 await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -216,7 +216,7 @@ public class UpdateChartOfAccountsCommandConsumer
                     {
                         existing.AccountCode = account.Code;
                         existing.AccountName = account.Name;
-                        existing.TraceUpdate(currentUser);
+                        existing.Trace(currentUser);
                         await session.SaveOrUpdateAsync(existing, cancellationToken).ConfigureAwait(false);
                     }
                 }

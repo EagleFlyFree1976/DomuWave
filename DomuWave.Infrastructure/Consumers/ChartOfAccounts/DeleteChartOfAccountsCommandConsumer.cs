@@ -91,19 +91,29 @@ public class DeleteChartOfAccountsCommandConsumer
                 .Select(x => x.ItemId)
                 .ToList();
 
-            var draftItems = await session.Query<BudgetItem>()
+            // Carica le voci in bozza come proiezione scalare per evitare problemi
+            // con lazy proxy di Budget: il BudgetId viene letto direttamente in SQL.
+            var draftItemProjections = await session.Query<BudgetItem>()
                 .Where(x => draftItemIds.Contains(x.Id))
+                .Select(x => new { x.Id, BudgetId = x.Budget.Id, x.Amount })
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             // Per ogni budget in bozza: riassegna o accorpa la voce al sostitutivo
-            var groupedByBudget = draftItems.GroupBy(x => x.Budget.Id);
+            var groupedByBudget = draftItemProjections.GroupBy(x => x.BudgetId);
             foreach (var group in groupedByBudget)
             {
-                // Verifica se esiste già una voce per il conto sostitutivo nello stesso budget
+                var budgetId = group.Key;
+
+                // Verifica se esiste già una voce per il conto sostitutivo nello STESSO budget in bozza.
+                // Il filtro su Budget.Status.Id == Draft è essenziale: senza di esso la query
+                // potrebbe trovare una voce del conto sostitutivo in un budget approvato/chiuso
+                // con lo stesso ID (impossibile per ID diversi, ma garantisce comunque
+                // che non si tocchino budget non-bozza).
                 var existingReplacement = await session.Query<BudgetItem>()
-                    .FirstOrDefaultAsync(x => x.Budget.Id  == group.Key
-                                           && x.Account.Id == replacement.Id
+                    .FirstOrDefaultAsync(x => x.Budget.Id       == budgetId
+                                           && x.Budget.Status.Id == BudgetStatus.Draft
+                                           && x.Account.Id      == replacement.Id
                                            && !x.IsDeleted, cancellationToken)
                     .ConfigureAwait(false);
 
@@ -111,13 +121,13 @@ public class DeleteChartOfAccountsCommandConsumer
                 {
                     // Accorpa: somma gli importi nella voce sostitutiva esistente, poi cancella le originali
                     existingReplacement.Amount += group.Sum(x => x.Amount);
-                    existingReplacement.TraceUpdate(currentUser);
+                    existingReplacement.Trace(currentUser);
                     await session.SaveOrUpdateAsync(existingReplacement, cancellationToken).ConfigureAwait(false);
 
                     foreach (var item in group)
                     {
                         item.IsDeleted = true;
-                        item.TraceUpdate(currentUser);
+                        item.Trace(currentUser);
                         await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
                     }
                 }
@@ -129,7 +139,7 @@ public class DeleteChartOfAccountsCommandConsumer
                         item.Account     = replacement;
                         item.AccountCode = replacement.Code;
                         item.AccountName = replacement.Name;
-                        item.TraceUpdate(currentUser);
+                        item.Trace(currentUser);
                         await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
                     }
                 }
@@ -179,7 +189,7 @@ public class DeleteChartOfAccountsCommandConsumer
                     foreach (var expense in expensesToReassign)
                     {
                         expense.Account = replacement;
-                        expense.TraceUpdate(currentUser);
+                        expense.Trace(currentUser);
                         await session.SaveOrUpdateAsync(expense, cancellationToken).ConfigureAwait(false);
                     }
                 }
