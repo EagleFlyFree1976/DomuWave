@@ -86,13 +86,14 @@ public class DeleteChartOfAccountsCommandConsumer
         // ── Riassegna voci e spese dei budget in bozza al sostitutivo ─────────
         if (hasDraftUsages && replacement != null)
         {
+            // Proiezione scalare: evita i problemi con i lazy proxy di NHibernate.
+            // BudgetId e Amount vengono letti direttamente in SQL; gli Id servono
+            // per ricaricare le entità complete quando necessario.
             var draftItemIds = budgetItemUsages
                 .Where(x => x.StatusId == BudgetStatus.Draft)
                 .Select(x => x.ItemId)
                 .ToList();
 
-            // Carica le voci in bozza come proiezione scalare per evitare problemi
-            // con lazy proxy di Budget: il BudgetId viene letto direttamente in SQL.
             var draftItemProjections = await session.Query<BudgetItem>()
                 .Where(x => draftItemIds.Contains(x.Id))
                 .Select(x => new { x.Id, BudgetId = x.Budget.Id, x.Amount })
@@ -103,28 +104,34 @@ public class DeleteChartOfAccountsCommandConsumer
             var groupedByBudget = draftItemProjections.GroupBy(x => x.BudgetId);
             foreach (var group in groupedByBudget)
             {
-                var budgetId = group.Key;
+                var budgetId  = group.Key;
+                var itemIds   = group.Select(x => x.Id).ToList();
+                var totalAmount = group.Sum(x => x.Amount);
 
                 // Verifica se esiste già una voce per il conto sostitutivo nello STESSO budget in bozza.
-                // Il filtro su Budget.Status.Id == Draft è essenziale: senza di esso la query
-                // potrebbe trovare una voce del conto sostitutivo in un budget approvato/chiuso
-                // con lo stesso ID (impossibile per ID diversi, ma garantisce comunque
-                // che non si tocchino budget non-bozza).
+                // Il filtro su Budget.Status.Id == Draft è essenziale: garantisce che non si
+                // tocchino voci di budget approvati/chiusi.
                 var existingReplacement = await session.Query<BudgetItem>()
-                    .FirstOrDefaultAsync(x => x.Budget.Id       == budgetId
+                    .FirstOrDefaultAsync(x => x.Budget.Id        == budgetId
                                            && x.Budget.Status.Id == BudgetStatus.Draft
-                                           && x.Account.Id      == replacement.Id
+                                           && x.Account.Id       == replacement.Id
                                            && !x.IsDeleted, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (existingReplacement != null)
                 {
-                    // Accorpa: somma gli importi nella voce sostitutiva esistente, poi cancella le originali
-                    existingReplacement.Amount += group.Sum(x => x.Amount);
+                    // Accorpa: somma gli importi nella voce sostitutiva esistente
+                    existingReplacement.Amount += totalAmount;
                     existingReplacement.Trace(currentUser);
                     await session.SaveOrUpdateAsync(existingReplacement, cancellationToken).ConfigureAwait(false);
 
-                    foreach (var item in group)
+                    // Cancella logicamente le voci originali ricaricandole come entità
+                    var itemsToDelete = await session.Query<BudgetItem>()
+                        .Where(x => itemIds.Contains(x.Id))
+                        .ToListAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                    foreach (var item in itemsToDelete)
                     {
                         item.IsDeleted = true;
                         item.Trace(currentUser);
@@ -134,7 +141,12 @@ public class DeleteChartOfAccountsCommandConsumer
                 else
                 {
                     // Riassegna: sposta le voci al conto sostitutivo (snapshot aggiornato)
-                    foreach (var item in group)
+                    var itemsToReassign = await session.Query<BudgetItem>()
+                        .Where(x => itemIds.Contains(x.Id))
+                        .ToListAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                    foreach (var item in itemsToReassign)
                     {
                         item.Account     = replacement;
                         item.AccountCode = replacement.Code;
