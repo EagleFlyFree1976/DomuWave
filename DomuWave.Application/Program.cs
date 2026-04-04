@@ -199,3 +199,6 @@ void _initSettings(
     jobSettings = new JobSettings();
     configuration.Bind("JobSettings", jobSettings);
 }
+
+// Required by WebApplicationFactory<Program> in DomuWave.IntegrationTests
+public partial class Program { }
