@@ -108,6 +108,16 @@ public class BudgetsController(
         return NoContent();
     }
 
+    [HttpPost("{id:int}/fix-orphan-items")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    public async Task<IActionResult> FixOrphanItems(int id, CancellationToken ct)
+    {
+        var created = await _mediator.GetResponse(
+            new FixOrphanBudgetItemsCommand(CurrentUser.Id, id), ct);
+        return Ok(created);
+    }
+
     [HttpPost("{id:int}/close")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     public async Task<IActionResult> Close(int id, CancellationToken ct)

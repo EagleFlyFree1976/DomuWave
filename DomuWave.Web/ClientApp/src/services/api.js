@@ -224,6 +224,7 @@ export const budgetApi = {
   close:                (id)      => api.post(`/budgets/${id}/close`),
   generateInstallments: (id, opts) => api.post(`/budgets/${id}/generate-installments`, opts ?? {}),
   recalculateItems:     (id)      => api.post(`/budgets/${id}/recalculate-items`),
+  fixOrphanItems:       (id)      => api.post(`/budgets/${id}/fix-orphan-items`),
   delete:               (id)      => api.delete(`/budgets/${id}`),
 }
 

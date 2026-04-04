@@ -1,4 +1,6 @@
 using CPQ.Core.Consumers;
+using CPQ.Core.Exceptions;
+using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.BudgetItem;
@@ -6,6 +8,7 @@ using DomuWave.Services.Dto.Budget;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
@@ -43,24 +46,80 @@ public class CreateBudgetItemCommandConsumer
         var budget = await _budgetService
             .GetByIdAsync(command.Dto.BudgetId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+        if (budget == null)
+            throw new NotFoundException("Budget non trovato.");
+        if (budget.Status.Id != BudgetStatus.Draft)
+            throw new ValidatorException("È possibile aggiungere voci solo a un budget in bozza.");
 
         var account = await _accountService
             .GetByIdAsync(command.Dto.AccountId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+        if (account == null)
+            throw new NotFoundException("Conto non trovato.");
 
         var item = new BudgetItem
         {
-            Budget = budget,
-            Tenant = budget.Tenant,
-            Account = account,
-            Name   = command.Dto.Description ?? string.Empty,
-            Amount = command.Dto.Amount,
-            Notes  = command.Dto.Notes,
+            Budget      = budget,
+            Tenant      = budget.Tenant,
+            Account     = account,
+            AccountCode = account.Code,
+            AccountName = account.Name,
+            Name        = command.Dto.Description ?? string.Empty,
+            Amount      = command.Dto.Amount,
+            Notes       = command.Dto.Notes,
         };
 
         var created = await _budgetItemService
             .CreateAsync(item, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        // ── Assicura che tutti gli antenati del conto siano presenti nel budget ──
+        // Risale la catena dei parent navigando il proxy NHibernate già in sessione.
+        var ancestors = new List<ChartOfAccounts>();
+        var cursor = account.ParentAccount;
+        while (cursor != null)
+        {
+            // Forza il caricamento dell'entità per evitare proxy non inizializzati
+            cursor = await session.GetAsync<ChartOfAccounts>(cursor.Id, cancellationToken)
+                .ConfigureAwait(false);
+            if (cursor == null) break;
+            ancestors.Add(cursor);
+            cursor = cursor.ParentAccount;
+        }
+
+        if (ancestors.Count > 0)
+        {
+            // Carica gli item già presenti nel budget per questi account
+            var ancestorIds = ancestors.Select(a => a.Id).ToList();
+            var existingAncestorAccountIds = await session.Query<BudgetItem>()
+                .Where(x => x.Budget.Id == budget.Id
+                         && ancestorIds.Contains(x.Account.Id)
+                         && !x.IsDeleted)
+                .Select(x => x.Account.Id)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+            var existingSet = new HashSet<int>(existingAncestorAccountIds);
+
+            foreach (var ancestor in ancestors)
+            {
+                if (existingSet.Contains(ancestor.Id)) continue;
+
+                var ancestorItem = new BudgetItem
+                {
+                    Budget      = budget,
+                    Tenant      = budget.Tenant,
+                    Account     = ancestor,
+                    AccountCode = ancestor.Code,
+                    AccountName = ancestor.Name,
+                    Name        = string.Empty,
+                    Amount      = 0,
+                };
+                ancestorItem.Trace(currentUser);
+                await session.SaveAsync(ancestorItem, cancellationToken).ConfigureAwait(false);
+            }
+
+            await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         // Ricalcola totali del budget in base al tipo conto
         var allItems = await _budgetItemService

@@ -73,6 +73,9 @@
                     <button v-if="canEdit && b.type === 2 && b.statusId !== 3"
                             class="btn btn-sm btn-ghost"
                             @click="recalculateConsuntivoItems(b)" title="Ricalcola voci da spese registrate">Ricalcola voci</button>
+                    <button v-if="canEdit && b.statusId === 1"
+                            class="btn btn-sm btn-ghost"
+                            @click="fixOrphanItems(b)" title="Aggiunge gli antenati mancanti alle voci orfane">Ripara gerarchia</button>
                     <button v-if="canEdit && b.statusId === 1" class="btn-icon"
                             @click="openBudgetModal(b)" title="Modifica">✎</button>
                     <button v-if="canDelete && b.statusId === 1" class="btn-icon"
@@ -275,6 +278,10 @@
               Salva
             </button>
           </div>
+          <div v-if="canEdit && selectedBudget?.statusId === 1"
+               :class="hasDirtyRows ? '' : 'summary-add-action'">
+            <button class="btn btn-sm btn-ghost" @click="openAddAccountsModal">+ Aggiungi voci</button>
+          </div>
         </div>
 
         <!-- ── Tab: Entrate / Uscite / Patrimoniale ── -->
@@ -359,6 +366,63 @@
         <button class="btn btn-ghost" @click="closeItemsModal">Chiudi</button>
       </template>
     </BaseModal>
+
+    <!-- ══════════════════════════════════════════════════
+         MODAL — Seleziona conti da aggiungere al budget
+    ══════════════════════════════════════════════════ -->
+    <Teleport to="body">
+    <div class="modal-overlay add-accounts-overlay" v-if="showAddAccountsModal" @click.self="showAddAccountsModal = false">
+      <div class="modal modal-lg">
+        <div class="modal-header">
+          <h2>Aggiungi voci dal piano dei conti</h2>
+          <button class="btn-icon" @click="showAddAccountsModal = false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div v-if="loadingAccounts" class="loading-state"><div class="spinner"></div></div>
+          <div v-else-if="!addAccountsTree.length" class="empty-state">
+            <div class="empty-icon">◎</div>
+            <div>Nessun conto disponibile da aggiungere</div>
+          </div>
+          <template v-else>
+            <p class="add-accounts-hint">Seleziona i conti da aggiungere. I conti già presenti nel budget non sono selezionabili.</p>
+            <div class="add-accounts-tree">
+              <div
+                v-for="node in addAccountsTree"
+                :key="node.id"
+                class="coa-node"
+                :class="{ 'coa-node-header': node.hasChildren, 'coa-node-disabled': node.alreadyPresent }"
+                :style="{ paddingLeft: (0.5 + (node.level - 1) * 1.5) + 'rem' }"
+              >
+                <label v-if="!node.hasChildren" class="coa-checkbox-label">
+                  <input
+                    type="checkbox"
+                    :disabled="node.alreadyPresent"
+                    v-model="addAccountsSelected"
+                    :value="node.id"
+                  />
+                  <span class="coa-code mono">{{ node.code }}</span>
+                  <span class="coa-name">{{ node.name }}</span>
+                  <span v-if="node.alreadyPresent" class="badge badge-muted" style="margin-left:auto;font-size:0.72rem">già presente</span>
+                </label>
+                <div v-else class="coa-group-label">
+                  <span class="coa-code mono">{{ node.code }}</span>
+                  <span class="coa-name">{{ node.name }}</span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="showAddAccountsModal = false">Annulla</button>
+          <button class="btn btn-primary" @click="confirmAddAccounts"
+                  :disabled="!addAccountsSelected.length || savingAddAccounts">
+            <span v-if="savingAddAccounts" class="spinner" style="width:14px;height:14px"></span>
+            Aggiungi ({{ addAccountsSelected.length }})
+          </button>
+        </div>
+      </div>
+    </div>
+    </Teleport>
 
   </div>
 </template>
@@ -556,6 +620,21 @@ async function reopenBudget(b) {
   }
 }
 
+async function fixOrphanItems(b) {
+  try {
+    const { data: created } = await budgetApi.fixOrphanItems(b.id)
+    if (created > 0) {
+      store.toast(`${created} voc${created === 1 ? 'e aggiunta' : 'i aggiunte'} alla gerarchia`, 'success')
+      if (selectedBudget.value?.id === b.id) await loadBudgetItems(true)
+      await loadBudgets()
+    } else {
+      store.toast('Nessuna voce mancante trovata', 'info')
+    }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
 async function recalculateConsuntivoItems(b) {
   if (!confirm('Ricalcolare le voci del consuntivo?\n\n⚠️ ATTENZIONE: tutte le modifiche manuali alle voci verranno annullate e sostituite con i valori calcolati automaticamente dalle spese registrate e dai movimenti di entrata.\n\nContinuare?')) return
   try {
@@ -692,9 +771,9 @@ function recalcHeaders(rows) {
   }
 }
 
-async function loadBudgetItems() {
+async function loadBudgetItems(silent = false) {
   if (!selectedBudget.value) return
-  loadingItems.value = true
+  if (!silent) loadingItems.value = true
   try {
     const { data } = await budgetItemApi.getByBudget(selectedBudget.value.id)
     const items = data ?? []
@@ -771,6 +850,8 @@ async function saveAllItems() {
       originalAmounts[row.accountId] = row.amount
     }
     await loadBudgets()
+    const refreshed = budgets.value.find(b => b.id === selectedBudget.value?.id)
+    if (refreshed) selectedBudget.value = refreshed
   } catch { /* global */ } finally { savingItem.value = false }
 }
 
@@ -779,18 +860,92 @@ async function deleteItem(row) {
   if (!confirm(`Rimuovere la voce "${row.accountName}"?`)) return
   try {
     await budgetItemApi.delete(row.itemId)
-    row.itemId = null
-    row.amount = 0
-    row.dirty  = false
-    delete originalAmounts[row.accountId]
-    const tab = budgetTabs.value.find(t => t.rows.includes(row))
-    if (tab) {
-      recalcHeaders(tab.rows)
-      tab.total = tab.rows.filter(r => !r.isHeader).reduce((s, r) => s + (r.amount || 0), 0)
-    }
+    await loadBudgetItems(true)
     await loadBudgets()
+    const refreshed = budgets.value.find(b => b.id === selectedBudget.value?.id)
+    if (refreshed) selectedBudget.value = refreshed
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+// ─── Aggiungi voci dal piano dei conti ───────────────────────
+const showAddAccountsModal  = ref(false)
+const loadingAccounts       = ref(false)
+const savingAddAccounts     = ref(false)
+const addAccountsTree       = ref([])   // lista piatta ordinata per visualizzazione
+const addAccountsSelected   = ref([])   // id dei conti foglia selezionati
+
+async function openAddAccountsModal() {
+  addAccountsSelected.value = []
+  showAddAccountsModal.value = true
+  loadingAccounts.value = true
+  try {
+    const { data } = await chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
+    const accounts = (data ?? []).filter(a => a.isActive)
+
+    // Calcola set degli accountId già presenti nel budget (da tutte le tab)
+    const presentIds = new Set(
+      budgetTabs.value.flatMap(t => t.rows.map(r => r.accountId))
+    )
+
+    // Costruisce albero piatto ordinato per visualizzazione (DFS)
+    const byParent = {}
+    for (const a of accounts) {
+      const pid = a.parentAccountId ?? null
+      if (!byParent[pid]) byParent[pid] = []
+      byParent[pid].push(a)
+    }
+    for (const list of Object.values(byParent))
+      list.sort((a, b) => (a.code ?? '').localeCompare(b.code ?? ''))
+
+    const childIds = new Set(accounts.filter(a => a.parentAccountId != null).map(a => a.parentAccountId))
+
+    const tree = []
+    function walkTree(parentId, level) {
+      for (const a of (byParent[parentId] ?? [])) {
+        const hasChildren = childIds.has(a.id)
+        tree.push({
+          id:            a.id,
+          code:          a.code,
+          name:          a.name,
+          level,
+          hasChildren,
+          alreadyPresent: !hasChildren && presentIds.has(a.id),
+        })
+        walkTree(a.id, level + 1)
+      }
+    }
+    walkTree(null, 1)
+    addAccountsTree.value = tree
+  } catch {
+    addAccountsTree.value = []
+  } finally {
+    loadingAccounts.value = false
+  }
+}
+
+async function confirmAddAccounts() {
+  if (!addAccountsSelected.value.length || !selectedBudget.value) return
+  savingAddAccounts.value = true
+  try {
+    for (const accountId of addAccountsSelected.value) {
+      await budgetItemApi.create({
+        budgetId:  selectedBudget.value.id,
+        accountId,
+        amount:    0,
+      })
+    }
+    showAddAccountsModal.value = false
+    store.toast(`${addAccountsSelected.value.length} voce/i aggiunta/e`, 'success')
+    await loadBudgetItems(true)
+    await loadBudgets()
+    const refreshed = budgets.value.find(b => b.id === selectedBudget.value?.id)
+    if (refreshed) selectedBudget.value = refreshed
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    savingAddAccounts.value = false
   }
 }
 
@@ -956,4 +1111,45 @@ onMounted(async () => {
 .has-error .form-input,
 .has-error .form-select { border-color: var(--accent-red, #e53e3e); }
 .field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; display: block; }
+
+/* ── Aggiungi voci ── */
+.summary-add-action { margin-left: auto; }
+.add-accounts-overlay { z-index: 1100; }
+.modal-lg { max-width: 640px; width: 100%; }
+.add-accounts-hint { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.75rem; }
+.add-accounts-tree {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-base);
+}
+.coa-node {
+  border-bottom: 1px solid var(--border);
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+  padding-right: 0.75rem;
+}
+.coa-node:last-child { border-bottom: none; }
+.coa-node-header { background: var(--bg-surface); }
+.coa-node-disabled { opacity: 0.55; }
+.coa-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  width: 100%;
+}
+.coa-checkbox-label input[type="checkbox"] { flex-shrink: 0; cursor: pointer; accent-color: var(--accent); }
+.coa-group-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.coa-code { font-size: 0.78rem; color: var(--text-muted); min-width: 60px; }
+.coa-name { flex: 1; }
 </style>
