@@ -127,4 +127,14 @@ public class FiscalYearsController(
         if (!result) return NotFound();
         return NoContent();
     }
+
+    [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new DeleteFiscalYearCommand(CurrentUser.Id, id), ct);
+        if (!result) return NotFound();
+        return NoContent();
+    }
 }
