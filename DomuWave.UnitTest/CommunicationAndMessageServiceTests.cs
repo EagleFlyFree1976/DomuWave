@@ -14,16 +14,25 @@ using Xunit;
 namespace DomuWave.Tests.Services
 {
     /// <summary>
-    /// Unit test per CommunicationService.
-    /// Nota: Communication ha Title (non Subject), Content, CommunicationType, Priority,
-    /// PublicationDate, ExpirationDate, SendEmail, IsVisible, AttachmentPath.
+    /// Unit test per <see cref="ICommunicationService"/>.
+    ///
+    /// APPROCCIO DI TEST: questi test mockano l'interfaccia <see cref="ICommunicationService"/>
+    /// direttamente (non la sua implementazione concreta). Servono come test di contratto
+    /// dell'interfaccia: verificano che i metodi esposti abbiano la firma corretta, i tipi di
+    /// ritorno attesi e che la semantica di base (null per id inesistente, lista vuota, ecc.)
+    /// sia consistente con ciò che il consumer si aspetta.
+    ///
+    /// Proprietà del modello <see cref="Communication"/>:
+    /// <c>Title</c> (non Subject), <c>Content</c>, <c>CommunicationType</c>, <c>Priority</c>,
+    /// <c>PublicationDate</c>, <c>ExpirationDate</c>, <c>SendEmail</c>, <c>IsVisible</c>,
+    /// <c>AttachmentPath</c>.
     /// </summary>
     public class CommunicationServiceTests
     {
         private readonly Mock<ICommunicationService> _serviceMock;
         private readonly CancellationToken _ct = CancellationToken.None;
 
-        // Utente fittizio minimo
+        /// <summary>Utente fittizio minimo usato come parametro currentUser in tutti i test.</summary>
         private readonly FakeUser _user = new FakeUser { Id = 1, FullName = "Test User" };
 
         public CommunicationServiceTests()
@@ -33,6 +42,12 @@ namespace DomuWave.Tests.Services
 
         // ─── Helper ───────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Costruisce un'istanza di <see cref="Communication"/> con valori predefiniti
+        /// sensati per i test, evitando la ripetizione del codice di costruzione.
+        /// L'<paramref name="id"/> non viene assegnato direttamente (NHibernate lo gestisce
+        /// tramite hilo), ma viene accettato per chiarezza semantica nei commenti del test.
+        /// </summary>
         private static Communication BuildCommunication(int id = 1,
             string title = "Avviso assemblea",
             string content = "Assemblea ordinaria in data 10/03/2026",
@@ -57,6 +72,12 @@ namespace DomuWave.Tests.Services
 
         // ─── GetAllAsync ──────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>GetAllAsync</c> restituisca tutte le comunicazioni non eliminate
+        /// (IsDeleted = false) presenti nel sistema.
+        /// Il mock simula una lista di 2 comunicazioni; si controlla che il risultato
+        /// non sia null, contenga 2 elementi e che ognuno abbia un titolo valorizzato.
+        /// </summary>
         [Fact]
         public async Task GetAllAsync_ReturnsAllNonDeletedCommunications()
         {
@@ -82,6 +103,10 @@ namespace DomuWave.Tests.Services
 
         // ─── GetByIdAsync ─────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>GetByIdAsync</c> con un id esistente restituisca la comunicazione
+        /// corrispondente, con titolo, tipo e priorità corretti.
+        /// </summary>
         [Fact]
         public async Task GetByIdAsync_ExistingId_ReturnsCommunication()
         {
@@ -102,6 +127,11 @@ namespace DomuWave.Tests.Services
             Assert.Equal("Alta", result.Priority);
         }
 
+        /// <summary>
+        /// Verifica che <c>GetByIdAsync</c> con un id inesistente (999) restituisca null
+        /// anziché lanciare un'eccezione. Il chiamante è responsabile di gestire il null
+        /// (es. restituendo 404 dal controller).
+        /// </summary>
         [Fact]
         public async Task GetByIdAsync_NonExistingId_ReturnsNull()
         {
@@ -119,6 +149,11 @@ namespace DomuWave.Tests.Services
 
         // ─── GetByCondominiumIdAsync ──────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>GetByCondominiumIdAsync</c> restituisca tutte le comunicazioni
+        /// associate al condominio specificato. Il filtraggio per condominio è essenziale
+        /// per l'isolamento multi-tenant (ogni gestione vede solo le proprie comunicazioni).
+        /// </summary>
         [Fact]
         public async Task GetByCondominiumIdAsync_ReturnsCommunicationsForCondominium()
         {
@@ -144,6 +179,12 @@ namespace DomuWave.Tests.Services
 
         // ─── GetVisibleCommunicationsAsync ────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>GetVisibleCommunicationsAsync</c> restituisca esclusivamente
+        /// le comunicazioni con <c>IsVisible = true</c>. Questo metodo è tipicamente
+        /// esposto ai condòmini nel portale self-service, dove le comunicazioni non pubblicate
+        /// non devono essere visibili.
+        /// </summary>
         [Fact]
         public async Task GetVisibleCommunicationsAsync_ReturnsOnlyVisibleCommunications()
         {
@@ -163,11 +204,16 @@ namespace DomuWave.Tests.Services
 
             // Assert
             Assert.NotNull(result);
+            // Tutte le comunicazioni restituite devono avere IsVisible = true
             Assert.All(result, c => Assert.True(c.IsVisible));
         }
 
         // ─── GetByTypeAsync ───────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>GetByTypeAsync</c> filtri correttamente per <c>CommunicationType</c>.
+        /// Nel dominio DomuWave i tipi predefiniti includono "Assemblea", "Avviso", "Manutenzione".
+        /// </summary>
         [Fact]
         public async Task GetByTypeAsync_ReturnsOnlyCommunicationsOfGivenType()
         {
@@ -189,11 +235,17 @@ namespace DomuWave.Tests.Services
 
             // Assert
             Assert.NotNull(result);
+            // Ogni elemento deve avere esattamente il tipo richiesto
             Assert.All(result, c => Assert.Equal("Assemblea", c.CommunicationType));
         }
 
         // ─── GetByPriorityAsync ───────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>GetByPriorityAsync</c> filtri correttamente per <c>Priority</c>.
+        /// La priorità "Alta" identifica le comunicazioni urgenti che richiedono attenzione
+        /// immediata dai condòmini.
+        /// </summary>
         [Fact]
         public async Task GetByPriorityAsync_ReturnsOnlyCommunicationsOfGivenPriority()
         {
@@ -220,6 +272,12 @@ namespace DomuWave.Tests.Services
 
         // ─── GetUnreadByUserAsync ─────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>GetUnreadByUserAsync</c> restituisca solo le comunicazioni
+        /// non ancora lette dall'utente specificato (<paramref name="userId"/>).
+        /// Il test simula un singolo messaggio non letto e verifica che il risultato
+        /// contenga esattamente quell'elemento.
+        /// </summary>
         [Fact]
         public async Task GetUnreadByUserAsync_ReturnsUnreadCommunicationsForUser()
         {
@@ -240,11 +298,17 @@ namespace DomuWave.Tests.Services
 
             // Assert
             Assert.NotNull(result);
-            Assert.Single(result);
+            Assert.Single(result); // deve esserci esattamente 1 comunicazione non letta
         }
 
         // ─── CreateAsync ──────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>CreateAsync</c> con una comunicazione valida restituisca l'entità
+        /// persistita, preservando titolo, tipo, priorità e flag <c>SendEmail</c>.
+        /// Il mock usa una lambda di ritorno (<c>ReturnsAsync(c, _, __) => c</c>) per
+        /// simulare il comportamento reale del servizio che restituisce l'oggetto salvato.
+        /// </summary>
         [Fact]
         public async Task CreateAsync_ValidCommunication_ReturnsCreatedEntity()
         {
@@ -266,6 +330,12 @@ namespace DomuWave.Tests.Services
             Assert.True(result.SendEmail);
         }
 
+        /// <summary>
+        /// Verifica esplicita che il modello <see cref="Communication"/> utilizzi
+        /// la proprietà <c>Title</c> (non <c>Subject</c>, che non esiste su questo modello).
+        /// Questo test serve come documentazione vivente: se in futuro qualcuno aggiungesse
+        /// erroneamente una proprietà <c>Subject</c>, questo test richiederebbe una revisione.
+        /// </summary>
         [Fact]
         public async Task CreateAsync_CommunicationHasNoSubject_TitleIsUsed()
         {
@@ -288,21 +358,27 @@ namespace DomuWave.Tests.Services
             var result = await _serviceMock.Object.CreateAsync(comm, _user, _ct);
 
             Assert.Equal("Titolo comunicazione", result.Title);
-            // La proprietà Subject non esiste su Communication
+            // La proprietà Subject non esiste su Communication: verificato a compile time
         }
 
         // ─── UpdateAsync ──────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>UpdateAsync</c> su una comunicazione esistente restituisca
+        /// l'entità con i valori aggiornati. Il test simula il ciclo completo:
+        /// lettura → modifica in memoria → salvataggio → verifica del risultato.
+        /// </summary>
         [Fact]
         public async Task UpdateAsync_ExistingCommunication_ReturnsUpdatedEntity()
         {
-            // Arrange
+            // Arrange: recupera la comunicazione esistente
             var existing = BuildCommunication(1, "Vecchio titolo");
 
             _serviceMock
                 .Setup(s => s.GetByIdAsync(1, _user, _ct))
                 .ReturnsAsync(existing);
 
+            // Modifica in memoria (simula ApplyUpdate del consumer)
             existing.Title = "Titolo aggiornato";
             existing.Content = "Contenuto aggiornato";
 
@@ -321,6 +397,10 @@ namespace DomuWave.Tests.Services
 
         // ─── DeleteAsync ──────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>DeleteAsync</c> con un id esistente restituisca <c>true</c>,
+        /// indicando che il soft-delete è stato applicato correttamente.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_ExistingId_ReturnsTrue()
         {
@@ -336,6 +416,10 @@ namespace DomuWave.Tests.Services
             Assert.True(result);
         }
 
+        /// <summary>
+        /// Verifica che <c>DeleteAsync</c> con un id inesistente (999) restituisca <c>false</c>,
+        /// consentendo al controller di rispondere con 404 Not Found.
+        /// </summary>
         [Fact]
         public async Task DeleteAsync_NonExistingId_ReturnsFalse()
         {
@@ -353,6 +437,11 @@ namespace DomuWave.Tests.Services
 
         // ─── PublishCommunicationAsync ────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>PublishCommunicationAsync</c> con un id esistente restituisca
+        /// <c>true</c>. La pubblicazione imposta <c>IsVisible = true</c> e registra
+        /// l'autore della pubblicazione (tracciabilità).
+        /// </summary>
         [Fact]
         public async Task PublishCommunicationAsync_ExistingId_ReturnsTrue()
         {
@@ -368,6 +457,10 @@ namespace DomuWave.Tests.Services
             Assert.True(result);
         }
 
+        /// <summary>
+        /// Verifica che <c>PublishCommunicationAsync</c> con un id inesistente restituisca
+        /// <c>false</c>. Il controller deve rispondere con 404 Not Found in questo scenario.
+        /// </summary>
         [Fact]
         public async Task PublishCommunicationAsync_NonExistingId_ReturnsFalse()
         {
@@ -385,6 +478,10 @@ namespace DomuWave.Tests.Services
 
         // ─── ExistsAsync ──────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>ExistsAsync</c> restituisca <c>true</c> per un id che
+        /// corrisponde a un'entità esistente nel sistema.
+        /// </summary>
         [Fact]
         public async Task ExistsAsync_ExistingId_ReturnsTrue()
         {
@@ -397,6 +494,10 @@ namespace DomuWave.Tests.Services
             Assert.True(result);
         }
 
+        /// <summary>
+        /// Verifica che <c>ExistsAsync</c> restituisca <c>false</c> per un id che
+        /// non corrisponde a nessuna entità (o a un'entità soft-deleted).
+        /// </summary>
         [Fact]
         public async Task ExistsAsync_NonExistingId_ReturnsFalse()
         {
@@ -411,6 +512,12 @@ namespace DomuWave.Tests.Services
 
         // ─── CountAsync ───────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Verifica che <c>CountAsync</c> con un predicato LINQ (es. <c>x => !x.IsDeleted</c>)
+        /// restituisca il conteggio corretto delle comunicazioni che soddisfano il filtro.
+        /// Il mock usa <c>It.IsAny&lt;Expression&gt;</c> perché le lambda non sono comparabili
+        /// per valore in Moq senza configurazione aggiuntiva.
+        /// </summary>
         [Fact]
         public async Task CountAsync_ReturnsCorrectCount()
         {
@@ -423,8 +530,4 @@ namespace DomuWave.Tests.Services
             Assert.Equal(5, result);
         }
     }
-
-    // ─── Fake user per i test ─────────────────────────────────────────────────────
-
-   
 }
