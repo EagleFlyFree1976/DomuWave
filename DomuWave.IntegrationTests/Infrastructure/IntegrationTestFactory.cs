@@ -1,7 +1,13 @@
 using CPQ.Core.ActionFilters;
+using CPQ.Core.Memberships;
 using CPQ.Core.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
 
@@ -11,97 +17,112 @@ namespace DomuWave.IntegrationTests.Infrastructure;
 /// WebApplicationFactory that spins up the full DomuWave.Application pipeline
 /// with authentication bypassed and domain services pointing to the test database.
 ///
-/// Configuration is loaded from (in priority order):
-///   1. Environment variables prefixed with DOMUWAVE_TEST_
-///   2. appsettings.IntegrationTest.json  (copy to output dir)
-///   3. Default appsettings.json from the Application project
-///
-/// Minimum required configuration (appsettings.IntegrationTest.json or env vars):
-///   ConnectionStrings:sql-DomuWave  → test SQL Server connection string
-///   IntegrationTest:TestUserId      → ID of an existing user in the test DB
-///   IntegrationTest:TestTenantId    → GUID of an existing tenant in the test DB
+/// Supports multiple test roles: DMW_SU, PRT_ADM, AMS, CLB, Condomino.
+/// Use CreateClientAs(role) to get a client authenticated as a specific role.
+/// The default client (CreateAuthenticatedClient) uses PRT_ADM.
 /// </summary>
 public class IntegrationTestFactory : WebApplicationFactory<Program>
 {
-    public TestUserContext TestUser { get; private set; } = null!;
+    /// <summary>All test users keyed by role, loaded at construction time.</summary>
+    public IReadOnlyDictionary<TestRole, TestUserContext> Users { get; }
+
+    /// <summary>Default test user (PRT_ADM).</summary>
+    public TestUserContext TestUser => Users[TestRole.DMW_SU];
+
+    public Guid TenantId { get; }
+
+    public IntegrationTestFactory()
+    {
+        var cfg = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.IntegrationTest.json", optional: true)
+            .AddEnvironmentVariables("DOMUWAVE_TEST_")
+            .Build();
+
+        TenantId = cfg.GetValue<Guid>("IntegrationTest:TestTenantId", Guid.Empty);
+
+        var users = new Dictionary<TestRole, TestUserContext>();
+        foreach (TestRole role in Enum.GetValues<TestRole>())
+        {
+            var section = cfg.GetSection($"IntegrationTest:Users:{role}");
+            var id           = section.GetValue<int>("Id", -(int)role - 650);
+            var fullName     = section.GetValue<string>("FullName", $"{role} Test User")!;
+            var email        = section.GetValue<string>("Email",    $"{role.ToString().ToLower()}@domuwave.it")!;
+            var isSystemUser = section.GetValue<bool>("IsSystemUser", false);
+            users[role] = TestUserContext.Create(id, TenantId, fullName, email, role, isSystemUser);
+        }
+        Users = users;
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("IntegrationTest");
 
-        // Overlay test-specific configuration
         builder.ConfigureAppConfiguration((_, config) =>
         {
-            var basePath = AppContext.BaseDirectory;
             config.AddJsonFile(
-                Path.Combine(basePath, "appsettings.IntegrationTest.json"),
-                optional: true,
-                reloadOnChange: false);
+                Path.Combine(AppContext.BaseDirectory, "appsettings.IntegrationTest.json"),
+                optional: true, reloadOnChange: false);
             config.AddEnvironmentVariables("DOMUWAVE_TEST_");
         });
 
         builder.ConfigureTestServices(services =>
         {
-            // ── Build test user from configuration ───────────────────────────
-            var sp            = services.BuildServiceProvider();
-            var cfg           = sp.GetRequiredService<IConfiguration>();
-            var testSection   = cfg.GetSection("IntegrationTest");
-
-            var userId   = testSection.GetValue<int>("TestUserId",       1);
-            var tenantId = testSection.GetValue<Guid>("TestTenantId",    Guid.Empty);
-            var fullName = testSection.GetValue<string>("TestUserFullName", "Integration Test User")!;
-            var email    = testSection.GetValue<string>("TestUserEmail",    "integrationtest@domuwave.it")!;
-
-            TestUser = TestUserContext.Create(userId, tenantId, fullName, email);
-
-            // ── Inject test user into the pipeline before any filters run ────
-            services.AddSingleton(TestUser);
+            services.AddSingleton<IntegrationTestFactory>(_ => this);
             services.AddSingleton<IStartupFilter, TestAuthStartupFilter>();
 
-            // ── Bypass TokenAuthorizeAttribute global filter ──────────────────
-            // The filter is registered as Add<TokenAuthorizeAttribute>() which
-            // results in a TypeFilterAttribute wrapping it.
             services.PostConfigure<MvcOptions>(options =>
             {
                 var tokenFilter = options.Filters
                     .OfType<TypeFilterAttribute>()
                     .FirstOrDefault(f => f.ImplementationType?.Name.Contains("TokenAuthorize") == true);
-
                 if (tokenFilter != null)
                     options.Filters.Remove(tokenFilter);
-
-                // AllowAnonymous ensures no auth challenge is issued
                 options.Filters.Add(new Microsoft.AspNetCore.Mvc.Authorization.AllowAnonymousFilter());
             });
 
-            // ── Mock CPQ.Core IUserService ────────────────────────────────────
-            // Consumers call _userService.GetByIdAsync(command.CurrentUserId, ct)
-            // to resolve the acting user. We return our TestUser for any ID.
+            // ── Mock IUserService — risponde per ogni utente di test per ID ──
+            var cpqUsers = Users.Values.ToDictionary(
+                u => (int)u.Id,
+                u => new User
+                {
+                    Id              = (int)u.Id,
+                    Name            = u.Username,
+                    FirstName       = u.FirstName,
+                    LastName        = u.LastName,
+                    Email           = u.Email,
+                    Token           = u.Token,
+                    IsActive        = true,
+                    IsAuthenticated = true,
+                    IsSystemUser    = u.IsSystemUser,
+                });
+
             services.RemoveAll<IUserService>();
             var userServiceMock = new Mock<IUserService>();
             userServiceMock
                 .Setup(s => s.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(TestUser);
+                .ReturnsAsync((int id, CancellationToken _) =>
+                    cpqUsers.TryGetValue(id, out var u) ? u : cpqUsers[(int)Users[TestRole.DMW_SU].Id]);
             userServiceMock
                 .Setup(s => s.GetByTokenAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(TestUser);
+                .ReturnsAsync((string token, CancellationToken _) =>
+                    cpqUsers.Values.FirstOrDefault(u => u.Token == token)
+                    ?? cpqUsers[(int)Users[TestRole.DMW_SU].Id]);
             services.AddScoped<IUserService>(_ => userServiceMock.Object);
         });
     }
 
-    /// <summary>
-    /// Creates an HttpClient pre-configured with the test tenant header.
-    /// Every request will carry X-Tenant-Id so TenantHeaderFilter is satisfied.
-    /// </summary>
-    public HttpClient CreateAuthenticatedClient()
+    /// <summary>Creates an HttpClient authenticated as the given role.</summary>
+    public HttpClient CreateClientAs(TestRole role)
     {
-        var client = CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false,
-        });
-
-        client.DefaultRequestHeaders.Add("X-Tenant-Id", TestUser.TenantId.ToString());
-        client.DefaultRequestHeaders.Add("Authorization", $"Bearer {TestUser.Token}");
+        var user   = Users[role];
+        var client = CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        client.DefaultRequestHeaders.Add("X-Tenant-Id",    TenantId.ToString());
+        client.DefaultRequestHeaders.Add("Authorization",  $"Bearer {user.Token}");
+        client.DefaultRequestHeaders.Add("X-Test-Role",    role.ToString());
         return client;
     }
+
+    /// <summary>Default authenticated client (PRT_ADM).</summary>
+    public HttpClient CreateAuthenticatedClient() => CreateClientAs(TestRole.DMW_SU);
 }

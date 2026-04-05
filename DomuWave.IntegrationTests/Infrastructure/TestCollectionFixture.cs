@@ -1,3 +1,5 @@
+using Xunit;
+
 namespace DomuWave.IntegrationTests.Infrastructure;
 
 /// <summary>

@@ -33,5 +33,6 @@ public static class BudgetMappingExtensions
     public static void ApplyUpdate(this Budget entity, UpdateBudgetDto dto)
     {
         entity.Description = dto.Notes;
+        entity.Notes= dto.Notes;
     }
 }

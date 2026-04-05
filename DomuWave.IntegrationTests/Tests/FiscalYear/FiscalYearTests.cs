@@ -4,6 +4,7 @@ using DomuWave.Services.Dto.Condominium;
 using DomuWave.Services.Dto.Contabilita.FiscalYear;
 using FluentAssertions;
 using System.Net;
+using Xunit;
 
 namespace DomuWave.IntegrationTests.Tests.FiscalYear;
 

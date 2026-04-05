@@ -32,9 +32,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Update="appsettings.IntegrationTest.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <None Update="appsettings.IntegrationTest.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

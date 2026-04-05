@@ -8,6 +8,7 @@ using DomuWave.Services.Dto.Contabilita.FiscalYear;
 using DomuWave.Services.Models;
 using FluentAssertions;
 using System.Net;
+using Xunit;
 using ChartOfAccountsReadDto = DomuWave.Services.Dto.Budget.ChartOfAccountsReadDto;
 
 namespace DomuWave.IntegrationTests.Tests.Budget;
@@ -84,7 +85,7 @@ public class BudgetWorkflowTests(IntegrationTestFactory factory)
         var dto = TestDataBuilder.Budget(_condominiumId, _fiscalYearId, BudgetType.Preventivo);
 
         var (response, created) = await PostAsync<BudgetReadDto>("/api/budgets", dto);
-
+        var body = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         created.Should().NotBeNull();
         created!.Id.Should().BeGreaterThan(0);
@@ -176,22 +177,18 @@ public class BudgetWorkflowTests(IntegrationTestFactory factory)
     }
 
     [Fact]
-    public async Task Approve_WhenConflictingApprovedBudgetExists_Returns400()
+    public async Task Create_DuplicateTypeSameFiscalYear_Returns400()
     {
-        // Create and approve the first budget
+        // Create the first Preventivo
         var (_, first) = await PostAsync<BudgetReadDto>("/api/budgets",
             TestDataBuilder.Budget(_condominiumId, _fiscalYearId, BudgetType.Preventivo));
         _budgetIds.Add(first!.Id);
-        await ApproveBudgetAsync(first.Id);
 
-        // Create a second Preventivo in the same condominium+year
-        var (_, second) = await PostAsync<BudgetReadDto>("/api/budgets",
+        // A second Preventivo on the same condominium+fiscal year must be rejected
+        var (secondResponse, _) = await PostAsync<BudgetReadDto>("/api/budgets",
             TestDataBuilder.Budget(_condominiumId, _fiscalYearId, BudgetType.Preventivo));
-        _budgetIds.Add(second!.Id);
-
-        // Approval should fail because a conflicting approved budget already exists
-        var response = await ApproveBudgetAsync(second.Id);
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        var secondBody = await secondResponse.Content.ReadAsStringAsync();
+        secondResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest, secondBody);
     }
 
     // ── Workflow: Approve → Close ──────────────────────────────────────────
@@ -241,7 +238,7 @@ public class BudgetWorkflowTests(IntegrationTestFactory factory)
 
         var reopenResponse = await Client.PostAsJsonAsync(
             $"/api/budgets/{created.Id}/reopen", new { });
-
+        var body = await reopenResponse.Content.ReadAsStringAsync();
         reopenResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var budget = await GetAsync<BudgetReadDto>($"/api/budgets/{created.Id}");
@@ -289,7 +286,7 @@ public class BudgetWorkflowTests(IntegrationTestFactory factory)
 
         var (response, updated) = await PutAsync<BudgetReadDto>(
             $"/api/budgets/{created.Id}", updateDto);
-
+        var body = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         updated!.Notes.Should().Be(updateDto.Notes);
     }

@@ -3,6 +3,7 @@ using DomuWave.IntegrationTests.Infrastructure;
 using DomuWave.Services.Dto.Condominium;
 using FluentAssertions;
 using System.Net;
+using Xunit;
 
 namespace DomuWave.IntegrationTests.Tests.Condominiums;
 
@@ -31,7 +32,8 @@ public class CondominiumCrudTests(IntegrationTestFactory factory)
         var (response, created) = await PostAsync<CondominiumReadDto>("/api/condominiums", dto);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body = await response.Content.ReadAsStringAsync();
+        response.StatusCode.Should().Be(HttpStatusCode.Created, body);
         created.Should().NotBeNull();
         created!.Id.Should().BeGreaterThan(0);
         created.Code.Should().Be(dto.Code);
@@ -129,17 +131,15 @@ public class CondominiumCrudTests(IntegrationTestFactory factory)
         var (_, created) = await PostAsync<CondominiumReadDto>("/api/condominiums", dto);
         _createdIds.Add(created!.Id);
 
-        var updateDto = new UpdateCondominiumDto
-        {
-            Name  = $"Aggiornato {TestDataBuilder.ShortId()}",
-            Notes = "Nota aggiornata",
-        };
+        var updateDto = TestDataBuilder.UpdateCondominium(created, name: $"Aggiornato {TestDataBuilder.ShortId()}");
 
         // Act
         var (response, updated) = await PutAsync<CondominiumReadDto>(
             $"/api/condominiums/{created.Id}", updateDto);
 
         // Assert
+        var body = await response.Content.ReadAsStringAsync();
+
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         updated!.Name.Should().Be(updateDto.Name);
     }
@@ -147,7 +147,7 @@ public class CondominiumCrudTests(IntegrationTestFactory factory)
     [Fact]
     public async Task Update_NonExistingId_Returns404()
     {
-        var updateDto = new UpdateCondominiumDto { Name = "Ghost" };
+        var updateDto = TestDataBuilder.UpdateCondominium(new CondominiumReadDto { Name = "Ghost", Code = "GHOST", InstallmentFrequency = "Monthly", Address = new CondominiumAddressDto() });
         var (response, _) = await PutAsync<CondominiumReadDto>("/api/condominiums/999999", updateDto);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }

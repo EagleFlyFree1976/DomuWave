@@ -2,23 +2,27 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Xunit;
 
 namespace DomuWave.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Base class for all integration test classes.
-/// Provides a pre-configured HttpClient and JSON helpers.
+/// Provides a pre-configured HttpClient (default: PRT_ADM) and helpers
+/// to obtain clients for other roles via AsRole(role).
 /// </summary>
 public abstract class IntegrationTestBase : IAsyncLifetime
 {
     protected readonly IntegrationTestFactory Factory;
-    protected readonly HttpClient             Client;
-    protected readonly TestUserContext        TestUser;
+
+    /// <summary>Default client — authenticated as PRT_ADM.</summary>
+    protected readonly HttpClient Client;
+
+    protected readonly TestUserContext TestUser;
 
     protected static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
-        Converters                  = { new JsonStringEnumConverter() },
         DefaultIgnoreCondition      = JsonIgnoreCondition.WhenWritingNull,
     };
 
@@ -29,12 +33,13 @@ public abstract class IntegrationTestBase : IAsyncLifetime
         TestUser = factory.TestUser;
     }
 
+    /// <summary>Returns an HttpClient authenticated as the given role.</summary>
+    protected HttpClient AsRole(TestRole role) => Factory.CreateClientAs(role);
+
     // ── IAsyncLifetime ────────────────────────────────────────────────────────
 
-    /// <summary>Override to seed test-specific data before each test.</summary>
     public virtual Task InitializeAsync() => Task.CompletedTask;
 
-    /// <summary>Override to clean up test data after each test.</summary>
     public virtual Task DisposeAsync()
     {
         Client.Dispose();
@@ -43,33 +48,33 @@ public abstract class IntegrationTestBase : IAsyncLifetime
 
     // ── HTTP helpers ──────────────────────────────────────────────────────────
 
-    protected async Task<T> GetAsync<T>(string url)
+    protected async Task<T> GetAsync<T>(string url, HttpClient? client = null)
     {
-        var response = await Client.GetAsync(url);
+        var response = await (client ?? Client).GetAsync(url);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<T>(JsonOptions))!;
     }
 
-    protected async Task<(HttpResponseMessage Response, T? Body)> PostAsync<T>(string url, object payload)
+    protected async Task<(HttpResponseMessage Response, T? Body)> PostAsync<T>(string url, object payload, HttpClient? client = null)
     {
-        var response = await Client.PostAsJsonAsync(url, payload, JsonOptions);
+        var response = await (client ?? Client).PostAsJsonAsync(url, payload, JsonOptions);
         T? body = default;
         if (response.IsSuccessStatusCode)
             body = await response.Content.ReadFromJsonAsync<T>(JsonOptions);
         return (response, body);
     }
 
-    protected async Task<(HttpResponseMessage Response, T? Body)> PutAsync<T>(string url, object payload)
+    protected async Task<(HttpResponseMessage Response, T? Body)> PutAsync<T>(string url, object payload, HttpClient? client = null)
     {
-        var response = await Client.PutAsJsonAsync(url, payload, JsonOptions);
+        var response = await (client ?? Client).PutAsJsonAsync(url, payload, JsonOptions);
         T? body = default;
         if (response.IsSuccessStatusCode)
             body = await response.Content.ReadFromJsonAsync<T>(JsonOptions);
         return (response, body);
     }
 
-    protected async Task<HttpResponseMessage> DeleteAsync(string url)
-        => await Client.DeleteAsync(url);
+    protected async Task<HttpResponseMessage> DeleteAsync(string url, HttpClient? client = null)
+        => await (client ?? Client).DeleteAsync(url);
 
     /// <summary>
     /// Reads the ProblemDetails error response and returns the first error message.
@@ -82,7 +87,6 @@ public abstract class IntegrationTestBase : IAsyncLifetime
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            // Try CPQ.Core Errors[] format first
             if (root.TryGetProperty("Errors", out var errors) && errors.GetArrayLength() > 0)
                 return errors[0].GetString() ?? string.Empty;
 
