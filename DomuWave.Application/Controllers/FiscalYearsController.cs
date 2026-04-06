@@ -136,4 +136,15 @@ public class FiscalYearsController(
         if (!result) return NotFound();
         return NoContent();
     }
+
+    [HttpGet("{id:int}/conguaglio")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(ConguaglioReadDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetConguaglio(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetConguaglioCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
 }

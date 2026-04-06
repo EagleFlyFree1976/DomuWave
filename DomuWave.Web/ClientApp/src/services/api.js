@@ -157,6 +157,7 @@ export const fiscalYearApi = {
   close:              (id, notes)     => api.post(`/fiscal-years/${id}/close`, { notes }),
   lock:               (id, notes)     => api.post(`/fiscal-years/${id}/lock`, { notes }),
   delete:             (id)            => api.delete(`/fiscal-years/${id}`),
+  getConguaglio:      (id)            => api.get(`/fiscal-years/${id}/conguaglio`),
 }
 
 // ─── Saldi contabili (AccountBalance) ─────────────────────────

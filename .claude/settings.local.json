@@ -33,7 +33,11 @@
       "Bash(grep -rn \"TotalExpenses\\\\|TotalIncome\\\\|budget\\\\.Total\" c:/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/BudgetItem --include=*.cs)",
       "Bash(grep -rn \"class User\\\\b\\\\|public.*Token\\\\|public.*IsSystem\\\\|public.*FullName\\\\|public.*Password\" c:/Projects/Blizio/ --include=*.cs -l)",
       "Bash(find c:/Projects/Blizio -name *.cs -path *Membership*)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/Condominium/*.cs)",
+      "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/UnitOwner/*.cs)",
+      "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/UnitTenant/*.cs)",
+      "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/FiscalYear/*.cs)"
     ]
   }
 }

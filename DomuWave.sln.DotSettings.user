@@ -1,5 +1,17 @@
 ﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=07c17b05_002Dd7b1_002D4eb0_002Dae7a_002D852649de1410/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="Create_ValidPayload_Returns201WithDto" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.Condominiums.CondominiumCrudTests&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.Budget.BudgetWorkflowTests&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.FiscalYear.FiscalYearTests&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.Budget.BudgetItemChartOfAccountsSyncTests&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.FiscalYear.FiscalYearPreviousLinkTests&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.Expense.ExpenseFiscalYearStatusTests&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.FiscalYear.FiscalYearBudgetConstraintsTests&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.Expense.ExpenseRegistrationDateTests&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String>
 	<s:Boolean x:Key="/Default/Housekeeping/Bookmarks/NumberedBookmarks/=Bookmark1/@KeyIndexDefined">True</s:Boolean>
 	<s:String x:Key="/Default/Housekeeping/Bookmarks/NumberedBookmarks/=Bookmark1/Coords/@EntryValue">(Doc Ln 134 Col 51)</s:String>
-	<s:String x:Key="/Default/Housekeeping/Bookmarks/NumberedBookmarks/=Bookmark1/FileId/@EntryValue">CB75DC3A-666D-4CF7-8EFA-452D2C1BE375/d:ClientApp/d:src/d:views/f:LoginView.vue</s:String>
+	<s:String x:Key="/Default/Housekeeping/Bookmarks/NumberedBookmarks/=Bookmark1/FileId/@EntryValue">4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D/d:Tests/d:Condominiums/f:CondominiumCrudTests.cs</s:String>
 	<s:String x:Key="/Default/Housekeeping/Bookmarks/NumberedBookmarks/=Bookmark1/Owner/@EntryValue">NumberedBookmarkManager</s:String></wpf:ResourceDictionary>
