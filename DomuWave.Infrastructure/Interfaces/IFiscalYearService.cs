@@ -40,7 +40,8 @@ namespace DomuWave.Services.Interfaces
             DateTime startDate,
             DateTime endDate,
             IUser currentUser,
-            CancellationToken ct = default);
+            CancellationToken ct = default,
+            int? previousFiscalYearId = null);
 
         /// <summary>
         /// Transizione Draft → Open.

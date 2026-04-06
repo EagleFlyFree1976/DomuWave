@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using DomuWave.IntegrationTests.Builders;
 using DomuWave.IntegrationTests.Infrastructure;
 using DomuWave.Services.Dto.Condominium;
@@ -194,21 +195,45 @@ public class FiscalYearTests(IntegrationTestFactory factory)
     // ── DELETE /api/fiscal-years/{id} ──────────────────────────────────────
 
     /// <summary>
-    /// Verifica che la DELETE su un anno fiscale esistente (senza budget e senza
-    /// dati contabili associati) restituisca 204 NoContent.
+    /// Verifica che la DELETE su un anno fiscale in stato Draft restituisca 204 NoContent.
     /// Non registra l'Id in <c>_fiscalYearIds</c> perché il test stesso lo elimina.
     /// </summary>
     [Fact]
-    public async Task Delete_ExistingFiscalYear_Returns204()
+    public async Task Delete_DraftFiscalYear_Returns204()
     {
-        // Arrange
-        var dto = TestDataBuilder.FiscalYear(_condominiumId);
-        var (_, created) = await PostAsync<FiscalYearReadDto>("/api/fiscal-years", dto);
+        // Arrange: crea un esercizio in stato Draft (stato iniziale)
+        var (_, created) = await PostAsync<FiscalYearReadDto>(
+            "/api/fiscal-years", TestDataBuilder.FiscalYear(_condominiumId));
 
-        // Act — elimina direttamente (non aggiunto a _fiscalYearIds)
+        // Act
         var response = await DeleteAsync($"/api/fiscal-years/{created!.Id}");
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent,
+            "un esercizio in stato Draft può essere eliminato");
+    }
+
+    /// <summary>
+    /// Verifica che la DELETE su un anno fiscale in stato Open (non più bozza)
+    /// restituisca 400 Bad Request: solo gli esercizi in stato Draft sono eliminabili.
+    /// </summary>
+    [Fact]
+    public async Task Delete_OpenFiscalYear_Returns400()
+    {
+        // Arrange: crea e apri l'esercizio (Draft → Open)
+        var (_, created) = await PostAsync<FiscalYearReadDto>(
+            "/api/fiscal-years", TestDataBuilder.FiscalYear(_condominiumId));
+        _fiscalYearIds.Add(created!.Id);
+
+        var openResponse = await Client.PostAsJsonAsync($"/api/fiscal-years/{created.Id}/open", new { });
+        openResponse.StatusCode.Should().Be(HttpStatusCode.NoContent,
+            "l'apertura dell'esercizio deve riuscire come prerequisito del test");
+
+        // Act: tenta di eliminare un esercizio aperto
+        var deleteResponse = await DeleteAsync($"/api/fiscal-years/{created.Id}");
+
+        // Assert
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest,
+            "un esercizio in stato Open non può essere eliminato: solo lo stato Draft è consentito");
     }
 }

@@ -35,7 +35,8 @@ public class OpenFiscalYearCommandConsumer : InMemoryConsumerBase<OpenFiscalYear
 
         var fy = await _fiscalYearService
             .OpenAsync(command.CondominiumId, command.Code, command.Description,
-                command.StartDate, command.EndDate, currentUser, cancellationToken)
+                command.StartDate, command.EndDate, currentUser, cancellationToken,
+                command.PreviousFiscalYearId)
             .ConfigureAwait(false);
         return fy.ToReadDto();
     }

@@ -31,6 +31,10 @@
                  column="StatusId" not-null="true" lazy="false" fetch="join" />
     <property name="IsActive"    column="IsActive"    type="bool"                not-null="true" />
 
+    <!-- Esercizio di provenienza (null per il primo esercizio) -->
+    <many-to-one name="PreviousFiscalYear" class="FiscalYear"
+                 column="PreviousFiscalYearId" not-null="false" lazy="false" fetch="join" />
+
     <!-- Campi di chiusura -->
     <property name="ClosingDate"     column="ClosingDate"     type="DateTime" not-null="false" />
     <property name="ClosedDate"      column="ClosedDate"      type="DateTime" not-null="false" />

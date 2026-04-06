@@ -17,5 +17,10 @@ namespace DomuWave.Services.Dto.Contabilita.FiscalYear
         public int StatusId { get; set; }
         public string StatusName { get; set; } = string.Empty;
         public bool IsActive { get; set; }
+
+        /// <summary>ID dell'esercizio di provenienza (null per il primo esercizio).</summary>
+        public int? PreviousFiscalYearId { get; set; }
+        /// <summary>Codice dell'esercizio di provenienza (null per il primo esercizio).</summary>
+        public string? PreviousFiscalYearCode { get; set; }
     }
 }

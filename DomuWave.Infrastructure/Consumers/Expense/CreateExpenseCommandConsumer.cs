@@ -103,6 +103,30 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
                 throw new ValidatorException("Nessun esercizio fiscale attivo trovato per questo condominio.");
         }
 
+        // Non è possibile registrare spese su esercizi in stato Bozza, Chiuso o Bloccato
+        if (fiscalYear.Status?.Id == FiscalYearStatus.Draft)
+            throw new ValidatorException(
+                "Non è possibile registrare spese su un esercizio in stato Bozza: aprire prima l'esercizio.");
+        if (fiscalYear.Status?.Id == FiscalYearStatus.Closed)
+            throw new ValidatorException(
+                "Non è possibile registrare spese su un esercizio chiuso.");
+        if (fiscalYear.Status?.Id == FiscalYearStatus.Locked)
+            throw new ValidatorException(
+                "Non è possibile registrare spese su un esercizio bloccato.");
+
+        // Validazione coerenza data registrazione con il periodo dell'esercizio.
+        // Per esercizi in stato Open la data deve essere compresa nel periodo (bloccante).
+        // Per esercizi in stato Closing la registrazione fuori periodo è consentita (l'utente
+        // è stato avvisato lato frontend ma il movimento deve poter essere salvato).
+        var regDate = dto.RegistrationDate.Date;
+        if (fiscalYear.Status?.Id == FiscalYearStatus.Open &&
+            (regDate < fiscalYear.StartDate.Date || regDate > fiscalYear.EndDate.Date))
+        {
+            throw new ValidatorException(
+                $"La data di registrazione ({regDate:dd/MM/yyyy}) non è compresa nel periodo " +
+                $"dell'esercizio fiscale ({fiscalYear.StartDate:dd/MM/yyyy} – {fiscalYear.EndDate:dd/MM/yyyy}).");
+        }
+
         var expenseType       = session.Load<ExpenseType>(dto.ExpenseTypeId);
         var paymentStatus     = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
         var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);

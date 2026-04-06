@@ -153,13 +153,14 @@ public static class TestDataBuilder
         string? code = null)
     {
         var y = year > 0 ? year : DateTime.UtcNow.Year;
+        var startDate = new DateTime(y, 1, 1);
         return new FiscalYearCreateDto
         {
             CondominiumId = condominiumId,
             Code          = code ?? $"{y}-{ShortId()}",
             Description   = $"Esercizio {y}",
-            StartDate     = new DateTime(y, 1, 1),
-            EndDate       = new DateTime(y, 12, 31),
+            StartDate     = startDate,
+            EndDate       = startDate.AddYears(1).AddDays(-1),
         };
     }
 

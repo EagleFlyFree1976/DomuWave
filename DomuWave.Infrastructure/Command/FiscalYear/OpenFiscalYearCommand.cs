@@ -10,16 +10,18 @@ public class OpenFiscalYearCommand : BaseCommand, IQuery<FiscalYearReadDto>
     public string Description { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    public int? PreviousFiscalYearId { get; set; }
 
     public OpenFiscalYearCommand() { }
 
     public OpenFiscalYearCommand(int currentUserId) : base(currentUserId) { }
-    public OpenFiscalYearCommand(int currentUserId, int condominiumId, string code, string description, DateTime startDate, DateTime endDate) : base(currentUserId)
+    public OpenFiscalYearCommand(int currentUserId, int condominiumId, string code, string description, DateTime startDate, DateTime endDate, int? previousFiscalYearId = null) : base(currentUserId)
     {
-        CondominiumId = condominiumId;
-        Code = code;
-        Description = description;
-        StartDate = startDate;
-        EndDate = endDate;
+        CondominiumId        = condominiumId;
+        Code                 = code;
+        Description          = description;
+        StartDate            = startDate;
+        EndDate              = endDate;
+        PreviousFiscalYearId = previousFiscalYearId;
     }
 }

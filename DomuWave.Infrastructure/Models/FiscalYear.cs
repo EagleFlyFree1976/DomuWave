@@ -56,6 +56,13 @@ namespace DomuWave.Services.Models
         /// <summary>Note dell'amministratore registrate in fase di chiusura.</summary>
         public virtual string ClosingNotes { get; set; }
 
+        /// <summary>
+        /// Esercizio di provenienza (precedente), impostato al momento della creazione
+        /// quando l'utente seleziona esplicitamente l'esercizio di continuità.
+        /// Null per il primo esercizio del condominio.
+        /// </summary>
+        public virtual FiscalYear? PreviousFiscalYear { get; set; }
+
         /// <summary>Bilanci (preventivo e consuntivo) associati all'esercizio. Lazy loading.</summary>
         public virtual IList<Budget> Budgets { get; set; } = new List<Budget>();
 

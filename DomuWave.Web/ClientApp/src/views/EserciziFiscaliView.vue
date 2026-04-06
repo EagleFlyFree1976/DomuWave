@@ -57,6 +57,9 @@
                     <button v-if="canEdit && (fy.statusId === 1 || fy.statusId === 2)"
                             class="btn-icon" title="Modifica"
                             @click="openEditModal(fy)">✎</button>
+                    <button v-if="canDelete && fy.statusId === 1"
+                            class="btn-icon btn-icon--danger" title="Elimina"
+                            @click="openDeleteModal(fy)">🗑</button>
                     <button v-if="canEdit && fy.statusId === 1"
                             class="btn btn-sm btn-ghost btn-green"
                             @click="openTransitionModal(fy, 'open')">
@@ -208,48 +211,177 @@
          MODAL — Crea / Modifica esercizio
     ══════════════════════════════════════════════════ -->
     <BaseModal :show="showModal"
-               @close="showModal = false"
-               :title="editingId ? 'Modifica esercizio' : 'Nuovo esercizio fiscale'"
+               @close="closeCreateModal"
+               :title="editingId ? 'Modifica esercizio' : (createStep === 2 ? 'Saldi iniziali unità' : 'Nuovo esercizio fiscale')"
                :subtitle="store.selectedCondominio?.name"
                size="lg">
-      <div class="form-grid">
-        <div class="form-group" :class="{ 'has-error': errors.code }">
-          <label class="form-label">Codice *</label>
-          <input class="form-input" v-model="form.code"
-                 :readonly="!!editingId"
-                 placeholder="es. 2025, EF-2025-01"
-                 @input="clearError('code')" />
-          <span v-if="errors.code" class="field-error">{{ errors.code }}</span>
+
+      <!-- Step 1: dati esercizio -->
+      <template v-if="!editingId && createStep === 1">
+        <!-- Selector esercizio precedente (solo se esistono già esercizi) -->
+        <div v-if="fiscalYears.length > 0" class="form-group form-group--full" :class="{ 'has-error': errors.previousFiscalYear }">
+          <label class="form-label">Esercizio precedente *</label>
+          <select class="form-select" v-model="selectedPreviousFiscalYearId" @change="onPreviousFiscalYearChange">
+            <option :value="null" disabled>— Seleziona esercizio precedente —</option>
+            <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">
+              {{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}
+              ({{ fmtDate(fy.startDate) }} / {{ fmtDate(fy.endDate) }})
+            </option>
+          </select>
+          <span v-if="errors.previousFiscalYear" class="field-error">{{ errors.previousFiscalYear }}</span>
         </div>
 
-        <div class="form-group" :class="{ 'has-error': errors.description }">
-          <label class="form-label">Descrizione</label>
-          <input class="form-input" v-model="form.description"
-                 placeholder="Descrizione opzionale"
-                 @input="clearError('description')" />
-          <span v-if="errors.description" class="field-error">{{ errors.description }}</span>
-        </div>
+        <div class="form-grid">
+          <div class="form-group" :class="{ 'has-error': errors.code }">
+            <label class="form-label">Codice *</label>
+            <input class="form-input" v-model="form.code"
+                   placeholder="es. 2025, EF-2025-01"
+                   @input="clearError('code')" />
+            <span v-if="errors.code" class="field-error">{{ errors.code }}</span>
+          </div>
 
-        <div class="form-group" :class="{ 'has-error': errors.startDate }">
-          <label class="form-label">Data inizio *</label>
-          <input class="form-input" type="date" v-model="form.startDate"
-                 :readonly="!!editingId"
-                 @change="clearError('startDate')" />
-          <span v-if="errors.startDate" class="field-error">{{ errors.startDate }}</span>
-        </div>
+          <div class="form-group" :class="{ 'has-error': errors.description }">
+            <label class="form-label">Descrizione</label>
+            <input class="form-input" v-model="form.description"
+                   placeholder="Descrizione opzionale"
+                   @input="clearError('description')" />
+            <span v-if="errors.description" class="field-error">{{ errors.description }}</span>
+          </div>
 
-        <div class="form-group" :class="{ 'has-error': errors.endDate }">
-          <label class="form-label">Data fine *</label>
-          <input class="form-input" type="date" v-model="form.endDate"
-                 @change="clearError('endDate')" />
-          <span v-if="errors.endDate" class="field-error">{{ errors.endDate }}</span>
+          <div class="form-group" :class="{ 'has-error': errors.startDate }">
+            <label class="form-label">Data inizio *</label>
+            <input class="form-input" type="date" v-model="form.startDate"
+                   :readonly="fiscalYears.length > 0"
+                   :class="{ 'input-readonly': fiscalYears.length > 0 }"
+                   @change="clearError('startDate')" />
+            <span v-if="errors.startDate" class="field-error">{{ errors.startDate }}</span>
+            <span v-if="fiscalYears.length > 0 && form.startDate" class="field-hint">
+              Calcolata automaticamente dal giorno successivo alla fine dell'esercizio precedente
+            </span>
+          </div>
+
+          <div class="form-group" :class="{ 'has-error': errors.endDate }">
+            <label class="form-label">Data fine *</label>
+            <input class="form-input" type="date" v-model="form.endDate"
+                   @change="clearError('endDate')" />
+            <span v-if="errors.endDate" class="field-error">{{ errors.endDate }}</span>
+          </div>
         </div>
-      </div>
+      </template>
+
+      <!-- Step 1 edit: form modifica -->
+      <template v-if="editingId">
+        <div class="form-grid">
+          <div class="form-group" :class="{ 'has-error': errors.code }">
+            <label class="form-label">Codice</label>
+            <input class="form-input input-readonly" :value="form.code" readonly />
+          </div>
+
+          <div class="form-group" :class="{ 'has-error': errors.description }">
+            <label class="form-label">Descrizione</label>
+            <input class="form-input" v-model="form.description"
+                   placeholder="Descrizione opzionale"
+                   @input="clearError('description')" />
+            <span v-if="errors.description" class="field-error">{{ errors.description }}</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Data inizio</label>
+            <input class="form-input input-readonly" :value="form.startDate" readonly />
+          </div>
+
+          <div class="form-group" :class="{ 'has-error': errors.endDate }">
+            <label class="form-label">Data fine *</label>
+            <input class="form-input" type="date" v-model="form.endDate"
+                   @change="clearError('endDate')" />
+            <span v-if="errors.endDate" class="field-error">{{ errors.endDate }}</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- Step 2: saldi iniziali unità (solo primo esercizio) -->
+      <template v-if="!editingId && createStep === 2">
+        <p class="step2-desc">
+          È il primo esercizio del condominio. Inserisci il saldo iniziale per ogni unità immobiliare
+          (lascia 0 se non ci sono crediti/debiti pregressi).
+        </p>
+        <div v-if="loadingUnits" class="loading-state"><div class="spinner"></div></div>
+        <div v-else-if="!unitBalances.length" class="empty-state" style="padding: 1rem 0">
+          Nessuna unità immobiliare trovata per questo condominio.
+        </div>
+        <div v-else class="opening-balances-table-wrap">
+          <table class="opening-balances-table">
+            <thead>
+              <tr>
+                <th>Unità</th>
+                <th class="col-num">Saldo iniziale (€)</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="ub in unitBalances" :key="ub.unitId">
+                <td>{{ ub.unitName }}</td>
+                <td class="col-num">
+                  <input class="inline-input" type="number" step="0.01"
+                         v-model.number="ub.openingBalance" />
+                </td>
+                <td>
+                  <input class="form-input form-input--sm" type="text"
+                         v-model="ub.notes" placeholder="Note opzionali" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </template>
+
       <template #footer>
-        <button class="btn btn-ghost" @click="showModal = false">Annulla</button>
-        <button class="btn btn-primary" @click="saveFiscalYear" :disabled="saving">
+        <button class="btn btn-ghost" @click="closeCreateModal">Annulla</button>
+
+        <!-- Crea step 1 -->
+        <button v-if="!editingId && createStep === 1"
+                class="btn btn-primary" @click="saveFiscalYear" :disabled="saving">
           <span v-if="saving" class="spinner" style="width:14px;height:14px"></span>
-          {{ editingId ? 'Salva' : 'Crea' }}
+          Crea
+        </button>
+
+        <!-- Crea step 2 -->
+        <template v-if="!editingId && createStep === 2">
+          <button class="btn btn-ghost" @click="skipOpeningBalances" :disabled="savingBalances">
+            Salta
+          </button>
+          <button class="btn btn-primary" @click="saveOpeningBalances" :disabled="savingBalances || loadingUnits">
+            <span v-if="savingBalances" class="spinner" style="width:14px;height:14px"></span>
+            Salva saldi
+          </button>
+        </template>
+
+        <!-- Modifica -->
+        <button v-if="editingId"
+                class="btn btn-primary" @click="saveFiscalYear" :disabled="saving">
+          <span v-if="saving" class="spinner" style="width:14px;height:14px"></span>
+          Salva
+        </button>
+      </template>
+    </BaseModal>
+
+    <!-- ══════════════════════════════════════════════════
+         MODAL — Conferma eliminazione
+    ══════════════════════════════════════════════════ -->
+    <BaseModal :show="showDeleteModal"
+               @close="showDeleteModal = false"
+               title="Elimina esercizio"
+               :subtitle="deleteTarget?.code"
+               size="sm">
+      <p class="transition-desc">
+        Stai per eliminare l'esercizio <strong>{{ deleteTarget?.code }}</strong>.
+        L'operazione è irreversibile. Continuare?
+      </p>
+      <template #footer>
+        <button class="btn btn-ghost" @click="showDeleteModal = false">Annulla</button>
+        <button class="btn btn-danger" @click="executeDelete" :disabled="deleting">
+          <span v-if="deleting" class="spinner" style="width:14px;height:14px"></span>
+          Elimina
         </button>
       </template>
     </BaseModal>
@@ -283,12 +415,12 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { fiscalYearApi, accountBalanceApi } from '@/services/api'
+import { fiscalYearApi, accountBalanceApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import BaseModal from '@/components/BaseModal.vue'
 
 const store = useAppStore()
-const { canCreate, canEdit } = usePermissions()
+const { canCreate, canEdit, canDelete } = usePermissions()
 
 // ── Lista ──────────────────────────────────────────────────────────────────
 const fiscalYears = ref([])
@@ -363,29 +495,86 @@ async function saveBalanceOpening(b) {
 }
 
 // ── Crea / Modifica ───────────────────────────────────────────────────────
-const showModal = ref(false)
-const editingId = ref(null)
-const saving    = ref(false)
-const form      = ref({ code: '', description: '', startDate: '', endDate: '' })
-const errors    = ref({})
+const showModal  = ref(false)
+const editingId  = ref(null)
+const saving     = ref(false)
+const createStep = ref(1)   // 1 = dati esercizio, 2 = saldi iniziali (solo primo esercizio)
+const form       = ref({ code: '', description: '', startDate: '', endDate: '' })
+const errors     = ref({})
+
+// Selector esercizio precedente (quando non è il primo esercizio)
+const selectedPreviousFiscalYearId = ref(null)
+
+// Step 2: saldi iniziali unità
+const unitBalances   = ref([])   // [{ unitId, unitName, openingBalance, notes }]
+const loadingUnits   = ref(false)
+const savingBalances = ref(false)
+const createdFiscalYearId = ref(null)
 
 function clearError(f) { delete errors.value[f] }
 
 function validate() {
   errors.value = {}
-  if (!form.value.code?.trim())      errors.value.code      = 'Codice obbligatorio'
-  if (!form.value.startDate)         errors.value.startDate = 'Data inizio obbligatoria'
-  if (!form.value.endDate)           errors.value.endDate   = 'Data fine obbligatoria'
+  if (!form.value.code?.trim()) errors.value.code = 'Codice obbligatorio'
+  if (!form.value.startDate)    errors.value.startDate = 'Data inizio obbligatoria'
+  if (!form.value.endDate)      errors.value.endDate   = 'Data fine obbligatoria'
   if (form.value.startDate && form.value.endDate && form.value.endDate <= form.value.startDate)
     errors.value.endDate = 'La data fine deve essere successiva alla data inizio'
+  if (fiscalYears.value.length > 0 && !selectedPreviousFiscalYearId.value)
+    errors.value.previousFiscalYear = 'Seleziona l\'esercizio precedente'
   return Object.keys(errors.value).length === 0
 }
 
+// Operazioni su date come stringhe ISO "YYYY-MM-DD" senza conversione timezone.
+// new Date("YYYY-MM-DD") è interpretato UTC e causa shift di un giorno nei fusi +N.
+function isoAddDays(isoDate, days) {
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number)
+  const dt = new Date(y, m - 1, d + days)   // costruttore locale: nessun shift timezone
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
+function isoAddYearsMinusOneDay(isoDate) {
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number)
+  const dt = new Date(y + 1, m - 1, d - 1)
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+}
+
+function onPreviousFiscalYearChange() {
+  clearError('previousFiscalYear')
+  if (!selectedPreviousFiscalYearId.value) {
+    form.value.startDate = ''
+    form.value.endDate   = ''
+    return
+  }
+  const prev = fiscalYears.value.find(f => f.id === selectedPreviousFiscalYearId.value)
+  if (!prev?.endDate) return
+  form.value.startDate = isoAddDays(prev.endDate, 1)
+  form.value.endDate   = isoAddYearsMinusOneDay(form.value.startDate)
+}
+
 function openCreateModal() {
-  editingId.value = null
-  form.value      = { code: '', description: '', startDate: '', endDate: '' }
-  errors.value    = {}
+  editingId.value                    = null
+  createStep.value                   = 1
+  selectedPreviousFiscalYearId.value = null
+  errors.value                       = {}
+  createdFiscalYearId.value          = null
+  unitBalances.value                 = []
+
+  // Per il primo esercizio, pre-popola le date con l'anno corrente
+  if (fiscalYears.value.length === 0) {
+    const y = new Date().getFullYear()
+    const startDate = `${y}-01-01`
+    form.value = { code: '', description: '', startDate, endDate: isoAddYearsMinusOneDay(startDate) }
+  } else {
+    form.value = { code: '', description: '', startDate: '', endDate: '' }
+  }
+
   showModal.value = true
+}
+
+function closeCreateModal() {
+  showModal.value = false
+  if (createStep.value === 2) loadFiscalYears()
 }
 
 function openEditModal(fy) {
@@ -397,6 +586,7 @@ function openEditModal(fy) {
     endDate:     fy.endDate?.slice(0, 10) ?? '',
   }
   errors.value    = {}
+  createStep.value = 1
   showModal.value = true
 }
 
@@ -409,20 +599,101 @@ async function saveFiscalYear() {
         description: form.value.description,
         endDate:     form.value.endDate || null,
       })
+      showModal.value = false
+      await loadFiscalYears()
     } else {
-      await fiscalYearApi.create({
-        condominiumId: store.selectedCondominioId,
-        code:          form.value.code.trim(),
-        description:   form.value.description,
-        startDate:     form.value.startDate,
-        endDate:       form.value.endDate,
+      const { data } = await fiscalYearApi.create({
+        condominiumId:         store.selectedCondominioId,
+        code:                  form.value.code.trim(),
+        description:           form.value.description,
+        startDate:             form.value.startDate,
+        endDate:               form.value.endDate,
+        previousFiscalYearId:  selectedPreviousFiscalYearId.value ?? null,
       })
+      // Primo esercizio → passa allo step 2 per i saldi iniziali
+      if (fiscalYears.value.length === 0) {
+        createdFiscalYearId.value = data.id
+        await loadUnitsForOpeningBalances()
+        createStep.value = 2
+      } else {
+        showModal.value = false
+        await loadFiscalYears()
+      }
     }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { saving.value = false }
+}
+
+async function loadUnitsForOpeningBalances() {
+  loadingUnits.value = true
+  try {
+    const { data } = await unitApi.getByCondominium(store.selectedCondominioId)
+    unitBalances.value = (data ?? []).map(u => ({
+      unitId:         u.id,
+      unitName:       u.displayName ?? u.internalNumber ?? `Unità ${u.id}`,
+      openingBalance: 0,
+      notes:          '',
+    }))
+  } catch {
+    unitBalances.value = []
+  } finally {
+    loadingUnits.value = false
+  }
+}
+
+async function saveOpeningBalances() {
+  savingBalances.value = true
+  try {
+    const fyId = createdFiscalYearId.value
+    await Promise.all(
+      unitBalances.value
+        .filter(ub => ub.openingBalance !== 0 || ub.notes)
+        .map(ub => unitApi.setOpeningBalance(ub.unitId, {
+          fiscalYearId:   fyId,
+          openingBalance: ub.openingBalance,
+          notes:          ub.notes || null,
+        }))
+    )
+    store.toast('Saldi iniziali salvati', 'success')
     showModal.value = false
     await loadFiscalYears()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
-  } finally { saving.value = false }
+  } finally { savingBalances.value = false }
+}
+
+function skipOpeningBalances() {
+  showModal.value = false
+  loadFiscalYears()
+}
+
+// ── Elimina ────────────────────────────────────────────────────────────────
+const showDeleteModal = ref(false)
+const deleteTarget    = ref(null)
+const deleting        = ref(false)
+
+function openDeleteModal(fy) {
+  deleteTarget.value    = fy
+  showDeleteModal.value = true
+}
+
+async function executeDelete() {
+  if (!deleteTarget.value) return
+  deleting.value = true
+  try {
+    await fiscalYearApi.delete(deleteTarget.value.id)
+    store.toast('Esercizio eliminato', 'success')
+    showDeleteModal.value = false
+    if (expandedId.value === deleteTarget.value.id) {
+      expandedId.value = null
+      detail.value     = null
+      balances.value   = []
+    }
+    await loadFiscalYears()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { deleting.value = false }
 }
 
 // ── Transizioni di stato ──────────────────────────────────────────────────
@@ -579,6 +850,15 @@ onMounted(loadFiscalYears)
 .btn-purple       { color: #a855f7 !important; border-color: #a855f750 !important; }
 .btn-purple:hover { background: #a855f715 !important; }
 
+/* Icona danger (elimina) */
+.btn-icon--danger       { color: var(--accent-red, #ef4444) !important; }
+.btn-icon--danger:hover { background: rgba(239,68,68,.1) !important; }
+
+/* Bottone elimina nel modal */
+.btn-danger       { background: var(--accent-red, #ef4444); color: #fff; border: none; }
+.btn-danger:hover { background: #dc2626; }
+.btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
+
 /* Form validation */
 .has-error .form-input { border-color: var(--accent-red, #e53e3e); }
 .field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; display: block; }
@@ -622,4 +902,24 @@ onMounted(loadFiscalYears)
 .edit-hint            { margin-left: 0.4rem; font-size: 0.7rem; color: var(--text-muted);
                         opacity: 0; transition: opacity 0.15s; }
 .cell-editable:hover .edit-hint { opacity: 1; }
+
+/* Input readonly (non editabile visivamente) */
+.input-readonly { opacity: 0.65; cursor: default; background: var(--bg-base); }
+
+/* Hint sotto campo readonly */
+.field-hint { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+/* Step 2 — descrizione */
+.step2-desc { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5; }
+
+/* Step 2 — tabella saldi iniziali unità */
+.opening-balances-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 6px; max-height: 340px; overflow-y: auto; }
+.opening-balances-table      { width: 100%; border-collapse: collapse; font-size: 0.825rem; }
+.opening-balances-table th   { background: var(--bg); color: var(--text-muted); font-size: 0.72rem; font-weight: 600;
+                                text-transform: uppercase; letter-spacing: 0.5px;
+                                padding: 0.45rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border);
+                                position: sticky; top: 0; z-index: 1; }
+.opening-balances-table td   { padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.opening-balances-table tbody tr:last-child td { border-bottom: none; }
+.opening-balances-table .form-input--sm { padding: 0.2rem 0.4rem; font-size: 0.8rem; height: auto; }
 </style>

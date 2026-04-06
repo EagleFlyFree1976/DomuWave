@@ -29,6 +29,11 @@ namespace DomuWave.Services.Dto.Contabilita.FiscalYear
         public DateTime? LockedDate { get; set; }
         public string? ClosingNotes { get; set; }
 
+        /// <summary>ID dell'esercizio di provenienza (null per il primo esercizio).</summary>
+        public int? PreviousFiscalYearId { get; set; }
+        /// <summary>Codice dell'esercizio di provenienza (null per il primo esercizio).</summary>
+        public string? PreviousFiscalYearCode { get; set; }
+
         // Audit
         public DateTime CreationDate { get; set; }
         public DateTime? LastUpdateDate { get; set; }

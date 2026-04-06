@@ -30,8 +30,10 @@ namespace DomuWave.Services.Interfaces.Extensions
                 ClosingDate          = fy.ClosingDate,
                 ClosedDate           = fy.ClosedDate,
                 LockedDate           = fy.LockedDate,
-                ClosingNotes         = fy.ClosingNotes,
-                CreationDate         = fy.CreationDate,
+                ClosingNotes              = fy.ClosingNotes,
+                PreviousFiscalYearId      = fy.PreviousFiscalYear?.Id,
+                PreviousFiscalYearCode    = fy.PreviousFiscalYear?.Code,
+                CreationDate              = fy.CreationDate,
                 LastUpdateDate       = fy.LastUpdateDate,
                 CreatedByFullName    = fy.CreatedByFullName,
                 LastUpdatedByFullName = fy.LastUpdatedByFullName
@@ -50,9 +52,11 @@ namespace DomuWave.Services.Interfaces.Extensions
                 Description = fy.Description,
                 StartDate   = fy.StartDate,
                 EndDate     = fy.EndDate,
-                StatusId    = fy.Status?.Id ?? 0,
-                StatusName  = fy.Status?.Name ?? string.Empty,
-                IsActive    = fy.IsActive
+                StatusId               = fy.Status?.Id ?? 0,
+                StatusName             = fy.Status?.Name ?? string.Empty,
+                IsActive               = fy.IsActive,
+                PreviousFiscalYearId   = fy.PreviousFiscalYear?.Id,
+                PreviousFiscalYearCode = fy.PreviousFiscalYear?.Code,
             };
         }
     }

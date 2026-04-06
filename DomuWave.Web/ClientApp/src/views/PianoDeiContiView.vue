@@ -510,7 +510,7 @@ async function loadMillesimalTables() {
   if (!store.selectedCondominioId) { millesimalTables.value = []; return }
   try {
     const res = await millesimalTableApi.getByCondominium(store.selectedCondominioId)
-    millesimalTables.value = (res.data ?? []).filter(t => t.isActive)
+    millesimalTables.value = (res.data ?? []).filter(t => t.isActive && t.isEnabled)
   } catch { millesimalTables.value = [] }
 }
 

@@ -28,5 +28,11 @@ namespace DomuWave.Services.Dto.Contabilita.FiscalYear
         /// <summary>Data di fine del periodo di esercizio. Deve essere successiva a StartDate.</summary>
         [Required(ErrorMessage = "La data di fine è obbligatoria.")]
         public DateTime EndDate { get; set; }
+
+        /// <summary>
+        /// ID dell'esercizio di provenienza selezionato dall'utente.
+        /// Null per il primo esercizio del condominio.
+        /// </summary>
+        public int? PreviousFiscalYearId { get; set; }
     }
 }

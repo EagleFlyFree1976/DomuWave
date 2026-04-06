@@ -71,3 +71,6 @@
 /DomuWave.UnitTest/bin/Debug/net8.0/DomuWave.Tests.deps.json
 /DomuWave.UnitTest/bin/Debug/net8.0/DomuWave.Tests.dll
 /DomuWave.UnitTest/bin/Debug/net8.0/DomuWave.Tests.pdb
+DomuWave.IntegrationTests/bin/
+DomuWave.IntegrationTests/obj/
+DomuWave.IntegrationTests/Logs/

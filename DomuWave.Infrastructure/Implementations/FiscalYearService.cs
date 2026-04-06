@@ -109,12 +109,40 @@ namespace DomuWave.Services.Implementations
             DateTime startDate,
             DateTime endDate,
             IUser currentUser,
-            CancellationToken ct = default)
+            CancellationToken ct = default,
+            int? previousFiscalYearId = null)
         {
             // Validazione date
             if (endDate <= startDate)
                 throw new ValidatorException(
                     "La data di fine esercizio deve essere successiva alla data di inizio.");
+
+            // Validazione predecessore (prima della sovrapposizione: errori più specifici hanno priorità)
+            FiscalYear? previousFiscalYear = null;
+            if (previousFiscalYearId.HasValue)
+            {
+                previousFiscalYear = await session.GetAsync<FiscalYear>(previousFiscalYearId.Value, ct)
+                    .ConfigureAwait(false)
+                    ?? throw new ValidatorException("Esercizio di provenienza non trovato.");
+
+                if (previousFiscalYear.Condominium.Id != condominiumId)
+                    throw new ValidatorException("L'esercizio di provenienza non appartiene allo stesso condominio.");
+
+                // La data di inizio deve essere esattamente il giorno successivo alla fine del precedente
+                var expectedStartDate = previousFiscalYear.EndDate.Date.AddDays(1);
+                if (startDate.Date != expectedStartDate)
+                    throw new ValidatorException(
+                        $"La data di inizio deve essere il giorno successivo alla data di fine dell'esercizio precedente ({expectedStartDate:dd/MM/yyyy}).");
+
+                // Un esercizio già usato come precedente non può essere riutilizzato
+                var alreadyUsedAsPrevious = await session.Query<FiscalYear>()
+                    .AnyAsync(x => x.PreviousFiscalYear.Id == previousFiscalYearId.Value
+                                && !x.IsDeleted, ct)
+                    .ConfigureAwait(false);
+                if (alreadyUsedAsPrevious)
+                    throw new ValidatorException(
+                        "L'esercizio selezionato come precedente è già collegato a un altro esercizio successivo.");
+            }
 
             // Verifica sovrapposizione date
             if (await HasOverlapAsync(condominiumId, startDate, endDate, excludeId: null, ct))
@@ -126,7 +154,6 @@ namespace DomuWave.Services.Implementations
                 .AnyAsync(x => x.Condominium.Id == condominiumId
                             && x.Code == code
                             && !x.IsDeleted, ct);
-
             if (codeExists)
                 throw new ValidatorException(
                     $"Esiste già un esercizio con codice '{code}' per questo condominio.");
@@ -139,15 +166,16 @@ namespace DomuWave.Services.Implementations
 
             var fiscalYear = new FiscalYear
             {
-                Condominium = condominium,
-                Tenant = condominium.Tenant,
-                Code = code,
-                Description = description,
-                StartDate = startDate,
-                EndDate = endDate,
-                Status = draftStatus,
-                IsActive = false,
-                IsDeleted = false
+                Condominium        = condominium,
+                Tenant             = condominium.Tenant,
+                Code               = code,
+                Description        = description,
+                StartDate          = startDate,
+                EndDate            = endDate,
+                Status             = draftStatus,
+                IsActive           = false,
+                IsDeleted          = false,
+                PreviousFiscalYear = previousFiscalYear,
             };
 
             fiscalYear.Trace(currentUser);
@@ -297,6 +325,18 @@ namespace DomuWave.Services.Implementations
                     $"Impossibile chiudere l'esercizio: lo stato corrente è '{fiscalYear.Status?.Name}'. " +
                     "L'esercizio deve essere in stato Open o Closing.");
 
+            // Verifica che esista un budget Consuntivo approvato (o chiuso) per questo esercizio
+            var hasApprovedConsuntivo = await session.Query<Budget>()
+                .AnyAsync(x => x.FiscalYear.Id == fiscalYearId
+                            && x.Type == BudgetType.Consuntivo
+                            && (x.Status.Id == BudgetStatus.Approved || x.Status.Id == BudgetStatus.Closed)
+                            && !x.IsDeleted, ct)
+                .ConfigureAwait(false);
+
+            if (!hasApprovedConsuntivo)
+                throw new ValidatorException(
+                    "Impossibile chiudere l'esercizio: è necessario approvare il budget Consuntivo prima di procedere alla chiusura.");
+
             // Verifica spese in stato provvisorio
             var pendingExpenses = await session.Query<Expense>()
                 .CountAsync(x => x.FiscalYear.Id == fiscalYearId
@@ -369,9 +409,9 @@ namespace DomuWave.Services.Implementations
             var fiscalYear = await GetByIdAsync(id, currentUser, ct);
             if (fiscalYear == null) return false;
 
-            if (fiscalYear.Status?.Id == FiscalYearStatus.Closed || fiscalYear.Status?.Id == FiscalYearStatus.Locked)
+            if (fiscalYear.Status?.Id != FiscalYearStatus.Draft)
                 throw new ValidatorException(
-                    "Non è possibile eliminare un esercizio chiuso o bloccato.");
+                    "È possibile eliminare solo un esercizio in stato Bozza.");
 
             fiscalYear.IsDeleted = true;
             fiscalYear.IsActive = false;

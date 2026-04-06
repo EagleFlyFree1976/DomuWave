@@ -6,6 +6,7 @@
       <button v-if="canCreate" class="btn btn-primary" @click="openExpenseModal()">+ Nuova spesa</button>
     </div>
 
+
     <!-- ── Toolbar filtri ──────────────────────────────── -->
     <div class="tab-toolbar">
       <!-- Esercizio fiscale -->
@@ -95,6 +96,26 @@
       :subtitle="store.selectedCondominio?.name"
       size="lg"
     >
+      <!-- ── Esercizio fiscale ──────────────────────────────────── -->
+      <div class="form-group form-group--full" :class="{ 'has-error': expErrors.fiscalYearId }">
+        <label class="form-label">Esercizio fiscale *</label>
+        <select class="form-select" v-model.number="expForm.fiscalYearId"
+                @change="clearExpError('fiscalYearId'); checkRegistrationDateWarning()">
+          <option :value="null" disabled>Seleziona esercizio…</option>
+          <option v-for="fy in selectableFiscalYears" :key="fy.id" :value="fy.id">
+            {{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}
+            ({{ fy.startDate?.slice(0,10) }} / {{ fy.endDate?.slice(0,10) }})
+            {{ fy.statusId === 3 ? '· In chiusura' : '' }}
+          </option>
+        </select>
+        <span v-if="expErrors.fiscalYearId" class="field-error">{{ expErrors.fiscalYearId }}</span>
+      </div>
+
+      <!-- ── Warning data fuori periodo (solo Closing) ─────────── -->
+      <div v-if="registrationDateWarning" class="warning-banner">
+        ⚠ {{ registrationDateWarning }}
+      </div>
+
       <div class="form-grid">
         <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.name }">
           <label class="form-label">Descrizione *</label>
@@ -222,6 +243,38 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 const fiscalYears          = computed(() => store.fiscalYears)
 const selectedFiscalYearId = ref(store.selectedFiscalYearId ?? null)
 
+// Esercizi selezionabili nella form: solo Open (2) e Closing (3)
+const FY_OPEN    = 2
+const FY_CLOSING = 3
+const selectableFiscalYears = computed(() =>
+  fiscalYears.value.filter(f => f.statusId === FY_OPEN || f.statusId === FY_CLOSING)
+)
+
+// Warning non bloccante: data registrazione fuori dal periodo, solo se esercizio in Closing
+const registrationDateWarning = ref('')
+
+function checkRegistrationDateWarning() {
+  registrationDateWarning.value = ''
+  const fyId = expForm.value.fiscalYearId
+  const regDate = expForm.value.registrationDate
+  if (!fyId || !regDate) return
+
+  const fy = fiscalYears.value.find(f => f.id === fyId)
+  if (!fy || fy.statusId !== FY_CLOSING) return
+
+  const parseLocal = s => { const [y,m,d] = s.slice(0,10).split('-').map(Number); return new Date(y, m-1, d) }
+  const reg   = parseLocal(regDate)
+  const start = parseLocal(fy.startDate)
+  const end   = parseLocal(fy.endDate)
+  if (reg < start || reg > end) {
+    const fmt = d => parseLocal(d).toLocaleDateString('it-IT')
+    registrationDateWarning.value =
+      `La data di registrazione (${fmt(regDate)}) è fuori dal periodo dell'esercizio ` +
+      `(${fmt(fy.startDate)} – ${fmt(fy.endDate)}). Il movimento verrà registrato ugualmente ` +
+      `perché l'esercizio è in fase di chiusura.`
+  }
+}
+
 // ─── Filtri ───────────────────────────────────────────────────
 const supplierSearch = ref('')
 const expTypeFilter  = ref(0)
@@ -264,6 +317,7 @@ function clearExpError(field) { delete expErrors.value[field] }
 function validateExpForm() {
   const e = {}
   const f = expForm.value
+  if (!f.fiscalYearId)          e.fiscalYearId     = 'Selezionare un esercizio fiscale'
   if (!f.name?.trim())          e.name             = 'Campo obbligatorio'
   if (!f.expenseTypeId)         e.expenseTypeId    = 'Selezionare un tipo spesa'
   if (!f.documentDate)          e.documentDate     = 'Campo obbligatorio'
@@ -271,6 +325,23 @@ function validateExpForm() {
   if (!f.grossAmount || f.grossAmount <= 0) e.grossAmount = 'Inserire un importo maggiore di zero'
   if (!f.accountId)             e.accountId        = 'Selezionare un conto'
   if (!f.millesimalTableId)     e.millesimalTableId = 'Selezionare una tabella millesimale'
+
+  // Data registrazione fuori periodo: bloccante solo se l'esercizio è Open (non Closing)
+  if (f.fiscalYearId && f.registrationDate) {
+    const fy = fiscalYears.value.find(fy => fy.id === f.fiscalYearId)
+    if (fy && fy.statusId === FY_OPEN) {
+      const parseLocal = s => { const [y,m,d] = s.slice(0,10).split('-').map(Number); return new Date(y, m-1, d) }
+      const reg   = parseLocal(f.registrationDate)
+      const start = parseLocal(fy.startDate)
+      const end   = parseLocal(fy.endDate)
+      if (reg < start || reg > end) {
+        const fmt = d => parseLocal(d).toLocaleDateString('it-IT')
+        e.registrationDate =
+          `La data deve essere compresa nel periodo dell'esercizio (${fmt(fy.startDate)} – ${fmt(fy.endDate)})`
+      }
+    }
+  }
+
   expErrors.value = e
   return Object.keys(e).length === 0
 }
@@ -284,6 +355,7 @@ const enabledMillesimalTables = computed(() => {
 })
 
 const emptyExpForm = () => ({
+  fiscalYearId: null,
   name: '', documentNumber: '', documentDate: today, registrationDate: today,
   grossAmount: 0, vatAmount: 0, expenseTypeId: 0, paymentStatusId: 1,
   paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: '',
@@ -314,8 +386,16 @@ async function loadExpenses() {
 
 async function openExpenseModal(e = null) {
   expErrors.value  = {}
+  registrationDateWarning.value = ''
   editingExp.value = e?.id ?? null
+
+  // Auto-seleziona l'esercizio attivo per le nuove spese
+  const defaultFyId = selectableFiscalYears.value.find(f => f.isActive)?.id
+    ?? selectableFiscalYears.value[0]?.id
+    ?? null
+
   expForm.value = e ? {
+    fiscalYearId:       e.fiscalYearId ?? defaultFyId,
     name:               e.name ?? '',
     documentNumber:     e.documentNumber ?? '',
     documentDate:       e.documentDate?.slice(0, 10) ?? today,
@@ -330,7 +410,9 @@ async function openExpenseModal(e = null) {
     millesimalTableId:  e.millesimalTableId ?? null,
     description:        e.description ?? '',
     chargeabilityTypeId: e.chargeabilityTypeId ?? 0,
-  } : emptyExpForm()
+  } : { ...emptyExpForm(), fiscalYearId: defaultFyId }
+
+  if (!store.fiscalYears.length) await store.loadFiscalYears()
 
   if (!accountsLoaded && store.selectedCondominioId) {
     try {
@@ -351,6 +433,9 @@ async function openExpenseModal(e = null) {
       millesimalTables.value = mtRes.data ?? []
     } catch {}
   }
+  // Controlla subito il warning se stiamo modificando una spesa esistente
+  if (e) checkRegistrationDateWarning()
+
   showExpenseModal.value = true
 }
 
@@ -394,7 +479,7 @@ async function saveExpense() {
       paymentMethod:      expForm.value.paymentMethod || null,
       description:        expForm.value.description || null,
       condominiumId:      store.selectedCondominioId,
-      fiscalYearId:       selectedFiscalYearId.value ?? null,
+      fiscalYearId:       expForm.value.fiscalYearId ?? null,
       accountId:          expForm.value.accountId         ?? null,
       millesimalTableId:  expForm.value.millesimalTableId ?? null,
       supplierId:         expForm.value.supplierId        ?? null,
@@ -420,6 +505,9 @@ async function deleteExpense(id) {
   if (!confirm('Eliminare questa spesa?')) return
   try { await expenseApi.delete(id); await loadExpenses() } catch {}
 }
+
+// Ricalcola warning quando cambia la data di registrazione
+watch(() => expForm.value.registrationDate, checkRegistrationDateWarning)
 
 // Auto-select DefaultMillesimalTable when account changes
 watch(() => expForm.value.accountId, (accountId) => {
@@ -453,4 +541,15 @@ onMounted(async () => {
 
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+.warning-banner {
+  margin-bottom: 1rem;
+  padding: .65rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #f59e0b;
+  background: color-mix(in srgb, #f59e0b 10%, transparent);
+  color: #92400e;
+  font-size: .85rem;
+  line-height: 1.45;
+}
 </style>

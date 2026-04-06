@@ -27,8 +27,7 @@ public class FiscalYearsController(
     {
         var result = await _mediator.GetResponse(
             new GetFiscalYearsByCondominiumCommand(CurrentUser.Id, condominiumId), ct);
-        if (result == null || !result.Any()) return NotFound();
-        return Ok(result);
+        return Ok(result ?? []);
     }
 
     [HttpGet("active/{condominiumId:int}")]
@@ -72,7 +71,7 @@ public class FiscalYearsController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new OpenFiscalYearCommand(CurrentUser.Id, dto.CondominiumId, dto.Code, dto.Description, dto.StartDate, dto.EndDate), ct);
+            new OpenFiscalYearCommand(CurrentUser.Id, dto.CondominiumId, dto.Code, dto.Description, dto.StartDate, dto.EndDate, dto.PreviousFiscalYearId), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
