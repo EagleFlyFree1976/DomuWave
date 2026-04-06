@@ -47,6 +47,7 @@ const routes = [
       { path: 'template-piano-dei-conti', component: () => import('@/views/TemplateContiView.vue'), meta: { title: 'Template Piano dei Conti', requiresTenant: true } },
       { path: 'tabelle-millesimali', component: () => import('@/views/TabelleMillesimaliView.vue'), meta: { title: 'Tabelle Millesimali', requiresTenant: true } },
       { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget', requiresTenant: true } },
+      { path: 'consuntivo', component: () => import('@/views/ConsuntivoView.vue'), meta: { title: 'Consuntivo', requiresTenant: true } },
       { path: 'spese',  component: () => import('@/views/ExpenseView.vue'), meta: { title: 'Spese', requiresTenant: true } },
       { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
       { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori', requiresTenant: true } },

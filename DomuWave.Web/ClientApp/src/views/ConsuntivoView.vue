@@ -267,7 +267,7 @@
 import { ref, computed, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { usePermissions } from '@/composables/usePermissions'
-import { budgetApi, fiscalYearApi } from '@/services/api'
+import { budgetApi, budgetItemApi, fiscalYearApi } from '@/services/api'
 
 const store = useAppStore()
 const { canView } = usePermissions()
@@ -291,6 +291,8 @@ async function loadBudgets() {
   if (!selectedFiscalYearId.value) {
     preventivo.value = null
     consuntivo.value = null
+    prevItems.value  = []
+    consItems.value  = []
     return
   }
   loadingBudgets.value = true
@@ -299,6 +301,7 @@ async function loadBudgets() {
     const all = data ?? []
     preventivo.value = all.find(b => b.type === 1) ?? null
     consuntivo.value = all.find(b => b.type === 2 && (b.statusId === 2 || b.statusId === 3)) ?? null
+    await loadItems()
   } catch {
     preventivo.value = null
     consuntivo.value = null
@@ -320,8 +323,8 @@ async function loadItems() {
   loadingItems.value = true
   try {
     const tasks = []
-    if (preventivo.value) tasks.push(budgetApi.getItems(preventivo.value.id).then(r => { prevItems.value  = r.data ?? [] }))
-    if (consuntivo.value) tasks.push(budgetApi.getItems(consuntivo.value.id).then(r => { consItems.value = r.data ?? [] }))
+    if (preventivo.value) tasks.push(budgetItemApi.getByBudget(preventivo.value.id).then(r => { prevItems.value  = r.data ?? [] }))
+    if (consuntivo.value) tasks.push(budgetItemApi.getByBudget(consuntivo.value.id).then(r => { consItems.value = r.data ?? [] }))
     await Promise.all(tasks)
   } catch {
     // silently handled by empty arrays
@@ -416,8 +419,8 @@ const comparisonRows = computed(() => {
   }
 })
 
-const prevTotal  = computed(() => prevItems.value.filter(i => !i.parentAccountId || !new Set(prevItems.value.map(x => x.accountId)).has(i.parentAccountId)).reduce((s, i) => s + (i.amount ?? 0), 0))
-const consTotal  = computed(() => consItems.value.filter(i => !i.parentAccountId || !new Set(consItems.value.map(x => x.accountId)).has(i.parentAccountId)).reduce((s, i) => s + (i.amount ?? 0), 0))
+const prevTotal   = computed(() => preventivo.value?.totalExpenses ?? 0)
+const consTotal   = computed(() => consuntivo.value?.totalExpenses ?? 0)
 const scostamento = computed(() => consTotal.value - prevTotal.value)
 
 // ── Conguaglio ───────────────────────────────────────────────────
@@ -450,10 +453,6 @@ watch(selectedFiscalYearId, async () => {
   await loadBudgets()
   await loadItems()
 }, { immediate: true })
-
-watch([preventivo, consuntivo], async () => {
-  await loadItems()
-})
 
 // ── Formatters ───────────────────────────────────────────────────
 const fmt     = (v) => v != null ? '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
