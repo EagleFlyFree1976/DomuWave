@@ -106,7 +106,7 @@ Draft (1) → Approved (2) → Closed (3)
 - Il **piano dei conti** del condominio deve avere almeno un conto attivo per ciascuno dei tre tipi: **Entrata**, **Uscita**, **Patrimoniale**.
 - **Effetti dell'approvazione:**
   - *Preventivo*: vengono generate automaticamente le **rate condominiali** (`CondominiumInstallment`) e le **quote per unità** (`CondominiumFee`), calcolate proporzionalmente ai millesimi.
-  - *Consuntivo*: viene calcolata la **ripartizione per unità** (saldo consuntivo = quota consuntiva − già pagato dal preventivo) e aggiornato `UnitOpeningBalance`.
+  - *Consuntivo*: vengono scritti `QuotaConsuntiva` e `SaldoConguaglio` su `UnitOpeningBalance` per ogni unità. `TotalMovements` e `ClosingBalance` **non vengono toccati** qui: vengono calcolati definitivamente solo alla chiusura dell'esercizio, incorporando sia l'insoluto delle rate sia il conguaglio.
 
 ### Chiusura budget (Approved → Closed)
 - Il budget deve essere in stato **Approved**.
@@ -216,11 +216,50 @@ Draft (1) → Approved (2) → Closed (3)
 
 ---
 
-## 9. Saldo Iniziale Unità (UnitOpeningBalance)
+## 9. Saldo Iniziale Unità e Riporto Morosità (UnitOpeningBalance)
+
+### Struttura del saldo
+
+Per ogni unità immobiliare e ogni esercizio fiscale esiste un record `UnitOpeningBalance` che traccia:
+
+| Campo | Descrizione | Quando viene scritto |
+|---|---|---|
+| `OpeningBalance` | Saldo riportato dall'esercizio precedente (morosità o credito pregresso) | Apertura nuovo esercizio (Draft → Open) |
+| `RateAddebitate` | Σ `CondominiumFee.AmountDue` del Preventivo | Chiusura esercizio (Closing → Closed) |
+| `RateIncassate` | Σ `CondominiumFee.AmountPaid` del Preventivo | Chiusura esercizio (Closing → Closed) |
+| `QuotaConsuntiva` | Quota reale dell'unità = TotaleSpese × (Millesimi / TotMillesimi) | Approvazione budget Consuntivo |
+| `SaldoConguaglio` | `QuotaConsuntiva − RateAddebitate` (+debito / −credito da conguaglio) | Approvazione budget Consuntivo |
+| `TotalMovements` | `(RateAddebitate − RateIncassate) + SaldoConguaglio` | Chiusura esercizio (fonte di verità definitiva) |
+| `ClosingBalance` | `OpeningBalance + TotalMovements` | Chiusura esercizio |
+
+### Riporto morosità (carry-forward)
+
+All'apertura del nuovo esercizio (transizione Draft → Open), per ogni unità:
+
+```
+nuovo.OpeningBalance = precedente.ClosingBalance
+nuovo.RateAddebitate = RateIncassate = QuotaConsuntiva = SaldoConguaglio = TotalMovements = ClosingBalance = 0
+```
+
+- `OpeningBalance > 0`: il condòmino porta in avanti una **morosità** (ha pagato meno di quanto dovuto).
+- `OpeningBalance < 0`: il condòmino porta in avanti un **credito** (ha pagato più di quanto dovuto o ha ricevuto un rimborso da conguaglio).
+- `OpeningBalance = 0`: prima situazione neutra o primo esercizio.
+
+### Flusso di calcolo nell'esercizio
+
+```
+1. Preventivo approvato    → generate CondominiumFee (RateAddebitate / RateIncassate si aggiornano via pagamenti)
+2. Consuntivo approvato    → scritti QuotaConsuntiva e SaldoConguaglio su UnitOpeningBalance
+3. Chiusura esercizio      → TotalMovements e ClosingBalance calcolati definitivamente
+4. Apertura esercizio succ → ClosingBalance propagato come OpeningBalance (riporto morosità)
+```
+
+### Regole di editabilità
 
 - Non è possibile modificare il saldo iniziale se l'esercizio è in stato **Closed** o **Locked**.
-- Il saldo iniziale può essere impostato **manualmente solo per il primo esercizio** del condominio (quello senza esercizi precedenti con `EndDate` anteriore).
-- Per gli esercizi successivi il saldo iniziale viene **propagato automaticamente** dal saldo di chiusura dell'esercizio precedente (calcolato all'approvazione del Consuntivo).
+- `OpeningBalance` può essere impostato **manualmente solo per il primo esercizio** del condominio (quello senza esercizi precedenti con `EndDate` anteriore).
+- Per gli esercizi successivi `OpeningBalance` viene **propagato automaticamente** dal `ClosingBalance` dell'esercizio precedente.
+- `RateAddebitate`, `RateIncassate`, `QuotaConsuntiva`, `SaldoConguaglio`, `TotalMovements`, `ClosingBalance` sono **sempre calcolati automaticamente** e non modificabili manualmente.
 
 ---
 

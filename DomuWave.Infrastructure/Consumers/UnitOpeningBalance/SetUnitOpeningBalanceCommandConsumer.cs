@@ -84,27 +84,33 @@ public class SetUnitOpeningBalanceCommandConsumer
             record.Trace(currentUser);
         }
 
-        record.OpeningBalance = command.Dto.OpeningBalance;
-        record.TotalMovements = 0;   // non ancora calcolato
-        record.ClosingBalance = 0;   // non ancora calcolato
-        record.Notes          = command.Dto.Notes;
+        record.OpeningBalance  = command.Dto.OpeningBalance;
+        // I campi di movimento non vengono toccati qui: appartengono all'esercizio in corso
+        // e vengono calcolati automaticamente (rate dal preventivo, conguaglio dal consuntivo).
+        record.TotalMovements  = 0;
+        record.ClosingBalance  = 0;
+        record.Notes           = command.Dto.Notes;
 
         await session.SaveOrUpdateAsync(record, cancellationToken).ConfigureAwait(false);
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         return new UnitOpeningBalanceReadDto
         {
-            Id             = record.Id,
-            UnitId         = command.UnitId,
-            UnitName       = unit.DisplayName ?? unit.InternalNumber,
-            FiscalYearId   = fiscalYear.Id,
-            FiscalYearCode = fiscalYear.Code,
-            OpeningBalance = record.OpeningBalance,
-            TotalMovements = 0,
-            ClosingBalance = 0,
-            Notes          = record.Notes,
-            IsEditable     = true,
-            IsClosed       = false,
+            Id              = record.Id,
+            UnitId          = command.UnitId,
+            UnitName        = unit.DisplayName ?? unit.InternalNumber,
+            FiscalYearId    = fiscalYear.Id,
+            FiscalYearCode  = fiscalYear.Code,
+            OpeningBalance  = record.OpeningBalance,
+            RateAddebitate  = record.RateAddebitate,
+            RateIncassate   = record.RateIncassate,
+            QuotaConsuntiva = record.QuotaConsuntiva,
+            SaldoConguaglio = record.SaldoConguaglio,
+            TotalMovements  = 0,
+            ClosingBalance  = 0,
+            Notes           = record.Notes,
+            IsEditable      = true,
+            IsClosed        = false,
         };
     }
 }

@@ -65,33 +65,41 @@ public class GetUnitOpeningBalanceCommandConsumer
         {
             return new UnitOpeningBalanceReadDto
             {
-                Id             = 0,
-                UnitId         = command.UnitId,
-                UnitName       = unit.DisplayName ?? unit.InternalNumber,
-                FiscalYearId   = command.FiscalYearId,
-                FiscalYearCode = fiscalYear.Code,
-                OpeningBalance = 0,
-                TotalMovements = 0,
-                ClosingBalance = 0,
-                Notes          = null,
-                IsEditable     = isEditable,
-                IsClosed       = isClosed,
+                Id              = 0,
+                UnitId          = command.UnitId,
+                UnitName        = unit.DisplayName ?? unit.InternalNumber,
+                FiscalYearId    = command.FiscalYearId,
+                FiscalYearCode  = fiscalYear.Code,
+                OpeningBalance  = 0,
+                RateAddebitate  = 0,
+                RateIncassate   = 0,
+                QuotaConsuntiva = 0,
+                SaldoConguaglio = 0,
+                TotalMovements  = 0,
+                ClosingBalance  = 0,
+                Notes           = null,
+                IsEditable      = isEditable,
+                IsClosed        = isClosed,
             };
         }
 
         var dto = new UnitOpeningBalanceReadDto
         {
-            Id             = record.Id,
-            UnitId         = command.UnitId,
-            UnitName       = unit.DisplayName ?? unit.InternalNumber,
-            FiscalYearId   = command.FiscalYearId,
-            FiscalYearCode = fiscalYear.Code,
-            OpeningBalance = record.OpeningBalance,
-            TotalMovements = record.TotalMovements,
-            ClosingBalance = record.ClosingBalance,
-            Notes          = record.Notes,
-            IsEditable     = isEditable,
-            IsClosed       = isClosed,
+            Id              = record.Id,
+            UnitId          = command.UnitId,
+            UnitName        = unit.DisplayName ?? unit.InternalNumber,
+            FiscalYearId    = command.FiscalYearId,
+            FiscalYearCode  = fiscalYear.Code,
+            OpeningBalance  = record.OpeningBalance,
+            RateAddebitate  = record.RateAddebitate,
+            RateIncassate   = record.RateIncassate,
+            QuotaConsuntiva = record.QuotaConsuntiva,
+            SaldoConguaglio = record.SaldoConguaglio,
+            TotalMovements  = record.TotalMovements,
+            ClosingBalance  = record.ClosingBalance,
+            Notes           = record.Notes,
+            IsEditable      = isEditable,
+            IsClosed        = isClosed,
         };
         dto.SetTraceInfo(record);
         return dto;

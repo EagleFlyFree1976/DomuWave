@@ -225,14 +225,16 @@ public class ApproveBudgetCommandConsumer
         }
     }
 
-    // ── Consuntivo: ripartizione saldi per unità (senza rate) ────────────────
+    // ── Consuntivo: scrive QuotaConsuntiva e SaldoConguaglio su UnitOpeningBalance ──
+    // NON sovrascrive TotalMovements né ClosingBalance: quelli vengono calcolati
+    // definitivamente da CloseFiscalYearCommandConsumer.ComputeUnitClosingBalances.
 
     private async Task GenerateConsuntivoDistribution(
         Budget budget,
         object currentUser,
         CancellationToken ct)
     {
-        // Ricalcola TotalExpenses dalle voci del budget
+        // Ricalcola TotalExpenses dalle voci del budget consuntivo
         var totalExpenses = await session.Query<BudgetItem>()
             .Where(i => i.Budget.Id == budget.Id && !i.IsDeleted)
             .SumAsync(i => i.Amount, ct)
@@ -259,34 +261,34 @@ public class ApproveBudgetCommandConsumer
         var totalMillesimal = unitMillesimals.Any()
             ? unitMillesimals.Sum(x => x.Millesimal)
             : millesimalTable.TotalMillesimal;
+
         var user = currentUser as CPQ.Core.Memberships.IUser;
 
-        // Recupera i saldi già pagati per unità (da CondominiumFee del Preventivo approvato)
-        // per calcolare il saldo residuo per ogni unità
-        var paidByUnit = await session.Query<CondominiumFee>()
+        // Rate addebitate per unità dal Preventivo dell'esercizio (fonte: CondominiumFee.AmountDue)
+        var rateAddebitatByUnit = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.Budget.Condominium.Id == budget.Condominium.Id
                      && f.Installment.Budget.FiscalYear.Id  == budget.FiscalYear.Id
                      && f.Installment.Budget.Type           == BudgetType.Preventivo
                      && !f.IsDeleted)
             .GroupBy(f => f.Unit.Id)
-            .Select(g => new { UnitId = g.Key, TotalPaid = g.Sum(f => f.AmountPaid) })
+            .Select(g => new { UnitId = g.Key, TotalDue = g.Sum(f => f.AmountDue) })
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
-        var paidMap = paidByUnit.ToDictionary(x => x.UnitId, x => x.TotalPaid);
+        var rateMap = rateAddebitatByUnit.ToDictionary(x => x.UnitId, x => x.TotalDue);
 
-        // Salva la ripartizione consuntiva su UnitOpeningBalance (saldo)
-        // Per ogni unità: quota consuntiva - già pagato = saldo residuo/credito
         foreach (var um in unitMillesimals)
         {
             var quotaConsuntiva = totalMillesimal > 0
                 ? Math.Round(totalExpenses * um.Millesimal / totalMillesimal, 2)
                 : 0m;
 
-            var alreadyPaid = paidMap.TryGetValue(um.Unit.Id, out var p) ? p : 0m;
-            var saldo = quotaConsuntiva - alreadyPaid;  // positivo = deve ancora pagare, negativo = credito
+            // SaldoConguaglio = quota reale consuntiva - quanto già addebitato con le rate del preventivo
+            // Positivo = il condòmino deve un conguaglio a debito
+            // Negativo = il condominio deve restituire un credito al condòmino
+            var rateAddebitate  = rateMap.TryGetValue(um.Unit.Id, out var r) ? r : 0m;
+            var saldoConguaglio = quotaConsuntiva - rateAddebitate;
 
-            // Aggiorna o crea il record UnitOpeningBalance con il saldo consuntivo
             var uob = await session.Query<UnitOpeningBalance>()
                 .FirstOrDefaultAsync(x => x.Unit.Id       == um.Unit.Id
                                        && x.FiscalYear.Id == budget.FiscalYear.Id
@@ -295,10 +297,34 @@ public class ApproveBudgetCommandConsumer
 
             if (uob != null)
             {
-                uob.TotalMovements  = quotaConsuntiva;
-                uob.ClosingBalance  = saldo;
+                // Aggiorna solo i campi di pertinenza del Consuntivo
+                uob.QuotaConsuntiva = quotaConsuntiva;
+                uob.SaldoConguaglio = saldoConguaglio;
+                // TotalMovements e ClosingBalance restano invariati qui:
+                // verranno ricalcolati definitivamente alla chiusura dell'esercizio.
                 if (user != null) uob.Trace(user);
                 await session.SaveOrUpdateAsync(uob, ct).ConfigureAwait(false);
+            }
+            else
+            {
+                // Crea il record se non esiste ancora (es. Consuntivo approvato prima della chiusura
+                // su un'unità che non ha ancora rate)
+                var unit = um.Unit;
+                var newUob = new UnitOpeningBalance
+                {
+                    Unit            = unit,
+                    FiscalYear      = budget.FiscalYear,
+                    Tenant          = budget.Tenant,
+                    OpeningBalance  = 0m,
+                    RateAddebitate  = rateAddebitate,
+                    RateIncassate   = 0m,
+                    QuotaConsuntiva = quotaConsuntiva,
+                    SaldoConguaglio = saldoConguaglio,
+                    TotalMovements  = 0m,
+                    ClosingBalance  = 0m,
+                };
+                if (user != null) newUob.Trace(user);
+                await session.SaveAsync(newUob, ct).ConfigureAwait(false);
             }
         }
 

@@ -165,12 +165,20 @@ public class OpenFiscalYearFromDraftCommandConsumer : InMemoryConsumerBase<OpenF
 
             var newBalance = new Models.UnitOpeningBalance
             {
-                Unit           = prev.Unit,
-                FiscalYear     = fiscalYear,
-                Tenant         = fiscalYear.Tenant,
-                OpeningBalance = prev.ClosingBalance,   // propagazione automatica
-                TotalMovements = 0m,
-                ClosingBalance = 0m,
+                Unit            = prev.Unit,
+                FiscalYear      = fiscalYear,
+                Tenant          = fiscalYear.Tenant,
+                // Il ClosingBalance dell'esercizio precedente diventa il saldo di apertura
+                // del nuovo esercizio (riporto morosità o credito pregresso).
+                OpeningBalance  = prev.ClosingBalance,
+                // Tutti i campi di movimento dell'esercizio partono da zero;
+                // verranno popolati durante l'esercizio e alla sua chiusura.
+                RateAddebitate  = 0m,
+                RateIncassate   = 0m,
+                QuotaConsuntiva = 0m,
+                SaldoConguaglio = 0m,
+                TotalMovements  = 0m,
+                ClosingBalance  = 0m,
             };
             if (user != null) newBalance.Trace(user);
             await session.SaveAsync(newBalance, cancellationToken).ConfigureAwait(false);

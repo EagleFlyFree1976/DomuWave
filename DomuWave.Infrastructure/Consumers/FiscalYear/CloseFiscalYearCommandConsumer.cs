@@ -91,43 +91,54 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
         object currentUser,
         CancellationToken cancellationToken)
     {
-        // Somma quote addebitate e pagate per unità nell'esercizio
-        // CondominiumFee → Installment → FiscalYear
+        var user = currentUser as CPQ.Core.Memberships.IUser;
+
+        // ── 1. Rate addebitate e incassate per unità (solo Preventivo) ──────────
+        // CondominiumFee → Installment (Budget.Type == Preventivo) → FiscalYear
         var feesByUnit = await session.Query<CondominiumFee>()
-            .Where(f => f.Installment.FiscalYear.Id == fiscalYearId && !f.IsDeleted)
+            .Where(f => f.Installment.FiscalYear.Id  == fiscalYearId
+                     && f.Installment.Budget.Type    == BudgetType.Preventivo
+                     && !f.IsDeleted)
             .GroupBy(f => f.Unit.Id)
             .Select(g => new
             {
-                UnitId     = g.Key,
-                TotalDue   = g.Sum(f => f.AmountDue),
-                TotalPaid  = g.Sum(f => f.AmountPaid),
+                UnitId    = g.Key,
+                TotalDue  = g.Sum(f => f.AmountDue),
+                TotalPaid = g.Sum(f => f.AmountPaid),
             })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Carica i record UnitOpeningBalance esistenti per l'esercizio
+        var feeMap = feesByUnit.ToDictionary(f => f.UnitId);
+
+        // ── 2. Record UnitOpeningBalance esistenti per l'esercizio ──────────────
         var unitBalances = await session.Query<Models.UnitOpeningBalance>()
             .Where(b => b.FiscalYear.Id == fiscalYearId && !b.IsDeleted)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var feeMap = feesByUnit.ToDictionary(f => f.UnitId);
-        var user   = currentUser as CPQ.Core.Memberships.IUser;
-
         foreach (var balance in unitBalances)
         {
-            if (feeMap.TryGetValue(balance.Unit.Id, out var fees))
-                balance.TotalMovements = fees.TotalDue - fees.TotalPaid;
-            else
-                balance.TotalMovements = 0m;
+            feeMap.TryGetValue(balance.Unit.Id, out var fees);
 
-            balance.ClosingBalance = balance.OpeningBalance + balance.TotalMovements;
+            var rateAddebitate = fees?.TotalDue  ?? 0m;
+            var rateIncassate  = fees?.TotalPaid ?? 0m;
+
+            // SaldoConguaglio è già stato impostato dall'approvazione del Consuntivo;
+            // qui lo leggiamo senza sovrascriverlo.
+            var insolutoRate   = rateAddebitate - rateIncassate;
+            var totalMovements = insolutoRate + balance.SaldoConguaglio;
+
+            balance.RateAddebitate = rateAddebitate;
+            balance.RateIncassate  = rateIncassate;
+            balance.TotalMovements = totalMovements;
+            balance.ClosingBalance = balance.OpeningBalance + totalMovements;
+
             if (user != null) balance.Trace(user);
             await session.UpdateAsync(balance, cancellationToken).ConfigureAwait(false);
         }
 
-        // Per le unità che hanno fee ma non ancora un record UnitOpeningBalance,
-        // crearlo con OpeningBalance=0
+        // ── 3. Unità con fee ma senza record UnitOpeningBalance ─────────────────
         var existingUnitIds = unitBalances.Select(b => b.Unit.Id).ToHashSet();
 
         var fiscalYear = await session.Query<FiscalYear>()
@@ -142,14 +153,19 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
 
             if (unit == null || fiscalYear == null) continue;
 
+            var insoluto = fee.TotalDue - fee.TotalPaid;
             var newBalance = new Models.UnitOpeningBalance
             {
-                Unit           = unit,
-                FiscalYear     = fiscalYear,
-                Tenant         = unit.Tenant,
-                OpeningBalance = 0m,
-                TotalMovements = fee.TotalDue - fee.TotalPaid,
-                ClosingBalance = fee.TotalDue - fee.TotalPaid,
+                Unit            = unit,
+                FiscalYear      = fiscalYear,
+                Tenant          = unit.Tenant,
+                OpeningBalance  = 0m,
+                RateAddebitate  = fee.TotalDue,
+                RateIncassate   = fee.TotalPaid,
+                QuotaConsuntiva = 0m,   // nessun consuntivo approvato al momento della chiusura
+                SaldoConguaglio = 0m,
+                TotalMovements  = insoluto,
+                ClosingBalance  = insoluto,
             };
             if (user != null) newBalance.Trace(user);
             await session.SaveAsync(newBalance, cancellationToken).ConfigureAwait(false);
