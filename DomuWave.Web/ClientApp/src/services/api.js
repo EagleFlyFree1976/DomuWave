@@ -122,7 +122,9 @@ export const unitApi = {
   create:             (data)          => api.post('/real-estate-units', data),
   update:             (id, data)      => api.put(`/real-estate-units/${id}`, data),
   delete:             (id)            => api.delete(`/real-estate-units/${id}`),
-  getOpeningBalance:  (unitId, fiscalYearId) => api.get(`/real-estate-units/${unitId}/opening-balance`, { params: { fiscalYearId } }),
+  getOpeningBalance:              (unitId, fiscalYearId) => api.get(`/real-estate-units/${unitId}/opening-balance`, { params: { fiscalYearId } }),
+  getOpeningBalancesByFiscalYear: (fiscalYearId)        => api.get(`/real-estate-units/opening-balances/by-fiscal-year/${fiscalYearId}`),
+  setOpeningBalancesBulk:         (data)                => api.put(`/real-estate-units/opening-balances/bulk`, data),
   setOpeningBalance:  (unitId, data)         => api.put(`/real-estate-units/${unitId}/opening-balance`, data),
 }
 

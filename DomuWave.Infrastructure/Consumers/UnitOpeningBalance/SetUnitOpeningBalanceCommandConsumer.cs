@@ -76,14 +76,12 @@ public class SetUnitOpeningBalanceCommandConsumer
                 Unit       = unit,
                 FiscalYear = fiscalYear,
                 Tenant     = unit.Tenant,
+                IsDeleted  = false,
             };
-            record.Trace(currentUser);
+         
         }
-        else
-        {
-            record.Trace(currentUser);
-        }
-
+       
+        record.Trace(currentUser);
         record.OpeningBalance  = command.Dto.OpeningBalance;
         // I campi di movimento non vengono toccati qui: appartengono all'esercizio in corso
         // e vengono calcolati automaticamente (rate dal preventivo, conguaglio dal consuntivo).

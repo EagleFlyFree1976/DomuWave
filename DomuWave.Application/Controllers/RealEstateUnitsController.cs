@@ -86,6 +86,15 @@ public class RealEstateUnitsController(
 
     // ── Bilancio iniziale ──────────────────────────────────────────────────
 
+    [HttpGet("opening-balances/by-fiscal-year/{fiscalYearId:int}")]
+    [ProducesResponseType(typeof(IList<UnitOpeningBalanceReadDto>), 200)]
+    public async Task<IActionResult> GetOpeningBalancesByFiscalYear(int fiscalYearId, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetUnitOpeningBalancesByFiscalYearCommand(CurrentUser.Id, fiscalYearId), ct);
+        return Ok(result ?? []);
+    }
+
     [HttpGet("{unitId:int}/opening-balance")]
     [ProducesResponseType(typeof(UnitOpeningBalanceReadDto), 200)]
     public async Task<IActionResult> GetOpeningBalance(int unitId, [FromQuery] int fiscalYearId, CancellationToken ct)
@@ -93,6 +102,15 @@ public class RealEstateUnitsController(
         var result = await _mediator.GetResponse(new GetUnitOpeningBalanceCommand(CurrentUser.Id, unitId, fiscalYearId), ct);
         if (result == null) return NotFound();
         return Ok(result);
+    }
+
+    [HttpPut("opening-balances/bulk")]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> SetOpeningBalancesBulk([FromBody] SetUnitOpeningBalancesBulkDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        await _mediator.GetResponse(new SetUnitOpeningBalancesBulkCommand(CurrentUser.Id, dto), ct);
+        return NoContent();
     }
 
     [HttpPut("{unitId:int}/opening-balance")]

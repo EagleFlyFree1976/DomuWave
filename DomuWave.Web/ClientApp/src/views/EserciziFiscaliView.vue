@@ -61,6 +61,12 @@
                             class="btn-icon btn-icon--danger" title="Elimina"
                             @click="openDeleteModal(fy)">🗑</button>
                     <button v-if="canEdit && fy.statusId === 1"
+                            class="btn btn-sm btn-ghost"
+                            title="Imposta saldi iniziali unità"
+                            @click="openOpeningBalancesModal(fy)">
+                      Saldi iniziali
+                    </button>
+                    <button v-if="canEdit && fy.statusId === 1"
                             class="btn btn-sm btn-ghost btn-green"
                             @click="openTransitionModal(fy, 'open')">
                       Apri
@@ -558,6 +564,16 @@ function onPreviousFiscalYearChange() {
   form.value.endDate   = isoAddYearsMinusOneDay(form.value.startDate)
 }
 
+function openOpeningBalancesModal(fy) {
+  editingId.value           = null
+  createdFiscalYearId.value = fy.id
+  createStep.value          = 2
+  errors.value              = {}
+  unitBalances.value        = []
+  showModal.value           = true
+  loadUnitsForOpeningBalances()
+}
+
 function openCreateModal() {
   editingId.value                    = null
   createStep.value                   = 1
@@ -619,8 +635,9 @@ async function saveFiscalYear() {
       // Primo esercizio → passa allo step 2 per i saldi iniziali
       if (fiscalYears.value.length === 0) {
         createdFiscalYearId.value = data.id
-        await loadUnitsForOpeningBalances()
-        createStep.value = 2
+        unitBalances.value        = []
+        createStep.value          = 2
+        loadUnitsForOpeningBalances()
       } else {
         showModal.value = false
         await loadFiscalYears()
@@ -634,12 +651,12 @@ async function saveFiscalYear() {
 async function loadUnitsForOpeningBalances() {
   loadingUnits.value = true
   try {
-    const { data } = await unitApi.getByCondominium(store.selectedCondominioId)
-    unitBalances.value = (data ?? []).map(u => ({
-      unitId:         u.id,
-      unitName:       u.displayName ?? u.internalNumber ?? `Unità ${u.id}`,
-      openingBalance: 0,
-      notes:          '',
+    const { data } = await unitApi.getOpeningBalancesByFiscalYear(createdFiscalYearId.value)
+    unitBalances.value = (data ?? []).map(b => ({
+      unitId:         b.unitId,
+      unitName:       b.unitName ?? `Unità ${b.unitId}`,
+      openingBalance: b.openingBalance,
+      notes:          b.notes ?? '',
     }))
   } catch {
     unitBalances.value = []
@@ -649,18 +666,19 @@ async function loadUnitsForOpeningBalances() {
 }
 
 async function saveOpeningBalances() {
+  const fyId = createdFiscalYearId.value
+  if (!fyId) { store.toast('Esercizio non identificato', 'error'); return }
+
   savingBalances.value = true
   try {
-    const fyId = createdFiscalYearId.value
-    await Promise.all(
-      unitBalances.value
-        .filter(ub => ub.openingBalance !== 0 || ub.notes)
-        .map(ub => unitApi.setOpeningBalance(ub.unitId, {
-          fiscalYearId:   fyId,
-          openingBalance: ub.openingBalance,
-          notes:          ub.notes || null,
-        }))
-    )
+    await unitApi.setOpeningBalancesBulk({
+      fiscalYearId: fyId,
+      items: unitBalances.value.map(ub => ({
+        unitId:         ub.unitId,
+        openingBalance: ub.openingBalance,
+        notes:          ub.notes || null,
+      })),
+    })
     store.toast('Saldi iniziali salvati', 'success')
     showModal.value = false
     await loadFiscalYears()
@@ -768,10 +786,11 @@ async function executeTransition() {
     // Dopo il revert apri subito la modale saldi iniziali
     if (transitionType.value === 'revertToDraft') {
       createdFiscalYearId.value = id
-      await loadUnitsForOpeningBalances()
-      editingId.value  = null
-      createStep.value = 2
-      showModal.value  = true
+      editingId.value           = null
+      createStep.value          = 2
+      unitBalances.value        = []
+      showModal.value           = true
+      loadUnitsForOpeningBalances()
     }
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
