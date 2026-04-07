@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using DomuWave.IntegrationTests.Infrastructure;
 using DomuWave.Services.Dto.Budget;
 using DomuWave.Services.Dto.ChartOfAccounts;
@@ -7,6 +8,8 @@ using DomuWave.Services.Dto.Contabilita.FiscalYear;
 using DomuWave.Services.Dto.MillesimalTable;
 using DomuWave.Services.Dto.RealEstateUnit;
 using DomuWave.Services.Dto.UnitMillesimal;
+using DomuWave.Services.Dto.UnitOwner;
+using DomuWave.Services.Dto.UnitTenant;
 using DomuWave.Services.Models;
 using FluentAssertions;
 using Xunit;
@@ -26,6 +29,7 @@ namespace DomuWave.IntegrationTests.Tests.Seed;
 ///       GIAR — Giardino                     1000.000
 ///       CANC — Cancello elettrico            1000.000
 ///   - Piano dei conti con gerarchia Entrate / Uscite / Patrimoniale
+///   - Occupanti: 9 proprietari (7 residenti, 2 non residenti); 1 inquilino (B06)
 ///   - Esercizio fiscale 2025 (01/01/2025 – 31/12/2025) → aperto
 ///   - Budget preventivo 2025 in bozza
 ///
@@ -336,7 +340,70 @@ public class SeedCondominioViaGaribaldiTest(
         openResp.StatusCode.Should().Be(HttpStatusCode.NoContent, await ReadErrorAsync(openResp));
         output.WriteLine("  Esercizio 2025 aperto.");
 
-        // ── 6. Budget preventivo 2025 (Bozza) ────────────────────────────
+        // ── 6. Occupanti ──────────────────────────────────────────────────
+        // 8 appartamenti occupati solo da proprietario (di cui 2 non residenti).
+        // 1 appartamento (B06 – Mancini Lucia) in affitto: proprietario non residente + inquilino.
+        // I box non hanno occupanti (uso diretto del proprietario).
+
+        // (apKey, firstName, lastName, taxCode, email, ownerType, quota, isResident)
+        var owners = new[]
+        {
+            ("A01", "Mario",    "Rossi",     "RSSMRA70A01F205X", "mario.rossi@email.it",       "Privato", 1.000m, true),
+            ("A02", "Laura",    "Bianchi",   "BNCLRA75B41F205Y", "laura.bianchi@email.it",      "Privato", 1.000m, true),
+            ("A03", "Giuseppe", "Ferri",     "FRRGPP68C15F205Z", "giuseppe.ferri@email.it",     "Privato", 1.000m, true),
+            ("B04", "Anna",     "De Luca",   "DLCNNA80D45F205W", "anna.deluca@email.it",        "Privato", 1.000m, true),
+            ("B05", "Sergio",   "Conti",     "CNTSGR65E01F205V", "sergio.conti@email.it",       "Privato", 1.000m, true),
+            // B06: proprietario non residente (ha dato in affitto)
+            ("B06", "Lucia",    "Mancini",   "MNCLCU72F55F205U", "lucia.mancini@email.it",      "Privato", 1.000m, false),
+            ("C07", "Carlo",    "Ricci",     "RCCCRL58G01F205T", "carlo.ricci@email.it",        "Privato", 1.000m, true),
+            ("C08", "Sara",     "Esposito",  "SPSRSA90H45F205S", "sara.esposito@email.it",      "Privato", 1.000m, true),
+            // C09: proprietario non residente (figlio vive altrove, immobile non occupato)
+            ("C09", "Pietro",   "Lombardi",  "LMBPTR55I01F205R", "pietro.lombardi@email.it",    "Privato", 1.000m, false),
+        };
+
+        foreach (var (apKey, firstName, lastName, taxCode, email, ownerType, quota, isResident) in owners)
+        {
+            var dto = new CreateUnitOwnerDto
+            {
+                UnitId          = apIds[apKey],
+                UserId          = 0,   // nessun account portale associato
+                FirstName       = firstName,
+                LastName        = lastName,
+                Email           = email,
+                OwnerType       = ownerType,
+                OwnershipQuota  = quota,
+                StartDate       = new DateTime(2020, 1, 1),
+                EndDate         = null,
+                IsResident      = isResident,
+                IsActive        = true,
+                IsAccessEnabled = false,
+            };
+            var (r, _) = await PostAsync<UnitOwnerReadDto>($"/api/unit-owners", dto);
+            r.StatusCode.Should().Be(HttpStatusCode.Created, $"proprietario {apKey}");
+        }
+        output.WriteLine("  Proprietari creati (9).");
+
+        // Inquilino di B06 (Mancini Lucia ha dato in affitto a Famiglia Ferretti)
+        var tenantDto = new CreateUnitTenantDto
+        {
+            UnitId         = apIds["B06"],
+            UserId         = 0,
+            FirstName      = "Roberto",
+            LastName       = "Ferretti",
+            TaxCode        = "FRTRBT88L10F205P",
+            Email          = "roberto.ferretti@email.it",
+            Phone          = "339 4512 8877",
+            LeaseStartDate = new DateTime(2023, 3, 1),
+            LeaseEndDate   = new DateTime(2025, 2, 28),
+            ExpensePayer   = "Owner",   // spese condominiali a carico del proprietario
+            IsActive       = true,
+            Notes          = "Contratto 4+4, locazione abitativa.",
+        };
+        var (tResp, _) = await PostAsync<UnitTenantReadDto>("/api/unit-tenants", tenantDto);
+        tResp.StatusCode.Should().Be(HttpStatusCode.Created, "inquilino B06");
+        output.WriteLine("  Inquilino B06 (Ferretti Roberto) creato.");
+
+        // ── 8. Budget preventivo 2025 (Bozza) ────────────────────────────
         var budgetDto = new CreateBudgetDto
         {
             CondominiumId = condId,
@@ -357,6 +424,8 @@ public class SeedCondominioViaGaribaldiTest(
         output.WriteLine($"    Tabella ASC    = {ascTable.Id}");
         output.WriteLine($"    Tabella GIAR   = {giarTable.Id}");
         output.WriteLine($"    Tabella CANC   = {cancTable.Id}");
+        output.WriteLine($"    Proprietari    = 9 (7 residenti, 2 non residenti)");
+        output.WriteLine($"    Inquilini      = 1 (B06 — Ferretti Roberto)");
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
