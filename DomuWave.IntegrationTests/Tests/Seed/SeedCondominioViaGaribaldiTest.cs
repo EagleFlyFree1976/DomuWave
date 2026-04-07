@@ -262,7 +262,7 @@ public class SeedCondominioViaGaribaldiTest(
         // ── Abilita la tabella DEF ────────────────────────────────────────
         var enableResp = await Client.PatchAsync(
             $"/api/millesimal-tables/{defTable.Id}/enabled",
-            JsonContent.Create(new { isEnabled = true }));
+            JsonContent.Create(true));
         enableResp.StatusCode.Should().Be(HttpStatusCode.NoContent, await ReadErrorAsync(enableResp));
         output.WriteLine("  Tabella DEF abilitata.");
 
