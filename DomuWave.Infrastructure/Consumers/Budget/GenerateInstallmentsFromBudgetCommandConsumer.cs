@@ -80,19 +80,10 @@ public class GenerateInstallmentsFromBudgetCommandConsumer
         var n            = command.NumberOfInstallments > 0 ? command.NumberOfInstallments : 4;
         var firstDueDate = command.FirstDueDate == default ? DateTime.Today : command.FirstDueDate;
 
-        // Carica la tabella millesimale abilitata del condominio (preferisce la DEF se presente)
-        var millesimalTable = await session.Query<MillesimalTable>()
-            .Where(x => x.Condominium.Id == budget.Condominium.Id && x.IsEnabled && !x.IsDeleted)
-            .OrderBy(x => x.Code)
-            .FirstOrDefaultAsync(cancellationToken)
+        // Verifica integrità tabella millesimale abilitata
+        var (millesimalTable, unitMillesimals) = await MillesimalTableGuard
+            .LoadAndValidateAsync(session, budget.Condominium.Id, cancellationToken)
             .ConfigureAwait(false);
-
-        var unitMillesimals = millesimalTable != null
-            ? await session.Query<UnitMillesimal>()
-                .Where(x => x.MillesimalTable.Id == millesimalTable.Id && !x.IsDeleted)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false)
-            : new List<UnitMillesimal>();
 
         // Ricalcola TotalIncome live dalle voci budget
         var totalIncome = await session.Query<BudgetItem>()

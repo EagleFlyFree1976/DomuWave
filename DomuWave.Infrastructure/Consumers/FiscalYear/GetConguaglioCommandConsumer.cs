@@ -60,25 +60,12 @@ public class GetConguaglioCommandConsumer
             .SumAsync(i => (decimal?)i.Amount, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
-        // Tabella millesimale abilitata del condominio
-        var millesimalTable = await session.Query<MillesimalTable>()
-            .Where(x => x.Condominium.Id == fiscalYear.Condominium.Id && x.IsEnabled && !x.IsDeleted)
-            .OrderBy(x => x.Code)
-            .FirstOrDefaultAsync(cancellationToken)
+        // Verifica integrità tabella millesimale abilitata
+        var (millesimalTable, unitMillesimals) = await MillesimalTableGuard
+            .LoadAndValidateAsync(session, fiscalYear.Condominium.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        if (millesimalTable == null)
-            throw new ValidatorException(
-                "Nessuna tabella millesimale abilitata trovata per questo condominio.");
-
-        var unitMillesimals = await session.Query<UnitMillesimal>()
-            .Where(x => x.MillesimalTable.Id == millesimalTable.Id && !x.IsDeleted)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var totalMillesimal = unitMillesimals.Any()
-            ? unitMillesimals.Sum(x => x.Millesimal)
-            : millesimalTable.TotalMillesimal;
+        var totalMillesimal = unitMillesimals.Sum(x => x.Millesimal);
 
         // Recupera il totale già pagato per unità tramite le CondominiumFee del preventivo
         var paidByUnit = await session.Query<CondominiumFee>()

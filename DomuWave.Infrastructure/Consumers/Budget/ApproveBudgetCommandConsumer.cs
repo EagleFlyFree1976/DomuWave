@@ -82,6 +82,11 @@ public class ApproveBudgetCommandConsumer
                 "Configura il piano dei conti prima di approvare il budget.");
         }
 
+        // Verifica integrità tabella millesimale abilitata
+        await MillesimalTableGuard
+            .LoadAndValidateAsync(session, budget.Condominium.Id, cancellationToken)
+            .ConfigureAwait(false);
+
         // Approva il budget
         var approved = await _budgetService
             .ApproveBudgetAsync(command.Id, command.CurrentUserId, currentUser, cancellationToken)
@@ -90,16 +95,21 @@ public class ApproveBudgetCommandConsumer
         if (!approved)
             return false;
 
+        // Carica tabella millesimale una volta sola (già validata sopra)
+        var (millesimalTable, unitMillesimals) = await MillesimalTableGuard
+            .LoadAndValidateAsync(session, budget.Condominium.Id, cancellationToken)
+            .ConfigureAwait(false);
+
         if (budget.Type == BudgetType.Preventivo)
         {
             // Genera rate di pagamento e quote per unità
-            await GenerateInstallmentsAndFees(budget, command, currentUser, cancellationToken)
+            await GenerateInstallmentsAndFees(budget, command, currentUser, millesimalTable, unitMillesimals, cancellationToken)
                 .ConfigureAwait(false);
         }
         else
         {
             // Consuntivo: salva la ripartizione per unità (saldi), senza rate
-            await GenerateConsuntivoDistribution(budget, currentUser, cancellationToken)
+            await GenerateConsuntivoDistribution(budget, currentUser, millesimalTable, unitMillesimals, ct: cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -110,6 +120,8 @@ public class ApproveBudgetCommandConsumer
         Budget budget,
         ApproveBudgetCommand command,
         object currentUser,
+        MillesimalTable millesimalTable,
+        IList<UnitMillesimal> unitMillesimals,
         CancellationToken cancellationToken)
     {
         var n            = command.NumberOfInstallments > 0 ? command.NumberOfInstallments : 4;
@@ -122,21 +134,6 @@ public class ApproveBudgetCommandConsumer
 
         if (existingCount > 0)
             return; // già generate, skip
-
-        // Carica la tabella millesimale abilitata del condominio (preferisce la DEF se presente)
-        var millesimalTable = await session.Query<MillesimalTable>()
-            .Where(x => x.Condominium.Id == budget.Condominium.Id && x.IsEnabled && !x.IsDeleted)
-            .OrderBy(x => x.Code)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        // Carica le voci millesimali (quote per unità)
-        var unitMillesimals = millesimalTable != null
-            ? await session.Query<UnitMillesimal>()
-                .Where(x => x.MillesimalTable.Id == millesimalTable.Id && !x.IsDeleted)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false)
-            : new List<UnitMillesimal>();
 
         // Ricalcola TotalIncome live dalle voci budget (somma tutto: include Entrata + Patrimoniale)
         // Nota: per il preventivo il totale da ripartire è la somma di tutte le voci (non solo le Entrate)
@@ -232,6 +229,8 @@ public class ApproveBudgetCommandConsumer
     private async Task GenerateConsuntivoDistribution(
         Budget budget,
         object currentUser,
+        MillesimalTable millesimalTable,
+        IList<UnitMillesimal> unitMillesimals,
         CancellationToken ct)
     {
         // Ricalcola TotalExpenses dalle voci del budget consuntivo
@@ -242,25 +241,7 @@ public class ApproveBudgetCommandConsumer
 
         if (totalExpenses <= 0) return;
 
-        // Tabella millesimale abilitata del condominio
-        var millesimalTable = await session.Query<MillesimalTable>()
-            .Where(x => x.Condominium.Id == budget.Condominium.Id && x.IsEnabled && !x.IsDeleted)
-            .OrderBy(x => x.Code)
-            .FirstOrDefaultAsync(ct)
-            .ConfigureAwait(false);
-
-        if (millesimalTable == null) return;
-
-        var unitMillesimals = await session.Query<UnitMillesimal>()
-            .Where(x => x.MillesimalTable.Id == millesimalTable.Id && !x.IsDeleted)
-            .ToListAsync(ct)
-            .ConfigureAwait(false);
-
-        if (!unitMillesimals.Any()) return;
-
-        var totalMillesimal = unitMillesimals.Any()
-            ? unitMillesimals.Sum(x => x.Millesimal)
-            : millesimalTable.TotalMillesimal;
+        var totalMillesimal = unitMillesimals.Sum(x => x.Millesimal);
 
         var user = currentUser as CPQ.Core.Memberships.IUser;
 

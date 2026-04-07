@@ -211,6 +211,22 @@ Draft (1) → Approved (2) → Closed (3)
 ### Creazione spese
 - La tabella millesimale specificata in una spesa deve essere **abilitata** (`IsEnabled = true`). Il tentativo di salvare una spesa con una tabella disabilitata restituisce 400 Bad Request.
 
+### Blocco operativo per anomalie millesimali
+
+Le seguenti operazioni vengono **bloccate con errore 400** se la tabella millesimale abilitata del condominio presenta anomalie:
+
+| Operazione | Endpoint |
+|---|---|
+| Approvazione budget (Preventivo o Consuntivo) | `POST /api/budgets/{id}/approve` |
+| Generazione/rigenerazione rate | `POST /api/budgets/{id}/generate-installments` |
+| Calcolo conguaglio | `GET /api/fiscal-years/{id}/conguaglio` |
+
+**Anomalie rilevate (nell'ordine):**
+
+1. **Nessuna tabella abilitata** — non esiste alcuna tabella con `IsEnabled = true` per il condominio.
+2. **Tabella senza voci** — la tabella abilitata non ha righe `UnitMillesimal` associate.
+3. **Totale millesimi incoerente** — la somma delle voci (`Σ UnitMillesimal.Millesimal`) differisce dal `TotalMillesimal` dichiarato della tabella di più di **0,01** (tolleranza di arrotondamento).
+
 ### Voci millesimali (UnitMillesimal)
 - Per ogni coppia **(unità, tabella)** può esistere **una sola voce**.
 
