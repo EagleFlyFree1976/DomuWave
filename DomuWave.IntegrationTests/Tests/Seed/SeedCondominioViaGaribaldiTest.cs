@@ -60,10 +60,22 @@ public class SeedCondominioViaGaribaldiTest(
             var existing = await existingResp.Content.ReadFromJsonAsync<CondominiumReadDto>();
             if (existing != null)
             {
+                // Elimina prima le tabelle millesimali esplicitamente per evitare che
+                // il cascade soft-delete del condominio le lasci con IsDeleted=0
+                // (bug di cache NHibernate nella stessa sessione).
+                var tablesResp = await Client.GetAsync($"/api/millesimal-tables/by-condominium/{existing.Id}");
+                if (tablesResp.IsSuccessStatusCode)
+                {
+                    var tables = await tablesResp.Content
+                        .ReadFromJsonAsync<IList<MillesimalTableReadDto>>(JsonOptions);
+                    foreach (var t in tables ?? [])
+                        await Client.DeleteAsync($"/api/millesimal-tables/{t.Id}");
+                }
+
                 var delResp = await Client.DeleteAsync($"/api/condominiums/{existing.Id}");
                 delResp.StatusCode.Should().Be(HttpStatusCode.NoContent,
                     $"cleanup condominio id={existing.Id}");
-                output.WriteLine($"  Cleanup: condominio esistente id={existing.Id} eliminato.");
+                output.WriteLine($"  Cleanup: condominio id={existing.Id} eliminato.");
             }
         }
 
@@ -454,6 +466,7 @@ public class SeedCondominioViaGaribaldiTest(
             TotalMillesimal = total,
         };
         var (r, table) = await PostAsync<MillesimalTableReadDto>("/api/millesimal-tables", dto);
+        var x = ReadErrorAsync(r);
         r.StatusCode.Should().Be(HttpStatusCode.Created, $"tabella {code}");
         return table!;
     }
