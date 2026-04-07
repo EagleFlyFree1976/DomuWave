@@ -33,9 +33,8 @@ namespace DomuWave.IntegrationTests.Tests.Seed;
 ///   - Esercizio fiscale 2025 (01/01/2025 – 31/12/2025) → aperto
 ///   - Budget preventivo 2025 in bozza
 ///
-/// ATTENZIONE: questo test NON fa cleanup — è uno seed "one-shot" per il DB di sviluppo.
-/// Eseguirlo una volta sola; esecuzioni ripetute falliranno sul codice condominio duplicato
-/// (il codice "VGARI-12" è fisso e unico per tenant).
+/// Il test è rieseguibile: all'avvio elimina automaticamente il condominio con codice
+/// "VGARI-12" se presente, poi ricrea tutto da zero.
 /// </summary>
 [Collection("Integration")]
 public class SeedCondominioViaGaribaldiTest(
@@ -53,6 +52,20 @@ public class SeedCondominioViaGaribaldiTest(
     public async Task Seed_CondominioViaGaribaldi_Complete()
     {
         output.WriteLine("=== SEED: Condominio Il Giardino, Via Garibaldi 12, Milano ===");
+
+        // ── 0. Cleanup: elimina il condominio precedente se esiste ─────────
+        var existingResp = await Client.GetAsync($"/api/condominiums/by-code/{CondominioCode}");
+        if (existingResp.StatusCode == HttpStatusCode.OK)
+        {
+            var existing = await existingResp.Content.ReadFromJsonAsync<CondominiumReadDto>();
+            if (existing != null)
+            {
+                var delResp = await Client.DeleteAsync($"/api/condominiums/{existing.Id}");
+                delResp.StatusCode.Should().Be(HttpStatusCode.NoContent,
+                    $"cleanup condominio id={existing.Id}");
+                output.WriteLine($"  Cleanup: condominio esistente id={existing.Id} eliminato.");
+            }
+        }
 
         // ── 1. Condominio ──────────────────────────────────────────────────
         var condoDto = new CreateCondominiumDto
