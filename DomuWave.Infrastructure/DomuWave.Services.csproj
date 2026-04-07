@@ -47,6 +47,12 @@
     <None Remove="Models\Mappings\UnitMillesimal.hbm.xml" />
     <None Remove="Models\Mappings\UnitOwner.hbm.xml" />
     <None Remove="Models\Mappings\UnitTenant.hbm.xml" />
+    <None Remove="Models\Mappings\ConsumptionType.hbm.xml" />
+    <None Remove="Models\Mappings\Meter.hbm.xml" />
+    <None Remove="Models\Mappings\ConsumptionReading.hbm.xml" />
+    <None Remove="Models\Mappings\ConsumptionChargeStatus.hbm.xml" />
+    <None Remove="Models\Mappings\ConsumptionCharge.hbm.xml" />
+    <None Remove="Models\Mappings\ConsumptionChargeItem.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -97,6 +103,12 @@
     <EmbeddedResource Include="Models\Mappings\DynamicFile.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\DynamicFileContent.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\DynamicFileStorageType.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ConsumptionType.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Meter.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ConsumptionReading.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ConsumptionChargeStatus.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ConsumptionCharge.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ConsumptionChargeItem.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>

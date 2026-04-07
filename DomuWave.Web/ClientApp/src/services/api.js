@@ -412,4 +412,38 @@ export const dynamicFileApi = {
   delete:       (id)       => api.delete(`/dynamic-files/${id}`),
 }
 
+export const consumptionTypeApi = {
+  getByCondominium: (condominiumId) => api.get(`/consumption/types/by-condominium/${condominiumId}`),
+  getById:          (id)            => api.get(`/consumption/types/${id}`),
+  create:           (data)          => api.post('/consumption/types', data),
+  update:           (id, data)      => api.put(`/consumption/types/${id}`, data),
+  delete:           (id)            => api.delete(`/consumption/types/${id}`),
+}
+
+export const meterApi = {
+  getByCondominium:    (condominiumId)    => api.get(`/consumption/meters/by-condominium/${condominiumId}`),
+  getByType:           (consumptionTypeId) => api.get(`/consumption/meters/by-type/${consumptionTypeId}`),
+  getById:             (id)               => api.get(`/consumption/meters/${id}`),
+  create:              (data)             => api.post('/consumption/meters', data),
+  update:              (id, data)         => api.put(`/consumption/meters/${id}`, data),
+  delete:              (id)               => api.delete(`/consumption/meters/${id}`),
+}
+
+export const consumptionReadingApi = {
+  getByTypeFiscalYear: (consumptionTypeId, fiscalYearId) =>
+    api.get(`/consumption/readings/by-type/${consumptionTypeId}/fiscal-year/${fiscalYearId}`),
+  saveBulk:            (data) => api.put('/consumption/readings/bulk', data),
+  delete:              (id)   => api.delete(`/consumption/readings/${id}`),
+}
+
+export const consumptionChargeApi = {
+  getByFiscalYear: (fiscalYearId) => api.get(`/consumption/charges/by-fiscal-year/${fiscalYearId}`),
+  getById:         (id)           => api.get(`/consumption/charges/${id}`),
+  create:          (data)         => api.post('/consumption/charges', data),
+  update:          (id, data)     => api.put(`/consumption/charges/${id}`, data),
+  recalculate:     (id)           => api.post(`/consumption/charges/${id}/recalculate`),
+  approve:         (id)           => api.post(`/consumption/charges/${id}/approve`),
+  delete:          (id)           => api.delete(`/consumption/charges/${id}`),
+}
+
 export default api
