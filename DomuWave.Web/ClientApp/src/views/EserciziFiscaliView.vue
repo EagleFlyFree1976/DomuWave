@@ -70,6 +70,12 @@
                             @click="openTransitionModal(fy, 'startClosing')">
                       Avvia chiusura
                     </button>
+                    <button v-if="canEdit && fy.statusId === 2"
+                            class="btn btn-sm btn-ghost btn-muted"
+                            title="Riporta in Bozza per correggere i saldi iniziali"
+                            @click="openTransitionModal(fy, 'revertToDraft')">
+                      ↩ Bozza
+                    </button>
                     <button v-if="canEdit && fy.statusId === 3"
                             class="btn btn-sm btn-ghost btn-purple"
                             @click="openTransitionModal(fy, 'close')">
@@ -724,6 +730,11 @@ const TRANSITION_META = {
     desc:  "L'esercizio verrà bloccato in modo irreversibile. Nessuna modifica sarà consentita.",
     btn:   '',
   },
+  revertToDraft: {
+    title: 'Riporta in Bozza',
+    desc:  "L'esercizio tornerà in stato Bozza. Potrai inserire o correggere i saldi iniziali delle unità e riaprirlo in seguito. Consentito solo se non sono presenti movimenti (spese, rate o budget approvati).",
+    btn:   'btn-muted',
+  },
 }
 
 const transitionTitle    = computed(() => TRANSITION_META[transitionType.value]?.title ?? '')
@@ -743,16 +754,25 @@ async function executeTransition() {
   try {
     const id    = transitionTarget.value.id
     const notes = transitionNotes.value || null
-    if (transitionType.value === 'open')          await fiscalYearApi.open(id)
-    else if (transitionType.value === 'startClosing') await fiscalYearApi.startClosing(id, notes)
-    else if (transitionType.value === 'close')   await fiscalYearApi.close(id, notes)
-    else if (transitionType.value === 'lock')    await fiscalYearApi.lock(id, notes)
+    if (transitionType.value === 'open')               await fiscalYearApi.open(id)
+    else if (transitionType.value === 'startClosing')  await fiscalYearApi.startClosing(id, notes)
+    else if (transitionType.value === 'close')         await fiscalYearApi.close(id, notes)
+    else if (transitionType.value === 'lock')          await fiscalYearApi.lock(id, notes)
+    else if (transitionType.value === 'revertToDraft') await fiscalYearApi.revertToDraft(id)
     showTransitionModal.value = false
     if (expandedId.value === id) {
       const { data } = await fiscalYearApi.getById(id)
       detail.value = data
     }
     await loadFiscalYears()
+    // Dopo il revert apri subito la modale saldi iniziali
+    if (transitionType.value === 'revertToDraft') {
+      createdFiscalYearId.value = id
+      await loadUnitsForOpeningBalances()
+      editingId.value  = null
+      createStep.value = 2
+      showModal.value  = true
+    }
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally { savingTransition.value = false }

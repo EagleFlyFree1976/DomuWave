@@ -156,6 +156,7 @@ export const fiscalYearApi = {
   startClosing:       (id, notes)     => api.post(`/fiscal-years/${id}/start-closing`, { notes }),
   close:              (id, notes)     => api.post(`/fiscal-years/${id}/close`, { notes }),
   lock:               (id, notes)     => api.post(`/fiscal-years/${id}/lock`, { notes }),
+  revertToDraft:      (id)            => api.post(`/fiscal-years/${id}/revert-to-draft`),
   delete:             (id)            => api.delete(`/fiscal-years/${id}`),
   getConguaglio:      (id)            => api.get(`/fiscal-years/${id}/conguaglio`),
 }
