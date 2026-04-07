@@ -43,7 +43,7 @@ public class SeedCondominioViaGaribaldiTest(
     : IntegrationTestBase(factory)
 {
     // ── Costanti descrittive ───────────────────────────────────────────────
-    private const string CondominioCode = "VGARI-12";
+    private const string CondominioCode = "VGARI-13";
     private const string CondominioName = "Condominio Il Giardino";
 
     // ── Seed principale ────────────────────────────────────────────────────
@@ -458,6 +458,18 @@ public class SeedCondominioViaGaribaldiTest(
     private async Task<MillesimalTableReadDto> CreateMillesimalTableAsync(
         int condId, string code, string name, decimal total)
     {
+        // Il condominio potrebbe aver già creato automaticamente la tabella DEF:
+        // se esiste già una tabella con lo stesso codice, la usiamo direttamente.
+        var existingResp = await Client.GetAsync(
+            $"/api/millesimal-tables/by-condominium/{condId}/code/{code}");
+        if (existingResp.StatusCode == HttpStatusCode.OK)
+        {
+            var existing = await existingResp.Content
+                .ReadFromJsonAsync<MillesimalTableReadDto>(JsonOptions);
+            if (existing != null)
+                return existing;
+        }
+
         var dto = new CreateMillesimalTableDto
         {
             CondominiumId   = condId,
@@ -466,8 +478,7 @@ public class SeedCondominioViaGaribaldiTest(
             TotalMillesimal = total,
         };
         var (r, table) = await PostAsync<MillesimalTableReadDto>("/api/millesimal-tables", dto);
-        var x = ReadErrorAsync(r);
-        r.StatusCode.Should().Be(HttpStatusCode.Created, $"tabella {code}");
+        r.StatusCode.Should().Be(HttpStatusCode.Created, await ReadErrorAsync(r));
         return table!;
     }
 
