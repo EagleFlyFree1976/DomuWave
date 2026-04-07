@@ -60,6 +60,34 @@ public class OpenFiscalYearFromDraftCommandConsumer : InMemoryConsumerBase<OpenF
                         && !f.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
 
+        // Per il primo esercizio è obbligatorio aver inserito i saldi iniziali
+        // per tutte le unità attive prima di poterlo aprire.
+        if (isFirstFiscalYear)
+        {
+            var activeUnitIds = await session.Query<RealEstateUnit>()
+                .Where(u => u.Condominium.Id == fiscalYear.Condominium.Id
+                         && u.IsActive
+                         && !u.IsDeleted)
+                .Select(u => u.Id)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (activeUnitIds.Count > 0)
+            {
+                var balanceUnitIds = await session.Query<Models.UnitOpeningBalance>()
+                    .Where(b => b.FiscalYear.Id == fiscalYear.Id && !b.IsDeleted)
+                    .Select(b => b.Unit.Id)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                var missing = activeUnitIds.Except(balanceUnitIds).ToList();
+                if (missing.Count > 0)
+                    throw new CPQ.Core.Exceptions.ValidatorException(
+                        $"Per aprire il primo esercizio è necessario inserire il saldo iniziale " +
+                        $"per tutte le unità. Mancano {missing.Count} unità su {activeUnitIds.Count}.");
+            }
+        }
+
         // Map accountId → ClosingBalance dell'esercizio precedente (se non primo esercizio)
         Dictionary<int, decimal> previousClosingMap = new();
         if (!isFirstFiscalYear)
