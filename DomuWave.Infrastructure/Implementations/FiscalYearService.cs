@@ -397,6 +397,72 @@ namespace DomuWave.Services.Implementations
         }
 
         // ─────────────────────────────────────────────
+        // COMMAND — REVERT TO DRAFT (Open → Draft)
+        // ─────────────────────────────────────────────
+
+        /// <inheritdoc />
+        public async Task<bool> RevertToDraftAsync(int fiscalYearId, IUser currentUser, CancellationToken ct = default)
+        {
+            var fiscalYear = await GetByIdAsync(fiscalYearId, currentUser, ct);
+            if (fiscalYear == null)
+                throw new NotFoundException("Esercizio fiscale non trovato.");
+
+            if (fiscalYear.Status?.Id != FiscalYearStatus.Open)
+                throw new ValidatorException(
+                    $"Solo un esercizio in stato Aperto può essere riportato in Bozza. " +
+                    $"Stato corrente: '{fiscalYear.Status?.Name}'.");
+
+            // Solo il primo esercizio del condominio può essere riportato in bozza
+            var isFirstFiscalYear = !await session.Query<FiscalYear>()
+                .AnyAsync(f => f.Condominium.Id == fiscalYear.Condominium.Id
+                            && f.Id != fiscalYearId
+                            && f.StartDate < fiscalYear.StartDate
+                            && !f.IsDeleted, ct)
+                .ConfigureAwait(false);
+
+            if (!isFirstFiscalYear)
+                throw new ValidatorException(
+                    "Solo il primo esercizio fiscale del condominio può essere riportato in Bozza.");
+
+            // Verifica assenza di movimenti: spese, rate, budget approvati
+            var hasExpenses = await session.Query<Expense>()
+                .AnyAsync(e => e.FiscalYear.Id == fiscalYearId && !e.IsDeleted, ct)
+                .ConfigureAwait(false);
+            if (hasExpenses)
+                throw new ValidatorException(
+                    "Impossibile riportare in Bozza: esistono spese registrate in questo esercizio.");
+
+            var hasInstallments = await session.Query<CondominiumInstallment>()
+                .AnyAsync(i => i.FiscalYear.Id == fiscalYearId && !i.IsDeleted, ct)
+                .ConfigureAwait(false);
+            if (hasInstallments)
+                throw new ValidatorException(
+                    "Impossibile riportare in Bozza: esistono rate generate in questo esercizio.");
+
+            var hasApprovedBudget = await session.Query<Budget>()
+                .AnyAsync(b => b.FiscalYear.Id == fiscalYearId
+                            && (b.Status.Id == BudgetStatus.Approved || b.Status.Id == BudgetStatus.Closed)
+                            && !b.IsDeleted, ct)
+                .ConfigureAwait(false);
+            if (hasApprovedBudget)
+                throw new ValidatorException(
+                    "Impossibile riportare in Bozza: esiste un budget approvato in questo esercizio.");
+
+            var draftStatus = await session.GetAsync<FiscalYearStatus>(FiscalYearStatus.Draft, ct)
+                ?? throw new ValidatorException("Stato 'Draft' non trovato nella tabella di lookup.");
+
+            fiscalYear.Status   = draftStatus;
+            fiscalYear.IsActive = false;
+            fiscalYear.Trace(currentUser);
+
+            await session.SaveOrUpdateAsync(fiscalYear, ct);
+            await session.FlushAsync(ct);
+
+            _cache.Clear(CacheRegion);
+            return true;
+        }
+
+        // ─────────────────────────────────────────────
         // COMMAND — DELETE (soft)
         // ─────────────────────────────────────────────
 

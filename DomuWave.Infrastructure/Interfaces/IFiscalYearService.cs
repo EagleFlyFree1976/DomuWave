@@ -86,6 +86,14 @@ namespace DomuWave.Services.Interfaces
         Task<bool> LockAsync(int fiscalYearId, IUser currentUser, string? notes = null, CancellationToken ct = default);
 
         /// <summary>
+        /// Riporta un esercizio dallo stato Open a Draft.
+        /// Consentito solo se è il primo esercizio del condominio e non ha movimenti registrati
+        /// (nessuna spesa, nessuna rata, nessun budget approvato).
+        /// Usato per correggere i saldi iniziali prima della riapertura.
+        /// </summary>
+        Task<bool> RevertToDraftAsync(int fiscalYearId, IUser currentUser, CancellationToken ct = default);
+
+        /// <summary>
         /// Verifica se una data documento cade fuori dal range dell'esercizio indicato.
         /// Restituisce un DTO con l'esito del controllo e l'eventuale esercizio suggerito per competenza.
         /// Usato dal frontend per mostrare un warning prima di confermare la registrazione di una spesa.
