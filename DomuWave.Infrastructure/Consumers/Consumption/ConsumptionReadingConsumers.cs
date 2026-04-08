@@ -65,18 +65,28 @@ public class SaveConsumptionReadingsBulkCommandConsumer
             .FirstOrDefaultAsync(x => x.Id == command.FiscalYearId && !x.IsDeleted, ct).ConfigureAwait(false);
         if (fiscalYear == null) throw new NotFoundException("Esercizio non trovato.");
 
-        var meterIds = command.Items.Select(i => i.MeterId).ToList();
+        var meterIds    = command.Items.Select(i => i.MeterId).Distinct().ToList();
+        var existingIds = command.Items.Where(i => i.Id > 0).Select(i => i.Id).ToList();
 
-        var meters = await session.Query<Meter>()
+        var meterById = (await session.Query<Meter>()
             .Where(m => meterIds.Contains(m.Id) && !m.IsDeleted)
-            .ToListAsync(ct).ConfigureAwait(false);
+            .ToListAsync(ct).ConfigureAwait(false))
+            .ToDictionary(m => m.Id);
 
-        var existingReadings = await session.Query<ConsumptionReading>()
-            .Where(r => meterIds.Contains(r.Meter.Id) && r.FiscalYear.Id == command.FiscalYearId && !r.IsDeleted)
-            .ToListAsync(ct).ConfigureAwait(false);
+        var existingById = existingIds.Count > 0
+            ? (await session.Query<ConsumptionReading>()
+                .Where(r => existingIds.Contains(r.Id) && !r.IsDeleted)
+                .ToListAsync(ct).ConfigureAwait(false))
+                .ToDictionary(r => r.Id)
+            : new Dictionary<int, ConsumptionReading>();
 
-        var readingByMeterId = existingReadings.ToDictionary(r => r.Meter.Id);
-        var meterById = meters.ToDictionary(m => m.Id);
+        // Cerca la ripartizione Draft attiva per questo tipo consumo + esercizio
+        // (le nuove letture vengono automaticamente assegnate ad essa)
+        var draftCharge = await session.Query<ConsumptionCharge>()
+            .FirstOrDefaultAsync(c => c.ConsumptionType.Id == consumptionType.Id
+                                   && c.FiscalYear.Id == fiscalYear.Id
+                                   && c.Status.Id == ConsumptionChargeStatus.Draft
+                                   && !c.IsDeleted, ct).ConfigureAwait(false);
 
         var result = new List<ConsumptionReading>();
 
@@ -84,14 +94,20 @@ public class SaveConsumptionReadingsBulkCommandConsumer
         {
             if (!meterById.TryGetValue(item.MeterId, out var meter)) continue;
 
-            if (readingByMeterId.TryGetValue(item.MeterId, out var reading))
+            ConsumptionReading reading;
+            if (item.Id > 0 && existingById.TryGetValue(item.Id, out var existing))
             {
-                reading.InitialDate  = item.InitialDate;
-                reading.InitialValue = item.InitialValue;
-                reading.FinalDate    = item.FinalDate;
-                reading.FinalValue   = item.FinalValue;
-                reading.Notes        = item.Notes;
-                reading.TraceUpdate(currentUser);
+                // Lettura esistente: modificabile solo se non ha una ripartizione o ce l'ha in Draft
+                if (existing.Charge != null && existing.Charge.Status?.Id != ConsumptionChargeStatus.Draft)
+                    continue; // approvata — salta silenziosamente
+
+                existing.InitialDate  = item.InitialDate;
+                existing.InitialValue = item.InitialValue;
+                existing.FinalDate    = item.FinalDate;
+                existing.FinalValue   = item.FinalValue;
+                existing.Notes        = item.Notes;
+                existing.Trace(currentUser);
+                reading = existing;
             }
             else
             {
@@ -105,6 +121,7 @@ public class SaveConsumptionReadingsBulkCommandConsumer
                     FinalDate    = item.FinalDate,
                     FinalValue   = item.FinalValue,
                     Notes        = item.Notes,
+                    Charge       = draftCharge,   // assegna subito alla Draft se esiste
                     IsDeleted    = false,
                 };
                 reading.Trace(currentUser);
@@ -117,10 +134,24 @@ public class SaveConsumptionReadingsBulkCommandConsumer
         await session.FlushAsync(ct).ConfigureAwait(false);
 
         // Rilegge per avere Consumption calcolato dal DB
-        await session.RefreshAsync(result.LastOrDefault(), ct).ConfigureAwait(false);
+        foreach (var r in result)
+            await session.RefreshAsync(r, ct).ConfigureAwait(false);
 
         return result.Select(x => x.ToReadDto()).ToList();
     }
+}
+
+public class GetUnchargedReadingsCountByFiscalYearCommandConsumer
+    : InMemoryConsumerBase<GetUnchargedReadingsCountByFiscalYearCommand, int>
+{
+    private readonly IUserService _userService;
+    public GetUnchargedReadingsCountByFiscalYearCommandConsumer(ISessionFactoryProvider sp, IUserService us) : base(sp) => _userService = us;
+
+    protected override async Task<int> Consume(GetUnchargedReadingsCountByFiscalYearCommand command, IMediationContext ctx, CancellationToken ct)
+        => await session.Query<ConsumptionReading>()
+            .CountAsync(r => r.FiscalYear.Id == command.FiscalYearId
+                          && r.Charge == null
+                          && !r.IsDeleted, ct).ConfigureAwait(false);
 }
 
 public class DeleteConsumptionReadingCommandConsumer
@@ -136,7 +167,7 @@ public class DeleteConsumptionReadingCommandConsumer
             .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
         if (entity == null) return false;
         entity.IsDeleted = true;
-        entity.TraceUpdate(currentUser);
+        entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
         return true;

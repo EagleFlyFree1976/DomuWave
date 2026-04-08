@@ -16,7 +16,7 @@
       <div class="tab-bar">
         <button class="tab-btn" :class="{ active: tab === 'types' }"    @click="tab = 'types'">Tipi consumo</button>
         <button class="tab-btn" :class="{ active: tab === 'meters' }"   @click="tab = 'meters'">Contatori</button>
-        <button class="tab-btn" :class="{ active: tab === 'readings' }" @click="tab = 'readings'" :disabled="!selectedTypeId">Letture</button>
+        <button class="tab-btn" :class="{ active: tab === 'readings' }" @click="tab = 'readings'">Letture</button>
         <button class="tab-btn" :class="{ active: tab === 'charges' }"  @click="tab = 'charges'">Ripartizioni</button>
       </div>
 
@@ -86,37 +86,43 @@
       </div>
 
       <!-- ── TAB: Letture ───────────────────────────────────────────────── -->
-      <div v-if="tab === 'readings'">
-        <!-- Selettore tipo + esercizio -->
-        <div class="card readings-filter">
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label">Tipo consumo</label>
-              <select class="form-select" v-model="selectedTypeId" @change="onTypeOrFyChange">
-                <option :value="null" disabled>— Seleziona —</option>
-                <option v-for="t in consumptionTypes" :key="t.id" :value="t.id">{{ t.name }} ({{ t.unitOfMeasure }})</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Esercizio fiscale</label>
-              <select class="form-select" v-model="selectedFiscalYearId" @change="onTypeOrFyChange">
-                <option :value="null" disabled>— Seleziona —</option>
-                <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">{{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}</option>
-              </select>
-            </div>
+      <div v-if="tab === 'readings'" class="card">
+        <!-- Toolbar con selettori integrati -->
+        <div class="toolbar readings-toolbar">
+          <div class="readings-selectors">
+            <select class="form-select readings-select" v-model="selectedTypeId" @change="onTypeOrFyChange">
+              <option :value="null" disabled>— Tipo consumo —</option>
+              <option v-for="t in consumptionTypes" :key="t.id" :value="t.id">{{ t.name }} ({{ t.unitOfMeasure }})</option>
+            </select>
+            <select class="form-select readings-select" v-model="selectedFiscalYearId" @change="onTypeOrFyChange">
+              <option :value="null" disabled>— Esercizio —</option>
+              <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">{{ fy.code }}</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button v-if="selectedTypeId && selectedFiscalYearId"
+                    class="btn btn-ghost btn-sm" @click="onTypeOrFyChange" :disabled="loadingReadings"
+                    title="Aggiorna letture">
+              <span v-if="loadingReadings" class="spinner" style="width:14px;height:14px"></span>
+              <span v-else>↺</span>
+            </button>
+            <button v-if="canEdit && selectedTypeId && selectedFiscalYearId && validReadingRows.length > 0"
+                    class="btn btn-primary btn-sm" @click="saveReadings" :disabled="savingReadings">
+              <span v-if="savingReadings" class="spinner" style="width:14px;height:14px"></span>
+              Salva tutte ({{ validReadingRows.length }})
+            </button>
           </div>
         </div>
 
-        <div class="card" v-if="selectedTypeId && selectedFiscalYearId">
-          <div class="toolbar">
-            <span class="text-secondary">Letture contatori — {{ selectedTypeName }}</span>
-            <button v-if="canEdit && readingsModified" class="btn btn-primary btn-sm" @click="saveReadings" :disabled="savingReadings">
-              <span v-if="savingReadings" class="spinner" style="width:14px;height:14px"></span>
-              Salva letture
-            </button>
-          </div>
+        <!-- Placeholder se non selezionato -->
+        <div v-if="!selectedTypeId || !selectedFiscalYearId" class="empty-state">
+          <div class="empty-icon">◎</div>
+          <div>Seleziona un tipo di consumo e un esercizio fiscale</div>
+        </div>
+
+        <template v-else>
           <div v-if="loadingReadings" class="loading-state"><div class="spinner"></div></div>
-          <div v-else-if="!readingRows.length" class="empty-state">
+          <div v-else-if="!meterGroups.length" class="empty-state">
             <div class="empty-icon">◎</div>
             <div>Nessun contatore per questo tipo di consumo. Aggiungi prima i contatori.</div>
           </div>
@@ -126,37 +132,76 @@
                 <tr>
                   <th>Unità</th>
                   <th>Matricola</th>
-                  <th class="col-num">Lettura iniziale</th>
+                  <th class="col-num">Lett. iniziale</th>
                   <th class="col-date">Data inizio</th>
-                  <th class="col-num">Lettura finale</th>
+                  <th class="col-num">Lett. finale</th>
                   <th class="col-date">Data fine</th>
                   <th class="col-num">Consumo</th>
+                  <th class="col-action"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="row in readingRows" :key="row.meterId" :class="{ 'row-warning': row.hasWarning }">
-                  <td>{{ row.unitName }}</td>
-                  <td class="mono text-secondary">{{ row.meterCode }}</td>
-                  <td class="col-num">
-                    <input class="inline-input" type="number" step="0.001" v-model.number="row.initialValue" @input="readingsModified = true" />
-                  </td>
-                  <td class="col-date">
-                    <input class="inline-input" type="date" v-model="row.initialDate" @input="readingsModified = true" />
-                  </td>
-                  <td class="col-num">
-                    <input class="inline-input" type="number" step="0.001" v-model.number="row.finalValue" @input="readingsModified = true" />
-                  </td>
-                  <td class="col-date">
-                    <input class="inline-input" type="date" v-model="row.finalDate" @input="readingsModified = true" />
-                  </td>
-                  <td class="col-num" :class="consumptionClass(row)">
-                    {{ fmtNum(row.finalValue - row.initialValue) }}
-                  </td>
-                </tr>
+                <template v-for="group in meterGroups" :key="group.meterId">
+                  <tr v-for="(row, rowIdx) in group.rows" :key="rowIdx"
+                      :class="{ 'row-error': rowError(row), 'row-saved': row.saved && !row.modified, 'row-charged': !!row.chargeId }">
+                    <!-- Unità e matricola solo nella prima riga del gruppo -->
+                    <td>
+                      <span v-if="rowIdx === 0">{{ group.unitName }}</span>
+                    </td>
+                    <td class="mono text-secondary">
+                      <span v-if="rowIdx === 0">{{ group.meterCode }}</span>
+                    </td>
+                    <td class="col-num">
+                      <span v-if="isReadonly(row)" class="inline-value mono">{{ fmtNum(row.initialValue) }}</span>
+                      <input v-else class="inline-input" type="number" step="0.001" v-model.number="row.initialValue" @input="onRowInput(row)" />
+                    </td>
+                    <td class="col-date">
+                      <span v-if="isReadonly(row)" class="inline-value text-secondary">{{ row.initialDate }}</span>
+                      <input v-else class="inline-input" type="date" v-model="row.initialDate" @input="onRowInput(row)" />
+                    </td>
+                    <td class="col-num">
+                      <span v-if="isReadonly(row)" class="inline-value mono">{{ fmtNum(row.finalValue) }}</span>
+                      <input v-else class="inline-input" type="number" step="0.001" v-model.number="row.finalValue" @input="onRowInput(row)" />
+                    </td>
+                    <td class="col-date">
+                      <span v-if="isReadonly(row)" class="inline-value text-secondary">{{ row.finalDate }}</span>
+                      <input v-else class="inline-input" type="date" v-model="row.finalDate" @input="onRowInput(row)" />
+                    </td>
+                    <td class="col-num" :class="consumptionClass(row)">
+                      <span v-if="rowError(row)" class="row-error-icon" :title="rowError(row)">⚠</span>
+                      <span v-else class="mono">{{ fmtNum(row.finalValue - row.initialValue) }}</span>
+                    </td>
+                    <td class="col-action">
+                      <span v-if="isReadonly(row)" class="badge badge-muted charged-badge" title="Inclusa in una ripartizione approvata">✓ Approvata</span>
+                      <div v-else class="row-btns">
+                        <button v-if="canEdit && row.modified && !rowError(row)"
+                                class="btn-icon btn-icon--save"
+                                :disabled="row.saving"
+                                title="Salva lettura"
+                                @click="saveRow(row)">
+                          <span v-if="row.saving" class="spinner" style="width:12px;height:12px"></span>
+                          <span v-else>✓</span>
+                        </button>
+                        <span v-else-if="row.saved && !row.modified && !row.chargeId" class="saved-check" title="Salvato">✓</span>
+                        <span v-else-if="row.chargeId" class="badge badge-green charged-badge" title="Inclusa in una ripartizione in bozza">↗ Bozza</span>
+                        <button v-if="canDelete && !isReadonly(row)"
+                                class="btn-icon btn-icon--danger"
+                                title="Elimina lettura"
+                                @click="deleteRow(group, row)">🗑</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <!-- Riga "+ Aggiungi lettura" per ogni contatore -->
+                  <tr v-if="canEdit" class="row-add">
+                    <td colspan="8">
+                      <button class="btn-add-reading" @click="addRow(group)">+ Aggiungi lettura</button>
+                    </td>
+                  </tr>
+                </template>
               </tbody>
             </table>
           </div>
-        </div>
+        </template>
       </div>
 
       <!-- ── TAB: Ripartizioni ──────────────────────────────────────────── -->
@@ -169,6 +214,16 @@
             </select>
           </div>
           <button v-if="canCreate && chargesFiscalYearId" class="btn btn-primary btn-sm" @click="openChargeModal()">+ Nuova ripartizione</button>
+        </div>
+
+        <div v-if="unchargedCount > 0 && chargesFiscalYearId && !loadingCharges" class="uncharged-warning">
+          <span class="uncharged-icon">⚠</span>
+          <span>
+            Ci sono <strong>{{ unchargedCount }}</strong>
+            {{ unchargedCount === 1 ? 'lettura non ancora ripartita' : 'letture non ancora ripartite' }}
+            in questo esercizio.
+          </span>
+          <button class="btn btn-sm btn-ghost" @click="tab = 'readings'">Vai alle letture</button>
         </div>
 
         <div v-if="loadingCharges" class="loading-state"><div class="spinner"></div></div>
@@ -331,7 +386,7 @@
           <label class="form-label">Budget preventivo *</label>
           <select class="form-select" v-model="chargeForm.budgetId" @change="delete chargeErrors.budgetId">
             <option :value="null" disabled>— Seleziona —</option>
-            <option v-for="b in preventiviForCharge" :key="b.id" :value="b.id">{{ b.code }}{{ b.description ? ' – ' + b.description : '' }}</option>
+            <option v-for="b in preventiviForCharge" :key="b.id" :value="b.id">{{ b.code }}{{ b.notes ? ' – ' + b.notes : '' }}</option>
           </select>
           <span v-if="chargeErrors.budgetId" class="field-error">{{ chargeErrors.budgetId }}</span>
         </div>
@@ -419,72 +474,185 @@ async function loadFiscalYears() {
 }
 
 // ── Letture ───────────────────────────────────────────────────────────────
-const selectedTypeId      = ref(null)
+const selectedTypeId       = ref(null)
 const selectedFiscalYearId = ref(null)
-const readingRows         = ref([])
-const loadingReadings     = ref(false)
-const savingReadings      = ref(false)
-const readingsModified    = ref(false)
+const meterGroups          = ref([])   // [{ meterId, unitName, meterCode, rows: [...] }]
+const loadingReadings      = ref(false)
+const savingReadings       = ref(false)
 
-const selectedTypeName = computed(() =>
-  consumptionTypes.value.find(t => t.id === selectedTypeId.value)?.name ?? '')
+function makeEmptyRow(meterId) {
+  return { id: 0, meterId, initialValue: 0, initialDate: '', finalValue: 0, finalDate: '', notes: '', modified: true, saving: false, saved: false, prevFinalValue: null, prevFinalDate: null }
+}
+
+function dayAfter(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+}
+
+/** Restituisce il messaggio di errore della riga, o null se valida. */
+function rowError(row) {
+  if (!row.initialDate) return 'Data inizio mancante'
+  if (!row.finalDate)   return 'Data fine mancante'
+  if (row.initialDate > row.finalDate) return 'Data inizio > data fine'
+  if (row.finalValue < row.initialValue) return 'Lettura finale < lettura iniziale'
+  if (row.prevFinalValue !== null && row.initialValue !== row.prevFinalValue)
+    return `Lettura iniziale deve essere ${row.prevFinalValue} (finale lettura precedente)`
+  if (row.prevFinalDate !== null && row.initialDate !== dayAfter(row.prevFinalDate))
+    return `Data inizio deve essere ${dayAfter(row.prevFinalDate)} (giorno dopo data finale precedente)`
+  return null
+}
+
+const allRows        = computed(() => meterGroups.value.flatMap(g => g.rows))
+const validReadingRows = computed(() => allRows.value.filter(r => !rowError(r)))
+
+function onRowInput(row) {
+  row.modified = true
+  row.saved    = false
+}
+
+function addRow(group) {
+  const prev = group.rows.at(-1)
+  const newRow = makeEmptyRow(group.meterId)
+  if (prev) {
+    newRow.initialValue  = prev.finalValue
+    newRow.initialDate   = dayAfter(prev.finalDate)
+    newRow.prevFinalValue = prev.finalValue
+    newRow.prevFinalDate  = prev.finalDate
+  }
+  group.rows.push(newRow)
+}
+
+async function deleteRow(group, row) {
+  if (row.id > 0) {
+    try {
+      await consumptionReadingApi.delete(row.id)
+    } catch (err) {
+      if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+      return
+    }
+  }
+  const idx = group.rows.indexOf(row)
+  if (idx !== -1) group.rows.splice(idx, 1)
+  if (group.rows.length === 0) {
+    group.rows.push(makeEmptyRow(group.meterId))
+  } else {
+    // ricalcola i riferimenti alla riga precedente per le righe successive
+    group.rows.forEach((r, i) => {
+      r.prevFinalValue = i > 0 ? group.rows[i - 1].finalValue : null
+      r.prevFinalDate  = i > 0 ? group.rows[i - 1].finalDate  : null
+    })
+  }
+}
 
 async function onTypeOrFyChange() {
   if (!selectedTypeId.value || !selectedFiscalYearId.value) return
-  readingsModified.value = false
-  loadingReadings.value  = true
+  loadingReadings.value = true
   try {
-    // Carica contatori del tipo selezionato
     const [metersRes, readingsRes] = await Promise.all([
       meterApi.getByType(selectedTypeId.value),
       consumptionReadingApi.getByTypeFiscalYear(selectedTypeId.value, selectedFiscalYearId.value),
     ])
-    const typeMeters    = metersRes.data ?? []
+    const typeMeters   = (metersRes.data ?? []).filter(m => m.isActive)
     const savedReadings = readingsRes.data ?? []
-    const readingByMeterId = Object.fromEntries(savedReadings.map(r => [r.meterId, r]))
 
-    readingRows.value = typeMeters
-      .filter(m => m.isActive)
+    // raggruppa letture per contatore
+    const readingsByMeter = {}
+    for (const r of savedReadings) {
+      if (!readingsByMeter[r.meterId]) readingsByMeter[r.meterId] = []
+      readingsByMeter[r.meterId].push(r)
+    }
+
+    meterGroups.value = typeMeters
       .sort((a, b) => (a.unitName ?? '').localeCompare(b.unitName ?? '', 'it', { sensitivity: 'base' }))
       .map(m => {
-        const saved = readingByMeterId[m.id]
-        return {
-          meterId:      m.id,
-          unitName:     m.unitName,
-          meterCode:    m.code,
-          initialValue: saved?.initialValue ?? 0,
-          initialDate:  saved?.initialDate?.slice(0, 10) ?? '',
-          finalValue:   saved?.finalValue ?? 0,
-          finalDate:    saved?.finalDate?.slice(0, 10) ?? '',
-          hasWarning:   false,
-        }
+        const existing = (readingsByMeter[m.id] ?? [])
+          .sort((a, b) => (a.initialDate ?? '') < (b.initialDate ?? '') ? -1 : 1)
+        const rows = existing.length
+          ? existing.map((r, idx) => ({
+              id:            r.id,
+              meterId:       m.id,
+              initialValue:  r.initialValue,
+              initialDate:   r.initialDate?.slice(0, 10) ?? '',
+              finalValue:    r.finalValue,
+              finalDate:     r.finalDate?.slice(0, 10) ?? '',
+              notes:         r.notes ?? '',
+              chargeId:       r.chargeId ?? null,
+              chargeStatusId: r.chargeStatusId ?? null,
+              modified:       false,
+              saving:        false,
+              saved:         true,
+              prevFinalValue: idx > 0 ? existing[idx - 1].finalValue : null,
+              prevFinalDate:  idx > 0 ? existing[idx - 1].finalDate?.slice(0, 10) ?? null : null,
+            }))
+          : [makeEmptyRow(m.id)]
+        return { meterId: m.id, unitName: m.unitName, meterCode: m.code, rows }
       })
-  } catch { readingRows.value = [] } finally { loadingReadings.value = false }
+  } catch { meterGroups.value = [] } finally { loadingReadings.value = false }
 }
 
-async function saveReadings() {
-  if (!selectedTypeId.value || !selectedFiscalYearId.value) return
-  savingReadings.value = true
+function rowToItem(r) {
+  return { id: r.id, meterId: r.meterId, initialValue: r.initialValue, initialDate: r.initialDate || null, finalValue: r.finalValue, finalDate: r.finalDate || null, notes: r.notes || null }
+}
+
+/** Salva una singola riga. */
+async function saveRow(row) {
+  row.saving = true
   try {
-    await consumptionReadingApi.saveBulk({
+    const res = await consumptionReadingApi.saveBulk({
       consumptionTypeId: selectedTypeId.value,
       fiscalYearId:      selectedFiscalYearId.value,
-      items: readingRows.value.map(r => ({
-        meterId:      r.meterId,
-        initialValue: r.initialValue,
-        initialDate:  r.initialDate || null,
-        finalValue:   r.finalValue,
-        finalDate:    r.finalDate || null,
-      })),
+      items:             [rowToItem(row)],
     })
-    store.toast('Letture salvate', 'success')
-    readingsModified.value = false
+    // aggiorna l'id se era nuovo
+    const saved = res.data?.[0]
+    if (saved && row.id === 0) row.id = saved.id
+    row.modified = false
+    row.saved    = true
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { row.saving = false }
+}
+
+/** Salva tutte le righe valide. */
+async function saveReadings() {
+  if (!selectedTypeId.value || !selectedFiscalYearId.value) return
+  const toSave = validReadingRows.value
+  if (!toSave.length) return
+  savingReadings.value = true
+  try {
+    const res = await consumptionReadingApi.saveBulk({
+      consumptionTypeId: selectedTypeId.value,
+      fiscalYearId:      selectedFiscalYearId.value,
+      items:             toSave.map(rowToItem),
+    })
+    // aggiorna gli id per le righe nuove
+    const saved = res.data ?? []
+    toSave.forEach((r, i) => {
+      if (r.id === 0 && saved[i]?.id) r.id = saved[i].id
+      r.modified = false
+      r.saved    = true
+    })
+    const skipped = allRows.value.length - toSave.length
+    store.toast(
+      skipped > 0
+        ? `${toSave.length} letture salvate, ${skipped} saltate per dati non validi`
+        : `${toSave.length} letture salvate`,
+      'success'
+    )
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally { savingReadings.value = false }
 }
 
+/** Lettura non modificabile: ha una ripartizione già approvata (statusId !== 1 = Draft). */
+function isReadonly(row) {
+  return !!row.chargeId && row.chargeStatusId !== 1
+}
+
 function consumptionClass(row) {
+  if (rowError(row)) return ''
   const c = row.finalValue - row.initialValue
   if (c < 0) return 'text-red'
   if (c > 0) return 'text-green'
@@ -501,17 +669,20 @@ const charges             = ref([])
 const loadingCharges      = ref(false)
 const chargesFiscalYearId = ref(null)
 const preventiviForCharge = ref([])
+const unchargedCount      = ref(0)
 
 async function loadCharges() {
   if (!chargesFiscalYearId.value) return
   loadingCharges.value = true
   try {
-    const [chargesRes, budgetsRes] = await Promise.all([
+    const [chargesRes, budgetsRes, unchargedRes] = await Promise.all([
       consumptionChargeApi.getByFiscalYear(chargesFiscalYearId.value),
       budgetApi.getByCondominium(store.selectedCondominioId),
+      consumptionReadingApi.getUnchargedCount(chargesFiscalYearId.value),
     ])
     charges.value = chargesRes.data ?? []
-    preventiviForCharge.value = (budgetsRes.data ?? []).filter(b => b.typeId === 1)
+    preventiviForCharge.value = (budgetsRes.data ?? []).filter(b => b.type === 1)
+    unchargedCount.value = unchargedRes.data ?? 0
   } catch { charges.value = [] } finally { loadingCharges.value = false }
 }
 
@@ -711,10 +882,78 @@ watch(() => store.selectedCondominioId, () => {
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 .tab-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.readings-filter { margin-bottom: 0.75rem; padding: 1rem; }
-.readings-table .col-num  { width: 110px; text-align: right; }
-.readings-table .col-date { width: 130px; }
-.readings-table .inline-input { width: 100%; }
+.toolbar {
+  display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.readings-toolbar { justify-content: space-between; }
+.readings-selectors { display: flex; gap: 0.5rem; flex-wrap: nowrap; }
+.readings-select { width: 220px; flex-shrink: 0; }
+
+.readings-table tbody tr:hover td { background: var(--bg-surface); }
+.readings-table .col-num    { width: 120px; text-align: right; }
+.readings-table th.col-num  { text-align: right; }
+.readings-table .col-date   { width: 150px; }
+.readings-table .col-action { width: 48px; text-align: center; padding: 0; }
+
+.inline-input {
+  width: 100%;
+  padding: 0.3rem 0.45rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.inline-input:focus {
+  outline: none;
+  border-color: var(--border-active, var(--accent));
+}
+input[type="date"].inline-input { color-scheme: dark; }
+
+.btn-icon--save {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: none; cursor: pointer;
+  background: color-mix(in srgb, var(--accent-green) 15%, transparent);
+  color: var(--accent-green);
+  font-size: 0.9rem;
+  transition: background 0.15s;
+}
+.btn-icon--save:hover:not(:disabled) { background: color-mix(in srgb, var(--accent-green) 28%, transparent); }
+.btn-icon--save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.row-error-icon { color: var(--accent-red); font-size: 1rem; cursor: help; }
+
+.uncharged-warning {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  margin: 0.75rem 1rem;
+  padding: 0.65rem 1rem;
+  background: color-mix(in srgb, var(--accent-amber, #f59e0b) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-amber, #f59e0b) 35%, transparent);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: var(--text);
+}
+.uncharged-icon { color: var(--accent-amber, #f59e0b); font-size: 1rem; flex-shrink: 0; }
+
+.row-charged td { opacity: 0.6; }
+.inline-value { display: block; padding: 0.3rem 0.45rem; font-size: 0.875rem; }
+.charged-badge { font-size: 0.75rem; white-space: nowrap; }
+
+.row-btns { display: flex; gap: 0.25rem; align-items: center; justify-content: center; }
+
+.row-add td { padding: 0.25rem 0.75rem; border-bottom: 2px solid var(--border); }
+.btn-add-reading {
+  background: none; border: none; cursor: pointer;
+  color: var(--accent); font-size: 0.8rem; padding: 0.15rem 0;
+  opacity: 0.75; transition: opacity 0.15s;
+}
+.btn-add-reading:hover { opacity: 1; }
 
 .row-warning td { background: color-mix(in srgb, var(--accent-amber, #f59e0b) 8%, transparent); }
 .warn-icon { color: var(--accent-amber, #f59e0b); cursor: help; }
@@ -744,4 +983,9 @@ watch(() => store.selectedCondominioId, () => {
 .items-table .col-num { text-align: right; }
 
 .link-btn { background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; font-size: inherit; }
+
+.row-error td { background: color-mix(in srgb, var(--accent-red) 6%, transparent); }
+.row-saved td { background: color-mix(in srgb, var(--accent-green) 6%, transparent); }
+.row-error-msg { color: var(--accent-red); font-size: 0.8rem; white-space: nowrap; }
+.saved-check { color: var(--accent-green); font-size: 1rem; }
 </style>

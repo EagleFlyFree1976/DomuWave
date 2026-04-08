@@ -106,6 +106,8 @@ public static class ConsumptionMappingExtensions
             FinalValue     = entity.FinalValue,
             Consumption    = entity.Consumption,
             Notes          = entity.Notes,
+            ChargeId       = entity.Charge?.Id,
+            ChargeStatusId = entity.Charge?.Status?.Id,
         };
         dto.SetTraceInfo(entity);
         return dto;
@@ -149,7 +151,6 @@ public static class ConsumptionMappingExtensions
             FiscalYearId        = entity.FiscalYear?.Id ?? 0,
             FiscalYearCode      = entity.FiscalYear?.Code,
             BudgetId            = entity.Budget?.Id ?? 0,
-            BudgetCode          = entity.Budget?.Code,
             ExpenseId           = entity.Expense?.Id,
             TotalAmount         = entity.TotalAmount,
             StatusId            = entity.Status?.Id ?? 0,

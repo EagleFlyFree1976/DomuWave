@@ -432,6 +432,8 @@ export const meterApi = {
 export const consumptionReadingApi = {
   getByTypeFiscalYear: (consumptionTypeId, fiscalYearId) =>
     api.get(`/consumption/readings/by-type/${consumptionTypeId}/fiscal-year/${fiscalYearId}`),
+  getUnchargedCount:   (fiscalYearId) =>
+    api.get(`/consumption/readings/uncharged-count/by-fiscal-year/${fiscalYearId}`),
   saveBulk:            (data) => api.put('/consumption/readings/bulk', data),
   delete:              (id)   => api.delete(`/consumption/readings/${id}`),
 }

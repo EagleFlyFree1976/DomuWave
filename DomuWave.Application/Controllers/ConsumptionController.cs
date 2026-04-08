@@ -1,8 +1,10 @@
 using CPQ.Core.ActionFilters;
+using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.Consumption;
 using DomuWave.Services.Dto.Consumption;
+using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -150,6 +152,12 @@ public class ConsumptionController(
     }
 
     // ── ConsumptionCharge ─────────────────────────────────────────────────
+
+    [HttpGet("readings/uncharged-count/by-fiscal-year/{fiscalYearId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(int), 200)]
+    public async Task<IActionResult> GetUnchargedReadingsCount(int fiscalYearId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetUnchargedReadingsCountByFiscalYearCommand(CurrentUser.Id, fiscalYearId), ct));
 
     [HttpGet("charges/by-fiscal-year/{fiscalYearId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]

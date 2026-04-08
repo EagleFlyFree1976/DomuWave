@@ -100,9 +100,7 @@ CREATE TABLE ConsumptionReading (
 
     CONSTRAINT FK_ConsumptionReading_Tenant     FOREIGN KEY (TenantId)     REFERENCES Tenant(Id),
     CONSTRAINT FK_ConsumptionReading_Meter      FOREIGN KEY (MeterId)      REFERENCES Meter(Id),
-    CONSTRAINT FK_ConsumptionReading_FiscalYear FOREIGN KEY (FiscalYearId) REFERENCES FiscalYear(Id),
-
-    CONSTRAINT UQ_ConsumptionReading_MeterFiscalYear UNIQUE (MeterId, FiscalYearId)
+    CONSTRAINT FK_ConsumptionReading_FiscalYear FOREIGN KEY (FiscalYearId) REFERENCES FiscalYear(Id)
 );
 
 INSERT INTO hibernate_unique_key (entity_type, next_hi)

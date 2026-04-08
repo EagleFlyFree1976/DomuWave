@@ -1,12 +1,14 @@
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
+using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Consumption;
 using DomuWave.Services.Dto.Consumption;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using NHibernate;
 using NHibernate.Linq;
 using SimpleMediator.Core;
 
@@ -71,6 +73,30 @@ public class CreateConsumptionChargeCommandConsumer
                 .FirstOrDefaultAsync(x => x.Id == command.Dto.ExpenseId.Value && !x.IsDeleted, ct).ConfigureAwait(false);
         }
 
+        // Blocca se esiste già una ripartizione in Draft per questo tipo+esercizio
+        var existingDraft = await session.Query<ConsumptionCharge>()
+            .AnyAsync(x => x.ConsumptionType.Id == command.Dto.ConsumptionTypeId
+                        && x.FiscalYear.Id == command.Dto.FiscalYearId
+                        && x.Status.Id == ConsumptionChargeStatus.Draft
+                        && !x.IsDeleted, ct).ConfigureAwait(false);
+        if (existingDraft)
+            throw new ValidatorException("Esiste già una ripartizione in bozza per questo tipo di consumo. Approva o elimina quella esistente prima di crearne una nuova.");
+
+        // Verifica che esistano letture non ancora ripartite per questo tipo+esercizio
+        var meterIdsForType = await session.Query<Meter>()
+            .Where(m => m.ConsumptionType.Id == command.Dto.ConsumptionTypeId && m.IsActive && !m.IsDeleted)
+            .Select(m => m.Id)
+            .ToListAsync(ct).ConfigureAwait(false);
+
+        var hasUnchargedReadings = await session.Query<ConsumptionReading>()
+            .AnyAsync(r => meterIdsForType.Contains(r.Meter.Id)
+                        && r.FiscalYear.Id == command.Dto.FiscalYearId
+                        && r.Charge == null
+                        && !r.IsDeleted, ct).ConfigureAwait(false);
+
+        if (!hasUnchargedReadings)
+            throw new ValidatorException("Non esistono letture non ancora ripartite per questo tipo di consumo nell'esercizio selezionato.");
+
         var draftStatus = await session.Query<ConsumptionChargeStatus>()
             .FirstOrDefaultAsync(x => x.Id == ConsumptionChargeStatus.Draft, ct).ConfigureAwait(false);
 
@@ -133,7 +159,7 @@ public class UpdateConsumptionChargeCommandConsumer
 
         entity.TotalAmount = command.Dto.TotalAmount;
         entity.Notes       = command.Dto.Notes;
-        entity.TraceUpdate(currentUser);
+        entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
 
@@ -230,7 +256,7 @@ public class ApproveConsumptionChargeCommandConsumer
         var approvedStatus = await session.Query<ConsumptionChargeStatus>()
             .FirstOrDefaultAsync(x => x.Id == ConsumptionChargeStatus.Approved, ct).ConfigureAwait(false);
         entity.Status = approvedStatus;
-        entity.TraceUpdate(currentUser);
+        entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
 
@@ -253,7 +279,7 @@ public class DeleteConsumptionChargeCommandConsumer
         if (entity.Status?.Id == ConsumptionChargeStatus.Approved)
             throw new ValidatorException("Non è possibile eliminare una ripartizione già approvata.");
         entity.IsDeleted = true;
-        entity.TraceUpdate(currentUser);
+        entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
         return true;
@@ -269,13 +295,23 @@ file static class ConsumptionChargeHelper
     /// Logica: proporzionale al consumo totale di tutte le unità del tipo di consumo.
     /// Le unità senza letture ricevono quota 0 con HasWarning=true.
     /// </summary>
-    internal static async Task RecalculateItems(
-        ConsumptionCharge entity,
-        object currentUser,
+    internal static async Task RecalculateItems(ConsumptionCharge entity,
+        IUser currentUser,
         CancellationToken ct,
-        NHibernate.ISession session)
+        ISession session)
     {
         var user = currentUser as CPQ.Core.Memberships.IUser;
+
+        // De-marca le letture precedentemente assegnate a questa ripartizione
+        // (vengono rimesse nel pool "non ancora ripartite")
+        var previousReadings = await session.Query<ConsumptionReading>()
+            .Where(r => r.Charge.Id == entity.Id && !r.IsDeleted)
+            .ToListAsync(ct).ConfigureAwait(false);
+        foreach (var r in previousReadings)
+        {
+            r.Charge = null;
+            await session.SaveOrUpdateAsync(r, ct).ConfigureAwait(false);
+        }
 
         // Tutti i contatori attivi del tipo di consumo
         var meters = await session.Query<Meter>()
@@ -283,11 +319,12 @@ file static class ConsumptionChargeHelper
                      && m.IsActive && !m.IsDeleted)
             .ToListAsync(ct).ConfigureAwait(false);
 
-        // Letture per l'esercizio
+        // Letture non ancora ripartite per l'esercizio
         var meterIds = meters.Select(m => m.Id).ToList();
         var readings = await session.Query<ConsumptionReading>()
             .Where(r => meterIds.Contains(r.Meter.Id)
                      && r.FiscalYear.Id == entity.FiscalYear.Id
+                     && r.Charge == null
                      && !r.IsDeleted)
             .ToListAsync(ct).ConfigureAwait(false);
 
@@ -345,7 +382,7 @@ file static class ConsumptionChargeHelper
                 existing.Percentage       = percentage;
                 existing.Amount           = amount;
                 existing.HasWarning       = hasWarning;
-                existing.TraceUpdate(currentUser);
+                existing.Trace(currentUser);
                 await session.SaveOrUpdateAsync(existing, ct).ConfigureAwait(false);
             }
             else
@@ -365,6 +402,13 @@ file static class ConsumptionChargeHelper
                 if (user != null) item.Trace(user);
                 await session.SaveAsync(item, ct).ConfigureAwait(false);
             }
+        }
+
+        // Marca le letture usate come appartenenti a questa ripartizione
+        foreach (var r in readings)
+        {
+            r.Charge = entity;
+            await session.SaveOrUpdateAsync(r, ct).ConfigureAwait(false);
         }
 
         await session.FlushAsync(ct).ConfigureAwait(false);

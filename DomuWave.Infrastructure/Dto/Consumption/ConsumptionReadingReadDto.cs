@@ -16,6 +16,8 @@ public class ConsumptionReadingReadDto : TraceEntityDTO<int>
     public decimal   FinalValue       { get; set; }
     public decimal   Consumption      { get; set; }
     public string    Notes            { get; set; }
+    public int?      ChargeId         { get; set; }
+    public int?      ChargeStatusId   { get; set; }
 }
 
 public class CreateConsumptionReadingDto

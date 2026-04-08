@@ -31,12 +31,21 @@ public class SaveConsumptionReadingsBulkCommand : BaseCommand, IQuery<IList<Cons
 
 public class UpsertConsumptionReadingDto
 {
+    public int       Id           { get; set; }   // 0 = nuovo record
     public int       MeterId      { get; set; }
     public DateTime? InitialDate  { get; set; }
     public decimal   InitialValue { get; set; }
     public DateTime? FinalDate    { get; set; }
     public decimal   FinalValue   { get; set; }
     public string?   Notes        { get; set; }
+}
+
+public class GetUnchargedReadingsCountByFiscalYearCommand : BaseCommand, IQuery<int>
+{
+    public int FiscalYearId { get; set; }
+    public GetUnchargedReadingsCountByFiscalYearCommand() { }
+    public GetUnchargedReadingsCountByFiscalYearCommand(int currentUserId, int fiscalYearId) : base(currentUserId)
+        => FiscalYearId = fiscalYearId;
 }
 
 public class DeleteConsumptionReadingCommand : BaseCommand, IQuery<bool>

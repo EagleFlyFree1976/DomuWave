@@ -25,6 +25,7 @@
     <!-- Colonna calcolata persistita: insert=false update=false -->
     <property name="Consumption"  column="Consumption"  type="Decimal"   not-null="true" insert="false" update="false" />
     <property name="Notes"        column="Notes"        type="String"    length="1000" />
+    <many-to-one name="Charge" class="DomuWave.Services.Models.ConsumptionCharge, DomuWave.Services" column="ChargeId" not-null="false" lazy="false" fetch="join" />
 
     <property name="CreatedBy"             column="CreatedById"           type="Int32"     not-null="true" />
     <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"    length="200" />

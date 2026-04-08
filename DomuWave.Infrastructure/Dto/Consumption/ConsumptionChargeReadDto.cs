@@ -10,8 +10,8 @@ public class ConsumptionChargeReadDto : TraceEntityDTO<int>
     public int     FiscalYearId        { get; set; }
     public string  FiscalYearCode      { get; set; }
     public int     BudgetId            { get; set; }
-    public string  BudgetCode          { get; set; }
-    public int?    ExpenseId           { get; set; }
+    
+    public long?    ExpenseId           { get; set; }
     public decimal TotalAmount         { get; set; }
     public int     StatusId            { get; set; }
     public string  StatusName          { get; set; }
