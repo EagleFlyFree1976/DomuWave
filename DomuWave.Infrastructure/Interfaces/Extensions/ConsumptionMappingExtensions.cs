@@ -19,6 +19,7 @@ public static class ConsumptionMappingExtensions
             UnitOfMeasure   = entity.UnitOfMeasure,
             Notes           = entity.Notes,
             IsActive        = entity.IsActive,
+            IsDeleted       = entity.IsDeleted,
         };
         dto.SetTraceInfo(entity);
         return dto;
@@ -53,14 +54,16 @@ public static class ConsumptionMappingExtensions
         if (entity == null) return null;
         var dto = new MeterReadDto
         {
-            ConsumptionTypeId   = entity.ConsumptionType?.Id ?? 0,
-            ConsumptionTypeName = entity.ConsumptionType?.Name,
-            UnitOfMeasure       = entity.ConsumptionType?.UnitOfMeasure,
+            ConsumptionTypeId        = entity.ConsumptionType?.Id ?? 0,
+            ConsumptionTypeName      = entity.ConsumptionType?.Name,
+            ConsumptionTypeIsDeleted = entity.ConsumptionType?.IsDeleted ?? false,
+            UnitOfMeasure            = entity.ConsumptionType?.UnitOfMeasure,
             UnitId              = entity.Unit?.Id ?? 0,
             UnitName            = entity.Unit?.DisplayName ?? entity.Unit?.InternalNumber,
             Code                = entity.Code,
             Notes               = entity.Notes,
             IsActive            = entity.IsActive,
+            IsDeleted           = entity.IsDeleted,
         };
         dto.SetTraceInfo(entity);
         return dto;
@@ -96,6 +99,7 @@ public static class ConsumptionMappingExtensions
         {
             MeterId        = entity.Meter?.Id ?? 0,
             MeterCode      = entity.Meter?.Code,
+            MeterIsDeleted = entity.Meter?.IsDeleted ?? false,
             UnitId         = entity.Meter?.Unit?.Id ?? 0,
             UnitName       = entity.Meter?.Unit?.DisplayName ?? entity.Meter?.Unit?.InternalNumber,
             FiscalYearId   = entity.FiscalYear?.Id ?? 0,
@@ -145,9 +149,10 @@ public static class ConsumptionMappingExtensions
         if (entity == null) return null;
         var dto = new ConsumptionChargeReadDto
         {
-            ConsumptionTypeId   = entity.ConsumptionType?.Id ?? 0,
-            ConsumptionTypeName = entity.ConsumptionType?.Name,
-            UnitOfMeasure       = entity.ConsumptionType?.UnitOfMeasure,
+            ConsumptionTypeId        = entity.ConsumptionType?.Id ?? 0,
+            ConsumptionTypeName      = entity.ConsumptionType?.Name,
+            ConsumptionTypeIsDeleted = entity.ConsumptionType?.IsDeleted ?? false,
+            UnitOfMeasure            = entity.ConsumptionType?.UnitOfMeasure,
             FiscalYearId        = entity.FiscalYear?.Id ?? 0,
             FiscalYearCode      = entity.FiscalYear?.Code,
             BudgetId            = entity.Budget?.Id ?? 0,

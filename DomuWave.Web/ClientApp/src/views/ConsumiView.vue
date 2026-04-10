@@ -23,11 +23,19 @@
       <!-- ── TAB: Tipi consumo ──────────────────────────────────────────── -->
       <div v-if="tab === 'types'" class="card">
         <div class="toolbar">
-          <span class="text-secondary">{{ consumptionTypes.length }} tipo/i</span>
-          <button v-if="canCreate" class="btn btn-primary btn-sm" @click="openTypeModal()">+ Nuovo tipo</button>
+          <span class="text-secondary">{{ visibleTypes.length }} tipo/i</span>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-ghost btn-sm"
+                    :class="{ 'btn-ghost--active': showDeletedTypes }"
+                    @click="showDeletedTypes = !showDeletedTypes"
+                    title="Mostra/nascondi tipi cancellati">
+              {{ showDeletedTypes ? 'Nascondi cancellati' : 'Mostra cancellati' }}
+            </button>
+            <button v-if="canCreate" class="btn btn-primary btn-sm" @click="openTypeModal()">+ Nuovo tipo</button>
+          </div>
         </div>
         <div v-if="loadingTypes" class="loading-state"><div class="spinner"></div></div>
-        <div v-else-if="!consumptionTypes.length" class="empty-state">
+        <div v-else-if="!visibleTypes.length" class="empty-state">
           <div class="empty-icon">◎</div>
           <div>Nessun tipo di consumo. Crea il primo.</div>
         </div>
@@ -35,16 +43,20 @@
           <table>
             <thead><tr><th>Nome</th><th>U.M.</th><th>Stato</th><th></th></tr></thead>
             <tbody>
-              <tr v-for="t in consumptionTypes" :key="t.id">
+              <tr v-for="t in visibleTypes" :key="t.id" :class="{ 'row-type-deleted': t.isDeleted }">
                 <td>
-                  <button class="link-btn" @click="selectType(t)">{{ t.name }}</button>
+                  <button class="link-btn" @click="selectType(t)" :disabled="t.isDeleted">{{ t.name }}</button>
+                  <span v-if="t.isDeleted" class="badge badge-muted type-deleted-badge" title="Tipo cancellato">Cancellato</span>
                 </td>
                 <td class="text-secondary mono">{{ t.unitOfMeasure }}</td>
-                <td><span class="badge" :class="t.isActive ? 'badge-green' : 'badge-muted'">{{ t.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
+                <td>
+                  <span v-if="!t.isDeleted" class="badge" :class="t.isActive ? 'badge-green' : 'badge-muted'">{{ t.isActive ? 'Attivo' : 'Inattivo' }}</span>
+                  <span v-else class="badge badge-muted">—</span>
+                </td>
                 <td>
                   <div class="row-actions">
-                    <button v-if="canEdit" class="btn-icon" @click="openTypeModal(t)">✎</button>
-                    <button v-if="canDelete" class="btn-icon btn-icon--danger" @click="deleteType(t.id)">🗑</button>
+                    <button v-if="canEdit && !t.isDeleted" class="btn-icon" @click="openTypeModal(t)">✎</button>
+                    <button v-if="canDelete && !t.isDeleted" class="btn-icon btn-icon--danger" @click="deleteType(t)">🗑</button>
                   </div>
                 </td>
               </tr>
@@ -56,11 +68,19 @@
       <!-- ── TAB: Contatori ─────────────────────────────────────────────── -->
       <div v-if="tab === 'meters'" class="card">
         <div class="toolbar">
-          <span class="text-secondary">{{ meters.length }} contatore/i</span>
-          <button v-if="canCreate" class="btn btn-primary btn-sm" @click="openMeterModal()">+ Nuovo contatore</button>
+          <span class="text-secondary">{{ visibleMeters.length }} contatore/i</span>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-ghost btn-sm"
+                    :class="{ 'btn-ghost--active': showDeletedMeters }"
+                    @click="showDeletedMeters = !showDeletedMeters"
+                    title="Mostra/nascondi contatori e tipi cancellati">
+              {{ showDeletedMeters ? 'Nascondi cancellati' : 'Mostra cancellati' }}
+            </button>
+            <button v-if="canCreate" class="btn btn-primary btn-sm" @click="openMeterModal()">+ Nuovo contatore</button>
+          </div>
         </div>
         <div v-if="loadingMeters" class="loading-state"><div class="spinner"></div></div>
-        <div v-else-if="!meters.length" class="empty-state">
+        <div v-else-if="!visibleMeters.length" class="empty-state">
           <div class="empty-icon">◎</div>
           <div>Nessun contatore. Crea il primo.</div>
         </div>
@@ -68,15 +88,25 @@
           <table>
             <thead><tr><th>Tipo</th><th>Unità</th><th>Matricola</th><th>Stato</th><th></th></tr></thead>
           <tbody>
-            <tr v-for="m in meters" :key="m.id">
-              <td>{{ m.consumptionTypeName }}</td>
+            <tr v-for="m in visibleMeters" :key="m.id"
+                :class="{ 'row-type-deleted': m.consumptionTypeIsDeleted || m.isDeleted }">
+              <td>
+                {{ m.consumptionTypeName }}
+                <span v-if="m.consumptionTypeIsDeleted" class="badge badge-muted type-deleted-badge" title="Il tipo consumo è stato eliminato">Cancellato</span>
+              </td>
               <td class="text-secondary">{{ m.unitName }}</td>
-              <td class="mono">{{ m.code }}</td>
-              <td><span class="badge" :class="m.isActive ? 'badge-green' : 'badge-muted'">{{ m.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
+              <td class="mono">
+                {{ m.code }}
+                <span v-if="m.isDeleted" class="badge badge-muted type-deleted-badge" title="Contatore eliminato">Cancellato</span>
+              </td>
+              <td>
+                <span v-if="!m.isDeleted" class="badge" :class="m.isActive ? 'badge-green' : 'badge-muted'">{{ m.isActive ? 'Attivo' : 'Inattivo' }}</span>
+                <span v-else class="badge badge-muted">—</span>
+              </td>
               <td>
                 <div class="row-actions">
-                  <button v-if="canEdit" class="btn-icon" @click="openMeterModal(m)">✎</button>
-                  <button v-if="canDelete" class="btn-icon btn-icon--danger" @click="deleteMeter(m.id)">🗑</button>
+                  <button v-if="canEdit && !m.isDeleted && !m.consumptionTypeIsDeleted" class="btn-icon" @click="openMeterModal(m)">✎</button>
+                  <button v-if="canDelete && !m.isDeleted" class="btn-icon btn-icon--danger" @click="deleteMeter(m.id)">🗑</button>
                 </div>
               </td>
             </tr>
@@ -92,19 +122,26 @@
           <div class="readings-selectors">
             <select class="form-select readings-select" v-model="selectedTypeId" @change="onTypeOrFyChange">
               <option :value="null" disabled>— Tipo consumo —</option>
-              <option v-for="t in consumptionTypes" :key="t.id" :value="t.id">{{ t.name }} ({{ t.unitOfMeasure }})</option>
+              <option v-for="t in consumptionTypes" :key="t.id" :value="t.id">{{ t.name }} ({{ t.unitOfMeasure }}){{ t.isDeleted ? ' — Cancellato' : '' }}</option>
             </select>
             <select class="form-select readings-select" v-model="selectedFiscalYearId" @change="onTypeOrFyChange">
               <option :value="null" disabled>— Esercizio —</option>
               <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">{{ fy.code }}</option>
             </select>
           </div>
-          <div style="display:flex;gap:0.5rem;align-items:center">
+          <div style="display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
             <button v-if="selectedTypeId && selectedFiscalYearId"
                     class="btn btn-ghost btn-sm" @click="onTypeOrFyChange" :disabled="loadingReadings"
                     title="Aggiorna letture">
               <span v-if="loadingReadings" class="spinner" style="width:14px;height:14px"></span>
               <span v-else>↺</span>
+            </button>
+            <button v-if="selectedTypeId && selectedFiscalYearId"
+                    class="btn btn-ghost btn-sm"
+                    :class="{ 'btn-ghost--active': showDeletedReadings }"
+                    @click="showDeletedReadings = !showDeletedReadings"
+                    title="Mostra/nascondi contatori cancellati">
+              {{ showDeletedReadings ? 'Nascondi cancellati' : 'Mostra cancellati' }}
             </button>
             <button v-if="canEdit && selectedTypeId && selectedFiscalYearId && validReadingRows.length > 0"
                     class="btn btn-primary btn-sm" @click="saveReadings" :disabled="savingReadings">
@@ -122,7 +159,7 @@
 
         <template v-else>
           <div v-if="loadingReadings" class="loading-state"><div class="spinner"></div></div>
-          <div v-else-if="!meterGroups.length" class="empty-state">
+          <div v-else-if="!visibleGroups.length" class="empty-state">
             <div class="empty-icon">◎</div>
             <div>Nessun contatore per questo tipo di consumo. Aggiungi prima i contatori.</div>
           </div>
@@ -141,15 +178,18 @@
                 </tr>
               </thead>
               <tbody>
-                <template v-for="group in meterGroups" :key="group.meterId">
+                <template v-for="group in visibleGroups" :key="group.meterId">
                   <tr v-for="(row, rowIdx) in group.rows" :key="rowIdx"
-                      :class="{ 'row-error': rowError(row), 'row-saved': row.saved && !row.modified, 'row-charged': !!row.chargeId }">
+                      :class="{ 'row-error': rowError(row), 'row-saved': row.saved && !row.modified, 'row-charged': !!row.chargeId, 'row-meter-deleted': group.meterIsDeleted }">
                     <!-- Unità e matricola solo nella prima riga del gruppo -->
                     <td>
                       <span v-if="rowIdx === 0">{{ group.unitName }}</span>
                     </td>
                     <td class="mono text-secondary">
-                      <span v-if="rowIdx === 0">{{ group.meterCode }}</span>
+                      <span v-if="rowIdx === 0">
+                        {{ group.meterCode }}
+                        <span v-if="group.meterIsDeleted" class="badge badge-muted meter-deleted-badge" title="Contatore eliminato">Eliminato</span>
+                      </span>
                     </td>
                     <td class="col-num">
                       <span v-if="isReadonly(row)" class="inline-value mono">{{ fmtNum(row.initialValue) }}</span>
@@ -191,8 +231,8 @@
                       </div>
                     </td>
                   </tr>
-                  <!-- Riga "+ Aggiungi lettura" per ogni contatore -->
-                  <tr v-if="canEdit" class="row-add">
+                  <!-- Riga "+ Aggiungi lettura" per ogni contatore (non sui cancellati) -->
+                  <tr v-if="canEdit && !group.meterIsDeleted" class="row-add">
                     <td colspan="8">
                       <button class="btn-add-reading" @click="addRow(group)">+ Aggiungi lettura</button>
                     </td>
@@ -213,7 +253,15 @@
               <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">{{ fy.code }}</option>
             </select>
           </div>
-          <button v-if="canCreate && chargesFiscalYearId" class="btn btn-primary btn-sm" @click="openChargeModal()">+ Nuova ripartizione</button>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <button v-if="chargesFiscalYearId" class="btn btn-ghost btn-sm"
+                    :class="{ 'btn-ghost--active': showDeletedCharges }"
+                    @click="showDeletedCharges = !showDeletedCharges"
+                    title="Mostra/nascondi ripartizioni con tipo cancellato">
+              {{ showDeletedCharges ? 'Nascondi cancellati' : 'Mostra cancellati' }}
+            </button>
+            <button v-if="canCreate && chargesFiscalYearId" class="btn btn-primary btn-sm" @click="openChargeModal()">+ Nuova ripartizione</button>
+          </div>
         </div>
 
         <div v-if="unchargedCount > 0 && chargesFiscalYearId && !loadingCharges" class="uncharged-warning">
@@ -227,15 +275,17 @@
         </div>
 
         <div v-if="loadingCharges" class="loading-state"><div class="spinner"></div></div>
-        <div v-else-if="!charges.length && chargesFiscalYearId" class="empty-state">
+        <div v-else-if="!visibleCharges.length && chargesFiscalYearId" class="empty-state">
           <div class="empty-icon">◎</div>
           <div>Nessuna ripartizione per questo esercizio.</div>
         </div>
         <template v-else>
-          <div v-for="charge in charges" :key="charge.id" class="charge-card">
+          <div v-for="charge in visibleCharges" :key="charge.id" class="charge-card"
+               :class="{ 'charge-type-deleted': charge.consumptionTypeIsDeleted }">
             <div class="charge-header">
               <div class="charge-title">
                 <span class="charge-type">{{ charge.consumptionTypeName }}</span>
+                <span v-if="charge.consumptionTypeIsDeleted" class="badge badge-muted type-deleted-badge" title="Il tipo consumo è stato eliminato">Cancellato</span>
                 <span class="text-secondary mono">{{ charge.unitOfMeasure }}</span>
                 <span class="badge" :class="charge.statusId === 2 ? 'badge-green' : 'badge-draft'">{{ charge.statusName }}</span>
                 <span v-if="charge.hasWarnings" class="badge badge-amber" title="Alcune unità non hanno letture">⚠ warning</span>
@@ -332,7 +382,7 @@
           <label class="form-label">Tipo consumo *</label>
           <select class="form-select" v-model="meterForm.consumptionTypeId" @change="delete meterErrors.consumptionTypeId">
             <option :value="null" disabled>— Seleziona —</option>
-            <option v-for="t in consumptionTypes" :key="t.id" :value="t.id">{{ t.name }}</option>
+            <option v-for="t in consumptionTypes.filter(x => !x.isDeleted)" :key="t.id" :value="t.id">{{ t.name }}</option>
           </select>
           <span v-if="meterErrors.consumptionTypeId" class="field-error">{{ meterErrors.consumptionTypeId }}</span>
         </div>
@@ -378,7 +428,7 @@
           <label class="form-label">Tipo consumo *</label>
           <select class="form-select" v-model="chargeForm.consumptionTypeId" @change="delete chargeErrors.consumptionTypeId">
             <option :value="null" disabled>— Seleziona —</option>
-            <option v-for="t in consumptionTypes" :key="t.id" :value="t.id">{{ t.name }}</option>
+            <option v-for="t in consumptionTypes.filter(x => !x.isDeleted)" :key="t.id" :value="t.id">{{ t.name }}</option>
           </select>
           <span v-if="chargeErrors.consumptionTypeId" class="field-error">{{ chargeErrors.consumptionTypeId }}</span>
         </div>
@@ -428,8 +478,15 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 const tab = ref('types')
 
 // ── Tipi consumo ──────────────────────────────────────────────────────────
-const consumptionTypes = ref([])
-const loadingTypes     = ref(false)
+const consumptionTypes  = ref([])
+const loadingTypes      = ref(false)
+const showDeletedTypes  = ref(false)
+
+const visibleTypes = computed(() =>
+  showDeletedTypes.value
+    ? consumptionTypes.value
+    : consumptionTypes.value.filter(t => !t.isDeleted)
+)
 
 async function loadTypes() {
   if (!store.selectedCondominioId) { consumptionTypes.value = []; return }
@@ -441,8 +498,15 @@ async function loadTypes() {
 }
 
 // ── Contatori ─────────────────────────────────────────────────────────────
-const meters        = ref([])
-const loadingMeters = ref(false)
+const meters             = ref([])
+const loadingMeters      = ref(false)
+const showDeletedMeters  = ref(false)
+
+const visibleMeters = computed(() =>
+  showDeletedMeters.value
+    ? meters.value
+    : meters.value.filter(m => !m.isDeleted && !m.consumptionTypeIsDeleted)
+)
 
 async function loadMeters() {
   if (!store.selectedCondominioId) { meters.value = []; return }
@@ -476,12 +540,19 @@ async function loadFiscalYears() {
 // ── Letture ───────────────────────────────────────────────────────────────
 const selectedTypeId       = ref(null)
 const selectedFiscalYearId = ref(null)
-const meterGroups          = ref([])   // [{ meterId, unitName, meterCode, rows: [...] }]
+const meterGroups          = ref([])   // [{ meterId, unitName, meterCode, meterIsDeleted, rows: [...] }]
 const loadingReadings      = ref(false)
 const savingReadings       = ref(false)
+const showDeletedReadings  = ref(false)
 
-function makeEmptyRow(meterId) {
-  return { id: 0, meterId, initialValue: 0, initialDate: '', finalValue: 0, finalDate: '', notes: '', modified: true, saving: false, saved: false, prevFinalValue: null, prevFinalDate: null }
+const visibleGroups = computed(() =>
+  showDeletedReadings.value
+    ? meterGroups.value
+    : meterGroups.value.filter(g => !g.meterIsDeleted)
+)
+
+function makeEmptyRow(meterId, meterIsDeleted = false) {
+  return { id: 0, meterId, initialValue: 0, initialDate: '', finalValue: 0, finalDate: '', notes: '', meterIsDeleted, modified: true, saving: false, saved: false, prevFinalValue: null, prevFinalDate: null }
 }
 
 function dayAfter(dateStr) {
@@ -504,8 +575,8 @@ function rowError(row) {
   return null
 }
 
-const allRows        = computed(() => meterGroups.value.flatMap(g => g.rows))
-const validReadingRows = computed(() => allRows.value.filter(r => !rowError(r)))
+const allRows          = computed(() => meterGroups.value.flatMap(g => g.rows))
+const validReadingRows = computed(() => allRows.value.filter(r => !rowError(r) && !r.meterIsDeleted))
 
 function onRowInput(row) {
   row.modified = true
@@ -554,7 +625,7 @@ async function onTypeOrFyChange() {
       meterApi.getByType(selectedTypeId.value),
       consumptionReadingApi.getByTypeFiscalYear(selectedTypeId.value, selectedFiscalYearId.value),
     ])
-    const typeMeters   = (metersRes.data ?? []).filter(m => m.isActive)
+    const typeMeters    = metersRes.data ?? []
     const savedReadings = readingsRes.data ?? []
 
     // raggruppa letture per contatore
@@ -564,30 +635,38 @@ async function onTypeOrFyChange() {
       readingsByMeter[r.meterId].push(r)
     }
 
-    meterGroups.value = typeMeters
-      .sort((a, b) => (a.unitName ?? '').localeCompare(b.unitName ?? '', 'it', { sensitivity: 'base' }))
+    // include anche contatori cancellati se hanno letture
+    const metersWithReadings = new Set(savedReadings.map(r => r.meterId))
+    const allMeters = typeMeters.filter(m => !m.isDeleted || metersWithReadings.has(m.id))
+
+    meterGroups.value = allMeters
+      .sort((a, b) => {
+        if (a.isDeleted !== b.isDeleted) return a.isDeleted ? 1 : -1
+        return (a.unitName ?? '').localeCompare(b.unitName ?? '', 'it', { sensitivity: 'base' })
+      })
       .map(m => {
         const existing = (readingsByMeter[m.id] ?? [])
           .sort((a, b) => (a.initialDate ?? '') < (b.initialDate ?? '') ? -1 : 1)
         const rows = existing.length
           ? existing.map((r, idx) => ({
-              id:            r.id,
-              meterId:       m.id,
-              initialValue:  r.initialValue,
-              initialDate:   r.initialDate?.slice(0, 10) ?? '',
-              finalValue:    r.finalValue,
-              finalDate:     r.finalDate?.slice(0, 10) ?? '',
-              notes:         r.notes ?? '',
+              id:             r.id,
+              meterId:        m.id,
+              initialValue:   r.initialValue,
+              initialDate:    r.initialDate?.slice(0, 10) ?? '',
+              finalValue:     r.finalValue,
+              finalDate:      r.finalDate?.slice(0, 10) ?? '',
+              notes:          r.notes ?? '',
               chargeId:       r.chargeId ?? null,
               chargeStatusId: r.chargeStatusId ?? null,
+              meterIsDeleted: r.meterIsDeleted ?? m.isDeleted ?? false,
               modified:       false,
-              saving:        false,
-              saved:         true,
+              saving:         false,
+              saved:          true,
               prevFinalValue: idx > 0 ? existing[idx - 1].finalValue : null,
               prevFinalDate:  idx > 0 ? existing[idx - 1].finalDate?.slice(0, 10) ?? null : null,
             }))
           : [makeEmptyRow(m.id)]
-        return { meterId: m.id, unitName: m.unitName, meterCode: m.code, rows }
+        return { meterId: m.id, unitName: m.unitName, meterCode: m.code, meterIsDeleted: m.isDeleted ?? false, rows }
       })
   } catch { meterGroups.value = [] } finally { loadingReadings.value = false }
 }
@@ -670,6 +749,13 @@ const loadingCharges      = ref(false)
 const chargesFiscalYearId = ref(null)
 const preventiviForCharge = ref([])
 const unchargedCount      = ref(0)
+const showDeletedCharges  = ref(false)
+
+const visibleCharges = computed(() =>
+  showDeletedCharges.value
+    ? charges.value
+    : charges.value.filter(c => !c.consumptionTypeIsDeleted)
+)
 
 async function loadCharges() {
   if (!chargesFiscalYearId.value) return
@@ -748,10 +834,13 @@ async function saveType() {
   } catch (err) { if (!err?.response) store.toast('Errore di rete', 'error') } finally { savingType.value = false }
 }
 
-async function deleteType(id) {
-  if (!confirm('Eliminare questo tipo di consumo?')) return
+async function deleteType(t) {
+  const msg = `Eliminare il tipo di consumo "${t.name}"?\n\n` +
+    `Se non esistono letture in ripartizioni approvate, verranno eliminati anche tutti i contatori e le letture associate.\n` +
+    `Se invece esistono letture approvate, il tipo verrà solo disattivato (cancellazione logica).`
+  if (!confirm(msg)) return
   try {
-    await consumptionTypeApi.delete(id)
+    await consumptionTypeApi.delete(t.id)
     store.toast('Tipo eliminato', 'success')
     await loadTypes()
   } catch (err) { if (!err?.response) store.toast('Errore di rete', 'error') }
@@ -863,7 +952,7 @@ watch(() => store.selectedCondominioId, () => {
   selectedTypeId.value       = null
   selectedFiscalYearId.value = null
   chargesFiscalYearId.value  = null
-  readingRows.value          = []
+  meterGroups.value          = []
   charges.value              = []
   loadAll()
 })
@@ -942,6 +1031,9 @@ input[type="date"].inline-input { color-scheme: dark; }
 .uncharged-icon { color: var(--accent-amber, #f59e0b); font-size: 1rem; flex-shrink: 0; }
 
 .row-charged td { opacity: 0.6; }
+.row-meter-deleted td { opacity: 0.5; background: color-mix(in srgb, var(--accent-red) 4%, transparent); }
+.meter-deleted-badge { font-size: 0.7rem; margin-left: 0.35rem; vertical-align: middle; }
+.btn-ghost--active { background: var(--accent-glow); color: var(--accent); }
 .inline-value { display: block; padding: 0.3rem 0.45rem; font-size: 0.875rem; }
 .charged-badge { font-size: 0.75rem; white-space: nowrap; }
 
@@ -983,6 +1075,12 @@ input[type="date"].inline-input { color-scheme: dark; }
 .items-table .col-num { text-align: right; }
 
 .link-btn { background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; font-size: inherit; }
+
+.row-type-deleted td { opacity: 0.65; }
+.type-deleted-badge { font-size: 0.7rem; margin-left: 0.35rem; vertical-align: middle; }
+
+.charge-type-deleted { opacity: 0.65; border-color: color-mix(in srgb, var(--accent-red) 30%, var(--border)); }
+.charge-type-deleted .charge-header { background: color-mix(in srgb, var(--accent-red) 4%, var(--bg-surface)); }
 
 .row-error td { background: color-mix(in srgb, var(--accent-red) 6%, transparent); }
 .row-saved td { background: color-mix(in srgb, var(--accent-green) 6%, transparent); }

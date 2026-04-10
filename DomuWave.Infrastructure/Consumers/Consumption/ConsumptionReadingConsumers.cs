@@ -24,7 +24,7 @@ public class GetConsumptionReadingsByFiscalYearCommandConsumer
             .Where(x => x.Meter.ConsumptionType.Id == command.ConsumptionTypeId
                      && x.FiscalYear.Id == command.FiscalYearId
                      && !x.IsDeleted)
-            .OrderBy(x => x.Meter.Unit.InternalNumber)
+            .OrderBy(x => x.Meter.IsDeleted).ThenBy(x => x.Meter.Unit.InternalNumber)
             .ToListAsync(ct).ConfigureAwait(false);
         return items.Select(x => x.ToReadDto()).ToList();
     }
@@ -137,6 +137,15 @@ public class SaveConsumptionReadingsBulkCommandConsumer
         foreach (var r in result)
             await session.RefreshAsync(r, ct).ConfigureAwait(false);
 
+        // Punto 2: se una lettura modificata appartiene a una ripartizione Draft, ricalcola
+        var draftChargesToRecalc = result
+            .Where(r => r.Charge != null && r.Charge.Status?.Id == ConsumptionChargeStatus.Draft)
+            .Select(r => r.Charge)
+            .DistinctBy(c => c.Id)
+            .ToList();
+        foreach (var charge in draftChargesToRecalc)
+            await ConsumptionChargeHelper.RecalculateItems(charge, currentUser, ct, session).ConfigureAwait(false);
+
         return result.Select(x => x.ToReadDto()).ToList();
     }
 }
@@ -166,9 +175,23 @@ public class DeleteConsumptionReadingCommandConsumer
         var entity = await session.Query<ConsumptionReading>()
             .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
         if (entity == null) return false;
-        entity.IsDeleted = true;
-        entity.Trace(currentUser);
-        await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
+
+        // Lettura in ripartizione approvata: non modificabile
+        if (entity.Charge != null && entity.Charge.Status?.Id != ConsumptionChargeStatus.Draft)
+            throw new ValidatorException("Non è possibile eliminare una lettura inclusa in una ripartizione approvata.");
+
+        // Lettura in ripartizione Draft: eliminazione fisica + ricalcolo
+        if (entity.Charge != null && entity.Charge.Status?.Id == ConsumptionChargeStatus.Draft)
+        {
+            var charge = entity.Charge;
+            await session.DeleteAsync(entity, ct).ConfigureAwait(false);
+            await session.FlushAsync(ct).ConfigureAwait(false);
+            await ConsumptionChargeHelper.RecalculateItems(charge, currentUser, ct, session).ConfigureAwait(false);
+            return true;
+        }
+
+        // Lettura senza ripartizione: eliminazione fisica
+        await session.DeleteAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
         return true;
     }

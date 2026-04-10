@@ -4,9 +4,10 @@ namespace DomuWave.Services.Dto.Consumption;
 
 public class ConsumptionChargeReadDto : TraceEntityDTO<int>
 {
-    public int     ConsumptionTypeId   { get; set; }
-    public string  ConsumptionTypeName { get; set; }
-    public string  UnitOfMeasure       { get; set; }
+    public int     ConsumptionTypeId      { get; set; }
+    public string  ConsumptionTypeName    { get; set; }
+    public bool    ConsumptionTypeIsDeleted { get; set; }
+    public string  UnitOfMeasure          { get; set; }
     public int     FiscalYearId        { get; set; }
     public string  FiscalYearCode      { get; set; }
     public int     BudgetId            { get; set; }

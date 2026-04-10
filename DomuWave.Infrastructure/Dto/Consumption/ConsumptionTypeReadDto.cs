@@ -10,6 +10,7 @@ public class ConsumptionTypeReadDto : TraceEntityDTO<int>
     public string UnitOfMeasure   { get; set; }
     public string Notes           { get; set; }
     public bool   IsActive        { get; set; }
+    public bool   IsDeleted       { get; set; }
 }
 
 public class CreateConsumptionTypeDto

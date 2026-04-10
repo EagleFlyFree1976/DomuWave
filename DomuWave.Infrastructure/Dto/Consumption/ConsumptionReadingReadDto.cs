@@ -6,6 +6,7 @@ public class ConsumptionReadingReadDto : TraceEntityDTO<int>
 {
     public int       MeterId          { get; set; }
     public string    MeterCode        { get; set; }
+    public bool      MeterIsDeleted   { get; set; }
     public int       UnitId           { get; set; }
     public string    UnitName         { get; set; }
     public int       FiscalYearId     { get; set; }

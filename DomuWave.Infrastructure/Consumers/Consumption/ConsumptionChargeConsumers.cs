@@ -288,7 +288,7 @@ public class DeleteConsumptionChargeCommandConsumer
 
 // ── Helper condiviso ──────────────────────────────────────────────────────
 
-file static class ConsumptionChargeHelper
+internal static class ConsumptionChargeHelper
 {
     /// <summary>
     /// Calcola o ricalcola gli item della ripartizione in base ai consumi registrati.

@@ -21,8 +21,8 @@ public class GetMetersByCondominiumCommandConsumer
     protected override async Task<IList<MeterReadDto>> Consume(GetMetersByCondominiumCommand command, IMediationContext ctx, CancellationToken ct)
     {
         var items = await session.Query<Meter>()
-            .Where(x => x.ConsumptionType.Condominium.Id == command.CondominiumId && !x.IsDeleted)
-            .OrderBy(x => x.ConsumptionType.Name).ThenBy(x => x.Unit.InternalNumber)
+            .Where(x => x.ConsumptionType.Condominium.Id == command.CondominiumId)
+            .OrderBy(x => x.IsDeleted).ThenBy(x => x.ConsumptionType.IsDeleted).ThenBy(x => x.ConsumptionType.Name).ThenBy(x => x.Unit.InternalNumber)
             .ToListAsync(ct).ConfigureAwait(false);
         return items.Select(x => x.ToReadDto()).ToList();
     }
@@ -37,8 +37,8 @@ public class GetMetersByConsumptionTypeCommandConsumer
     protected override async Task<IList<MeterReadDto>> Consume(GetMetersByConsumptionTypeCommand command, IMediationContext ctx, CancellationToken ct)
     {
         var items = await session.Query<Meter>()
-            .Where(x => x.ConsumptionType.Id == command.ConsumptionTypeId && !x.IsDeleted)
-            .OrderBy(x => x.Unit.InternalNumber)
+            .Where(x => x.ConsumptionType.Id == command.ConsumptionTypeId)
+            .OrderBy(x => x.IsDeleted).ThenBy(x => x.Unit.InternalNumber)
             .ToListAsync(ct).ConfigureAwait(false);
         return items.Select(x => x.ToReadDto()).ToList();
     }
@@ -100,7 +100,7 @@ public class UpdateMeterCommandConsumer
             .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
         if (entity == null) throw new NotFoundException("Contatore non trovato.");
         entity.ApplyUpdate(command.Dto);
-        entity.TraceUpdate(currentUser);
+        entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
         return entity.ToReadDto();
@@ -120,7 +120,7 @@ public class DeleteMeterCommandConsumer
             .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
         if (entity == null) return false;
         entity.IsDeleted = true;
-        entity.TraceUpdate(currentUser);
+        entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
         return true;

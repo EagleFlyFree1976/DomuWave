@@ -21,8 +21,8 @@ public class GetConsumptionTypesByCondominiumCommandConsumer
     protected override async Task<IList<ConsumptionTypeReadDto>> Consume(GetConsumptionTypesByCondominiumCommand command, IMediationContext ctx, CancellationToken ct)
     {
         var items = await session.Query<ConsumptionType>()
-            .Where(x => x.Condominium.Id == command.CondominiumId && !x.IsDeleted)
-            .OrderBy(x => x.Name)
+            .Where(x => x.Condominium.Id == command.CondominiumId)
+            .OrderBy(x => x.IsDeleted).ThenBy(x => x.Name)
             .ToListAsync(ct).ConfigureAwait(false);
         return items.Select(x => x.ToReadDto()).ToList();
     }
@@ -52,7 +52,7 @@ public class CreateConsumptionTypeCommandConsumer
     {
         var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, ct).ConfigureAwait(false);
 
-        var condominium = await session.Query<Condominium>()
+        var condominium = await session.Query<Models.Condominium>()
             .FirstOrDefaultAsync(x => x.Id == command.Dto.CondominiumId && !x.IsDeleted, ct).ConfigureAwait(false);
         if (condominium == null) throw new NotFoundException("Condominio non trovato.");
 
@@ -80,7 +80,7 @@ public class UpdateConsumptionTypeCommandConsumer
             .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
         if (entity == null) throw new NotFoundException("Tipo consumo non trovato.");
         entity.ApplyUpdate(command.Dto);
-        entity.TraceUpdate(currentUser);
+        entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
         return entity.ToReadDto();
@@ -97,11 +97,41 @@ public class DeleteConsumptionTypeCommandConsumer
     {
         var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, ct).ConfigureAwait(false);
         var entity = await session.Query<ConsumptionType>()
-            .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
+            .FirstOrDefaultAsync(x => x.Id == command.Id, ct).ConfigureAwait(false);
         if (entity == null) return false;
-        entity.IsDeleted = true;
-        entity.TraceUpdate(currentUser);
-        await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
+
+        // Verifica se esistono letture in ripartizioni approvate per questo tipo
+        var hasApprovedReadings = await session.Query<ConsumptionReading>()
+            .AnyAsync(r => r.Meter.ConsumptionType.Id == command.Id
+                        && r.Charge != null
+                        && r.Charge.Status.Id == ConsumptionChargeStatus.Approved
+                        && !r.IsDeleted, ct).ConfigureAwait(false);
+
+        if (hasApprovedReadings)
+        {
+            // Cancellazione logica: il tipo rimane visibile (evidenziato) per storico
+            entity.IsDeleted = true;
+            entity.Trace(currentUser);
+            await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
+        }
+        else
+        {
+            // Cancellazione fisica a cascata: letture → contatori → tipo
+            var readings = await session.Query<ConsumptionReading>()
+                .Where(r => r.Meter.ConsumptionType.Id == command.Id)
+                .ToListAsync(ct).ConfigureAwait(false);
+            foreach (var r in readings)
+                await session.DeleteAsync(r, ct).ConfigureAwait(false);
+
+            var meters = await session.Query<Meter>()
+                .Where(m => m.ConsumptionType.Id == command.Id)
+                .ToListAsync(ct).ConfigureAwait(false);
+            foreach (var m in meters)
+                await session.DeleteAsync(m, ct).ConfigureAwait(false);
+
+            await session.DeleteAsync(entity, ct).ConfigureAwait(false);
+        }
+
         await session.FlushAsync(ct).ConfigureAwait(false);
         return true;
     }
