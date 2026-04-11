@@ -25,6 +25,7 @@ public static class BudgetItemMappingExtensions
             ParentAccountName = item.Account?.ParentAccount?.Name,
             Description       = item.Description,
             Amount            = item.Amount,
+            AmountPaid        = item.AmountPaid,
             Notes             = item.Notes,
         };
 

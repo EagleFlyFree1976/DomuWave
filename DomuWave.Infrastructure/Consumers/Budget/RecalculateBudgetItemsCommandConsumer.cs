@@ -71,16 +71,33 @@ public class RecalculateBudgetItemsCommandConsumer
         }
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-        // ── 2. Uscite: raggruppa Expense PAGATE per Account aggregando in SQL ──
+        // ── 2. Uscite ────────────────────────────────────────────────────────
+        // Amount     = tutte le spese per competenza (indipendentemente dal pagamento)
+        // AmountPaid = solo le spese effettivamente pagate (PaymentStatus == Pagata)
+
+        // Tutte le spese per competenza (query separata da quella delle pagate per evitare
+        // problemi di traduzione LINQ del Where-inside-GroupBy con NHibernate)
         var expenseGroups = await session.Query<Expense>()
-            .Where(x => x.Condominium.Id        == condominiumId
-                     && x.FiscalYear.Id          == fiscalYearId
-                     && x.PaymentStatus.Id       == ExpensePaymentStatus.Pagata
+            .Where(x => x.Condominium.Id == condominiumId
+                     && x.FiscalYear.Id  == fiscalYearId
                      && !x.IsDeleted)
             .GroupBy(x => x.Account.Id)
             .Select(g => new { AccountId = g.Key, Total = g.Sum(x => x.GrossAmount), Count = g.Count() })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        // Solo le spese pagate (query separata per evitare il filtro condizionale nel GroupBy)
+        var paidGroups = await session.Query<Expense>()
+            .Where(x => x.Condominium.Id    == condominiumId
+                     && x.FiscalYear.Id     == fiscalYearId
+                     && x.PaymentStatus.Id  == ExpensePaymentStatus.Pagata
+                     && !x.IsDeleted)
+            .GroupBy(x => x.Account.Id)
+            .Select(g => new { AccountId = g.Key, TotalPaid = g.Sum(x => x.GrossAmount) })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var paidByAccount = paidGroups.ToDictionary(g => g.AccountId, g => g.TotalPaid);
 
         // Carica tutti i conti del condominio come proiezione scalare (evita lazy proxy)
         var allAccountRows = await session.Query<ChartOfAccounts>()
@@ -88,28 +105,29 @@ public class RecalculateBudgetItemsCommandConsumer
             .Select(a => new { a.Id, ParentAccountId = a.ParentAccount != null ? (int?)a.ParentAccount.Id : null })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
-        var parentMap = allAccountRows.ToDictionary(a => a.Id, a => a.ParentAccountId); // id → parentId?
+        var parentMap = allAccountRows.ToDictionary(a => a.Id, a => a.ParentAccountId);
 
-        // Accumula importi per account foglia + tutti gli antenati
-        var amountByAccountId = new Dictionary<int, (decimal Total, int Count)>();
+        // Accumula importi (competenza + cassa) per account foglia + tutti gli antenati
+        var amountByAccountId = new Dictionary<int, (decimal Total, decimal TotalPaid, int Count)>();
         foreach (var group in expenseGroups)
         {
             if (!parentMap.ContainsKey(group.AccountId)) continue;
 
-            // Percorri la catena: foglia → padre → nonno → …
+            var paid = paidByAccount.GetValueOrDefault(group.AccountId, 0m);
+
             int? currentId = group.AccountId;
             while (currentId.HasValue && parentMap.ContainsKey(currentId.Value))
             {
                 if (amountByAccountId.TryGetValue(currentId.Value, out var existing))
-                    amountByAccountId[currentId.Value] = (existing.Total + group.Total, existing.Count + group.Count);
+                    amountByAccountId[currentId.Value] = (existing.Total + group.Total, existing.TotalPaid + paid, existing.Count + group.Count);
                 else
-                    amountByAccountId[currentId.Value] = (group.Total, group.Count);
+                    amountByAccountId[currentId.Value] = (group.Total, paid, group.Count);
 
-                currentId = parentMap[currentId.Value]; // sale al padre (null se radice)
+                currentId = parentMap[currentId.Value];
             }
         }
 
-        foreach (var (accountId, (total, count)) in amountByAccountId)
+        foreach (var (accountId, (total, totalPaid, count)) in amountByAccountId)
         {
             var account = await session.GetAsync<ChartOfAccounts>(accountId, cancellationToken)
                 .ConfigureAwait(false);
@@ -124,25 +142,34 @@ public class RecalculateBudgetItemsCommandConsumer
                 AccountName = account.Name,
                 Name        = account.Name ?? string.Empty,
                 Amount      = total,
-                Notes       = $"Ricalcolato automaticamente da {count} spese pagate",
+                AmountPaid  = totalPaid,
+                Notes       = $"Ricalcolato automaticamente da {count} spese",
             };
             item.Trace(currentUser);
             await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
         }
 
-        // ── 3. Entrate: quote incassate (CondominiumFee.AmountPaid) per esercizio ─
-        // Naviga via Installment (che ha FiscalYear e Condominium diretti) per evitare
-        // navigazioni lazy profonde su Budget.FiscalYear che NHibernate non traduce.
-        var totalPaid = await session.Query<CondominiumFee>()
+        // ── 3. Entrate ───────────────────────────────────────────────────────
+        // Amount     = quote di competenza (CondominiumFee.AmountDue)
+        // AmountPaid = quote effettivamente incassate (CondominiumFee.AmountPaid)
+
+        var totalAccrued = await session.Query<CondominiumFee>()
+            .Where(f => f.Installment.Condominium.Id == condominiumId
+                     && f.Installment.FiscalYear.Id  == fiscalYearId
+                     && !f.IsDeleted)
+            .SumAsync(f => (decimal?)f.AmountDue, cancellationToken)
+            .ConfigureAwait(false) ?? 0m;
+
+        var totalCollected = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.Condominium.Id == condominiumId
                      && f.Installment.FiscalYear.Id  == fiscalYearId
                      && !f.IsDeleted)
             .SumAsync(f => (decimal?)f.AmountPaid, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
-        if (totalPaid > 0)
+        if (totalAccrued > 0)
         {
-            // Cerca il conto Entrata dal preventivo approvato/chiuso per lo stesso esercizio
+            // Cerca i conti Entrata dal preventivo approvato/chiuso per lo stesso esercizio
             var preventivoEntrataGroups = await session.Query<BudgetItem>()
                 .Where(x => x.Budget.Condominium.Id == condominiumId
                          && x.Budget.FiscalYear.Id  == fiscalYearId
@@ -171,23 +198,32 @@ public class RecalculateBudgetItemsCommandConsumer
                     .ToList();
             }
 
-            var totalWeight = preventivoEntrataGroups.Sum(x => x.Total);
-            var allocated   = 0m;
+            var totalWeight      = preventivoEntrataGroups.Sum(x => x.Total);
+            var allocatedAccrued   = 0m;
+            var allocatedCollected = 0m;
 
             for (int i = 0; i < preventivoEntrataGroups.Count; i++)
             {
-                var grp      = preventivoEntrataGroups[i];
-                var srcAcct  = await session.GetAsync<ChartOfAccounts>(grp.AccountId, cancellationToken)
+                var grp     = preventivoEntrataGroups[i];
+                var srcAcct = await session.GetAsync<ChartOfAccounts>(grp.AccountId, cancellationToken)
                     .ConfigureAwait(false);
                 if (srcAcct == null) continue;
 
-                decimal share;
+                decimal shareAccrued;
+                decimal shareCollected;
+
                 if (i == preventivoEntrataGroups.Count - 1)
-                    share = totalPaid - allocated;
+                {
+                    shareAccrued   = totalAccrued   - allocatedAccrued;
+                    shareCollected = totalCollected - allocatedCollected;
+                }
                 else
                 {
-                    share      = totalWeight > 0 ? Math.Round(totalPaid * grp.Total / totalWeight, 2) : 0m;
-                    allocated += share;
+                    var ratio        = totalWeight > 0 ? grp.Total / totalWeight : 0m;
+                    shareAccrued     = Math.Round(totalAccrued   * ratio, 2);
+                    shareCollected   = Math.Round(totalCollected * ratio, 2);
+                    allocatedAccrued   += shareAccrued;
+                    allocatedCollected += shareCollected;
                 }
 
                 var item = new BudgetItem
@@ -198,8 +234,9 @@ public class RecalculateBudgetItemsCommandConsumer
                     AccountCode = srcAcct.Code,
                     AccountName = srcAcct.Name,
                     Name        = srcAcct.Name ?? string.Empty,
-                    Amount      = share,
-                    Notes       = "Entrate incassate (ricalcolo automatico)",
+                    Amount      = shareAccrued,
+                    AmountPaid  = shareCollected,
+                    Notes       = "Entrate di competenza (ricalcolo automatico)",
                 };
                 item.Trace(currentUser);
                 await session.SaveOrUpdateAsync(item, cancellationToken).ConfigureAwait(false);
@@ -208,16 +245,15 @@ public class RecalculateBudgetItemsCommandConsumer
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-        // ── 4. Aggiorna i totali del budget (solo foglie) ────────────────────────
-        // Un account è foglia se nessun altro account del condominio lo ha come ParentAccount.
+        // ── 4. Aggiorna i totali del budget (solo foglie) ────────────────────
         var allAccountsForTotals = await session.Query<ChartOfAccounts>()
             .Where(a => a.Condominium.Id == condominiumId && !a.IsDeleted)
             .Select(a => new { a.Id, TypeId = (int)a.Type, ParentId = a.ParentAccount != null ? (int?)a.ParentAccount.Id : null })
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        var parentIds    = allAccountsForTotals.Where(a => a.ParentId.HasValue).Select(a => a.ParentId!.Value).ToHashSet();
-        var leafIds      = allAccountsForTotals.Where(a => !parentIds.Contains(a.Id)).Select(a => a.Id).ToHashSet();
-        var uscitaLeafIds = allAccountsForTotals
+        var parentIds        = allAccountsForTotals.Where(a => a.ParentId.HasValue).Select(a => a.ParentId!.Value).ToHashSet();
+        var leafIds          = allAccountsForTotals.Where(a => !parentIds.Contains(a.Id)).Select(a => a.Id).ToHashSet();
+        var uscitaLeafIds    = allAccountsForTotals
             .Where(a => leafIds.Contains(a.Id) && a.TypeId == (int)ChartOfAccountsType.Uscita)
             .Select(a => a.Id).ToList();
         var nonUscitaLeafIds = allAccountsForTotals
@@ -233,6 +269,7 @@ public class RecalculateBudgetItemsCommandConsumer
             .Where(x => x.Budget.Id == budget.Id && !x.IsDeleted && nonUscitaLeafIds.Contains(x.Account.Id))
             .SumAsync(x => (decimal?)x.Amount, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
+
         budget.Trace(currentUser);
         await session.SaveOrUpdateAsync(budget, cancellationToken).ConfigureAwait(false);
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);

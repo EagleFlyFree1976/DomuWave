@@ -7,7 +7,8 @@ namespace DomuWave.Services.Models
     {
         public virtual Budget Budget { get; set; }
         public virtual ChartOfAccounts Account { get; set; }
-        public virtual decimal Amount { get; set; }
+        public virtual decimal Amount     { get; set; }
+        public virtual decimal AmountPaid { get; set; }
         public virtual string Notes { get; set; }
 
         /// <summary>

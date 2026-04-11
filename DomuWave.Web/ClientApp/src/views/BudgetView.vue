@@ -306,7 +306,9 @@
               <tr>
                 <th style="width:90px">Codice</th>
                 <th>Voce</th>
-                <th style="width:160px" class="text-right">Importo (€)</th>
+                <th style="width:140px" class="text-right">Competenza (€)</th>
+                <th v-if="selectedBudget?.type === 2" style="width:140px" class="text-right">Pagato (€)</th>
+                <th v-if="selectedBudget?.type === 2" style="width:120px" class="text-right">Delta (€)</th>
                 <th v-if="canEdit && selectedBudget?.statusId === 1" style="width:36px"></th>
               </tr>
             </thead>
@@ -334,6 +336,17 @@
                     {{ fmt(row.amount) }}
                   </span>
                 </td>
+                <td v-if="selectedBudget?.type === 2" class="text-right">
+                  <span class="mono" :class="row.isHeader ? 'row-header-amount' : ''">
+                    {{ fmt(row.amountPaid) }}
+                  </span>
+                </td>
+                <td v-if="selectedBudget?.type === 2" class="text-right">
+                  <span class="mono delta-cell"
+                        :class="(row.amount - row.amountPaid) > 0 ? 'delta-positive' : (row.amount - row.amountPaid) < 0 ? 'delta-negative' : 'delta-zero'">
+                    {{ fmt(row.amount - row.amountPaid) }}
+                  </span>
+                </td>
                 <td v-if="canEdit && selectedBudget?.statusId === 1">
                   <button
                     v-if="!row.isHeader && row.itemId"
@@ -348,6 +361,12 @@
               <tr class="section-total-row">
                 <td colspan="2" class="text-secondary">Totale</td>
                 <td class="mono text-right">{{ fmt(activeTabRows.filter(r => !r.isHeader).reduce((s, r) => s + (r.amount || 0), 0)) }}</td>
+                <td v-if="selectedBudget?.type === 2" class="mono text-right">
+                  {{ fmt(activeTabRows.filter(r => !r.isHeader).reduce((s, r) => s + (r.amountPaid || 0), 0)) }}
+                </td>
+                <td v-if="selectedBudget?.type === 2" class="mono text-right">
+                  {{ fmt(activeTabRows.filter(r => !r.isHeader).reduce((s, r) => s + ((r.amount || 0) - (r.amountPaid || 0)), 0)) }}
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -728,6 +747,7 @@ function buildHierarchyRows(items, typeLabel) {
         isHeader:    hasChildren,   // nodi con figli = sola lettura, importo calcolato
         itemId:      hasChildren ? null : (i.id ?? null),
         amount:      i.amount ?? 0,
+        amountPaid:  i.amountPaid ?? 0,
         dirty:       false,
       })
       walk(i.accountId, level + 1)
@@ -742,7 +762,7 @@ function buildHierarchyRows(items, typeLabel) {
         accountId: i.accountId, accountCode: i.accountCode,
         accountName: i.accountName, accountType: typeLabel,
         level: 1, isHeader: false,
-        itemId: i.id ?? null, amount: i.amount ?? 0, dirty: false,
+        itemId: i.id ?? null, amount: i.amount ?? 0, amountPaid: i.amountPaid ?? 0, dirty: false,
       })
     }
   }
@@ -751,23 +771,16 @@ function buildHierarchyRows(items, typeLabel) {
 
 // Ricalcola l'importo di ogni nodo-header come somma dei figli foglia discendenti
 function recalcHeaders(rows) {
-  // Calcola per ogni accountId la somma delle foglie discendenti
-  const amountById = {}
-  // Prima passa: somma solo le foglie
-  for (const r of rows) if (!r.isHeader) amountById[r.accountId] = r.amount
-  // Seconda passa bottom-up: propaga ai parent
-  // Usiamo l'ordine inverso della lista (i figli vengono dopo i padri nella DFS)
   for (let i = rows.length - 1; i >= 0; i--) {
     const r = rows[i]
     if (!r.isHeader) continue
-    // Somma tutti i discendenti foglia che vengono dopo nella lista
-    // fino al prossimo nodo dello stesso livello o superiore
-    let total = 0
+    let total = 0, totalPaid = 0
     for (let j = i + 1; j < rows.length; j++) {
       if (rows[j].level <= r.level) break
-      if (!rows[j].isHeader) total += rows[j].amount
+      if (!rows[j].isHeader) { total += rows[j].amount; totalPaid += rows[j].amountPaid }
     }
-    r.amount = total
+    r.amount     = total
+    r.amountPaid = totalPaid
   }
 }
 
@@ -1094,6 +1107,10 @@ onMounted(async () => {
 .section-total-row td { font-weight: 600; background: var(--bg-surface); border-top: 2px solid var(--border); }
 .btn-delete-row { color: var(--text-muted); font-size: 0.75rem; opacity: 0.5; transition: opacity 0.15s, color 0.15s; }
 .btn-delete-row:hover { color: var(--accent-red); opacity: 1; }
+.delta-cell { font-weight: 500; }
+.delta-positive { color: var(--accent-red); }
+.delta-negative { color: var(--accent-green); }
+.delta-zero    { color: var(--text-muted); }
 
 /* Approve modal */
 .approve-info { font-size: .875rem; color: var(--text-secondary); margin-bottom: 1rem; }

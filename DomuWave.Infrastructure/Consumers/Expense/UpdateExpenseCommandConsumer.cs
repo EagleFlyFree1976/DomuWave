@@ -3,6 +3,7 @@ using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
+using DomuWave.Services.Command.Budget;
 using DomuWave.Services.Command.Expense;
 using DomuWave.Services.Dto.Expense;
 using DomuWave.Services.Interfaces;
@@ -17,14 +18,17 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
 {
     private readonly IExpenseService _expenseService;
     private readonly IUserService    _userService;
+    private readonly IMediator       _mediator;
 
     public UpdateExpenseCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IExpenseService         expenseService,
-        IUserService            userService) : base(sessionFactoryProvider)
+        IUserService            userService,
+        IMediator               mediator) : base(sessionFactoryProvider)
     {
         _expenseService = expenseService;
         _userService    = userService;
+        _mediator       = mediator;
     }
 
     protected override async Task<ExpenseReadDto> Consume(
@@ -87,10 +91,28 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
         var paymentStatus     = session.Load<ExpensePaymentStatus>(dto.PaymentStatusId > 0 ? dto.PaymentStatusId : entity.PaymentStatus?.Id ?? ExpensePaymentStatus.DaPagare);
         var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
 
+        var condominiumId = entity.Condominium?.Id ?? 0;
+        var fiscalYearId  = entity.FiscalYear?.Id  ?? 0;
+
         entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType, paymentStatus, chargeabilityType);
         var updated = await _expenseService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        var consuntivo = await session.Query<Budget>()
+            .Where(b => b.Condominium.Id == condominiumId
+                     && b.FiscalYear.Id  == fiscalYearId
+                     && b.Type           == BudgetType.Consuntivo
+                     && b.Status.Id      != BudgetStatus.Closed
+                     && !b.IsDeleted)
+            .Select(b => new { b.Id })
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (consuntivo != null)
+            await _mediator
+                .GetResponse(new RecalculateBudgetItemsCommand(command.CurrentUserId, consuntivo.Id), cancellationToken)
+                .ConfigureAwait(false);
 
         return updated.ToReadDto();
     }

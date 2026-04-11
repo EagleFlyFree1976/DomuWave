@@ -21,6 +21,7 @@
     <property name="Name" column="Description" type="String" length="500" />
     <property name="Description" column="Description" type="String" length="500" insert="false" update="false" />
     <property name="Amount"      column="Amount"      type="Decimal" not-null="true" />
+    <property name="AmountPaid"  column="AmountPaid"  type="Decimal" not-null="true" />
     <property name="Notes"       column="Notes"       type="String"  length="500" />
 
     <!-- Snapshot denormalizzato: fotografato alla creazione/ricalcolo.

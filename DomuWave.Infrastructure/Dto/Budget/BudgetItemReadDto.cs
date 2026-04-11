@@ -15,5 +15,7 @@ public class BudgetItemReadDto : TraceEntityDTO<int>
     public string? ParentAccountName { get; set; }
     public string? Description       { get; set; }
     public decimal Amount            { get; set; }
+    public decimal AmountPaid        { get; set; }
+    public decimal Delta             => Amount - AmountPaid;
     public string? Notes             { get; set; }
 }
