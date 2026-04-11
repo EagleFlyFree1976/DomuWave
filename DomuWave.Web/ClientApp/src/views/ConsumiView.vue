@@ -25,6 +25,10 @@
         <div class="toolbar">
           <span class="text-secondary">{{ visibleTypes.length }} tipo/i</span>
           <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-ghost btn-sm btn-icon-only" @click="loadTypes" :disabled="loadingTypes" title="Aggiorna">
+              <span v-if="loadingTypes" class="spinner" style="width:13px;height:13px"></span>
+              <span v-else>↺</span>
+            </button>
             <button class="btn btn-ghost btn-sm"
                     :class="{ 'btn-ghost--active': showDeletedTypes }"
                     @click="showDeletedTypes = !showDeletedTypes"
@@ -70,6 +74,10 @@
         <div class="toolbar">
           <span class="text-secondary">{{ visibleMeters.length }} contatore/i</span>
           <div style="display:flex;gap:0.5rem;align-items:center">
+            <button class="btn btn-ghost btn-sm btn-icon-only" @click="loadMeters" :disabled="loadingMeters" title="Aggiorna">
+              <span v-if="loadingMeters" class="spinner" style="width:13px;height:13px"></span>
+              <span v-else>↺</span>
+            </button>
             <button class="btn btn-ghost btn-sm"
                     :class="{ 'btn-ghost--active': showDeletedMeters }"
                     @click="showDeletedMeters = !showDeletedMeters"
@@ -254,6 +262,10 @@
             </select>
           </div>
           <div style="display:flex;gap:0.5rem;align-items:center">
+            <button v-if="chargesFiscalYearId" class="btn btn-ghost btn-sm btn-icon-only" @click="loadCharges" :disabled="loadingCharges" title="Aggiorna">
+              <span v-if="loadingCharges" class="spinner" style="width:13px;height:13px"></span>
+              <span v-else>↺</span>
+            </button>
             <button v-if="chargesFiscalYearId" class="btn btn-ghost btn-sm"
                     :class="{ 'btn-ghost--active': showDeletedCharges }"
                     @click="showDeletedCharges = !showDeletedCharges"
@@ -282,25 +294,42 @@
         <template v-else>
           <div v-for="charge in visibleCharges" :key="charge.id" class="charge-card"
                :class="{ 'charge-type-deleted': charge.consumptionTypeIsDeleted }">
-            <div class="charge-header">
+
+            <!-- Testata cliccabile -->
+            <div class="charge-header" :class="{ 'charge-header--expandable': true }"
+                 @click="toggleCharge(charge.id)">
+              <span class="charge-expand-icon">{{ expandedChargeId === charge.id ? '▾' : '▸' }}</span>
               <div class="charge-title">
                 <span class="charge-type">{{ charge.consumptionTypeName }}</span>
                 <span v-if="charge.consumptionTypeIsDeleted" class="badge badge-muted type-deleted-badge" title="Il tipo consumo è stato eliminato">Cancellato</span>
                 <span class="text-secondary mono">{{ charge.unitOfMeasure }}</span>
                 <span class="badge" :class="charge.statusId === 2 ? 'badge-green' : 'badge-draft'">{{ charge.statusName }}</span>
                 <span v-if="charge.hasWarnings" class="badge badge-amber" title="Alcune unità non hanno letture">⚠ warning</span>
+                <span v-if="charge.hasNoReadings && charge.statusId === 1"
+                      class="badge badge-amber"
+                      title="Nessuna lettura inserita — inserisci almeno una lettura e ricalcola prima di approvare">
+                  ⚠ nessuna lettura
+                </span>
               </div>
               <div class="charge-amount">{{ fmt(charge.totalAmount) }}</div>
-              <div class="row-actions" v-if="charge.statusId === 1">
-                <button v-if="canEdit" class="btn btn-sm btn-ghost" @click="recalculate(charge.id)">↺ Ricalcola</button>
-                <button v-if="canEdit" class="btn btn-sm btn-ghost btn-green" @click="approveCharge(charge.id)">✓ Approva</button>
+              <div class="row-actions" v-if="charge.statusId === 1" @click.stop>
+                <button v-if="canEdit" class="btn btn-sm btn-ghost" @click="recalculate(charge.id)"
+                        :disabled="recalculatingId === charge.id">
+                  <span v-if="recalculatingId === charge.id" class="spinner" style="width:13px;height:13px;margin-right:4px"></span>
+                  <span v-else>↺</span>
+                  {{ recalculatingId === charge.id ? 'Ricalcolo…' : 'Ricalcola' }}
+                </button>
+                <button v-if="canEdit" class="btn btn-sm btn-ghost btn-green"
+                        :disabled="charge.hasNoReadings"
+                        :title="charge.hasNoReadings ? 'Inserisci almeno una lettura e ricalcola prima di approvare' : ''"
+                        @click="approveCharge(charge.id)">✓ Approva</button>
                 <button v-if="canEdit" class="btn-icon" @click="openChargeModal(charge)">✎</button>
                 <button v-if="canDelete" class="btn-icon btn-icon--danger" @click="deleteCharge(charge.id)">🗑</button>
               </div>
             </div>
 
-            <!-- Tabella ripartizione per unità -->
-            <div v-if="charge.items?.length" class="charge-items">
+            <!-- Dettaglio unità (collassabile) -->
+            <div v-if="expandedChargeId === charge.id && charge.items?.length" class="charge-items">
               <table class="items-table">
                 <thead>
                   <tr>
@@ -333,6 +362,10 @@
                 </tfoot>
               </table>
             </div>
+            <div v-else-if="expandedChargeId === charge.id && !charge.items?.length" class="charge-empty">
+              Nessuna unità calcolata — clicca Ricalcola.
+            </div>
+
           </div>
         </template>
       </div>
@@ -750,6 +783,11 @@ const chargesFiscalYearId = ref(null)
 const preventiviForCharge = ref([])
 const unchargedCount      = ref(0)
 const showDeletedCharges  = ref(false)
+const expandedChargeId    = ref(null)
+
+function toggleCharge(id) {
+  expandedChargeId.value = expandedChargeId.value === id ? null : id
+}
 
 const visibleCharges = computed(() =>
   showDeletedCharges.value
@@ -772,13 +810,20 @@ async function loadCharges() {
   } catch { charges.value = [] } finally { loadingCharges.value = false }
 }
 
+const recalculatingId = ref(null)
+
 async function recalculate(id) {
+  recalculatingId.value = id
   try {
     const { data } = await consumptionChargeApi.recalculate(id)
     const idx = charges.value.findIndex(c => c.id === id)
     if (idx !== -1) charges.value[idx] = data
     store.toast('Ripartizione ricalcolata', 'success')
-  } catch (err) { if (!err?.response) store.toast('Errore di rete', 'error') }
+  } catch (err) {
+    if (!err?.response) store.toast('Errore di rete', 'error')
+  } finally {
+    recalculatingId.value = null
+  }
 }
 
 async function approveCharge(id) {
@@ -788,7 +833,10 @@ async function approveCharge(id) {
     const idx = charges.value.findIndex(c => c.id === id)
     if (idx !== -1) charges.value[idx] = data
     store.toast('Ripartizione approvata — rate generate', 'success')
-  } catch (err) { if (!err?.response) store.toast('Errore di rete', 'error') }
+  } catch (err) {
+    if (!err?.response) store.toast('Errore di rete', 'error')
+    // altrimenti l'errore HTTP viene mostrato dal gestore globale api:error
+  }
 }
 
 async function deleteCharge(id) {
@@ -1034,6 +1082,7 @@ input[type="date"].inline-input { color-scheme: dark; }
 .row-meter-deleted td { opacity: 0.5; background: color-mix(in srgb, var(--accent-red) 4%, transparent); }
 .meter-deleted-badge { font-size: 0.7rem; margin-left: 0.35rem; vertical-align: middle; }
 .btn-ghost--active { background: var(--accent-glow); color: var(--accent); }
+.btn-icon-only { width: 30px; padding: 0; justify-content: center; }
 .inline-value { display: block; padding: 0.3rem 0.45rem; font-size: 0.875rem; }
 .charged-badge { font-size: 0.75rem; white-space: nowrap; }
 
@@ -1061,7 +1110,12 @@ input[type="date"].inline-input { color-scheme: dark; }
   padding: 0.75rem 1rem;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
+  user-select: none;
 }
+.charge-header--expandable { cursor: pointer; }
+.charge-header--expandable:hover { background: color-mix(in srgb, var(--accent) 4%, var(--bg-surface)); }
+.charge-expand-icon { color: var(--text-muted); font-size: 0.75rem; flex-shrink: 0; width: 14px; }
+.charge-empty { padding: 0.75rem 1rem; font-size: 0.875rem; color: var(--text-muted); }
 .charge-title { display: flex; align-items: center; gap: 0.5rem; flex: 1; flex-wrap: wrap; }
 .charge-type  { font-weight: 600; }
 .charge-amount { font-weight: 600; font-size: 1.05rem; white-space: nowrap; }

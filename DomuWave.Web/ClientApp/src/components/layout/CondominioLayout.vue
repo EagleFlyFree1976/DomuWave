@@ -35,8 +35,10 @@
 import { ref, computed, onMounted, watch, provide } from 'vue'
 import { useRoute } from 'vue-router'
 import { condominiumApi } from '@/services/api'
+import { useAppStore } from '@/stores/app'
 
 const route = useRoute()
+const store = useAppStore()
 const condominium = ref(null)
 const condominiumId = computed(() => Number(route.params.id))
 
@@ -45,6 +47,7 @@ const quickNav = [
   { path: '/panoramica',    icon: '◫', label: 'Panoramica' },
   { path: '/budget',        icon: '◎', label: 'Budget' },
   { path: '/spese',         icon: '◑', label: 'Spese' },
+  { path: '/consumi',       icon: '◌', label: 'Consumi' },
   { path: '/rate',          icon: '◷', label: 'Rate' },
   { path: '/fornitori',     icon: '◈', label: 'Fornitori' },
   { path: '/documenti',     icon: '▤', label: 'Documenti' },
@@ -59,6 +62,8 @@ async function fetchCondominium(id) {
   condominium.value = null
   const { data } = await condominiumApi.getById(id)
   condominium.value = data
+  // Sincronizza il condominio selezionato nello store globale
+  store.selectCondominio(Number(id))
 }
 
 onMounted(() => fetchCondominium(route.params.id))

@@ -166,7 +166,8 @@ public static class ConsumptionMappingExtensions
                 .Select(i => i.ToItemReadDto())
                 .ToList() ?? [],
         };
-        dto.HasWarnings = dto.Items.Any(i => i.HasWarning);
+        dto.HasWarnings   = dto.Items.Any(i => i.HasWarning);
+        dto.HasNoReadings = !dto.Items.Any(i => i.Consumption > 0);
         dto.SetTraceInfo(entity);
         return dto;
     }

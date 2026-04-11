@@ -18,6 +18,7 @@ public class ConsumptionChargeReadDto : TraceEntityDTO<int>
     public string  StatusName          { get; set; }
     public string  Notes               { get; set; }
     public bool    HasWarnings         { get; set; }
+    public bool    HasNoReadings       { get; set; }
 
     public IList<ConsumptionChargeItemReadDto> Items { get; set; } = [];
 }

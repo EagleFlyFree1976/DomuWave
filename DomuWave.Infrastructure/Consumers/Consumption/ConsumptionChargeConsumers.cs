@@ -24,7 +24,8 @@ public class GetConsumptionChargesByFiscalYearCommandConsumer
     {
         var items = await session.Query<ConsumptionCharge>()
             .Where(x => x.FiscalYear.Id == command.FiscalYearId && !x.IsDeleted)
-            .OrderBy(x => x.ConsumptionType.Name)
+            .OrderBy(x => x.Status.Id)   // Draft (1) prima di Approved (2)
+            .ThenBy(x => x.ConsumptionType.Name)
             .ToListAsync(ct).ConfigureAwait(false);
         return items.Select(x => x.ToReadDto()).ToList();
     }
@@ -81,21 +82,6 @@ public class CreateConsumptionChargeCommandConsumer
                         && !x.IsDeleted, ct).ConfigureAwait(false);
         if (existingDraft)
             throw new ValidatorException("Esiste già una ripartizione in bozza per questo tipo di consumo. Approva o elimina quella esistente prima di crearne una nuova.");
-
-        // Verifica che esistano letture non ancora ripartite per questo tipo+esercizio
-        var meterIdsForType = await session.Query<Meter>()
-            .Where(m => m.ConsumptionType.Id == command.Dto.ConsumptionTypeId && m.IsActive && !m.IsDeleted)
-            .Select(m => m.Id)
-            .ToListAsync(ct).ConfigureAwait(false);
-
-        var hasUnchargedReadings = await session.Query<ConsumptionReading>()
-            .AnyAsync(r => meterIdsForType.Contains(r.Meter.Id)
-                        && r.FiscalYear.Id == command.Dto.FiscalYearId
-                        && r.Charge == null
-                        && !r.IsDeleted, ct).ConfigureAwait(false);
-
-        if (!hasUnchargedReadings)
-            throw new ValidatorException("Non esistono letture non ancora ripartite per questo tipo di consumo nell'esercizio selezionato.");
 
         var draftStatus = await session.Query<ConsumptionChargeStatus>()
             .FirstOrDefaultAsync(x => x.Id == ConsumptionChargeStatus.Draft, ct).ConfigureAwait(false);
@@ -211,21 +197,22 @@ public class ApproveConsumptionChargeCommandConsumer
         if (entity == null) throw new NotFoundException("Ripartizione non trovata.");
         if (entity.Status?.Id == ConsumptionChargeStatus.Approved)
             throw new ValidatorException("La ripartizione è già approvata.");
-        if (!entity.Items.Any(i => !i.IsDeleted))
-            throw new ValidatorException("Calcola prima la ripartizione prima di approvarla.");
+        if (!entity.Items.Any(i => !i.IsDeleted && i.Consumption > 0))
+            throw new ValidatorException("Non è possibile approvare una ripartizione senza letture. Inserisci almeno una lettura e ricalcola prima di approvare.");
 
-        // Recupera l'installment aperto del budget (il più recente)
+        // Recupera l'installment del budget disponibile (Draft o Open), il più recente per scadenza
         var installment = await session.Query<CondominiumInstallment>()
             .Where(x => x.Budget.Id == entity.Budget.Id
-                     && x.Status.Id == CondominiumInstallmentStatus.Open
+                     && (x.Status.Id == CondominiumInstallmentStatus.Draft
+                      || x.Status.Id == CondominiumInstallmentStatus.Open)
                      && !x.IsDeleted)
             .OrderByDescending(x => x.DueDate)
             .FirstOrDefaultAsync(ct).ConfigureAwait(false);
 
         if (installment == null)
             throw new ValidatorException(
-                "Non esiste una rata aperta nel budget selezionato su cui addebitare i consumi. " +
-                "Verifica che il budget preventivo abbia rate generate e ancora aperte.");
+                "Non esiste una rata (aperta o in bozza) nel budget selezionato su cui addebitare i consumi. " +
+                "Verifica che il budget preventivo abbia rate generate.");
 
         var openStatus = await session.Query<CondominiumInstallmentStatus>()
             .FirstOrDefaultAsync(x => x.Id == CondominiumInstallmentStatus.Open, ct).ConfigureAwait(false);
@@ -246,11 +233,19 @@ public class ApproveConsumptionChargeCommandConsumer
                 AmountPaid    = 0m,
                 Balance       = item.Amount,
                 PaymentStatus = "ToPay",
-                Notes         = $"Consumo {entity.ConsumptionType?.Name} – {entity.FiscalYear?.Code}",
+                Notes         = $"[Ripartizione consumi #{entity.Id}] {entity.ConsumptionType?.Name} – {entity.FiscalYear?.Code}",
             };
             if (user != null) fee.Trace(user);
             await session.SaveAsync(fee, ct).ConfigureAwait(false);
         }
+
+        // Aggiorna TotalAmount dell'installment sommando tutte le fee (incluse quelle appena aggiunte)
+        await session.FlushAsync(ct).ConfigureAwait(false);
+        var allFees = await session.Query<CondominiumFee>()
+            .Where(f => f.Installment.Id == installment.Id && !f.IsDeleted)
+            .ToListAsync(ct).ConfigureAwait(false);
+        installment.TotalAmount = allFees.Sum(f => f.AmountDue);
+        await session.SaveOrUpdateAsync(installment, ct).ConfigureAwait(false);
 
         // Cambia stato → Approved
         var approvedStatus = await session.Query<ConsumptionChargeStatus>()
@@ -278,6 +273,17 @@ public class DeleteConsumptionChargeCommandConsumer
         if (entity == null) return false;
         if (entity.Status?.Id == ConsumptionChargeStatus.Approved)
             throw new ValidatorException("Non è possibile eliminare una ripartizione già approvata.");
+
+        // Sgancia le letture collegate prima di eliminare la ripartizione
+        var linkedReadings = await session.Query<ConsumptionReading>()
+            .Where(r => r.Charge.Id == entity.Id && !r.IsDeleted)
+            .ToListAsync(ct).ConfigureAwait(false);
+        foreach (var r in linkedReadings)
+        {
+            r.Charge = null;
+            await session.SaveOrUpdateAsync(r, ct).ConfigureAwait(false);
+        }
+
         entity.IsDeleted = true;
         entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);

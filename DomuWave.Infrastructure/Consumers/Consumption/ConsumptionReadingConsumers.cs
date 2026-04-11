@@ -160,7 +160,9 @@ public class GetUnchargedReadingsCountByFiscalYearCommandConsumer
         => await session.Query<ConsumptionReading>()
             .CountAsync(r => r.FiscalYear.Id == command.FiscalYearId
                           && r.Charge == null
-                          && !r.IsDeleted, ct).ConfigureAwait(false);
+                          && !r.IsDeleted
+                          && !r.Meter.IsDeleted
+                          && !r.Meter.ConsumptionType.IsDeleted, ct).ConfigureAwait(false);
 }
 
 public class DeleteConsumptionReadingCommandConsumer
