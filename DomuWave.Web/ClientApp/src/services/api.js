@@ -231,6 +231,7 @@ export const budgetApi = {
   recalculateItems:     (id)      => api.post(`/budgets/${id}/recalculate-items`),
   fixOrphanItems:       (id)      => api.post(`/budgets/${id}/fix-orphan-items`),
   delete:               (id)      => api.delete(`/budgets/${id}`),
+  consuntivoDetail:     (id)      => api.get(`/budgets/${id}/consuntivo-detail`),
 }
 
 // ─── Voci di budget ───────────────────────────────────────────

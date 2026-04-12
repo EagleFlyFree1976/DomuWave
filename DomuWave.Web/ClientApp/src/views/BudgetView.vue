@@ -70,6 +70,10 @@
                     <button v-if="canEdit && b.statusId === 2 && b.type === 1"
                             class="btn btn-sm btn-ghost"
                             @click="openGenerateModal(b)">Genera rate</button>
+                    <button v-if="b.type === 2"
+                            class="btn btn-sm btn-ghost"
+                            @click="router.push(`/condomini/${store.selectedCondominioId}/budget/${b.id}/dettaglio`)"
+                            title="Panoramica ripartizione spese per conto e per unità">Dettaglio</button>
                     <button v-if="canEdit && b.type === 2 && b.statusId !== 3"
                             class="btn btn-sm btn-ghost"
                             @click="recalculateConsuntivoItems(b)" title="Ricalcola voci da spese registrate">Ricalcola voci</button>

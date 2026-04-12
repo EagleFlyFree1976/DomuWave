@@ -143,6 +143,17 @@ public class BudgetsController(
         return NoContent();
     }
 
+    [HttpGet("{id:int}/consuntivo-detail")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(ConsuntivoDetailDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetConsuntivoDetail(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetConsuntivoDetailCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpDelete("{id:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)

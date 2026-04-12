@@ -38,6 +38,7 @@ const routes = [
           { path: 'unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari' } },
           { path: 'panoramica', component: () => import('@/views/PanoramicaView.vue'), meta: { title: 'Panoramica Occupanti' } },
           { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget' } },
+          { path: 'budget/:budgetId/dettaglio', component: () => import('@/views/ConsuntivoDetailView.vue'), meta: { title: 'Dettaglio Consuntivo' } },
           { path: 'spese', component: () => import('@/views/ExpenseView.vue'), meta: { title: 'Spese' } },
           { path: 'consumi', component: () => import('@/views/ConsumiView.vue'), meta: { title: 'Consumi' } },
           { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote' } },
