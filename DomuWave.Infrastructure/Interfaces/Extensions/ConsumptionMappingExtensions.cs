@@ -15,6 +15,9 @@ public static class ConsumptionMappingExtensions
         {
             CondominiumId   = entity.Condominium?.Id ?? 0,
             CondominiumName = entity.Condominium?.Name,
+            AccountId       = entity.Account?.Id,
+            AccountCode     = entity.Account?.Code,
+            AccountName     = entity.Account?.Name,
             Name            = entity.Name,
             UnitOfMeasure   = entity.UnitOfMeasure,
             Notes           = entity.Notes,
@@ -25,12 +28,13 @@ public static class ConsumptionMappingExtensions
         return dto;
     }
 
-    public static ConsumptionType ToEntity(this CreateConsumptionTypeDto dto, Condominium condominium, Tenant tenant)
+    public static ConsumptionType ToEntity(this CreateConsumptionTypeDto dto, Condominium condominium, ChartOfAccounts account, Tenant tenant)
     {
         if (dto == null) return null;
         return new ConsumptionType
         {
             Condominium   = condominium,
+            Account       = account,
             Tenant        = tenant,
             Name          = dto.Name,
             UnitOfMeasure = dto.UnitOfMeasure,
@@ -39,8 +43,9 @@ public static class ConsumptionMappingExtensions
         };
     }
 
-    public static void ApplyUpdate(this ConsumptionType entity, UpdateConsumptionTypeDto dto)
+    public static void ApplyUpdate(this ConsumptionType entity, UpdateConsumptionTypeDto dto, ChartOfAccounts account)
     {
+        entity.Account       = account;
         entity.Name          = dto.Name;
         entity.UnitOfMeasure = dto.UnitOfMeasure;
         entity.Notes         = dto.Notes;

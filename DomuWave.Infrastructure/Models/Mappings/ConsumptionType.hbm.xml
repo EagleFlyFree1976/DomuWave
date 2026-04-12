@@ -14,8 +14,9 @@
       </generator>
     </id>
 
-    <many-to-one name="Tenant"      class="DomuWave.Services.Models.Tenant, DomuWave.Services"       column="TenantId"      not-null="true" />
-    <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services"  column="CondominiumId" not-null="true" />
+    <many-to-one name="Tenant"      class="DomuWave.Services.Models.Tenant, DomuWave.Services"            column="TenantId"      not-null="true" />
+    <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services"      column="CondominiumId" not-null="true" />
+    <many-to-one name="Account"     class="DomuWave.Services.Models.ChartOfAccounts, DomuWave.Services"  column="AccountId"     not-null="false" lazy="false" fetch="join" />
 
     <property name="Name"          column="Name"          type="String"  length="200"  not-null="true" />
     <property name="UnitOfMeasure" column="UnitOfMeasure" type="String"  length="50"   not-null="true" />

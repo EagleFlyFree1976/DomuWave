@@ -4,18 +4,22 @@ namespace DomuWave.Services.Dto.Consumption;
 
 public class ConsumptionTypeReadDto : TraceEntityDTO<int>
 {
-    public int    CondominiumId   { get; set; }
-    public string CondominiumName { get; set; }
-    public string Name            { get; set; }
-    public string UnitOfMeasure   { get; set; }
-    public string Notes           { get; set; }
-    public bool   IsActive        { get; set; }
-    public bool   IsDeleted       { get; set; }
+    public int     CondominiumId   { get; set; }
+    public string  CondominiumName { get; set; }
+    public int?    AccountId       { get; set; }
+    public string? AccountCode     { get; set; }
+    public string? AccountName     { get; set; }
+    public string  Name            { get; set; }
+    public string  UnitOfMeasure   { get; set; }
+    public string  Notes           { get; set; }
+    public bool    IsActive        { get; set; }
+    public bool    IsDeleted       { get; set; }
 }
 
 public class CreateConsumptionTypeDto
 {
     public int    CondominiumId { get; set; }
+    public int?   AccountId     { get; set; }
     public string Name          { get; set; }
     public string UnitOfMeasure { get; set; }
     public string Notes         { get; set; }
@@ -23,6 +27,7 @@ public class CreateConsumptionTypeDto
 
 public class UpdateConsumptionTypeDto
 {
+    public int?    AccountId     { get; set; }
     public string  Name          { get; set; }
     public string  UnitOfMeasure { get; set; }
     public string? Notes         { get; set; }

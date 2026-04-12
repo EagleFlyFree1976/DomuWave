@@ -59,7 +59,15 @@ public class CreateConsumptionTypeCommandConsumer
         if (string.IsNullOrWhiteSpace(command.Dto.Name))
             throw new ValidatorException("Il nome è obbligatorio.");
 
-        var entity = command.Dto.ToEntity(condominium, condominium.Tenant);
+        ChartOfAccounts account = null;
+        if (command.Dto.AccountId.HasValue)
+        {
+            account = await session.Query<ChartOfAccounts>()
+                .FirstOrDefaultAsync(x => x.Id == command.Dto.AccountId.Value && !x.IsDeleted, ct).ConfigureAwait(false);
+            if (account == null) throw new NotFoundException("Conto del piano dei conti non trovato.");
+        }
+
+        var entity = command.Dto.ToEntity(condominium, account, condominium.Tenant);
         entity.Trace(currentUser);
         await session.SaveAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
@@ -79,7 +87,16 @@ public class UpdateConsumptionTypeCommandConsumer
         var entity = await session.Query<ConsumptionType>()
             .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
         if (entity == null) throw new NotFoundException("Tipo consumo non trovato.");
-        entity.ApplyUpdate(command.Dto);
+
+        ChartOfAccounts account = null;
+        if (command.Dto.AccountId.HasValue)
+        {
+            account = await session.Query<ChartOfAccounts>()
+                .FirstOrDefaultAsync(x => x.Id == command.Dto.AccountId.Value && !x.IsDeleted, ct).ConfigureAwait(false);
+            if (account == null) throw new NotFoundException("Conto del piano dei conti non trovato.");
+        }
+
+        entity.ApplyUpdate(command.Dto, account);
         entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);

@@ -45,7 +45,7 @@
         </div>
         <div v-else class="table-wrap">
           <table>
-            <thead><tr><th>Nome</th><th>U.M.</th><th>Stato</th><th></th></tr></thead>
+            <thead><tr><th>Nome</th><th>U.M.</th><th>Conto spesa</th><th>Stato</th><th></th></tr></thead>
             <tbody>
               <tr v-for="t in visibleTypes" :key="t.id" :class="{ 'row-type-deleted': t.isDeleted }">
                 <td>
@@ -53,6 +53,11 @@
                   <span v-if="t.isDeleted" class="badge badge-muted type-deleted-badge" title="Tipo cancellato">Cancellato</span>
                 </td>
                 <td class="text-secondary mono">{{ t.unitOfMeasure }}</td>
+                <td class="text-secondary" style="font-size:0.85em">
+                  <span v-if="t.accountId" class="mono">{{ t.accountCode }}</span>
+                  <span v-if="t.accountId"> {{ t.accountName }}</span>
+                  <span v-else class="text-muted">—</span>
+                </td>
                 <td>
                   <span v-if="!t.isDeleted" class="badge" :class="t.isActive ? 'badge-green' : 'badge-muted'">{{ t.isActive ? 'Attivo' : 'Inattivo' }}</span>
                   <span v-else class="badge badge-muted">—</span>
@@ -386,6 +391,16 @@
           <input class="form-input" v-model="typeForm.unitOfMeasure" placeholder="mc, kWh, litri…" @input="delete typeErrors.unitOfMeasure" />
           <span v-if="typeErrors.unitOfMeasure" class="field-error">{{ typeErrors.unitOfMeasure }}</span>
         </div>
+        <div class="form-group form-group--full">
+          <label class="form-label">Conto spesa (piano dei conti)</label>
+          <select class="form-select" v-model="typeForm.accountId">
+            <option :value="null">— Nessuno —</option>
+            <option v-for="a in uscitaAccounts" :key="a.id" :value="a.id">
+              {{ a.code }} – {{ a.name }}
+            </option>
+          </select>
+          <span class="field-hint">Se impostato, all'approvazione della ripartizione viene creata automaticamente una spesa su questo conto.</span>
+        </div>
         <div v-if="editingTypeId" class="form-group form-group--full">
           <label class="form-label">
             <input type="checkbox" v-model="typeForm.isActive" style="margin-right:6px" />
@@ -500,7 +515,7 @@ import { useAppStore } from '@/stores/app'
 import { usePermissions } from '@/composables/usePermissions'
 import {
   consumptionTypeApi, meterApi, consumptionReadingApi, consumptionChargeApi,
-  fiscalYearApi, unitApi, budgetApi,
+  fiscalYearApi, unitApi, budgetApi, chartOfAccountsApi,
 } from '@/services/api'
 import BaseModal from '@/components/BaseModal.vue'
 
@@ -509,6 +524,18 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 
 // ── Tab ────────────────────────────────────────────────────────────────────
 const tab = ref('types')
+
+// ── Piano dei conti (per select nel form tipo consumo) ────────────────────
+const accounts     = ref([])
+const uscitaAccounts = computed(() => accounts.value.filter(a => a.type === 2 && a.isActive))
+
+async function loadAccounts() {
+  if (!store.selectedCondominioId) { accounts.value = []; return }
+  try {
+    const { data } = await chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
+    accounts.value = data ?? []
+  } catch { accounts.value = [] }
+}
 
 // ── Tipi consumo ──────────────────────────────────────────────────────────
 const consumptionTypes  = ref([])
@@ -853,13 +880,13 @@ const showTypeModal  = ref(false)
 const editingTypeId  = ref(null)
 const savingType     = ref(false)
 const typeErrors     = ref({})
-const typeForm       = ref({ name: '', unitOfMeasure: '', notes: '', isActive: true })
+const typeForm       = ref({ name: '', unitOfMeasure: '', accountId: null, notes: '', isActive: true })
 
 function openTypeModal(t = null) {
   editingTypeId.value = t?.id ?? null
   typeForm.value = t
-    ? { name: t.name, unitOfMeasure: t.unitOfMeasure, notes: t.notes ?? '', isActive: t.isActive }
-    : { name: '', unitOfMeasure: '', notes: '', isActive: true }
+    ? { name: t.name, unitOfMeasure: t.unitOfMeasure, accountId: t.accountId ?? null, notes: t.notes ?? '', isActive: t.isActive }
+    : { name: '', unitOfMeasure: '', accountId: null, notes: '', isActive: true }
   typeErrors.value = {}
   showTypeModal.value = true
 }
@@ -992,7 +1019,7 @@ const fmtPct = (v) => v != null ? (Number(v) * 100).toLocaleString('it-IT', { mi
 
 // ── Init ──────────────────────────────────────────────────────────────────
 async function loadAll() {
-  await Promise.all([loadTypes(), loadMeters(), loadUnits(), loadFiscalYears()])
+  await Promise.all([loadTypes(), loadMeters(), loadUnits(), loadFiscalYears(), loadAccounts()])
 }
 
 onMounted(loadAll)
@@ -1140,4 +1167,5 @@ input[type="date"].inline-input { color-scheme: dark; }
 .row-saved td { background: color-mix(in srgb, var(--accent-green) 6%, transparent); }
 .row-error-msg { color: var(--accent-red); font-size: 0.8rem; white-space: nowrap; }
 .saved-check { color: var(--accent-green); font-size: 1rem; }
+.field-hint { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
 </style>

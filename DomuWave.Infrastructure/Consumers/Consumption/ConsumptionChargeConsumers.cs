@@ -247,6 +247,51 @@ public class ApproveConsumptionChargeCommandConsumer
         installment.TotalAmount = allFees.Sum(f => f.AmountDue);
         await session.SaveOrUpdateAsync(installment, ct).ConfigureAwait(false);
 
+        // ── Crea Expense sul conto del tipo consumo (se configurato) ──────────
+        if (entity.ConsumptionType?.Account != null)
+        {
+            var condominium = await session.GetAsync<Models.Condominium>(
+                entity.ConsumptionType.Condominium.Id, ct).ConfigureAwait(false);
+
+            // Tabella millesimale di default del condominio (prima attiva trovata)
+            var millesimalTable = await session.Query<MillesimalTable>()
+                .Where(m => m.Condominium.Id == condominium.Id && m.IsEnabled && !m.IsDeleted)
+                .OrderBy(m => m.Id)
+                .FirstOrDefaultAsync(ct).ConfigureAwait(false);
+            if (millesimalTable == null)
+                throw new ValidatorException(
+                    "Nessuna tabella millesimale attiva trovata per il condominio. " +
+                    "Impossibile creare la spesa associata alla ripartizione.");
+
+            var expenseType       = session.Load<ExpenseType>(ExpenseType.Altro);
+            var paymentStatus     = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
+            var chargeabilityType = session.Load<ChargeabilityType>(ChargeabilityType.Owner);
+
+            var expense = new Expense
+            {
+                Condominium      = condominium,
+                Tenant           = entity.Tenant,
+                Account          = entity.ConsumptionType.Account,
+                FiscalYear       = entity.FiscalYear,
+                MillesimalTable  = millesimalTable,
+                ExpenseType      = expenseType,
+                PaymentStatus    = paymentStatus,
+                ChargeabilityType = chargeabilityType,
+                Name             = $"Consumi {entity.ConsumptionType.Name} – {entity.FiscalYear?.Code}",
+                DocumentDate     = DateTime.Today,
+                RegistrationDate = DateTime.Today,
+                GrossAmount      = entity.TotalAmount,
+                VatAmount        = 0m,
+                NetAmount        = entity.TotalAmount,
+                Notes            = $"[Ripartizione consumi #{entity.Id}] generata automaticamente",
+            };
+            if (user != null) expense.Trace(user);
+            await session.SaveAsync(expense, ct).ConfigureAwait(false);
+            await session.FlushAsync(ct).ConfigureAwait(false);
+
+            entity.Expense = expense;
+        }
+
         // Cambia stato → Approved
         var approvedStatus = await session.Query<ConsumptionChargeStatus>()
             .FirstOrDefaultAsync(x => x.Id == ConsumptionChargeStatus.Approved, ct).ConfigureAwait(false);
