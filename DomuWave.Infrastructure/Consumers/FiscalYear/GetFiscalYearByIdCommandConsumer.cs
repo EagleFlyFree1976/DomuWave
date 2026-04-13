@@ -9,6 +9,7 @@ using DomuWave.Services.Interfaces;
 using NHibernate.Linq;
 using SimpleMediator.Core;
 using System.Linq;
+using Models = DomuWave.Services.Models;
 
 namespace DomuWave.Services.Consumers;
 
@@ -66,13 +67,18 @@ public class GetFiscalYearByIdCommandConsumer : InMemoryConsumerBase<GetFiscalYe
             .CountAsync(b => b.FiscalYear.Id == fyId && !b.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
 
+        var totalOpeningBalance = await session.Query<Models.UnitOpeningBalance>()
+            .Where(b => b.FiscalYear.Id == fyId && !b.IsDeleted)
+            .SumAsync(b => (decimal?)b.OpeningBalance, cancellationToken)
+            .ConfigureAwait(false) ?? 0m;
+
         dto.Summary = new FiscalYearSummaryDto
         {
             TotalExpenses            = expenses.Sum(e => e.GrossAmount),
             TotalExpensesPaid        = expenses.Where(e => e.PaymentStatus?.Id == ExpensePaymentStatus.Pagata).Sum(e => e.GrossAmount),
             TotalInstallmentsBilled  = installments.Sum(i => i.TotalAmount),
             TotalPaymentsReceived    = fees.Sum(f => f.AmountPaid),
-            Balance                  = fees.Sum(f => f.AmountPaid) - expenses.Sum(e => e.GrossAmount),
+            Balance                  = totalOpeningBalance + fees.Sum(f => f.AmountPaid) - expenses.Sum(e => e.GrossAmount),
             ExpenseCount             = expenses.Count,
             InstallmentCount         = installments.Count,
             BudgetCount              = budgetCount,

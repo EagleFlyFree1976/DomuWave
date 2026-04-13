@@ -480,14 +480,6 @@
           </select>
           <span v-if="chargeErrors.consumptionTypeId" class="field-error">{{ chargeErrors.consumptionTypeId }}</span>
         </div>
-        <div class="form-group form-group--full" :class="{ 'has-error': chargeErrors.budgetId }">
-          <label class="form-label">Budget preventivo *</label>
-          <select class="form-select" v-model="chargeForm.budgetId" @change="delete chargeErrors.budgetId">
-            <option :value="null" disabled>— Seleziona —</option>
-            <option v-for="b in preventiviForCharge" :key="b.id" :value="b.id">{{ b.code }}{{ b.notes ? ' – ' + b.notes : '' }}</option>
-          </select>
-          <span v-if="chargeErrors.budgetId" class="field-error">{{ chargeErrors.budgetId }}</span>
-        </div>
         <div class="form-group form-group--full" :class="{ 'has-error': chargeErrors.totalAmount }">
           <label class="form-label">Importo totale spesa (€) *</label>
           <input class="form-input" type="number" step="0.01" v-model.number="chargeForm.totalAmount" @input="delete chargeErrors.totalAmount" />
@@ -515,7 +507,7 @@ import { useAppStore } from '@/stores/app'
 import { usePermissions } from '@/composables/usePermissions'
 import {
   consumptionTypeApi, meterApi, consumptionReadingApi, consumptionChargeApi,
-  fiscalYearApi, unitApi, budgetApi, chartOfAccountsApi,
+  fiscalYearApi, unitApi, chartOfAccountsApi,
 } from '@/services/api'
 import BaseModal from '@/components/BaseModal.vue'
 
@@ -807,7 +799,6 @@ function selectType(t) {
 const charges             = ref([])
 const loadingCharges      = ref(false)
 const chargesFiscalYearId = ref(null)
-const preventiviForCharge = ref([])
 const unchargedCount      = ref(0)
 const showDeletedCharges  = ref(false)
 const expandedChargeId    = ref(null)
@@ -826,13 +817,11 @@ async function loadCharges() {
   if (!chargesFiscalYearId.value) return
   loadingCharges.value = true
   try {
-    const [chargesRes, budgetsRes, unchargedRes] = await Promise.all([
+    const [chargesRes, unchargedRes] = await Promise.all([
       consumptionChargeApi.getByFiscalYear(chargesFiscalYearId.value),
-      budgetApi.getByCondominium(store.selectedCondominioId),
       consumptionReadingApi.getUnchargedCount(chargesFiscalYearId.value),
     ])
     charges.value = chargesRes.data ?? []
-    preventiviForCharge.value = (budgetsRes.data ?? []).filter(b => b.type === 1)
     unchargedCount.value = unchargedRes.data ?? 0
   } catch { charges.value = [] } finally { loadingCharges.value = false }
 }
@@ -970,13 +959,13 @@ const showChargeModal  = ref(false)
 const editingChargeId  = ref(null)
 const savingCharge     = ref(false)
 const chargeErrors     = ref({})
-const chargeForm       = ref({ consumptionTypeId: null, budgetId: null, totalAmount: 0, notes: '' })
+const chargeForm       = ref({ consumptionTypeId: null, totalAmount: 0, notes: '' })
 
 function openChargeModal(c = null) {
   editingChargeId.value = c?.id ?? null
   chargeForm.value = c
-    ? { consumptionTypeId: c.consumptionTypeId, budgetId: c.budgetId, totalAmount: c.totalAmount, notes: c.notes ?? '' }
-    : { consumptionTypeId: null, budgetId: null, totalAmount: 0, notes: '' }
+    ? { consumptionTypeId: c.consumptionTypeId, totalAmount: c.totalAmount, notes: c.notes ?? '' }
+    : { consumptionTypeId: null, totalAmount: 0, notes: '' }
   chargeErrors.value = {}
   showChargeModal.value = true
 }
@@ -984,14 +973,12 @@ function openChargeModal(c = null) {
 async function saveCharge() {
   chargeErrors.value = {}
   if (!editingChargeId.value && !chargeForm.value.consumptionTypeId) chargeErrors.value.consumptionTypeId = 'Obbligatorio'
-  if (!chargeForm.value.budgetId) chargeErrors.value.budgetId = 'Obbligatorio'
   if (!chargeForm.value.totalAmount || chargeForm.value.totalAmount <= 0) chargeErrors.value.totalAmount = 'Deve essere maggiore di zero'
   if (Object.keys(chargeErrors.value).length) return
   savingCharge.value = true
   try {
     if (editingChargeId.value) {
       const { data } = await consumptionChargeApi.update(editingChargeId.value, {
-        budgetId: chargeForm.value.budgetId,
         totalAmount: chargeForm.value.totalAmount,
         notes: chargeForm.value.notes,
       })
@@ -1001,7 +988,6 @@ async function saveCharge() {
       await consumptionChargeApi.create({
         consumptionTypeId: chargeForm.value.consumptionTypeId,
         fiscalYearId:      chargesFiscalYearId.value,
-        budgetId:          chargeForm.value.budgetId,
         totalAmount:       chargeForm.value.totalAmount,
         notes:             chargeForm.value.notes,
       })

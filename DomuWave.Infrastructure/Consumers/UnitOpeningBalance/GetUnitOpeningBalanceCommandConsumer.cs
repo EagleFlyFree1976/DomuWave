@@ -44,13 +44,8 @@ public class GetUnitOpeningBalanceCommandConsumer
         var isClosed = fiscalYear.Status?.Id == FiscalYearStatus.Closed
                     || fiscalYear.Status?.Id == FiscalYearStatus.Locked;
 
-        // È il primo esercizio del condominio (nessun esercizio precedente con EndDate < StartDate)?
-        var isFirstFiscalYear = !await session.Query<FiscalYear>()
-            .AnyAsync(f => f.Condominium.Id == unit.Condominium.Id
-                        && f.Id != command.FiscalYearId
-                        && f.EndDate < fiscalYear.StartDate
-                        && !f.IsDeleted, cancellationToken)
-            .ConfigureAwait(false);
+        // È il primo esercizio del condominio se non ha un esercizio precedente esplicitamente collegato
+        var isFirstFiscalYear = fiscalYear.PreviousFiscalYear == null;
 
         // Modificabile solo se: primo esercizio AND non ancora chiuso
         var isEditable = isFirstFiscalYear && !isClosed;

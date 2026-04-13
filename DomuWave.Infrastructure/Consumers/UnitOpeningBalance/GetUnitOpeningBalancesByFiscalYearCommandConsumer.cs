@@ -37,12 +37,7 @@ public class GetUnitOpeningBalancesByFiscalYearCommandConsumer
         var isClosed = fiscalYear.Status?.Id == FiscalYearStatus.Closed
                     || fiscalYear.Status?.Id == FiscalYearStatus.Locked;
 
-        var isFirstFiscalYear = !await session.Query<FiscalYear>()
-            .AnyAsync(f => f.Condominium.Id == fiscalYear.Condominium.Id
-                        && f.Id != command.FiscalYearId
-                        && f.EndDate < fiscalYear.StartDate
-                        && !f.IsDeleted, cancellationToken)
-            .ConfigureAwait(false);
+        var isFirstFiscalYear = fiscalYear.PreviousFiscalYear == null;
 
         var isEditable = isFirstFiscalYear && !isClosed;
 

@@ -39,7 +39,6 @@ public class CreateConsumptionChargeDto
 {
     public int     ConsumptionTypeId { get; set; }
     public int     FiscalYearId      { get; set; }
-    public int     BudgetId          { get; set; }
     public int?    ExpenseId         { get; set; }
     public decimal TotalAmount       { get; set; }
     public string? Notes             { get; set; }
@@ -47,7 +46,6 @@ public class CreateConsumptionChargeDto
 
 public class UpdateConsumptionChargeDto
 {
-    public int?    BudgetId    { get; set; }
     public int?    ExpenseId   { get; set; }
     public decimal TotalAmount { get; set; }
     public string? Notes       { get; set; }

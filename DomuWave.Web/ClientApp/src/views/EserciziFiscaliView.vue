@@ -51,8 +51,13 @@
                 </td>
                 <td>
                   <div class="row-actions">
-                    <button class="btn btn-sm btn-ghost" @click="toggleDetail(fy)">
-                      {{ expandedId === fy.id ? 'Chiudi' : 'Dettaglio' }}
+                    <button class="btn-icon btn-icon--expand"
+                            :class="{ expanded: expandedId === fy.id }"
+                            :title="expandedId === fy.id ? 'Comprimi' : 'Espandi dettaglio'"
+                            @click="toggleDetail(fy)">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
                     </button>
                     <button v-if="canEdit && (fy.statusId === 1 || fy.statusId === 2)"
                             class="btn-icon" title="Modifica"
@@ -70,6 +75,14 @@
                             class="btn btn-sm btn-ghost btn-green"
                             @click="openTransitionModal(fy, 'open')">
                       Apri
+                    </button>
+                    <button v-if="canEdit && (fy.statusId === 1 || fy.statusId === 2) && fy.previousFiscalYearId"
+                            class="btn btn-sm btn-ghost"
+                            title="Ricalcola i saldi iniziali dalle chiusure dell'esercizio precedente"
+                            :disabled="propagatingId === fy.id"
+                            @click="propagateOpeningBalances(fy)">
+                      <span v-if="propagatingId === fy.id" class="spinner" style="width:12px;height:12px"></span>
+                      Propaga saldi
                     </button>
                     <button v-if="canEdit && fy.statusId === 2"
                             class="btn btn-sm btn-ghost btn-amber"
@@ -209,6 +222,45 @@
                           </table>
                         </div>
                       </div>
+                      <!-- Saldi iniziali per unità -->
+                      <div class="balances-section">
+                        <div class="balances-header">
+                          <span class="balances-title">Saldi iniziali per unità</span>
+                          <span v-if="loadingUnitOpeningBalances" class="spinner" style="width:14px;height:14px"></span>
+                        </div>
+                        <div v-if="!loadingUnitOpeningBalances && !unitOpeningBalances.length" class="balances-empty">
+                          Nessun saldo disponibile.
+                        </div>
+                        <div v-else-if="!loadingUnitOpeningBalances" class="balances-table-wrap">
+                          <table class="balances-table">
+                            <thead>
+                              <tr>
+                                <th>Unità</th>
+                                <th class="col-num">Saldo iniziale</th>
+                                <th class="col-num">Rate addebitate</th>
+                                <th class="col-num">Rate incassate</th>
+                                <th class="col-num">Quota consuntiva</th>
+                                <th class="col-num">Saldo conguaglio</th>
+                                <th class="col-num">Saldo finale</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr v-for="ub in unitOpeningBalances" :key="ub.unitId">
+                                <td>{{ ub.unitName }}</td>
+                                <td class="col-num mono">{{ fmt(ub.openingBalance) }}</td>
+                                <td class="col-num text-secondary">{{ fmt(ub.rateAddebitate) }}</td>
+                                <td class="col-num text-secondary">{{ fmt(ub.rateIncassate) }}</td>
+                                <td class="col-num text-secondary">{{ fmt(ub.quotaConsuntiva) }}</td>
+                                <td class="col-num text-secondary">{{ fmt(ub.saldoConguaglio) }}</td>
+                                <td class="col-num" :class="ub.closingBalance >= 0 ? 'text-green' : 'text-red'">
+                                  {{ fmt(ub.closingBalance) }}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
                     </template>
                   </div>
                 </td>
@@ -313,9 +365,13 @@
 
       <!-- Step 2: saldi iniziali unità (solo primo esercizio) -->
       <template v-if="!editingId && createStep === 2">
-        <p class="step2-desc">
+        <p v-if="isFirstFiscalYear" class="step2-desc">
           È il primo esercizio del condominio. Inserisci il saldo iniziale per ogni unità immobiliare
           (lascia 0 se non ci sono crediti/debiti pregressi).
+        </p>
+        <p v-else class="step2-desc" style="color: var(--text-secondary)">
+          I saldi iniziali vengono propagati automaticamente dal saldo di chiusura dell'esercizio precedente.
+          Per aggiornare i saldi usa il pulsante <strong>Propaga saldi</strong> sulla riga dell'esercizio.
         </p>
         <div v-if="loadingUnits" class="loading-state"><div class="spinner"></div></div>
         <div v-else-if="!unitBalances.length" class="empty-state" style="padding: 1rem 0">
@@ -327,17 +383,18 @@
               <tr>
                 <th>Unità</th>
                 <th class="col-num">Saldo iniziale (€)</th>
-                <th>Note</th>
+                <th v-if="isFirstFiscalYear">Note</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="ub in unitBalances" :key="ub.unitId">
                 <td>{{ ub.unitName }}</td>
                 <td class="col-num">
-                  <input class="inline-input" type="number" step="0.01"
+                  <input v-if="isFirstFiscalYear" class="inline-input" type="number" step="0.01"
                          v-model.number="ub.openingBalance" />
+                  <span v-else class="mono">{{ fmt(ub.openingBalance) }}</span>
                 </td>
-                <td>
+                <td v-if="isFirstFiscalYear">
                   <input class="form-input form-input--sm" type="text"
                          v-model="ub.notes" placeholder="Note opzionali" />
                 </td>
@@ -357,8 +414,8 @@
           Crea
         </button>
 
-        <!-- Crea step 2 -->
-        <template v-if="!editingId && createStep === 2">
+        <!-- Crea step 2 — solo se primo esercizio -->
+        <template v-if="!editingId && createStep === 2 && isFirstFiscalYear">
           <button class="btn btn-ghost" @click="skipOpeningBalances" :disabled="savingBalances">
             Salta
           </button>
@@ -367,6 +424,11 @@
             Salva saldi
           </button>
         </template>
+        <!-- Crea step 2 — EF con precedente: solo chiudi -->
+        <button v-if="!editingId && createStep === 2 && !isFirstFiscalYear"
+                class="btn btn-primary" @click="closeCreateModal">
+          Chiudi
+        </button>
 
         <!-- Modifica -->
         <button v-if="editingId"
@@ -459,29 +521,39 @@ const editingBalanceId = ref(null)
 const balanceEditValue = ref(0)
 const savingBalance    = ref(false)
 
+// Saldi iniziali per unità
+const unitOpeningBalances        = ref([])
+const loadingUnitOpeningBalances = ref(false)
+
 async function toggleDetail(fy) {
   if (expandedId.value === fy.id) {
     expandedId.value  = null
     detail.value      = null
     balances.value    = []
+    unitOpeningBalances.value = []
     editingBalanceId.value = null
     return
   }
   expandedId.value  = fy.id
   detail.value      = null
   balances.value    = []
-  loadingSummary.value  = true
-  loadingBalances.value = true
+  unitOpeningBalances.value = []
+  loadingSummary.value         = true
+  loadingBalances.value        = true
+  loadingUnitOpeningBalances.value = true
   try {
-    const [summaryRes, balancesRes] = await Promise.allSettled([
+    const [summaryRes, balancesRes, unitBalancesRes] = await Promise.allSettled([
       fiscalYearApi.getById(fy.id),
       accountBalanceApi.getByFiscalYear(fy.id),
+      unitApi.getOpeningBalancesByFiscalYear(fy.id),
     ])
-    if (summaryRes.status  === 'fulfilled') detail.value   = summaryRes.value.data
-    if (balancesRes.status === 'fulfilled') balances.value = balancesRes.value.data ?? []
+    if (summaryRes.status     === 'fulfilled') detail.value              = summaryRes.value.data
+    if (balancesRes.status    === 'fulfilled') balances.value            = balancesRes.value.data ?? []
+    if (unitBalancesRes.status === 'fulfilled') unitOpeningBalances.value = unitBalancesRes.value.data ?? []
   } finally {
-    loadingSummary.value  = false
-    loadingBalances.value = false
+    loadingSummary.value             = false
+    loadingBalances.value            = false
+    loadingUnitOpeningBalances.value = false
   }
 }
 
@@ -510,7 +582,8 @@ async function saveBalanceOpening(b) {
 const showModal  = ref(false)
 const editingId  = ref(null)
 const saving     = ref(false)
-const createStep = ref(1)   // 1 = dati esercizio, 2 = saldi iniziali (solo primo esercizio)
+const createStep        = ref(1)   // 1 = dati esercizio, 2 = saldi iniziali (solo primo esercizio)
+const isFirstFiscalYear = ref(true) // false quando l'EF ha un precedente (saldi propagati automaticamente)
 const form       = ref({ code: '', description: '', startDate: '', endDate: '' })
 const errors     = ref({})
 
@@ -567,6 +640,7 @@ function onPreviousFiscalYearChange() {
 function openOpeningBalancesModal(fy) {
   editingId.value           = null
   createdFiscalYearId.value = fy.id
+  isFirstFiscalYear.value   = !fy.previousFiscalYearId
   createStep.value          = 2
   errors.value              = {}
   unitBalances.value        = []
@@ -635,6 +709,7 @@ async function saveFiscalYear() {
       // Primo esercizio → passa allo step 2 per i saldi iniziali
       if (fiscalYears.value.length === 0) {
         createdFiscalYearId.value = data.id
+        isFirstFiscalYear.value   = true
         unitBalances.value        = []
         createStep.value          = 2
         loadUnitsForOpeningBalances()
@@ -693,6 +768,23 @@ function skipOpeningBalances() {
 }
 
 // ── Elimina ────────────────────────────────────────────────────────────────
+// ── Propaga saldi iniziali ─────────────────────────────────────────────────
+const propagatingId = ref(null)
+
+async function propagateOpeningBalances(fy) {
+  if (!confirm(`Propagare i saldi iniziali dall'esercizio precedente a "${fy.code}"?\nI saldi già presenti verranno aggiornati con il saldo di chiusura dell'esercizio precedente.`)) return
+  propagatingId.value = fy.id
+  try {
+    const { data } = await fiscalYearApi.propagateOpeningBalances(fy.id)
+    store.toast(`Saldi propagati: ${data.propagatedCount} unità aggiornate`, 'success')
+    await loadFiscalYears()
+  } catch (err) {
+    if (!err?.response) store.toast('Errore di rete', 'error')
+  } finally {
+    propagatingId.value = null
+  }
+}
+
 const showDeleteModal = ref(false)
 const deleteTarget    = ref(null)
 const deleting        = ref(false)
@@ -785,7 +877,9 @@ async function executeTransition() {
     await loadFiscalYears()
     // Dopo il revert apri subito la modale saldi iniziali
     if (transitionType.value === 'revertToDraft') {
+      const reverted = fiscalYears.value.find(f => f.id === id)
       createdFiscalYearId.value = id
+      isFirstFiscalYear.value   = !reverted?.previousFiscalYearId
       editingId.value           = null
       createStep.value          = 2
       unitBalances.value        = []
@@ -892,6 +986,12 @@ onMounted(loadFiscalYears)
 /* Icona danger (elimina) */
 .btn-icon--danger       { color: var(--accent-red, #ef4444) !important; }
 .btn-icon--danger:hover { background: rgba(239,68,68,.1) !important; }
+
+/* Chevron espandi/comprimi */
+.btn-icon--expand       { color: var(--text-secondary); transition: color .15s; }
+.btn-icon--expand:hover { color: var(--text); background: transparent !important; }
+.btn-icon--expand svg   { transition: transform .2s ease; }
+.btn-icon--expand.expanded svg { transform: rotate(180deg); }
 
 /* Bottone elimina nel modal */
 .btn-danger       { background: var(--accent-red, #ef4444); color: #fff; border: none; }

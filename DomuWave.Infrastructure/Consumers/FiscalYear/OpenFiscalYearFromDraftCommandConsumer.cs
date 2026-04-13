@@ -52,13 +52,8 @@ public class OpenFiscalYearFromDraftCommandConsumer : InMemoryConsumerBase<OpenF
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // È il primo esercizio per il condominio?
-        var isFirstFiscalYear = !await session.Query<FiscalYear>()
-            .AnyAsync(f => f.Condominium.Id == fiscalYear.Condominium.Id
-                        && f.Id != fiscalYear.Id
-                        && f.StartDate < fiscalYear.StartDate
-                        && !f.IsDeleted, cancellationToken)
-            .ConfigureAwait(false);
+        // È il primo esercizio per il condominio se non ha un esercizio precedente collegato
+        var isFirstFiscalYear = fiscalYear.PreviousFiscalYear == null;
 
         // Per il primo esercizio è obbligatorio aver inserito i saldi iniziali
         // per tutte le unità attive prima di poterlo aprire.

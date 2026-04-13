@@ -63,9 +63,13 @@ public class CreateConsumptionChargeCommandConsumer
             .FirstOrDefaultAsync(x => x.Id == command.Dto.FiscalYearId && !x.IsDeleted, ct).ConfigureAwait(false);
         if (fiscalYear == null) throw new NotFoundException("Esercizio non trovato.");
 
+        // Recupera automaticamente il budget preventivo dell'esercizio
         var budget = await session.Query<Budget>()
-            .FirstOrDefaultAsync(x => x.Id == command.Dto.BudgetId && !x.IsDeleted, ct).ConfigureAwait(false);
-        if (budget == null) throw new NotFoundException("Budget non trovato.");
+            .FirstOrDefaultAsync(x => x.FiscalYear.Id == command.Dto.FiscalYearId
+                                   && x.Type == BudgetType.Preventivo
+                                   && !x.IsDeleted, ct).ConfigureAwait(false);
+        if (budget == null) throw new ValidatorException(
+            "Non esiste un budget preventivo per questo esercizio. Crea prima il preventivo.");
 
         Expense expense = null;
         if (command.Dto.ExpenseId.HasValue)
@@ -73,6 +77,17 @@ public class CreateConsumptionChargeCommandConsumer
             expense = await session.Query<Expense>()
                 .FirstOrDefaultAsync(x => x.Id == command.Dto.ExpenseId.Value && !x.IsDeleted, ct).ConfigureAwait(false);
         }
+
+        // Blocca se il budget consuntivo dell'esercizio è già approvato o chiuso
+        var consuntivoApproved = await session.Query<Budget>()
+            .AnyAsync(b => b.FiscalYear.Id == command.Dto.FiscalYearId
+                        && b.Type          == BudgetType.Consuntivo
+                        && (b.Status.Id == BudgetStatus.Approved || b.Status.Id == BudgetStatus.Closed)
+                        && !b.IsDeleted, ct).ConfigureAwait(false);
+        if (consuntivoApproved)
+            throw new ValidatorException(
+                "Non è possibile creare una ripartizione consumi: il budget consuntivo di questo esercizio è già stato approvato. " +
+                "Riapri il consuntivo oppure seleziona un altro esercizio.");
 
         // Blocca se esiste già una ripartizione in Draft per questo tipo+esercizio
         var existingDraft = await session.Query<ConsumptionCharge>()
@@ -124,14 +139,6 @@ public class UpdateConsumptionChargeCommandConsumer
         if (entity == null) throw new NotFoundException("Ripartizione non trovata.");
         if (entity.Status?.Id == ConsumptionChargeStatus.Approved)
             throw new ValidatorException("Non è possibile modificare una ripartizione già approvata.");
-
-        if (command.Dto.BudgetId.HasValue)
-        {
-            var budget = await session.Query<Budget>()
-                .FirstOrDefaultAsync(x => x.Id == command.Dto.BudgetId.Value && !x.IsDeleted, ct).ConfigureAwait(false);
-            if (budget == null) throw new NotFoundException("Budget non trovato.");
-            entity.Budget = budget;
-        }
 
         if (command.Dto.ExpenseId.HasValue)
         {
@@ -197,6 +204,18 @@ public class ApproveConsumptionChargeCommandConsumer
         if (entity == null) throw new NotFoundException("Ripartizione non trovata.");
         if (entity.Status?.Id == ConsumptionChargeStatus.Approved)
             throw new ValidatorException("La ripartizione è già approvata.");
+
+        // Blocca se il budget consuntivo dell'esercizio è già approvato o chiuso
+        var consuntivoApproved = await session.Query<Budget>()
+            .AnyAsync(b => b.FiscalYear.Id == entity.FiscalYear.Id
+                        && b.Type          == BudgetType.Consuntivo
+                        && (b.Status.Id == BudgetStatus.Approved || b.Status.Id == BudgetStatus.Closed)
+                        && !b.IsDeleted, ct).ConfigureAwait(false);
+        if (consuntivoApproved)
+            throw new ValidatorException(
+                "Non è possibile approvare la ripartizione: il budget consuntivo di questo esercizio è già stato approvato. " +
+                "Riapri il consuntivo oppure sposta la ripartizione su un altro esercizio.");
+
         if (!entity.Items.Any(i => !i.IsDeleted && i.Consumption > 0))
             throw new ValidatorException("Non è possibile approvare una ripartizione senza letture. Inserisci almeno una lettura e ricalcola prima di approvare.");
 

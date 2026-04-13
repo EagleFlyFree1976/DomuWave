@@ -147,6 +147,16 @@ public class FiscalYearsController(
         return NoContent();
     }
 
+    [HttpPost("{id:int}/propagate-opening-balances")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    public async Task<IActionResult> PropagateOpeningBalances(int id, CancellationToken ct)
+    {
+        var count = await _mediator.GetResponse(
+            new PropagateUnitOpeningBalancesCommand(CurrentUser.Id, id), ct);
+        return Ok(new { propagatedCount = count });
+    }
+
     [HttpGet("{id:int}/conguaglio")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ConguaglioReadDto), StatusCodes.Status200OK)]

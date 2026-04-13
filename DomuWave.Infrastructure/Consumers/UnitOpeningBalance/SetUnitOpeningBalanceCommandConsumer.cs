@@ -52,14 +52,7 @@ public class SetUnitOpeningBalanceCommandConsumer
             throw new ValidatorException("Non è possibile modificare il bilancio: l'esercizio è già chiuso.");
 
         // Blocca se esiste un esercizio precedente (OpeningBalance propagato automaticamente)
-        var isFirstFiscalYear = !await session.Query<FiscalYear>()
-            .AnyAsync(f => f.Condominium.Id == unit.Condominium.Id
-                        && f.Id != command.Dto.FiscalYearId
-                        && f.EndDate < fiscalYear.StartDate
-                        && !f.IsDeleted, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (!isFirstFiscalYear)
+        if (fiscalYear.PreviousFiscalYear != null)
             throw new ValidatorException(
                 "Il bilancio di apertura non è modificabile: viene propagato automaticamente dal saldo di chiusura dell'esercizio precedente.");
 
