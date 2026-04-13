@@ -60,9 +60,6 @@ public class RegenerateExpenseAllocationsCommandConsumer
         int count = 0;
         foreach (var expense in expenses)
         {
-            if (expense.MillesimalTable == null)
-                continue;
-
             await ExpenseAllocationHelper
                 .RegenerateAllocationsAsync(session, expense, currentUser, cancellationToken)
                 .ConfigureAwait(false);
