@@ -1,3 +1,4 @@
+using DomuWave.Services.Interfaces.Extensions;
 using CPQ.Core.Consumers;
 using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
@@ -67,7 +68,7 @@ public class GetUnitOpeningBalanceCommandConsumer
             {
                 Id              = 0,
                 UnitId          = command.UnitId,
-                UnitName        = unit.DisplayName ?? unit.InternalNumber,
+                UnitName        = unit.FormatUnitName(),
                 FiscalYearId    = command.FiscalYearId,
                 FiscalYearCode  = fiscalYear.Code,
                 OpeningBalance  = 0,
@@ -87,7 +88,7 @@ public class GetUnitOpeningBalanceCommandConsumer
         {
             Id              = record.Id,
             UnitId          = command.UnitId,
-            UnitName        = unit.DisplayName ?? unit.InternalNumber,
+            UnitName        = unit.FormatUnitName(),
             FiscalYearId    = command.FiscalYearId,
             FiscalYearCode  = fiscalYear.Code,
             OpeningBalance  = record.OpeningBalance,

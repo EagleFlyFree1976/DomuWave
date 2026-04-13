@@ -11,6 +11,19 @@ namespace DomuWave.Services.Interfaces.Extensions;
 public static class RealEstateUnitMappingExtensions
 {
     /// <summary>
+    /// Formato univoco del nome unità: "{InternalNumber} - {DisplayName}".
+    /// Se DisplayName è vuoto restituisce solo InternalNumber.
+    /// </summary>
+    public static string FormatUnitName(string internalNumber, string displayName)
+        => !string.IsNullOrWhiteSpace(displayName)
+            ? $"{internalNumber} - {displayName}"
+            : internalNumber ?? string.Empty;
+
+    /// <summary>Overload su entità.</summary>
+    public static string FormatUnitName(this RealEstateUnit unit)
+        => FormatUnitName(unit?.InternalNumber, unit?.DisplayName);
+
+    /// <summary>
     /// Proietta un'entità <see cref="RealEstateUnit"/> nel suo DTO di lettura.
     /// </summary>
     public static RealEstateUnitReadDto ToReadDto(this RealEstateUnit unit)

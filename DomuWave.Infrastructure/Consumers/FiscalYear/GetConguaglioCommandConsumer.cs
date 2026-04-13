@@ -1,3 +1,4 @@
+using DomuWave.Services.Interfaces.Extensions;
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
 using CPQ.Core.Persistence.SessionFactories;
@@ -98,7 +99,7 @@ public class GetConguaglioCommandConsumer
             {
                 UnitId             = um.Unit.Id,
                 UnitInternalNumber = um.Unit.InternalNumber,
-                UnitDescription    = um.Unit.DisplayName ?? um.Unit.InternalNumber,
+                UnitDescription    = um.Unit.FormatUnitName(),
                 Millesimal         = um.Millesimal,
                 QuotaConsuntiva    = quotaConsuntiva,
                 AlreadyPaid        = alreadyPaid,

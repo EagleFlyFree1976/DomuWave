@@ -64,7 +64,7 @@ public static class ConsumptionMappingExtensions
             ConsumptionTypeIsDeleted = entity.ConsumptionType?.IsDeleted ?? false,
             UnitOfMeasure            = entity.ConsumptionType?.UnitOfMeasure,
             UnitId              = entity.Unit?.Id ?? 0,
-            UnitName            = entity.Unit?.DisplayName ?? entity.Unit?.InternalNumber,
+            UnitName            = RealEstateUnitMappingExtensions.FormatUnitName(entity.Unit?.InternalNumber, entity.Unit?.DisplayName),
             Code                = entity.Code,
             Notes               = entity.Notes,
             IsActive            = entity.IsActive,
@@ -106,7 +106,7 @@ public static class ConsumptionMappingExtensions
             MeterCode      = entity.Meter?.Code,
             MeterIsDeleted = entity.Meter?.IsDeleted ?? false,
             UnitId         = entity.Meter?.Unit?.Id ?? 0,
-            UnitName       = entity.Meter?.Unit?.DisplayName ?? entity.Meter?.Unit?.InternalNumber,
+            UnitName       = RealEstateUnitMappingExtensions.FormatUnitName(entity.Meter?.Unit?.InternalNumber, entity.Meter?.Unit?.DisplayName),
             FiscalYearId   = entity.FiscalYear?.Id ?? 0,
             FiscalYearCode = entity.FiscalYear?.Code,
             InitialDate    = entity.InitialDate,
@@ -182,16 +182,11 @@ public static class ConsumptionMappingExtensions
     public static ConsumptionChargeItemReadDto ToItemReadDto(this ConsumptionChargeItem entity)
     {
         if (entity == null) return null;
-        var internalNumber = entity.Unit?.InternalNumber;
-        var displayName    = entity.Unit?.DisplayName;
-        var unitLabel      = !string.IsNullOrWhiteSpace(displayName)
-            ? $"{internalNumber} - {displayName}"
-            : internalNumber;
         return new ConsumptionChargeItemReadDto
         {
             Id               = entity.Id,
             UnitId           = entity.Unit?.Id ?? 0,
-            UnitName         = unitLabel,
+            UnitName         = RealEstateUnitMappingExtensions.FormatUnitName(entity.Unit?.InternalNumber, entity.Unit?.DisplayName),
             Consumption      = entity.Consumption,
             TotalConsumption = entity.TotalConsumption,
             Percentage       = entity.Percentage,

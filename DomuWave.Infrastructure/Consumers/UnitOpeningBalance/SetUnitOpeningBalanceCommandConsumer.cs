@@ -1,3 +1,4 @@
+using DomuWave.Services.Interfaces.Extensions;
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
@@ -96,7 +97,7 @@ public class SetUnitOpeningBalanceCommandConsumer
         {
             Id              = record.Id,
             UnitId          = command.UnitId,
-            UnitName        = unit.DisplayName ?? unit.InternalNumber,
+            UnitName        = unit.FormatUnitName(),
             FiscalYearId    = fiscalYear.Id,
             FiscalYearCode  = fiscalYear.Code,
             OpeningBalance  = record.OpeningBalance,

@@ -1,3 +1,4 @@
+using DomuWave.Services.Interfaces.Extensions;
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
 using CPQ.Core.Persistence.SessionFactories;
@@ -91,9 +92,7 @@ public class GetConsuntivoDetailCommandConsumer
                 {
                     a.ExpenseId,
                     a.UnitId,
-                    UnitName = !string.IsNullOrWhiteSpace(a.DisplayName)
-                        ? $"{a.InternalNumber} - {a.DisplayName}"
-                        : a.InternalNumber,
+                    UnitName = RealEstateUnitMappingExtensions.FormatUnitName(a.InternalNumber, a.DisplayName),
                     a.Millesimal,
                     a.AllocatedAmount,
                 })
@@ -144,9 +143,7 @@ public class GetConsuntivoDetailCommandConsumer
                 {
                     ci.ChargeId,
                     ci.UnitId,
-                    UnitName = !string.IsNullOrWhiteSpace(ci.DisplayName)
-                        ? $"{ci.InternalNumber} - {ci.DisplayName}"
-                        : ci.InternalNumber,
+                    UnitName = RealEstateUnitMappingExtensions.FormatUnitName(ci.InternalNumber, ci.DisplayName),
                     ci.Amount,
                     ci.Percentage,
                 })
