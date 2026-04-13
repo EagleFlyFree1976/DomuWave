@@ -45,6 +45,10 @@ public class DeleteExpenseCommandConsumer : InMemoryConsumerBase<DeleteExpenseCo
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        await ExpenseAllocationHelper
+            .DeleteAllocationsAsync(session, command.ExpenseId, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
         var deleted = await _expenseService
             .DeleteAsync(command.ExpenseId, currentUser, cancellationToken)
             .ConfigureAwait(false);

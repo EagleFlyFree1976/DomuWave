@@ -99,6 +99,10 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        await ExpenseAllocationHelper
+            .RegenerateAllocationsAsync(session, updated, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
         var consuntivo = await session.Query<Budget>()
             .Where(b => b.Condominium.Id == condominiumId
                      && b.FiscalYear.Id  == fiscalYearId

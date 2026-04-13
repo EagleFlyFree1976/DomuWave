@@ -140,6 +140,10 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        await ExpenseAllocationHelper
+            .RegenerateAllocationsAsync(session, created, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
         var consuntivo = await session.Query<Budget>()
             .Where(b => b.Condominium.Id == dto.CondominiumId
                      && b.FiscalYear.Id  == fiscalYear.Id
