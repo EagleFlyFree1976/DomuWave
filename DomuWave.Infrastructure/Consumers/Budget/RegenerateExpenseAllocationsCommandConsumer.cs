@@ -11,7 +11,7 @@ using SimpleMediator.Core;
 namespace DomuWave.Services.Consumers;
 
 public class RegenerateExpenseAllocationsCommandConsumer
-    : InMemoryConsumerBase<RegenerateExpenseAllocationsCommand, int>
+    : InMemoryConsumerBase<RegenerateExpenseAllocationsCommand, RegenerateExpenseAllocationsResult>
 {
     private readonly IUserService _userService;
 
@@ -22,7 +22,7 @@ public class RegenerateExpenseAllocationsCommandConsumer
         _userService = userService;
     }
 
-    protected override async Task<int> Consume(
+    protected override async Task<RegenerateExpenseAllocationsResult> Consume(
         RegenerateExpenseAllocationsCommand command,
         IMediationContext                   mediationContext,
         CancellationToken                   cancellationToken)
@@ -45,20 +45,44 @@ public class RegenerateExpenseAllocationsCommandConsumer
         var condominiumId = budget.Condominium.Id;
         var fiscalYearId  = budget.FiscalYear.Id;
 
-        // ── 1. Ripartizioni consumi approvate senza spesa collegata ─────────
-        // Queste esistono quando la ripartizione è stata approvata prima che
-        // il tipo consumo avesse un conto del piano dei conti configurato.
-        // Le gestiamo creando le ExpenseAllocation direttamente dai ConsumptionChargeItem.
+        var result = new RegenerateExpenseAllocationsResult
+        {
+            BudgetId      = command.BudgetId,
+            CondominiumId = condominiumId,
+            FiscalYearId  = fiscalYearId,
+        };
+
+        // ── Diagnostica: tutte le ConsumptionCharge dell'esercizio ───────────
+        var allCharges = await session.Query<ConsumptionCharge>()
+            .Where(c => c.FiscalYear.Id == fiscalYearId && !c.IsDeleted)
+            .Select(c => new
+            {
+                c.Id,
+                StatusId      = c.Status.Id,
+                BudgetId      = c.Budget.Id,
+                HasExpense    = c.Expense != null,
+                ExpenseId     = c.Expense != null ? (long?)c.Expense.Id : null,
+                TypeName      = c.ConsumptionType.Name,
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        result.DiagCharges = allCharges.Select(c =>
+            $"Charge#{c.Id} status={c.StatusId} budgetId={c.BudgetId} hasExpense={c.HasExpense} expenseId={c.ExpenseId} type={c.TypeName}"
+        ).ToList();
+
+        // ── 1. ConsumptionCharge approvate senza spesa — filtro per esercizio ─
+        // Nota: il Budget su ConsumptionCharge è il PREVENTIVO, non il consuntivo.
+        // Filtriamo solo per esercizio fiscale e stato approvato.
         var chargesWithoutExpense = await session.Query<ConsumptionCharge>()
-            .Where(c => c.FiscalYear.Id  == fiscalYearId
-                     && c.Budget.Id      == command.BudgetId
-                     && c.Status.Id      == ConsumptionChargeStatus.Approved
-                     && c.Expense        == null
+            .Where(c => c.FiscalYear.Id == fiscalYearId
+                     && c.Status.Id     == ConsumptionChargeStatus.Approved
+                     && c.Expense       == null
                      && !c.IsDeleted)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        int count = 0;
+        result.ChargesWithoutExpenseCount = chargesWithoutExpense.Count;
 
         foreach (var charge in chargesWithoutExpense)
         {
@@ -69,15 +93,11 @@ public class RegenerateExpenseAllocationsCommandConsumer
                 .ConfigureAwait(false);
 
             if (!items.Any())
+            {
+                result.DiagMessages.Add($"Charge#{charge.Id}: skip — nessun item con Amount > 0");
                 continue;
+            }
 
-            // Crea una spesa fittizia per questa ripartizione, anche senza Account,
-            // in modo da poter agganciare le ExpenseAllocation al dettaglio consuntivo.
-            var condominium = session.Load<Models.Condominium>(condominiumId);
-            var fiscalYear  = session.Load<FiscalYear>(fiscalYearId);
-
-            // Tabella millesimale di default — obbligatoria su Expense ma non usata
-            // per il calcolo (quello viene dai ConsumptionChargeItem)
             var millesimalTable = await session.Query<MillesimalTable>()
                 .Where(m => m.Condominium.Id == condominiumId && m.IsEnabled && !m.IsDeleted)
                 .OrderBy(m => m.Id)
@@ -85,11 +105,16 @@ public class RegenerateExpenseAllocationsCommandConsumer
                 .ConfigureAwait(false);
 
             if (millesimalTable == null)
-                continue; // non possiamo creare la spesa senza tabella millesimale
+            {
+                result.DiagMessages.Add($"Charge#{charge.Id}: skip — nessuna tabella millesimale attiva");
+                continue;
+            }
 
-            var expenseType       = session.Load<ExpenseType>(ExpenseType.Altro);
-            var paymentStatus     = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
-            var chargeabilityType = session.Load<ChargeabilityType>(ChargeabilityType.Owner);
+            var condominium   = session.Load<Models.Condominium>(condominiumId);
+            var fiscalYear    = session.Load<FiscalYear>(fiscalYearId);
+            var expenseType   = session.Load<ExpenseType>(ExpenseType.Altro);
+            var paymentStatus = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
+            var chargeType    = session.Load<ChargeabilityType>(ChargeabilityType.Owner);
 
             var expense = new Expense
             {
@@ -100,7 +125,7 @@ public class RegenerateExpenseAllocationsCommandConsumer
                 MillesimalTable   = millesimalTable,
                 ExpenseType       = expenseType,
                 PaymentStatus     = paymentStatus,
-                ChargeabilityType = chargeabilityType,
+                ChargeabilityType = chargeType,
                 Name              = $"Consumi {charge.ConsumptionType?.Name} – {charge.FiscalYear?.Code}",
                 DocumentDate      = charge.CreationDate,
                 RegistrationDate  = charge.CreationDate,
@@ -113,21 +138,20 @@ public class RegenerateExpenseAllocationsCommandConsumer
             await session.SaveAsync(expense, cancellationToken).ConfigureAwait(false);
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-            // Collega la spesa alla ripartizione
             charge.Expense = expense;
             charge.Trace(currentUser);
             await session.SaveOrUpdateAsync(charge, cancellationToken).ConfigureAwait(false);
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
-            // Genera le ExpenseAllocation dai ConsumptionChargeItem
             await ExpenseAllocationHelper
                 .RegenerateAllocationsAsync(session, expense, currentUser, cancellationToken)
                 .ConfigureAwait(false);
 
-            count++;
+            result.DiagMessages.Add($"Charge#{charge.Id}: creata Expense#{expense.Id} con {items.Count} allocazioni");
+            result.CreatedExpensesCount++;
         }
 
-        // ── 2. Spese dell'esercizio (incluse quelle appena create) ───────────
+        // ── 2. Spese dell'esercizio ───────────────────────────────────────────
         var expenses = await session.Query<Expense>()
             .Where(e => e.Condominium.Id == condominiumId
                      && e.FiscalYear.Id  == fiscalYearId
@@ -135,15 +159,16 @@ public class RegenerateExpenseAllocationsCommandConsumer
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        result.ExpensesCount = expenses.Count;
+
         foreach (var expense in expenses)
         {
             await ExpenseAllocationHelper
                 .RegenerateAllocationsAsync(session, expense, currentUser, cancellationToken)
                 .ConfigureAwait(false);
-
-            count++;
         }
 
-        return count;
+        result.ProcessedCount = result.CreatedExpensesCount + result.ExpensesCount;
+        return result;
     }
 }

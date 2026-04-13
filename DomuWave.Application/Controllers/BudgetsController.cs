@@ -145,12 +145,12 @@ public class BudgetsController(
 
     [HttpPost("{id:int}/regenerate-allocations")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
-    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RegenerateExpenseAllocationsResult), StatusCodes.Status200OK)]
     public async Task<IActionResult> RegenerateAllocations(int id, CancellationToken ct)
     {
-        var count = await _mediator.GetResponse(
+        var result = await _mediator.GetResponse(
             new RegenerateExpenseAllocationsCommand(CurrentUser.Id, id), ct);
-        return Ok(count);
+        return Ok(result);
     }
 
     [HttpGet("{id:int}/consuntivo-detail")]
