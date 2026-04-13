@@ -77,6 +77,9 @@
                     <button v-if="canEdit && b.type === 2 && b.statusId !== 3"
                             class="btn btn-sm btn-ghost"
                             @click="recalculateConsuntivoItems(b)" title="Ricalcola voci da spese registrate">Ricalcola voci</button>
+                    <button v-if="canEdit && b.type === 2 && b.statusId !== 3"
+                            class="btn btn-sm btn-ghost"
+                            @click="regenerateAllocations(b)" title="Rigenera le ripartizioni millesimali per tutte le spese">Rigenera ripartizioni</button>
                     <button v-if="canEdit && b.statusId === 1"
                             class="btn btn-sm btn-ghost"
                             @click="fixOrphanItems(b)" title="Aggiunge gli antenati mancanti alle voci orfane">Ripara gerarchia</button>
@@ -664,6 +667,16 @@ async function recalculateConsuntivoItems(b) {
     await budgetApi.recalculateItems(b.id)
     store.toast('Voci ricalcolate', 'success')
     await loadBudgets()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+async function regenerateAllocations(b) {
+  if (!confirm('Rigenera le ripartizioni millesimali per tutte le spese di questo consuntivo?\n\nPer ogni spesa verranno ricalcolate le quote per unità immobiliare in base alla tabella millesimale associata.\n\nContinuare?')) return
+  try {
+    const { data } = await budgetApi.regenerateAllocations(b.id)
+    store.toast(`Ripartizioni rigenerate per ${data} spese`, 'success')
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   }

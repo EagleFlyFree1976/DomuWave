@@ -228,10 +228,11 @@ export const budgetApi = {
   reopen:               (id)      => api.post(`/budgets/${id}/reopen`),
   close:                (id)      => api.post(`/budgets/${id}/close`),
   generateInstallments: (id, opts) => api.post(`/budgets/${id}/generate-installments`, opts ?? {}),
-  recalculateItems:     (id)      => api.post(`/budgets/${id}/recalculate-items`),
-  fixOrphanItems:       (id)      => api.post(`/budgets/${id}/fix-orphan-items`),
-  delete:               (id)      => api.delete(`/budgets/${id}`),
-  consuntivoDetail:     (id)      => api.get(`/budgets/${id}/consuntivo-detail`),
+  recalculateItems:      (id)      => api.post(`/budgets/${id}/recalculate-items`),
+  fixOrphanItems:        (id)      => api.post(`/budgets/${id}/fix-orphan-items`),
+  regenerateAllocations: (id)      => api.post(`/budgets/${id}/regenerate-allocations`),
+  delete:                (id)      => api.delete(`/budgets/${id}`),
+  consuntivoDetail:      (id)      => api.get(`/budgets/${id}/consuntivo-detail`),
 }
 
 // ─── Voci di budget ───────────────────────────────────────────

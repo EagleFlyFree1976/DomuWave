@@ -143,6 +143,16 @@ public class BudgetsController(
         return NoContent();
     }
 
+    [HttpPost("{id:int}/regenerate-allocations")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RegenerateAllocations(int id, CancellationToken ct)
+    {
+        var count = await _mediator.GetResponse(
+            new RegenerateExpenseAllocationsCommand(CurrentUser.Id, id), ct);
+        return Ok(count);
+    }
+
     [HttpGet("{id:int}/consuntivo-detail")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ConsuntivoDetailDto), StatusCodes.Status200OK)]

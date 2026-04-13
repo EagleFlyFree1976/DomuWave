@@ -4,6 +4,13 @@
       <button class="btn btn-ghost btn-sm" @click="router.back()">← Torna al budget</button>
       <h1>Dettaglio consuntivo</h1>
       <span v-if="detail" class="text-secondary">{{ detail.fiscalYear }}</span>
+      <button v-if="detail" class="btn btn-sm btn-ghost" style="margin-left:auto"
+              :disabled="regenerating"
+              @click="regenerate"
+              title="Rigenera le ripartizioni millesimali per tutte le spese">
+        <span v-if="regenerating" class="spinner" style="width:12px;height:12px"></span>
+        Rigenera ripartizioni
+      </button>
     </div>
 
     <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
@@ -137,9 +144,10 @@ const store  = useAppStore()
 
 const budgetId = Number(route.params.budgetId)
 
-const loading = ref(false)
-const detail  = ref(null)
-const tab     = ref('accounts')
+const loading      = ref(false)
+const regenerating = ref(false)
+const detail       = ref(null)
+const tab          = ref('accounts')
 
 const expandedAccounts = ref(new Set())
 const expandedExpenses = ref(new Set())
@@ -179,6 +187,20 @@ async function load() {
     detail.value = null
   } finally {
     loading.value = false
+  }
+}
+
+async function regenerate() {
+  if (!confirm('Rigenera le ripartizioni millesimali per tutte le spese?\n\nPer ogni spesa verranno ricalcolate le quote per unità immobiliare in base alla tabella millesimale associata.\n\nContinuare?')) return
+  regenerating.value = true
+  try {
+    const { data } = await budgetApi.regenerateAllocations(budgetId)
+    store.toast(`Ripartizioni rigenerate per ${data} spese`, 'success')
+    await load()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    regenerating.value = false
   }
 }
 
