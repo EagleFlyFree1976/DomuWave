@@ -74,18 +74,30 @@ public class GetConsuntivoDetailCommandConsumer
         var expenseIds = expenses.Select(e => e.ExpenseId).ToList();
 
         var allocations = expenseIds.Any()
-            ? await session.Query<ExpenseAllocation>()
-                .Where(a => expenseIds.Contains(a.Expense.Id) && !a.IsDeleted)
+            ? (await session.Query<ExpenseAllocation>()
+                .Where(a => expenseIds.Contains(a.Expense.Id) && !a.IsDeleted && a.AllocatedAmount != 0)
                 .Select(a => new
                 {
-                    ExpenseId       = a.Expense.Id,
-                    UnitId          = a.Unit.Id,
-                    UnitName        = a.Unit.DisplayName ?? a.Unit.InternalNumber,
+                    ExpenseId      = a.Expense.Id,
+                    UnitId         = a.Unit.Id,
+                    InternalNumber = a.Unit.InternalNumber,
+                    DisplayName    = a.Unit.DisplayName,
                     a.Millesimal,
                     a.AllocatedAmount,
                 })
                 .ToListAsync(cancellationToken)
-                .ConfigureAwait(false)
+                .ConfigureAwait(false))
+                .Select(a => new
+                {
+                    a.ExpenseId,
+                    a.UnitId,
+                    UnitName = !string.IsNullOrWhiteSpace(a.DisplayName)
+                        ? $"{a.InternalNumber} - {a.DisplayName}"
+                        : a.InternalNumber,
+                    a.Millesimal,
+                    a.AllocatedAmount,
+                })
+                .ToList()
             : [];
 
         var allocationsByExpense = allocations
@@ -115,18 +127,30 @@ public class GetConsuntivoDetailCommandConsumer
         // Recupera gli item per queste charge
         var chargeIds = chargesWithoutExpense.Select(c => c.ChargeId).ToList();
         var chargeItems = chargeIds.Any()
-            ? await session.Query<ConsumptionChargeItem>()
+            ? (await session.Query<ConsumptionChargeItem>()
                 .Where(ci => chargeIds.Contains(ci.Charge.Id) && !ci.IsDeleted && ci.Amount > 0)
                 .Select(ci => new
                 {
-                    ChargeId  = ci.Charge.Id,
-                    UnitId    = ci.Unit.Id,
-                    UnitName  = ci.Unit.DisplayName ?? ci.Unit.InternalNumber,
+                    ChargeId       = ci.Charge.Id,
+                    UnitId         = ci.Unit.Id,
+                    InternalNumber = ci.Unit.InternalNumber,
+                    DisplayName    = ci.Unit.DisplayName,
                     ci.Amount,
                     ci.Percentage,
                 })
                 .ToListAsync(cancellationToken)
-                .ConfigureAwait(false)
+                .ConfigureAwait(false))
+                .Select(ci => new
+                {
+                    ci.ChargeId,
+                    ci.UnitId,
+                    UnitName = !string.IsNullOrWhiteSpace(ci.DisplayName)
+                        ? $"{ci.InternalNumber} - {ci.DisplayName}"
+                        : ci.InternalNumber,
+                    ci.Amount,
+                    ci.Percentage,
+                })
+                .ToList()
             : [];
 
         var chargeItemsByCharge = chargeItems
