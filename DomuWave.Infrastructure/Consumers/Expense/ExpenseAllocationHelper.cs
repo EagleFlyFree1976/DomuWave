@@ -40,20 +40,41 @@ internal static class ExpenseAllocationHelper
         IUser             currentUser,
         CancellationToken cancellationToken)
     {
+        // Verifica se la spesa proviene da una ripartizione consumi.
+        // In tal caso le quote per unità sono già calcolate sui consumi reali
+        // (ConsumptionChargeItem.Amount) e non devono essere sovrascritte con i millesimi.
+        var chargeItems = await session.Query<ConsumptionChargeItem>()
+            .Where(ci => ci.Charge.Expense.Id == expense.Id && !ci.IsDeleted)
+            .Select(ci => new { UnitId = ci.Unit.Id, ci.Amount, ci.Percentage })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (chargeItems.Any())
+        {
+            // Fonte: ConsumptionChargeItem — ripartizione basata sui consumi reali
+            await UpsertAllocationsAsync(
+                session, expense, currentUser, cancellationToken,
+                rows: chargeItems.Select(ci => new AllocationRow
+                {
+                    UnitId          = ci.UnitId,
+                    Millesimal      = 0m,
+                    AllocatedAmount = ci.Amount,
+                    Percentage      = ci.Percentage,
+                    Notes           = "Generato da ripartizione consumi",
+                }).ToList());
+            return;
+        }
+
+        // Fonte: tabella millesimale standard
         if (expense.MillesimalTable == null)
             return;
 
         var millesimalTableId = expense.MillesimalTable.Id;
         var grossAmount       = expense.GrossAmount;
 
-        // 1. Carica le quote millesimali della tabella
         var unitMillesimals = await session.Query<UnitMillesimal>()
             .Where(um => um.MillesimalTable.Id == millesimalTableId && !um.IsDeleted)
-            .Select(um => new
-            {
-                UnitId      = um.Unit.Id,
-                um.Millesimal,
-            })
+            .Select(um => new { UnitId = um.Unit.Id, um.Millesimal })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -64,26 +85,8 @@ internal static class ExpenseAllocationHelper
         if (totalMillesimal == 0)
             return;
 
-        // 2. Carica TUTTI i record esistenti (inclusi IsDeleted) per evitare violazioni
-        //    dell'indice univoco (ExpenseId, UnitId) durante l'upsert.
-        var existing = await session.Query<ExpenseAllocation>()
-            .Where(a => a.Expense.Id == expense.Id)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        var existingByUnit = existing.ToDictionary(a => a.Unit.Id);
-
-        // Unità non più nella tabella millesimale → soft-delete
-        var activeUnitIds = unitMillesimals.Select(um => um.UnitId).ToHashSet();
-        foreach (var old in existing.Where(a => !a.IsDeleted && !activeUnitIds.Contains(a.Unit.Id)))
-        {
-            old.IsDeleted = true;
-            old.Trace(currentUser);
-            await session.SaveOrUpdateAsync(old, cancellationToken).ConfigureAwait(false);
-        }
-
-        // 3. Prima passata — arrotonda a 2 decimali
-        var rows = unitMillesimals
+        // Prima passata — arrotonda a 2 decimali
+        var rawRows = unitMillesimals
             .Select(um =>
             {
                 decimal raw     = grossAmount * um.Millesimal / totalMillesimal;
@@ -92,28 +95,79 @@ internal static class ExpenseAllocationHelper
             })
             .ToList();
 
-        // 4. Assegna il residuo di arrotondamento all'unità con millesimo maggiore
-        decimal roundedSum = rows.Sum(r => r.Rounded);
+        // Residuo all'unità con millesimo maggiore
+        decimal roundedSum = rawRows.Sum(r => r.Rounded);
         decimal remainder  = Math.Round(grossAmount - roundedSum, 2, MidpointRounding.AwayFromZero);
-        int?    largestId  = rows.Count > 0
-            ? rows.OrderByDescending(r => r.Millesimal).First().UnitId
+        int?    largestId  = rawRows.Count > 0
+            ? rawRows.OrderByDescending(r => r.Millesimal).First().UnitId
             : null;
 
-        // 5. Upsert: aggiorna il record esistente (ri-attivandolo se necessario) o ne crea uno nuovo
+        await UpsertAllocationsAsync(
+            session, expense, currentUser, cancellationToken,
+            rows: rawRows.Select(r =>
+            {
+                decimal rounding = r.UnitId == largestId ? remainder : 0m;
+                decimal amount   = r.Rounded + rounding;
+                return new AllocationRow
+                {
+                    UnitId          = r.UnitId,
+                    Millesimal      = r.Millesimal,
+                    AllocatedAmount = amount,
+                    Percentage      = totalMillesimal > 0 ? r.Millesimal / totalMillesimal * 100m : 0m,
+                    Rounding        = rounding,
+                    Notes           = "Generato automaticamente dalla tabella millesimale",
+                };
+            }).ToList());
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private sealed class AllocationRow
+    {
+        public int     UnitId          { get; init; }
+        public decimal Millesimal      { get; init; }
+        public decimal AllocatedAmount { get; init; }
+        public decimal Percentage      { get; init; }
+        public decimal Rounding        { get; init; }
+        public string? Notes           { get; init; }
+    }
+
+    private static async Task UpsertAllocationsAsync(
+        ISession           session,
+        Expense            expense,
+        IUser              currentUser,
+        CancellationToken  cancellationToken,
+        List<AllocationRow> rows)
+    {
+        // Carica TUTTI i record esistenti (inclusi IsDeleted) per evitare violazioni
+        // dell'indice univoco (ExpenseId, UnitId)
+        var existing = await session.Query<ExpenseAllocation>()
+            .Where(a => a.Expense.Id == expense.Id)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var existingByUnit = existing.ToDictionary(a => a.Unit.Id);
+
+        // Soft-delete unità non più presenti
+        var activeUnitIds = rows.Select(r => r.UnitId).ToHashSet();
+        foreach (var old in existing.Where(a => !a.IsDeleted && !activeUnitIds.Contains(a.Unit.Id)))
+        {
+            old.IsDeleted = true;
+            old.Trace(currentUser);
+            await session.SaveOrUpdateAsync(old, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Upsert
         foreach (var row in rows)
         {
-            decimal rounding        = row.UnitId == largestId ? remainder : 0m;
-            decimal allocatedAmount = row.Rounded + rounding;
-            decimal pct             = totalMillesimal > 0 ? row.Millesimal / totalMillesimal * 100m : 0m;
-
             if (existingByUnit.TryGetValue(row.UnitId, out var alloc))
             {
-                alloc.IsDeleted           = false;
-                alloc.Millesimal          = row.Millesimal;
-                alloc.AllocatedAmount     = allocatedAmount;
-                alloc.AllocationPercentage = pct;
-                alloc.RoundingAdjustment  = rounding;
-                alloc.Notes               = "Generato automaticamente dalla tabella millesimale";
+                alloc.IsDeleted            = false;
+                alloc.Millesimal           = row.Millesimal;
+                alloc.AllocatedAmount      = row.AllocatedAmount;
+                alloc.AllocationPercentage = row.Percentage;
+                alloc.RoundingAdjustment   = row.Rounding;
+                alloc.Notes                = row.Notes;
                 alloc.Trace(currentUser);
                 await session.SaveOrUpdateAsync(alloc, cancellationToken).ConfigureAwait(false);
             }
@@ -126,10 +180,10 @@ internal static class ExpenseAllocationHelper
                     Unit                 = unit,
                     Tenant               = expense.Tenant,
                     Millesimal           = row.Millesimal,
-                    AllocatedAmount      = allocatedAmount,
-                    AllocationPercentage = pct,
-                    RoundingAdjustment   = rounding,
-                    Notes                = "Generato automaticamente dalla tabella millesimale",
+                    AllocatedAmount      = row.AllocatedAmount,
+                    AllocationPercentage = row.Percentage,
+                    RoundingAdjustment   = row.Rounding,
+                    Notes                = row.Notes,
                 };
                 newAlloc.Trace(currentUser);
                 await session.SaveOrUpdateAsync(newAlloc, cancellationToken).ConfigureAwait(false);
