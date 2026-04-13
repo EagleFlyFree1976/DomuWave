@@ -49,7 +49,7 @@ public class GetConsuntivoDetailCommandConsumer
         var condominiumId = budgetRow.CondominiumId;
         var fiscalYearId  = budgetRow.FiscalYearId;
 
-        // ── 1. Carica tutte le spese dell'esercizio ──────────────────────────
+        // ── 1. Spese dell'esercizio ──────────────────────────────────────────
         var expenses = await session.Query<Expense>()
             .Where(e => e.Condominium.Id == condominiumId
                      && e.FiscalYear.Id  == fiscalYearId
@@ -70,7 +70,7 @@ public class GetConsuntivoDetailCommandConsumer
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // ── 2. Carica le allocazioni per unità (se esistono) ─────────────────
+        // ── 2. Allocazioni per unità delle spese ────────────────────────────
         var expenseIds = expenses.Select(e => e.ExpenseId).ToList();
 
         var allocations = expenseIds.Any()
@@ -92,7 +92,48 @@ public class GetConsuntivoDetailCommandConsumer
             .GroupBy(a => a.ExpenseId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        // ── 3. Raggruppa per conto → spesa → allocazioni ─────────────────────
+        // ── 3. ConsumptionCharge approvate SENZA Expense collegata ───────────
+        // Ripartizioni create prima dell'introduzione del campo Account su ConsumptionType:
+        // non hanno una Expense e non possono averne una (Account mancante).
+        // Le includiamo direttamente come voci sintetiche nel dettaglio.
+        var chargesWithoutExpense = await session.Query<ConsumptionCharge>()
+            .Where(c => c.FiscalYear.Id == fiscalYearId
+                     && c.Status.Id     == ConsumptionChargeStatus.Approved
+                     && c.Expense       == null
+                     && !c.IsDeleted)
+            .Select(c => new
+            {
+                ChargeId        = c.Id,
+                ChargeName      = "Consumi " + c.ConsumptionType.Name,
+                TotalAmount     = c.TotalAmount,
+                DocumentDate    = c.CreationDate,
+                TypeName        = c.ConsumptionType.Name,
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        // Recupera gli item per queste charge
+        var chargeIds = chargesWithoutExpense.Select(c => c.ChargeId).ToList();
+        var chargeItems = chargeIds.Any()
+            ? await session.Query<ConsumptionChargeItem>()
+                .Where(ci => chargeIds.Contains(ci.Charge.Id) && !ci.IsDeleted && ci.Amount > 0)
+                .Select(ci => new
+                {
+                    ChargeId  = ci.Charge.Id,
+                    UnitId    = ci.Unit.Id,
+                    UnitName  = ci.Unit.DisplayName ?? ci.Unit.InternalNumber,
+                    ci.Amount,
+                    ci.Percentage,
+                })
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false)
+            : [];
+
+        var chargeItemsByCharge = chargeItems
+            .GroupBy(ci => ci.ChargeId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        // ── 4. Raggruppa per conto → spesa → allocazioni ─────────────────────
         var accountGroups = expenses
             .GroupBy(e => e.AccountId)
             .Select(ag =>
@@ -140,25 +181,83 @@ public class GetConsuntivoDetailCommandConsumer
             .OrderBy(a => a.AccountCode)
             .ToList();
 
-        // ── 4. Vista per unità (solo se ci sono allocazioni) ─────────────────
-        var unitGroups = allocations
+        // ── 5. Aggiungi le ConsumptionCharge senza Expense come conto virtuale ─
+        // Le raggruppiamo sotto un conto sintetico "Consumi (senza conto)"
+        // oppure, se il tipo consumo ha un nome riconoscibile, lo usiamo come label.
+        if (chargesWithoutExpense.Any())
+        {
+            // Raggruppa per tipo consumo (ognuno diventa una "voce spesa" virtuale)
+            var virtualExpenseRows = chargesWithoutExpense
+                .Select(c =>
+                {
+                    var allocs = chargeItemsByCharge.TryGetValue(c.ChargeId, out var items)
+                        ? items.Select(ci => new ConsuntivoAllocationRowDto
+                        {
+                            UnitId          = ci.UnitId,
+                            UnitName        = ci.UnitName,
+                            Millesimal      = 0m,
+                            AllocatedAmount = ci.Amount,
+                        })
+                        .OrderBy(a => a.UnitName)
+                        .ToList()
+                        : [];
+
+                    return new ConsuntivoExpenseRowDto
+                    {
+                        ExpenseId    = -c.ChargeId,   // id negativo per distinguere da spese reali
+                        Name         = c.ChargeName,
+                        GrossAmount  = c.TotalAmount,
+                        SupplierName = null,
+                        DocumentDate = c.DocumentDate,
+                        Allocations  = allocs,
+                    };
+                })
+                .OrderBy(e => e.DocumentDate)
+                .ToList();
+
+            // Cerca se esiste già un conto "consumi" tra quelli presenti,
+            // altrimenti aggiunge un gruppo virtuale con id=0
+            accountGroups.Add(new ConsuntivoAccountRowDto
+            {
+                AccountId   = 0,
+                AccountCode = "—",
+                AccountName = "Consumi (senza conto)",
+                Level       = 1,
+                ParentId    = null,
+                TotalAmount = chargesWithoutExpense.Sum(c => c.TotalAmount),
+                Expenses    = virtualExpenseRows,
+            });
+        }
+
+        // ── 6. Vista per unità (pivot) ────────────────────────────────────────
+        // Combina allocazioni da ExpenseAllocation e da ConsumptionChargeItem
+        var allAllocRows = allocations
+            .Select(a => new { a.UnitId, a.UnitName, a.AllocatedAmount,
+                AccountId = expenses.First(e => e.ExpenseId == a.ExpenseId).AccountId })
+            .ToList();
+
+        // Aggiungi allocazioni dalle charge senza expense (AccountId = 0)
+        var chargeAllocRows = chargeItems
+            .Select(ci => new { ci.UnitId, ci.UnitName, AllocatedAmount = ci.Amount, AccountId = 0 })
+            .ToList();
+
+        var allUnitRows = allAllocRows.Concat(chargeAllocRows)
             .GroupBy(a => a.UnitId)
             .Select(ug =>
             {
                 var uf = ug.First();
-                // Per ogni unità raggruppa per conto (via expense)
                 var entries = ug
-                    .Join(expenses, a => a.ExpenseId, e => e.ExpenseId, (a, e) => new { a, e })
-                    .GroupBy(x => x.e.AccountId)
+                    .GroupBy(x => x.AccountId)
                     .Select(cg =>
                     {
-                        var cf = cg.First();
+                        // Trova nome conto
+                        var acct = accountGroups.FirstOrDefault(a => a.AccountId == cg.Key);
                         return new ConsuntivoUnitAccountEntryDto
                         {
                             AccountId       = cg.Key,
-                            AccountCode     = cf.e.AccountCode,
-                            AccountName     = cf.e.AccountName,
-                            AllocatedAmount = cg.Sum(x => x.a.AllocatedAmount),
+                            AccountCode     = acct?.AccountCode,
+                            AccountName     = acct?.AccountName,
+                            AllocatedAmount = cg.Sum(x => x.AllocatedAmount),
                         };
                     })
                     .OrderBy(e => e.AccountCode)
@@ -177,11 +276,11 @@ public class GetConsuntivoDetailCommandConsumer
 
         return new ConsuntivoDetailDto
         {
-            BudgetId      = command.BudgetId,
-            FiscalYear    = budgetRow.FiscalYearCode,
-            HasAllocations = allocations.Any(),
-            Accounts      = accountGroups,
-            Units         = unitGroups,
+            BudgetId       = command.BudgetId,
+            FiscalYear     = budgetRow.FiscalYearCode,
+            HasAllocations = allocations.Any() || chargeItems.Any(),
+            Accounts       = accountGroups,
+            Units          = allUnitRows,
         };
     }
 }

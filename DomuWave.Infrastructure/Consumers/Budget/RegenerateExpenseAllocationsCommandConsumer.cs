@@ -52,32 +52,15 @@ public class RegenerateExpenseAllocationsCommandConsumer
             FiscalYearId  = fiscalYearId,
         };
 
-        // ── Diagnostica: tutte le ConsumptionCharge dell'esercizio ───────────
-        var allCharges = await session.Query<ConsumptionCharge>()
-            .Where(c => c.FiscalYear.Id == fiscalYearId && !c.IsDeleted)
-            .Select(c => new
-            {
-                c.Id,
-                StatusId      = c.Status.Id,
-                BudgetId      = c.Budget.Id,
-                HasExpense    = c.Expense != null,
-                ExpenseId     = c.Expense != null ? (long?)c.Expense.Id : null,
-                TypeName      = c.ConsumptionType.Name,
-            })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        result.DiagCharges = allCharges.Select(c =>
-            $"Charge#{c.Id} status={c.StatusId} budgetId={c.BudgetId} hasExpense={c.HasExpense} expenseId={c.ExpenseId} type={c.TypeName}"
-        ).ToList();
-
-        // ── 1. ConsumptionCharge approvate senza spesa — filtro per esercizio ─
-        // Nota: il Budget su ConsumptionCharge è il PREVENTIVO, non il consuntivo.
-        // Filtriamo solo per esercizio fiscale e stato approvato.
+        // ── 1. ConsumptionCharge approvate con Account configurato ma senza Expense ─
+        // Esistono quando la ripartizione è stata approvata dopo l'introduzione
+        // del campo Account su ConsumptionType ma la spesa non è stata creata
+        // (es. per un bug precedente). Possiamo crearla solo se Account != null.
         var chargesWithoutExpense = await session.Query<ConsumptionCharge>()
-            .Where(c => c.FiscalYear.Id == fiscalYearId
-                     && c.Status.Id     == ConsumptionChargeStatus.Approved
-                     && c.Expense       == null
+            .Where(c => c.FiscalYear.Id           == fiscalYearId
+                     && c.Status.Id               == ConsumptionChargeStatus.Approved
+                     && c.Expense                 == null
+                     && c.ConsumptionType.Account != null
                      && !c.IsDeleted)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -88,7 +71,6 @@ public class RegenerateExpenseAllocationsCommandConsumer
         {
             var items = await session.Query<ConsumptionChargeItem>()
                 .Where(ci => ci.Charge.Id == charge.Id && !ci.IsDeleted && ci.Amount > 0)
-                .Select(ci => new { UnitId = ci.Unit.Id, ci.Amount, ci.Percentage })
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -120,13 +102,13 @@ public class RegenerateExpenseAllocationsCommandConsumer
             {
                 Condominium       = condominium,
                 Tenant            = budget.Tenant,
-                Account           = charge.ConsumptionType?.Account,
+                Account           = charge.ConsumptionType.Account,   // garantito != null dal filtro
                 FiscalYear        = fiscalYear,
                 MillesimalTable   = millesimalTable,
                 ExpenseType       = expenseType,
                 PaymentStatus     = paymentStatus,
                 ChargeabilityType = chargeType,
-                Name              = $"Consumi {charge.ConsumptionType?.Name} – {charge.FiscalYear?.Code}",
+                Name              = $"Consumi {charge.ConsumptionType.Name} – {charge.FiscalYear?.Code}",
                 DocumentDate      = charge.CreationDate,
                 RegistrationDate  = charge.CreationDate,
                 GrossAmount       = charge.TotalAmount,
@@ -151,7 +133,25 @@ public class RegenerateExpenseAllocationsCommandConsumer
             result.CreatedExpensesCount++;
         }
 
-        // ── 2. Spese dell'esercizio ───────────────────────────────────────────
+        // ── 2. ConsumptionCharge approvate SENZA Account — nessuna Expense possibile.
+        // Le loro allocazioni vengono gestite direttamente nel GetConsuntivoDetailCommandConsumer
+        // leggendo i ConsumptionChargeItem, senza passare per ExpenseAllocation.
+        var chargesNoAccount = await session.Query<ConsumptionCharge>()
+            .Where(c => c.FiscalYear.Id           == fiscalYearId
+                     && c.Status.Id               == ConsumptionChargeStatus.Approved
+                     && c.Expense                 == null
+                     && c.ConsumptionType.Account == null
+                     && !c.IsDeleted)
+            .Select(c => new { c.Id, TypeName = c.ConsumptionType.Name, c.TotalAmount })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var c in chargesNoAccount)
+            result.DiagMessages.Add($"Charge#{c.Id} ({c.TypeName} €{c.TotalAmount}): nessun Account configurato — visibile nel dettaglio via ConsumptionChargeItem");
+
+        result.ChargesNoAccountCount = chargesNoAccount.Count;
+
+        // ── 3. Spese dell'esercizio ───────────────────────────────────────────
         var expenses = await session.Query<Expense>()
             .Where(e => e.Condominium.Id == condominiumId
                      && e.FiscalYear.Id  == fiscalYearId
