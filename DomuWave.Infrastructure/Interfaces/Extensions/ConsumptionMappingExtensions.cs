@@ -167,12 +167,14 @@ public static class ConsumptionMappingExtensions
             StatusName          = entity.Status?.Name ?? string.Empty,
             Notes               = entity.Notes,
             Items               = entity.Items?
-                .Where(i => !i.IsDeleted)
+                .Where(i => !i.IsDeleted && i.Amount > 0)
                 .Select(i => i.ToItemReadDto())
                 .ToList() ?? [],
         };
-        dto.HasWarnings   = dto.Items.Any(i => i.HasWarning);
-        dto.HasNoReadings = !dto.Items.Any(i => i.Consumption > 0);
+        // HasWarnings e HasNoReadings calcolati sui dati completi (non filtrati)
+        var allItems = entity.Items?.Where(i => !i.IsDeleted).ToList() ?? [];
+        dto.HasWarnings   = allItems.Any(i => i.HasWarning);
+        dto.HasNoReadings = !allItems.Any(i => i.Consumption > 0);
         dto.SetTraceInfo(entity);
         return dto;
     }
@@ -180,11 +182,16 @@ public static class ConsumptionMappingExtensions
     public static ConsumptionChargeItemReadDto ToItemReadDto(this ConsumptionChargeItem entity)
     {
         if (entity == null) return null;
+        var internalNumber = entity.Unit?.InternalNumber;
+        var displayName    = entity.Unit?.DisplayName;
+        var unitLabel      = !string.IsNullOrWhiteSpace(displayName)
+            ? $"{internalNumber} - {displayName}"
+            : internalNumber;
         return new ConsumptionChargeItemReadDto
         {
             Id               = entity.Id,
             UnitId           = entity.Unit?.Id ?? 0,
-            UnitName         = entity.Unit?.DisplayName ?? entity.Unit?.InternalNumber,
+            UnitName         = unitLabel,
             Consumption      = entity.Consumption,
             TotalConsumption = entity.TotalConsumption,
             Percentage       = entity.Percentage,
