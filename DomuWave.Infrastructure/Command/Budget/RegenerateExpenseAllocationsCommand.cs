@@ -20,7 +20,6 @@ public class RegenerateExpenseAllocationsResult
     public int    CreatedExpensesCount      { get; set; }
     public int    ExpensesCount             { get; set; }
     public int    ProcessedCount            { get; set; }
-    public int    ChargesNoAccountCount      { get; set; }
     public List<string> DiagCharges         { get; set; } = [];
     public List<string> DiagMessages        { get; set; } = [];
 }
