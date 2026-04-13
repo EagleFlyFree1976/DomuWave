@@ -187,50 +187,69 @@ VALUES (@CondId, @TenantId, N'Condominio La Quercia', N'LQ-001', N'91054320153',
     @UserId, @UserName, 0, @Now);
 
 -- ── CondominiumAddress ───────────────────────────────────────
-INSERT INTO CondominiumAddress (Id, TenantId, CondominiumId, Street, StreetNumber, City, Province, ZipCode, Country,
+INSERT INTO CondominiumAddress (Id, TenantId, CondominiumId, Street, StreetNumber, PostalCode, City, Province, Country,
     CreatedById, CreatedByFullName, IsDeleted, CreationDate)
-VALUES (@AddrId, @TenantId, @CondId, N'Via delle Querce', N'14', N'Milano', N'MI', N'20141', N'Italia',
+VALUES (@AddrId, @TenantId, @CondId, N'Via delle Querce', N'14', N'20141', N'Milano', N'MI', N'IT',
     @UserId, @UserName, 0, @Now);
 
 -- ── RealEstateUnit ───────────────────────────────────────────
+-- Colonne reali: Staircase, Floor, InternalNumber, AreaSqm, Rooms,
+--   UnitType (NOT NULL), OccupancyStatus (NOT NULL), NumeroAbitanti (NOT NULL),
+--   DisplayName, IsActive
 -- Scala A: 3 appartamenti (piano 1-2-3)
-INSERT INTO RealEstateUnit (Id, TenantId, CondominiumId, InternalNumber, DisplayName, Floor, Rooms, Surface, IsActive, IsDeleted, CreatedById, CreatedByFullName, CreationDate)
+INSERT INTO RealEstateUnit (Id, TenantId, CondominiumId,
+    Staircase, Floor, InternalNumber, AreaSqm, Rooms,
+    UnitType, OccupancyStatus, NumeroAbitanti, DisplayName, IsActive,
+    IsDeleted, CreatedById, CreatedByFullName, CreationDate)
 VALUES
-(@UA01, @TenantId, @CondId, N'A01', N'Ferrari', 1, 3, 85.00, 1, 0, @UserId, @UserName, @Now),
-(@UA02, @TenantId, @CondId, N'A02', N'Marchetti', 2, 4, 110.00, 1, 0, @UserId, @UserName, @Now),
-(@UA03, @TenantId, @CondId, N'A03', N'Colombo', 3, 3, 90.00, 1, 0, @UserId, @UserName, @Now),
+(@UA01,  @TenantId, @CondId, N'A', 1, N'A01',   85.00, 3, N'Residenziale', N'Occupato', 2, N'Ferrari',   1, 0, @UserId, @UserName, @Now),
+(@UA02,  @TenantId, @CondId, N'A', 2, N'A02',  110.00, 4, N'Residenziale', N'Occupato', 3, N'Marchetti', 1, 0, @UserId, @UserName, @Now),
+(@UA03,  @TenantId, @CondId, N'A', 3, N'A03',   90.00, 3, N'Residenziale', N'Occupato', 2, N'Colombo',   1, 0, @UserId, @UserName, @Now),
 -- Scala B: 3 appartamenti
-(@UB01, @TenantId, @CondId, N'B01', N'Galli', 1, 2, 65.00, 1, 0, @UserId, @UserName, @Now),
-(@UB02, @TenantId, @CondId, N'B02', N'Fontana', 2, 4, 120.00, 1, 0, @UserId, @UserName, @Now),
-(@UB03, @TenantId, @CondId, N'B03', N'Rizzo', 3, 3, 95.00, 1, 0, @UserId, @UserName, @Now),
+(@UB01,  @TenantId, @CondId, N'B', 1, N'B01',   65.00, 2, N'Residenziale', N'Occupato', 1, N'Galli',     1, 0, @UserId, @UserName, @Now),
+(@UB02,  @TenantId, @CondId, N'B', 2, N'B02',  120.00, 4, N'Residenziale', N'Occupato', 3, N'Fontana',   1, 0, @UserId, @UserName, @Now),
+(@UB03,  @TenantId, @CondId, N'B', 3, N'B03',   95.00, 3, N'Residenziale', N'Occupato', 2, N'Rizzo',     1, 0, @UserId, @UserName, @Now),
 -- Scala C: 3 appartamenti
-(@UC01, @TenantId, @CondId, N'C01', N'Barbieri', 1, 3, 80.00, 1, 0, @UserId, @UserName, @Now),
-(@UC02, @TenantId, @CondId, N'C02', N'Conti', 2, 2, 60.00, 1, 0, @UserId, @UserName, @Now),
-(@UC03, @TenantId, @CondId, N'C03', N'Greco', 3, 4, 130.00, 1, 0, @UserId, @UserName, @Now),
+(@UC01,  @TenantId, @CondId, N'C', 1, N'C01',   80.00, 3, N'Residenziale', N'Occupato', 2, N'Barbieri',  1, 0, @UserId, @UserName, @Now),
+(@UC02,  @TenantId, @CondId, N'C', 2, N'C02',   60.00, 2, N'Residenziale', N'Occupato', 1, N'Conti',     1, 0, @UserId, @UserName, @Now),
+(@UC03,  @TenantId, @CondId, N'C', 3, N'C03',  130.00, 4, N'Residenziale', N'Occupato', 3, N'Greco',     1, 0, @UserId, @UserName, @Now),
 -- Box auto
-(@UBOX1, @TenantId, @CondId, N'BOX-A1', N'Ferrari', 0, 0, 14.00, 1, 0, @UserId, @UserName, @Now),
-(@UBOX2, @TenantId, @CondId, N'BOX-B1', N'Fontana', 0, 0, 14.00, 1, 0, @UserId, @UserName, @Now),
-(@UBOX3, @TenantId, @CondId, N'BOX-C1', N'Greco',   0, 0, 14.00, 1, 0, @UserId, @UserName, @Now);
+(@UBOX1, @TenantId, @CondId, N'A', 0, N'BOX-A1', 14.00, 0, N'Box',         N'Occupato', 0, N'Ferrari',   1, 0, @UserId, @UserName, @Now),
+(@UBOX2, @TenantId, @CondId, N'B', 0, N'BOX-B1', 14.00, 0, N'Box',         N'Occupato', 0, N'Fontana',   1, 0, @UserId, @UserName, @Now),
+(@UBOX3, @TenantId, @CondId, N'C', 0, N'BOX-C1', 14.00, 0, N'Box',         N'Occupato', 0, N'Greco',     1, 0, @UserId, @UserName, @Now);
 
 -- ── UnitOwner ────────────────────────────────────────────────
-INSERT INTO UnitOwner (Id, TenantId, CondominiumId, UnitId, Name, FirstName, IsActive, UserId, IsDeleted, CreatedById, CreatedByFullName, CreationDate)
+-- Colonne reali: UnitId (FK), OwnerType (= Name fisico), LastName, FirstName,
+--   OwnershipQuota, StartDate, IsResident, IsAccessEnabled, IsActive, UserId
+-- NB: NON esiste CondominiumId in UnitOwner
+DECLARE @StartOwnership DATE = '2020-01-01';
+
+INSERT INTO UnitOwner (Id, TenantId, UnitId,
+    OwnerType, LastName, FirstName,
+    OwnershipQuota, StartDate, IsResident, IsActive, IsAccessEnabled, UserId,
+    IsDeleted, CreatedById, CreatedByFullName, CreationDate)
 VALUES
-(@OWA01, @TenantId, @CondId, @UA01, N'Ferrari',   N'Marco',    1, 0, 0, @UserId, @UserName, @Now),
-(@OWA02, @TenantId, @CondId, @UA02, N'Marchetti', N'Laura',    1, 0, 0, @UserId, @UserName, @Now),
-(@OWA03, @TenantId, @CondId, @UA03, N'Colombo',   N'Giuseppe', 1, 0, 0, @UserId, @UserName, @Now),
-(@OWB01, @TenantId, @CondId, @UB01, N'Galli',     N'Sofia',    1, 0, 0, @UserId, @UserName, @Now),
-(@OWB02, @TenantId, @CondId, @UB02, N'Fontana',   N'Roberto',  1, 0, 0, @UserId, @UserName, @Now),
-(@OWB03, @TenantId, @CondId, @UB03, N'Rizzo',     N'Anna',     1, 0, 0, @UserId, @UserName, @Now),
-(@OWC01, @TenantId, @CondId, @UC01, N'Barbieri',  N'Luca',     1, 0, 0, @UserId, @UserName, @Now),
-(@OWC02, @TenantId, @CondId, @UC02, N'Conti',     N'Elena',    1, 0, 0, @UserId, @UserName, @Now),
-(@OWC03, @TenantId, @CondId, @UC03, N'Greco',     N'Paolo',    1, 0, 0, @UserId, @UserName, @Now),
-(@OWBX1, @TenantId, @CondId, @UBOX1, N'Ferrari',  N'Marco',   1, 0, 0, @UserId, @UserName, @Now),
-(@OWBX2, @TenantId, @CondId, @UBOX2, N'Fontana',  N'Roberto', 1, 0, 0, @UserId, @UserName, @Now),
-(@OWBX3, @TenantId, @CondId, @UBOX3, N'Greco',    N'Paolo',   1, 0, 0, @UserId, @UserName, @Now);
+(@OWA01, @TenantId, @UA01,  N'Proprietario', N'Ferrari',   N'Marco',    1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWA02, @TenantId, @UA02,  N'Proprietario', N'Marchetti', N'Laura',    1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWA03, @TenantId, @UA03,  N'Proprietario', N'Colombo',   N'Giuseppe', 1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWB01, @TenantId, @UB01,  N'Proprietario', N'Galli',     N'Sofia',    1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWB02, @TenantId, @UB02,  N'Proprietario', N'Fontana',   N'Roberto',  1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWB03, @TenantId, @UB03,  N'Proprietario', N'Rizzo',     N'Anna',     1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWC01, @TenantId, @UC01,  N'Proprietario', N'Barbieri',  N'Luca',     1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWC02, @TenantId, @UC02,  N'Proprietario', N'Conti',     N'Elena',    1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWC03, @TenantId, @UC03,  N'Proprietario', N'Greco',     N'Paolo',    1.0000, @StartOwnership, 1, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWBX1, @TenantId, @UBOX1, N'Proprietario', N'Ferrari',   N'Marco',    1.0000, @StartOwnership, 0, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWBX2, @TenantId, @UBOX2, N'Proprietario', N'Fontana',   N'Roberto',  1.0000, @StartOwnership, 0, 1, 1, 0, 0, @UserId, @UserName, @Now),
+(@OWBX3, @TenantId, @UBOX3, N'Proprietario', N'Greco',     N'Paolo',    1.0000, @StartOwnership, 0, 1, 1, 0, 0, @UserId, @UserName, @Now);
 
 -- ── MillesimalTable ──────────────────────────────────────────
-INSERT INTO MillesimalTable (Id, TenantId, CondominiumId, Name, Code, IsEnabled, IsDraft, IsDeleted, CreatedById, CreatedByFullName, CreationDate)
-VALUES (@MtId, @TenantId, @CondId, N'Tabella Millesimale Generale', N'TMG', 1, 0, 0, @UserId, @UserName, @Now);
+-- Colonne reali: Name, Code, TotalMillesimal, IsActive, IsEnabled, IsDraft
+INSERT INTO MillesimalTable (Id, TenantId, CondominiumId, Name, Code,
+    TotalMillesimal, IsActive, IsEnabled, IsDraft,
+    IsDeleted, CreatedById, CreatedByFullName, CreationDate)
+VALUES (@MtId, @TenantId, @CondId, N'Tabella Millesimale Generale', N'TMG',
+    1000.0000, 1, 1, 0,
+    0, @UserId, @UserName, @Now);
 
 -- ── UnitMillesimal ───────────────────────────────────────────
 -- Totale = 1000 millesimi, proporzionali alla superficie
@@ -251,11 +270,13 @@ VALUES
 -- Totale: 98.75+127.75+104.50+75.45+139.30+110.30+92.90+69.70+150.95+10.35+10.35+10.35 = 1000.65 ≈ 1000
 
 -- ── Suppliers ────────────────────────────────────────────────
-INSERT INTO Supplier (Id, TenantId, Name, CompanyName, VatNumber, IsDeleted, CreatedById, CreatedByFullName, CreationDate)
+-- Colonna fisica: CompanyName (= Name nel mapping NHibernate)
+INSERT INTO Supplier (Id, TenantId, CompanyName, VatNumber, IsActive,
+    IsDeleted, CreatedById, CreatedByFullName, CreationDate)
 VALUES
-(@Sup1, @TenantId, N'Tecno Impianti Srl',    N'Tecno Impianti Srl',    N'IT03456780152', 0, @UserId, @UserName, @Now),
-(@Sup2, @TenantId, N'CleanPro Srl',          N'CleanPro Srl',          N'IT07891230154', 0, @UserId, @UserName, @Now),
-(@Sup3, @TenantId, N'Studio Amm. Ferretti',  N'Studio Amm. Ferretti',  N'IT09876540151', 0, @UserId, @UserName, @Now);
+(@Sup1, @TenantId, N'Tecno Impianti Srl',   N'IT03456780152', 1, 0, @UserId, @UserName, @Now),
+(@Sup2, @TenantId, N'CleanPro Srl',         N'IT07891230154', 1, 0, @UserId, @UserName, @Now),
+(@Sup3, @TenantId, N'Studio Amm. Ferretti', N'IT09876540151', 1, 0, @UserId, @UserName, @Now);
 
 -- ── FiscalYear 2024 (Closed) ─────────────────────────────────
 INSERT INTO FiscalYear (FiscalYearId, TenantId, CondominiumId, Code, Description, StartDate, EndDate,
@@ -267,48 +288,85 @@ VALUES (@FyId, @TenantId, @CondId, N'2024', N'Esercizio 2024',
     0, '2025-02-10',
     @UserId, @UserName, 0, @Now);
 
+-- ── Recupera conti del piano dei conti ────────────────────────
+DECLARE @AccManutenzione  INT = NULL;
+DECLARE @AccPulizie       INT = NULL;
+DECLARE @AccAmministrazione INT = NULL;
+DECLARE @AccAssicurazione INT = NULL;
+DECLARE @AccUtenze        INT = NULL;
+DECLARE @AccFondoRiserva  INT = NULL;
+
+SELECT @AccManutenzione    = MIN(Id) FROM ChartOfAccounts WHERE TenantId = @TenantId AND CondominiumId = @CondId AND IsDeleted = 0 AND Code LIKE '5.1%';
+SELECT @AccPulizie         = MIN(Id) FROM ChartOfAccounts WHERE TenantId = @TenantId AND CondominiumId = @CondId AND IsDeleted = 0 AND Code LIKE '5.3%';
+SELECT @AccAmministrazione = MIN(Id) FROM ChartOfAccounts WHERE TenantId = @TenantId AND CondominiumId = @CondId AND IsDeleted = 0 AND Code LIKE '5.4%';
+SELECT @AccAssicurazione   = MIN(Id) FROM ChartOfAccounts WHERE TenantId = @TenantId AND CondominiumId = @CondId AND IsDeleted = 0 AND Code LIKE '5.5%';
+SELECT @AccUtenze          = MIN(Id) FROM ChartOfAccounts WHERE TenantId = @TenantId AND CondominiumId = @CondId AND IsDeleted = 0 AND Code LIKE '5.6%';
+SELECT @AccFondoRiserva    = MIN(Id) FROM ChartOfAccounts WHERE TenantId = @TenantId AND CondominiumId = @CondId AND IsDeleted = 0 AND Code LIKE '5.7%';
+
+IF @AccManutenzione    IS NULL SELECT @AccManutenzione    = MIN(Id) FROM ChartOfAccounts WHERE TenantId = @TenantId AND CondominiumId = @CondId AND IsDeleted = 0;
+IF @AccPulizie         IS NULL SET @AccPulizie         = @AccManutenzione;
+IF @AccAmministrazione IS NULL SET @AccAmministrazione = @AccManutenzione;
+IF @AccAssicurazione   IS NULL SET @AccAssicurazione   = @AccManutenzione;
+IF @AccUtenze          IS NULL SET @AccUtenze          = @AccManutenzione;
+IF @AccFondoRiserva    IS NULL SET @AccFondoRiserva    = @AccManutenzione;
+
 -- ── Budget Preventivo 2024 (Approved) ───────────────────────
 -- Totale preventivato: 12.400 €
-INSERT INTO Budget (Id, TenantId, CondominiumId, FiscalYearId, Type, StatusId, Notes,
+-- Colonne reali: TotalIncome, TotalExpenses, Notes (= Description fisico)
+INSERT INTO Budget (Id, TenantId, CondominiumId, FiscalYearId, Type, StatusId,
+    TotalIncome, TotalExpenses, Notes,
     CreatedById, CreatedByFullName, IsDeleted, CreationDate)
-VALUES (@BudPrev, @TenantId, @CondId, @FyId, 1, 2, N'Preventivo approvato assemblea 15/01/2024',
+VALUES (@BudPrev, @TenantId, @CondId, @FyId, 1, 2,
+    12400.00, 12400.00, N'Preventivo approvato assemblea 15/01/2024',
     @UserId, @UserName, 0, @Now);
 
-INSERT INTO BudgetItem (Id, TenantId, BudgetId, Name, Amount, AmountPaid, Notes, IsDeleted, CreatedById, CreatedByFullName, CreationDate)
-VALUES
-(@BIP1, @TenantId, @BudPrev, N'Manutenzione ordinaria parti comuni',  3200.00, 3200.00, NULL, 0, @UserId, @UserName, @Now),
-(@BIP2, @TenantId, @BudPrev, N'Servizio pulizie scale e aree comuni', 2400.00, 2400.00, NULL, 0, @UserId, @UserName, @Now),
-(@BIP3, @TenantId, @BudPrev, N'Onorario amministratore',             1800.00, 1800.00, NULL, 0, @UserId, @UserName, @Now),
-(@BIP4, @TenantId, @BudPrev, N'Assicurazione fabbricato',            1400.00, 1400.00, NULL, 0, @UserId, @UserName, @Now),
-(@BIP5, @TenantId, @BudPrev, N'Utenze (luce scale, acqua)',          2200.00, 2200.00, NULL, 0, @UserId, @UserName, @Now),
-(@BIP6, @TenantId, @BudPrev, N'Fondo riserva',                       1400.00, 1400.00, NULL, 0, @UserId, @UserName, @Now);
+-- BudgetItem: colonne reali AccountId (NOT NULL), Description (= Name fisico)
+IF @AccManutenzione IS NOT NULL
+BEGIN
+    INSERT INTO BudgetItem (Id, TenantId, BudgetId, AccountId, Description, Amount, AmountPaid,
+        IsDeleted, CreatedById, CreatedByFullName, CreationDate)
+    VALUES
+    (@BIP1, @TenantId, @BudPrev, @AccManutenzione,    N'Manutenzione ordinaria parti comuni',  3200.00, 3200.00, 0, @UserId, @UserName, @Now),
+    (@BIP2, @TenantId, @BudPrev, @AccPulizie,         N'Servizio pulizie scale e aree comuni', 2400.00, 2400.00, 0, @UserId, @UserName, @Now),
+    (@BIP3, @TenantId, @BudPrev, @AccAmministrazione, N'Onorario amministratore',              1800.00, 1800.00, 0, @UserId, @UserName, @Now),
+    (@BIP4, @TenantId, @BudPrev, @AccAssicurazione,   N'Assicurazione fabbricato',             1400.00, 1400.00, 0, @UserId, @UserName, @Now),
+    (@BIP5, @TenantId, @BudPrev, @AccUtenze,          N'Utenze (luce scale, acqua)',           2200.00, 2200.00, 0, @UserId, @UserName, @Now),
+    (@BIP6, @TenantId, @BudPrev, @AccFondoRiserva,    N'Fondo riserva',                        1400.00, 1400.00, 0, @UserId, @UserName, @Now);
+END
 
 -- ── Budget Consuntivo 2024 (Approved) ───────────────────────
--- Totale consuntivo: 12.850 € (leggermente superiore al preventivo)
-INSERT INTO Budget (Id, TenantId, CondominiumId, FiscalYearId, Type, StatusId, Notes,
+-- Totale consuntivo: 12.850 €
+INSERT INTO Budget (Id, TenantId, CondominiumId, FiscalYearId, Type, StatusId,
+    TotalIncome, TotalExpenses, Notes,
     CreatedById, CreatedByFullName, IsDeleted, CreationDate)
-VALUES (@BudCons, @TenantId, @CondId, @FyId, 2, 2, N'Consuntivo approvato assemblea 20/01/2025',
+VALUES (@BudCons, @TenantId, @CondId, @FyId, 2, 2,
+    12850.00, 12850.00, N'Consuntivo approvato assemblea 20/01/2025',
     @UserId, @UserName, 0, @Now);
 
-INSERT INTO BudgetItem (Id, TenantId, BudgetId, Name, Amount, AmountPaid, Notes, IsDeleted, CreatedById, CreatedByFullName, CreationDate)
-VALUES
-(@BIC1, @TenantId, @BudCons, N'Manutenzione ordinaria parti comuni',  3450.00, 3450.00, N'Intervento extra cancello automatico', 0, @UserId, @UserName, @Now),
-(@BIC2, @TenantId, @BudCons, N'Servizio pulizie scale e aree comuni', 2400.00, 2400.00, NULL, 0, @UserId, @UserName, @Now),
-(@BIC3, @TenantId, @BudCons, N'Onorario amministratore',             1800.00, 1800.00, NULL, 0, @UserId, @UserName, @Now),
-(@BIC4, @TenantId, @BudCons, N'Assicurazione fabbricato',            1420.00, 1420.00, N'Adeguamento premio', 0, @UserId, @UserName, @Now),
-(@BIC5, @TenantId, @BudCons, N'Utenze (luce scale, acqua)',          2380.00, 2380.00, NULL, 0, @UserId, @UserName, @Now),
-(@BIC6, @TenantId, @BudCons, N'Fondo riserva',                       1400.00, 1400.00, NULL, 0, @UserId, @UserName, @Now);
+IF @AccManutenzione IS NOT NULL
+BEGIN
+    INSERT INTO BudgetItem (Id, TenantId, BudgetId, AccountId, Description, Amount, AmountPaid, Notes,
+        IsDeleted, CreatedById, CreatedByFullName, CreationDate)
+    VALUES
+    (@BIC1, @TenantId, @BudCons, @AccManutenzione,    N'Manutenzione ordinaria parti comuni',  3450.00, 3450.00, N'Intervento extra cancello automatico', 0, @UserId, @UserName, @Now),
+    (@BIC2, @TenantId, @BudCons, @AccPulizie,         N'Servizio pulizie scale e aree comuni', 2400.00, 2400.00, NULL, 0, @UserId, @UserName, @Now),
+    (@BIC3, @TenantId, @BudCons, @AccAmministrazione, N'Onorario amministratore',              1800.00, 1800.00, NULL, 0, @UserId, @UserName, @Now),
+    (@BIC4, @TenantId, @BudCons, @AccAssicurazione,   N'Assicurazione fabbricato',             1420.00, 1420.00, N'Adeguamento premio', 0, @UserId, @UserName, @Now),
+    (@BIC5, @TenantId, @BudCons, @AccUtenze,          N'Utenze (luce scale, acqua)',           2380.00, 2380.00, NULL, 0, @UserId, @UserName, @Now),
+    (@BIC6, @TenantId, @BudCons, @AccFondoRiserva,    N'Fondo riserva',                        1400.00, 1400.00, NULL, 0, @UserId, @UserName, @Now);
+END
 
 -- ── CondominiumInstallment: 4 rate trimestrali ───────────────
--- Quota annuale preventivata per unità: 12.400 / 1000 * millesimi
+-- Colonne reali: Description (= Name fisico), InstallmentNumber, DueDate, TotalAmount, StatusId (FK)
 -- Rate: Q1=30%, Q2=30%, Q3=20%, Q4=20%
-INSERT INTO CondominiumInstallment (Id, TenantId, BudgetId, FiscalYearId, CondominiumId,
-    Name, DueDate, TotalAmount, StatusId, IsDeleted, CreatedById, CreatedByFullName, CreationDate)
+INSERT INTO CondominiumInstallment (Id, TenantId, CondominiumId, BudgetId, FiscalYearId,
+    Description, InstallmentNumber, DueDate, TotalAmount, StatusId,
+    IsDeleted, CreatedById, CreatedByFullName, CreationDate)
 VALUES
-(@CI1, @TenantId, @BudPrev, @FyId, @CondId, N'1ª Rata 2024', '2024-03-15', 3720.00, 3, 0, @UserId, @UserName, @Now),
-(@CI2, @TenantId, @BudPrev, @FyId, @CondId, N'2ª Rata 2024', '2024-06-15', 3720.00, 3, 0, @UserId, @UserName, @Now),
-(@CI3, @TenantId, @BudPrev, @FyId, @CondId, N'3ª Rata 2024', '2024-09-15', 2480.00, 3, 0, @UserId, @UserName, @Now),
-(@CI4, @TenantId, @BudPrev, @FyId, @CondId, N'4ª Rata 2024', '2024-12-15', 2480.00, 3, 0, @UserId, @UserName, @Now);
+(@CI1, @TenantId, @CondId, @BudPrev, @FyId, N'1ª Rata 2024', 1, '2024-03-15', 3720.00, 3, 0, @UserId, @UserName, @Now),
+(@CI2, @TenantId, @CondId, @BudPrev, @FyId, N'2ª Rata 2024', 2, '2024-06-15', 3720.00, 3, 0, @UserId, @UserName, @Now),
+(@CI3, @TenantId, @CondId, @BudPrev, @FyId, N'3ª Rata 2024', 3, '2024-09-15', 2480.00, 3, 0, @UserId, @UserName, @Now),
+(@CI4, @TenantId, @CondId, @BudPrev, @FyId, N'4ª Rata 2024', 4, '2024-12-15', 2480.00, 3, 0, @UserId, @UserName, @Now);
 -- StatusId=3 = Paid
 
 -- ── CondominiumFee: quote per unità (4 rate × 12 unità = 48 righe) ──
@@ -328,143 +386,183 @@ VALUES
 -- BX3(10.35):  Q1=38.50,  Q2=38.50,  Q3=25.67,  Q4=25.67
 -- Nota: C03-Greco e B01-Galli hanno una rata Q4 non pagata (morosità)
 
-DECLARE @FeeHi INT = @HiCondFee;
+-- CondominiumFee: Id è BIGINT (hilo usa Int64)
+DECLARE @FeeHi BIGINT = CAST(@HiCondFee AS BIGINT);
 
--- Funzione helper: inserisce 4 fee per un'unità
--- Usiamo una tabella temporanea per le fee
 IF OBJECT_ID('tempdb..#fees') IS NOT NULL DROP TABLE #fees;
 CREATE TABLE #fees (
-    Id INT, UnitId INT, InstId INT,
-    AmountDue DECIMAL(18,4), AmountPaid DECIMAL(18,4), UserId_ BIGINT
+    Id BIGINT, UnitId INT, InstId INT,
+    AmountDue DECIMAL(18,4), AmountPaid DECIMAL(18,4)
 );
 
 -- A01 - Ferrari (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UA01, @CI1, 367.65, 367.65, 0),
-(@FeeHi*11+1,  @UA01, @CI2, 367.65, 367.65, 0),
-(@FeeHi*11+2,  @UA01, @CI3, 245.10, 245.10, 0),
-(@FeeHi*11+3,  @UA01, @CI4, 245.10, 245.10, 0);
+(@FeeHi*11+0,  @UA01, @CI1, 367.65, 367.65),
+(@FeeHi*11+1,  @UA01, @CI2, 367.65, 367.65),
+(@FeeHi*11+2,  @UA01, @CI3, 245.10, 245.10),
+(@FeeHi*11+3,  @UA01, @CI4, 245.10, 245.10);
 SET @FeeHi += 1;
 
 -- A02 - Marchetti (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UA02, @CI1, 475.23, 475.23, 0),
-(@FeeHi*11+1,  @UA02, @CI2, 475.23, 475.23, 0),
-(@FeeHi*11+2,  @UA02, @CI3, 316.82, 316.82, 0),
-(@FeeHi*11+3,  @UA02, @CI4, 316.82, 316.82, 0);
+(@FeeHi*11+0,  @UA02, @CI1, 475.23, 475.23),
+(@FeeHi*11+1,  @UA02, @CI2, 475.23, 475.23),
+(@FeeHi*11+2,  @UA02, @CI3, 316.82, 316.82),
+(@FeeHi*11+3,  @UA02, @CI4, 316.82, 316.82);
 SET @FeeHi += 1;
 
 -- A03 - Colombo (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UA03, @CI1, 388.74, 388.74, 0),
-(@FeeHi*11+1,  @UA03, @CI2, 388.74, 388.74, 0),
-(@FeeHi*11+2,  @UA03, @CI3, 259.16, 259.16, 0),
-(@FeeHi*11+3,  @UA03, @CI4, 259.16, 259.16, 0);
+(@FeeHi*11+0,  @UA03, @CI1, 388.74, 388.74),
+(@FeeHi*11+1,  @UA03, @CI2, 388.74, 388.74),
+(@FeeHi*11+2,  @UA03, @CI3, 259.16, 259.16),
+(@FeeHi*11+3,  @UA03, @CI4, 259.16, 259.16);
 SET @FeeHi += 1;
 
 -- B01 - Galli (Q4 non pagata — morosità 187.12)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UB01, @CI1, 280.67, 280.67, 0),
-(@FeeHi*11+1,  @UB01, @CI2, 280.67, 280.67, 0),
-(@FeeHi*11+2,  @UB01, @CI3, 187.12, 187.12, 0),
-(@FeeHi*11+3,  @UB01, @CI4, 187.12,   0.00, 0);  -- non pagata
+(@FeeHi*11+0,  @UB01, @CI1, 280.67, 280.67),
+(@FeeHi*11+1,  @UB01, @CI2, 280.67, 280.67),
+(@FeeHi*11+2,  @UB01, @CI3, 187.12, 187.12),
+(@FeeHi*11+3,  @UB01, @CI4, 187.12,   0.00);  -- non pagata
 SET @FeeHi += 1;
 
 -- B02 - Fontana (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UB02, @CI1, 518.20, 518.20, 0),
-(@FeeHi*11+1,  @UB02, @CI2, 518.20, 518.20, 0),
-(@FeeHi*11+2,  @UB02, @CI3, 345.46, 345.46, 0),
-(@FeeHi*11+3,  @UB02, @CI4, 345.46, 345.46, 0);
+(@FeeHi*11+0,  @UB02, @CI1, 518.20, 518.20),
+(@FeeHi*11+1,  @UB02, @CI2, 518.20, 518.20),
+(@FeeHi*11+2,  @UB02, @CI3, 345.46, 345.46),
+(@FeeHi*11+3,  @UB02, @CI4, 345.46, 345.46);
 SET @FeeHi += 1;
 
 -- B03 - Rizzo (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UB03, @CI1, 410.32, 410.32, 0),
-(@FeeHi*11+1,  @UB03, @CI2, 410.32, 410.32, 0),
-(@FeeHi*11+2,  @UB03, @CI3, 273.54, 273.54, 0),
-(@FeeHi*11+3,  @UB03, @CI4, 273.54, 273.54, 0);
+(@FeeHi*11+0,  @UB03, @CI1, 410.32, 410.32),
+(@FeeHi*11+1,  @UB03, @CI2, 410.32, 410.32),
+(@FeeHi*11+2,  @UB03, @CI3, 273.54, 273.54),
+(@FeeHi*11+3,  @UB03, @CI4, 273.54, 273.54);
 SET @FeeHi += 1;
 
 -- C01 - Barbieri (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UC01, @CI1, 345.59, 345.59, 0),
-(@FeeHi*11+1,  @UC01, @CI2, 345.59, 345.59, 0),
-(@FeeHi*11+2,  @UC01, @CI3, 230.39, 230.39, 0),
-(@FeeHi*11+3,  @UC01, @CI4, 230.39, 230.39, 0);
+(@FeeHi*11+0,  @UC01, @CI1, 345.59, 345.59),
+(@FeeHi*11+1,  @UC01, @CI2, 345.59, 345.59),
+(@FeeHi*11+2,  @UC01, @CI3, 230.39, 230.39),
+(@FeeHi*11+3,  @UC01, @CI4, 230.39, 230.39);
 SET @FeeHi += 1;
 
 -- C02 - Conti (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UC02, @CI1, 259.32, 259.32, 0),
-(@FeeHi*11+1,  @UC02, @CI2, 259.32, 259.32, 0),
-(@FeeHi*11+2,  @UC02, @CI3, 172.88, 172.88, 0),
-(@FeeHi*11+3,  @UC02, @CI4, 172.88, 172.88, 0);
+(@FeeHi*11+0,  @UC02, @CI1, 259.32, 259.32),
+(@FeeHi*11+1,  @UC02, @CI2, 259.32, 259.32),
+(@FeeHi*11+2,  @UC02, @CI3, 172.88, 172.88),
+(@FeeHi*11+3,  @UC02, @CI4, 172.88, 172.88);
 SET @FeeHi += 1;
 
 -- C03 - Greco (Q3+Q4 non pagate — morosità 748.72)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UC03, @CI1, 561.53, 561.53, 0),
-(@FeeHi*11+1,  @UC03, @CI2, 561.53, 561.53, 0),
-(@FeeHi*11+2,  @UC03, @CI3, 374.36,   0.00, 0),  -- non pagata
-(@FeeHi*11+3,  @UC03, @CI4, 374.36,   0.00, 0);  -- non pagata
+(@FeeHi*11+0,  @UC03, @CI1, 561.53, 561.53),
+(@FeeHi*11+1,  @UC03, @CI2, 561.53, 561.53),
+(@FeeHi*11+2,  @UC03, @CI3, 374.36,   0.00),  -- non pagata
+(@FeeHi*11+3,  @UC03, @CI4, 374.36,   0.00);  -- non pagata
 SET @FeeHi += 1;
 
 -- BOX-A1 - Ferrari (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UBOX1, @CI1, 38.50, 38.50, 0),
-(@FeeHi*11+1,  @UBOX1, @CI2, 38.50, 38.50, 0),
-(@FeeHi*11+2,  @UBOX1, @CI3, 25.67, 25.67, 0),
-(@FeeHi*11+3,  @UBOX1, @CI4, 25.67, 25.67, 0);
+(@FeeHi*11+0,  @UBOX1, @CI1, 38.50, 38.50),
+(@FeeHi*11+1,  @UBOX1, @CI2, 38.50, 38.50),
+(@FeeHi*11+2,  @UBOX1, @CI3, 25.67, 25.67),
+(@FeeHi*11+3,  @UBOX1, @CI4, 25.67, 25.67);
 SET @FeeHi += 1;
 
 -- BOX-B1 - Fontana (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UBOX2, @CI1, 38.50, 38.50, 0),
-(@FeeHi*11+1,  @UBOX2, @CI2, 38.50, 38.50, 0),
-(@FeeHi*11+2,  @UBOX2, @CI3, 25.67, 25.67, 0),
-(@FeeHi*11+3,  @UBOX2, @CI4, 25.67, 25.67, 0);
+(@FeeHi*11+0,  @UBOX2, @CI1, 38.50, 38.50),
+(@FeeHi*11+1,  @UBOX2, @CI2, 38.50, 38.50),
+(@FeeHi*11+2,  @UBOX2, @CI3, 25.67, 25.67),
+(@FeeHi*11+3,  @UBOX2, @CI4, 25.67, 25.67);
 SET @FeeHi += 1;
 
 -- BOX-C1 - Greco (tutti pagati)
 INSERT INTO #fees VALUES
-(@FeeHi*11+0,  @UBOX3, @CI1, 38.50, 38.50, 0),
-(@FeeHi*11+1,  @UBOX3, @CI2, 38.50, 38.50, 0),
-(@FeeHi*11+2,  @UBOX3, @CI3, 25.67, 25.67, 0),
-(@FeeHi*11+3,  @UBOX3, @CI4, 25.67, 25.67, 0);
+(@FeeHi*11+0,  @UBOX3, @CI1, 38.50, 38.50),
+(@FeeHi*11+1,  @UBOX3, @CI2, 38.50, 38.50),
+(@FeeHi*11+2,  @UBOX3, @CI3, 25.67, 25.67),
+(@FeeHi*11+3,  @UBOX3, @CI4, 25.67, 25.67);
 SET @FeeHi += 1;
 
 INSERT INTO CondominiumFee (Id, TenantId, InstallmentId, UnitId, UserId,
     AmountDue, AmountPaid, Balance, PaymentStatus,
     IsDeleted, CreatedById, CreatedByFullName, CreationDate)
-SELECT f.Id, @TenantId, f.InstId, f.UnitId, f.UserId_,
+SELECT f.Id, @TenantId, f.InstId, f.UnitId, 0,
     f.AmountDue, f.AmountPaid,
     f.AmountDue - f.AmountPaid,
-    CASE WHEN f.AmountPaid = 0 THEN 'ToPay'
-         WHEN f.AmountPaid < f.AmountDue THEN 'PartiallyPaid'
-         ELSE 'Paid' END,
+    CASE WHEN f.AmountPaid = 0         THEN N'ToPay'
+         WHEN f.AmountPaid < f.AmountDue THEN N'PartiallyPaid'
+         ELSE                               N'Paid' END,
     0, @UserId, @UserName, @Now
 FROM #fees f;
 
 -- ── Expenses (6 spese reali) ──────────────────────────────────
-INSERT INTO Expense (Id, TenantId, CondominiumId, FiscalYearId, Name,
-    GrossAmount, NetAmount, VatAmount,
-    ExpenseTypeId, PaymentStatusId, ChargeabilityType, SupplierId,
-    DocumentDate, RegistrationDate, Notes,
-    IsDeleted, CreatedById, CreatedByFullName, CreationDate)
-VALUES
-(@EXP1, @TenantId, @CondId, @FyId, N'Manutenzione cancello automatico',
-    1250.00, 1025.41, 224.59, 1, 2, 0, @Sup1, '2024-03-10', '2024-03-12', N'Sostituzione motore', 0, @UserId, @UserName, @Now),
-(@EXP2, @TenantId, @CondId, @FyId, N'Riparazione citofoni scala B',
-    580.00, 475.41, 104.59, 1, 2, 0, @Sup1, '2024-05-20', '2024-05-22', NULL, 0, @UserId, @UserName, @Now),
-(@EXP3, @TenantId, @CondId, @FyId, N'Servizio pulizie annuale',
-    2400.00, 1967.21, 432.79, 2, 2, 0, @Sup2, '2024-12-31', '2024-12-31', N'Contratto annuale', 0, @UserId, @UserName, @Now),
-(@EXP4, @TenantId, @CondId, @FyId, N'Onorario amministratore 2024',
-    1800.00, 1639.34, 160.66, 5, 2, 0, @Sup3, '2024-12-31', '2024-12-31', NULL, 0, @UserId, @UserName, @Now),
-(@EXP5, @TenantId, @CondId, @FyId, N'Assicurazione fabbricato 2024',
-    1420.00, 1420.00, 0.00,  6, 2, 0, NULL,  '2024-01-15', '2024-01-16', NULL, 0, @UserId, @UserName, @Now),
-(@EXP6, @TenantId, @CondId, @FyId, N'Bollette energia elettrica scale',
-    2380.00, 1950.82, 429.18, 4, 2, 0, NULL,  '2024-12-15', '2024-12-16', N'Consumo annuale', 0, @UserId, @UserName, @Now);
+-- Colonne reali: AccountId (NOT NULL), MillesimalTableId (NOT NULL),
+--   Description (= Name fisico), PaymentStatusId (FK), ExpenseTypeId (FK),
+--   ChargeabilityType (FK int)
+IF @AccManutenzione IS NOT NULL
+BEGIN
+    DECLARE @EtManutenzione    INT = (SELECT TOP 1 Id FROM ExpenseTypeLookup WHERE Id = 1);
+    DECLARE @EtPulizie         INT = (SELECT TOP 1 Id FROM ExpenseTypeLookup WHERE Id = 2);
+    DECLARE @EtUtenze          INT = (SELECT TOP 1 Id FROM ExpenseTypeLookup WHERE Id = 4);
+    DECLARE @EtAmministrazione INT = (SELECT TOP 1 Id FROM ExpenseTypeLookup WHERE Id = 5);
+    DECLARE @EtAssicurazione   INT = (SELECT TOP 1 Id FROM ExpenseTypeLookup WHERE Id = 6);
+    DECLARE @PayPagata         INT = (SELECT TOP 1 Id FROM ExpensePaymentStatusLookup WHERE Id = 2);
+    DECLARE @ChargeOwner       INT = (SELECT TOP 1 Id FROM ChargeabilityTypeLookup   WHERE Id = 0);
+
+    IF @EtManutenzione    IS NULL SELECT @EtManutenzione    = MIN(Id) FROM ExpenseTypeLookup;
+    IF @EtPulizie         IS NULL SET @EtPulizie         = @EtManutenzione;
+    IF @EtUtenze          IS NULL SET @EtUtenze          = @EtManutenzione;
+    IF @EtAmministrazione IS NULL SET @EtAmministrazione = @EtManutenzione;
+    IF @EtAssicurazione   IS NULL SET @EtAssicurazione   = @EtManutenzione;
+    IF @PayPagata         IS NULL SELECT @PayPagata       = MIN(Id) FROM ExpensePaymentStatusLookup;
+    IF @ChargeOwner       IS NULL SELECT @ChargeOwner     = MIN(Id) FROM ChargeabilityTypeLookup;
+
+    INSERT INTO Expense (Id, TenantId, CondominiumId, FiscalYearId, AccountId, MillesimalTableId,
+        SupplierId, Description, GrossAmount, NetAmount, VatAmount,
+        ExpenseTypeId, PaymentStatusId, ChargeabilityType,
+        DocumentDate, RegistrationDate,
+        IsDeleted, CreatedById, CreatedByFullName, CreationDate)
+    VALUES
+    (@EXP1, @TenantId, @CondId, @FyId, @AccManutenzione, @MtId,
+        @Sup1, N'Manutenzione cancello automatico',
+        1250.00, 1025.41, 224.59, @EtManutenzione, @PayPagata, @ChargeOwner,
+        '2024-03-10', '2024-03-12', 0, @UserId, @UserName, @Now),
+
+    (@EXP2, @TenantId, @CondId, @FyId, @AccManutenzione, @MtId,
+        @Sup1, N'Riparazione citofoni scala B',
+        580.00, 475.41, 104.59, @EtManutenzione, @PayPagata, @ChargeOwner,
+        '2024-05-20', '2024-05-22', 0, @UserId, @UserName, @Now),
+
+    (@EXP3, @TenantId, @CondId, @FyId, @AccPulizie, @MtId,
+        @Sup2, N'Servizio pulizie annuale',
+        2400.00, 1967.21, 432.79, @EtPulizie, @PayPagata, @ChargeOwner,
+        '2024-12-31', '2024-12-31', 0, @UserId, @UserName, @Now),
+
+    (@EXP4, @TenantId, @CondId, @FyId, @AccAmministrazione, @MtId,
+        @Sup3, N'Onorario amministratore 2024',
+        1800.00, 1639.34, 160.66, @EtAmministrazione, @PayPagata, @ChargeOwner,
+        '2024-12-31', '2024-12-31', 0, @UserId, @UserName, @Now),
+
+    (@EXP5, @TenantId, @CondId, @FyId, @AccAssicurazione, @MtId,
+        NULL, N'Assicurazione fabbricato 2024',
+        1420.00, 1420.00, 0.00, @EtAssicurazione, @PayPagata, @ChargeOwner,
+        '2024-01-15', '2024-01-16', 0, @UserId, @UserName, @Now),
+
+    (@EXP6, @TenantId, @CondId, @FyId, @AccUtenze, @MtId,
+        NULL, N'Bollette energia elettrica scale',
+        2380.00, 1950.82, 429.18, @EtUtenze, @PayPagata, @ChargeOwner,
+        '2024-12-15', '2024-12-16', 0, @UserId, @UserName, @Now);
+END
+ELSE
+    PRINT N'ATTENZIONE: Piano dei conti non trovato — Expense non inserite.';
 
 -- ── UnitOpeningBalance 2024 ───────────────────────────────────
 -- Primo esercizio: OpeningBalance = 0 per tutti
@@ -538,7 +636,7 @@ UPDATE hibernate_unique_key SET next_hi = @HiFiscalYear         WHERE entity_typ
 UPDATE hibernate_unique_key SET next_hi = @HiBudget             WHERE entity_type = 'Budget';
 UPDATE hibernate_unique_key SET next_hi = @HiBudgetItem         WHERE entity_type = 'BudgetItem';
 UPDATE hibernate_unique_key SET next_hi = @HiCondInst           WHERE entity_type = 'CondominiumInstallment';
-UPDATE hibernate_unique_key SET next_hi = @FeeHi                WHERE entity_type = 'CondominiumFee';
+UPDATE hibernate_unique_key SET next_hi = CAST(@FeeHi AS INT)   WHERE entity_type = 'CondominiumFee';
 UPDATE hibernate_unique_key SET next_hi = @HiExpense            WHERE entity_type = 'Expense';
 UPDATE hibernate_unique_key SET next_hi = @HiUnitOwner          WHERE entity_type = 'UnitOwner';
 UPDATE hibernate_unique_key SET next_hi = @HiUnitOpeningBalance WHERE entity_type = 'UnitOpeningBalance';
