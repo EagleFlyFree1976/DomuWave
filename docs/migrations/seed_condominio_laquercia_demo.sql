@@ -23,10 +23,19 @@ DECLARE @UserId       INT              = 1;
 DECLARE @UserName     NVARCHAR(200)    = N'Sistema Demo';
 DECLARE @MaxLo        INT              = 10;
 
--- Prende il primo tenant attivo
-DECLARE @TenantId UNIQUEIDENTIFIER = (SELECT TOP 1 Id FROM Tenant WHERE IsDeleted = 0 ORDER BY Id);
-IF @TenantId IS NULL
-    RAISERROR('Nessun Tenant trovato. Creare prima un Tenant.', 16, 1);
+DECLARE @TenantId UNIQUEIDENTIFIER = 'E60CE426-B371-444A-9D44-B40500664F9F';
+
+-- ============================================================
+-- HILO: assicura che tutte le entity_type esistano
+-- ============================================================
+INSERT INTO hibernate_unique_key (entity_type, next_hi)
+SELECT v.et, 1 FROM (VALUES
+    ('Condominium'),('CondominiumAddress'),('RealEstateUnit'),
+    ('MillesimalTable'),('UnitMillesimal'),('Supplier'),
+    ('FiscalYear'),('Budget'),('BudgetItem'),('CondominiumInstallment'),
+    ('CondominiumFee'),('Expense'),('UnitOwner'),('UnitOpeningBalance'),('AccountBalance')
+) v(et)
+WHERE NOT EXISTS (SELECT 1 FROM hibernate_unique_key WHERE entity_type = v.et);
 
 -- ============================================================
 -- HILO: lettura contatori correnti
@@ -164,17 +173,6 @@ DECLARE @EXP6 INT = @HiExpense * (@MaxLo + 1) + 5;
 SET @HiExpense += 1;
 
 -- ============================================================
--- Recupera AccountId dal piano dei conti di questo tenant
--- (usa i conti già presenti — fallback a NULL se non esistono)
--- ============================================================
-DECLARE @AccManutenzione  INT = (SELECT TOP 1 Id FROM ChartOfAccounts WHERE TenantId = @TenantId AND CondominiumId = @CondId AND IsDeleted = 0 AND Type = 2 ORDER BY Code);
-DECLARE @AccPulizie       INT;
-DECLARE @AccAmministrazione INT;
-DECLARE @AccAssicurazione INT;
-DECLARE @AccUtenze        INT;
-DECLARE @AccFondoRiserva  INT;
-
--- ============================================================
 -- INSERIMENTI
 -- ============================================================
 
@@ -183,7 +181,7 @@ INSERT INTO Condominium (Id, TenantId, Name, Code, TaxCode, NumberOfUnits, Numbe
     TotalMillesimal, InstallmentFrequency, InstallmentDueDay, IsActive,
     CreatedById, CreatedByFullName, IsDeleted, CreationDate)
 VALUES (@CondId, @TenantId, N'Condominio La Quercia', N'LQ-001', N'91054320153',
-    12, 1, 1000.0000, 4, 15, 1,
+    12, 1, 1000.0000, N'Quarterly', 15, 1,
     @UserId, @UserName, 0, @Now);
 
 -- ── CondominiumAddress ───────────────────────────────────────
@@ -281,7 +279,7 @@ VALUES
 -- ── FiscalYear 2024 (Closed) ─────────────────────────────────
 INSERT INTO FiscalYear (FiscalYearId, TenantId, CondominiumId, Code, Description, StartDate, EndDate,
     StatusId, IsActive, ClosedDate,
-    CreatedById, CreatedByFullName, IsDeleted, CreationDate)
+    CreatedBy, CreatedByFullName, IsDeleted, CreationDate)
 VALUES (@FyId, @TenantId, @CondId, N'2024', N'Esercizio 2024',
     '2024-01-01', '2024-12-31',
     4,  -- Closed

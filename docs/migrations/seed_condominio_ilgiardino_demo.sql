@@ -34,6 +34,18 @@ IF @TenantId IS NULL
     RAISERROR('Nessun Tenant trovato. Creare prima un Tenant.', 16, 1);
 
 -- ============================================================
+-- HILO: assicura che tutte le entity_type esistano
+-- ============================================================
+INSERT INTO hibernate_unique_key (entity_type, next_hi)
+SELECT v.et, 1 FROM (VALUES
+    ('Condominium'),('CondominiumAddress'),('RealEstateUnit'),
+    ('MillesimalTable'),('UnitMillesimal'),('Supplier'),
+    ('FiscalYear'),('Budget'),('BudgetItem'),('CondominiumInstallment'),
+    ('CondominiumFee'),('Expense'),('UnitOwner'),('UnitOpeningBalance')
+) v(et)
+WHERE NOT EXISTS (SELECT 1 FROM hibernate_unique_key WHERE entity_type = v.et);
+
+-- ============================================================
 -- HILO: lettura contatori correnti
 -- ============================================================
 DECLARE @HiCondominium          INT = (SELECT next_hi FROM hibernate_unique_key WHERE entity_type = 'Condominium');
@@ -177,7 +189,7 @@ INSERT INTO Condominium (Id, TenantId, Name, Code, TaxCode, NumberOfUnits, Numbe
     TotalMillesimal, InstallmentFrequency, InstallmentDueDay, IsActive,
     CreatedById, CreatedByFullName, IsDeleted, CreationDate)
 VALUES (@CondId, @TenantId, N'Residenza Il Giardino', N'GRD-001', N'80134590157',
-    9, 2, 1000.0000, 4, 10, 1,
+    9, 2, 1000.0000, N'Quarterly', 10, 1,
     @UserId, @UserName, 0, @Now);
 
 -- ── CondominiumAddress ───────────────────────────────────────
@@ -286,7 +298,7 @@ VALUES
 -- ── FiscalYear 2025 (Open) ───────────────────────────────────
 INSERT INTO FiscalYear (FiscalYearId, TenantId, CondominiumId, Code, Description,
     StartDate, EndDate, StatusId, IsActive, ClosedDate,
-    CreatedById, CreatedByFullName, IsDeleted, CreationDate)
+    CreatedBy, CreatedByFullName, IsDeleted, CreationDate)
 VALUES (@FyId, @TenantId, @CondId, N'2025', N'Esercizio 2025',
     '2025-01-01', '2025-12-31',
     2, 1, NULL,
