@@ -54,31 +54,9 @@ public class SeedCondominioViaGaribaldiTest(
     {
         output.WriteLine("=== SEED: Condominio Il Giardino, Via Garibaldi 12, Milano ===");
 
-        // ── 0. Cleanup: elimina il condominio precedente se esiste ─────────
-        var existingResp = await Client.GetAsync($"/api/condominiums/by-code/{CondominioCode}");
-        if (existingResp.StatusCode == HttpStatusCode.OK)
-        {
-            var existing = await existingResp.Content.ReadFromJsonAsync<CondominiumReadDto>();
-            if (existing != null)
-            {
-                // Elimina prima le tabelle millesimali esplicitamente per evitare che
-                // il cascade soft-delete del condominio le lasci con IsDeleted=0
-                // (bug di cache NHibernate nella stessa sessione).
-                var tablesResp = await Client.GetAsync($"/api/millesimal-tables/by-condominium/{existing.Id}");
-                if (tablesResp.IsSuccessStatusCode)
-                {
-                    var tables = await tablesResp.Content
-                        .ReadFromJsonAsync<IList<MillesimalTableReadDto>>(JsonOptions);
-                    foreach (var t in tables ?? [])
-                        await Client.DeleteAsync($"/api/millesimal-tables/{t.Id}");
-                }
-
-                var delResp = await Client.DeleteAsync($"/api/condominiums/{existing.Id}");
-                delResp.StatusCode.Should().Be(HttpStatusCode.NoContent,
-                    $"cleanup condominio id={existing.Id}");
-                output.WriteLine($"  Cleanup: condominio id={existing.Id} eliminato.");
-            }
-        }
+        // ── 0. Cleanup: hard-delete di tutti i record con questo codice ──────
+        await PurgeCondominiumByCodeAsync(CondominioCode);
+        output.WriteLine($"  Cleanup: purge '{CondominioCode}' completato.");
 
         // ── 1. Condominio ──────────────────────────────────────────────────
         var condoDto = new CreateCondominiumDto

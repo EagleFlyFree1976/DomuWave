@@ -2,6 +2,8 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Xunit;
 
 namespace DomuWave.IntegrationTests.Infrastructure;
@@ -146,6 +148,116 @@ public abstract class IntegrationTestBase : IAsyncLifetime
     /// Usato tipicamente per verificare che un 400 Bad Request contenga il messaggio
     /// di validazione atteso (es. "Il codice è già utilizzato").
     /// </summary>
+    /// <summary>
+    /// Hard-delete di tutti i condominii (inclusi soft-deleted) con il codice specificato,
+    /// eliminando in cascata tutte le entità figlio direttamente via SQL.
+    /// Usare nel cleanup dei seed test per evitare l'accumulo di record IsDeleted=1
+    /// dopo run parzialmente fallite.
+    /// </summary>
+    protected async Task PurgeCondominiumByCodeAsync(string code)
+    {
+        var cfg = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.IntegrationTest.json", optional: true)
+            .AddEnvironmentVariables("DOMUWAVE_TEST_")
+            .Build();
+        var connStr = cfg.GetConnectionString("sql-DomuWave")!;
+
+        await using var conn = new SqlConnection(connStr);
+        await conn.OpenAsync();
+
+        // Trova tutti i CondominiumId con quel codice (inclusi IsDeleted=1)
+        var condIds = new List<int>();
+        await using (var cmd = new SqlCommand(
+            "SELECT Id FROM Condominium WHERE Code = @code", conn))
+        {
+            cmd.Parameters.AddWithValue("@code", code);
+            await using var rdr = await cmd.ExecuteReaderAsync();
+            while (await rdr.ReadAsync()) condIds.Add(rdr.GetInt32(0));
+        }
+        if (condIds.Count == 0) return;
+
+        var ids = string.Join(",", condIds);
+
+        // Cascata derivata dalle FK reali (query su sys.foreign_keys). Foglie prima, radici dopo.
+        var fyIds  = $"SELECT FiscalYearId FROM FiscalYear WHERE CondominiumId IN ({ids})";
+        var budIds = $"SELECT Id FROM Budget WHERE CondominiumId IN ({ids})";
+        var expIds = $"SELECT Id FROM Expense WHERE CondominiumId IN ({ids})";
+        var unitIds = $"SELECT Id FROM RealEstateUnit WHERE CondominiumId IN ({ids})";
+        var instIds = $"SELECT Id FROM CondominiumInstallment WHERE CondominiumId IN ({ids})";
+        var coaIds  = $"SELECT Id FROM ChartOfAccounts WHERE CondominiumId IN ({ids})";
+        var mtIds   = $"SELECT Id FROM MillesimalTable WHERE CondominiumId IN ({ids})";
+        var ccIds   = $"SELECT Id FROM ConsumptionCharge WHERE FiscalYearId IN ({fyIds})";
+        var meterIds = $"SELECT Id FROM Meter WHERE RealEstateUnitId IN ({unitIds})";
+
+        var statements = new[]
+        {
+            // Foglie: dipendenti da ConsumptionCharge
+            $"DELETE FROM ConsumptionChargeItem WHERE ConsumptionChargeId IN ({ccIds})",
+            $"DELETE FROM ConsumptionReading    WHERE ChargeId IN ({ccIds})",
+            $"DELETE FROM ConsumptionReading    WHERE MeterId IN ({meterIds})",
+
+            // Foglie: dipendenti da Expense
+            $"DELETE FROM ExpenseAllocation     WHERE ExpenseId IN ({expIds})",
+
+            // ConsumptionCharge (dipende da Budget, Expense, FiscalYear)
+            $"DELETE FROM ConsumptionCharge     WHERE BudgetId    IN ({budIds})",
+            $"DELETE FROM ConsumptionCharge     WHERE ExpenseId   IN ({expIds})",
+            $"DELETE FROM ConsumptionCharge     WHERE FiscalYearId IN ({fyIds})",
+
+            // AccountBalance (dipende da FiscalYear e ChartOfAccounts)
+            $"DELETE FROM AccountBalance        WHERE FiscalYearId      IN ({fyIds})",
+            $"DELETE FROM AccountBalance        WHERE ChartOfAccountsId IN ({coaIds})",
+
+            // Fee e opening balance
+            $"DELETE FROM UnitOpeningBalance    WHERE FiscalYearId IN ({fyIds})",
+            $"DELETE FROM CondominiumFee        WHERE InstallmentId IN ({instIds})",
+            $"DELETE FROM CondominiumFee        WHERE UnitId        IN ({unitIds})",
+
+            // Budget items
+            $"DELETE FROM BudgetItem            WHERE BudgetId IN ({budIds})",
+
+            // Meter (dipende da RealEstateUnit)
+            $"DELETE FROM Meter                 WHERE RealEstateUnitId IN ({unitIds})",
+
+            // Livello medio
+            $"DELETE FROM CondominiumInstallment WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM Budget                 WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM Expense                WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM FiscalYear             WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM Payment                WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM Receipt                WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM UnitMillesimal         WHERE UnitId              IN ({unitIds})",
+            $"DELETE FROM UnitMillesimal         WHERE MillesimalTableId   IN ({mtIds})",
+            $"DELETE FROM UnitTenant             WHERE UnitId IN ({unitIds})",
+            $"DELETE FROM UnitOwner              WHERE UnitId IN ({unitIds})",
+
+            // ConsumptionType ha FK su ChartOfAccounts — deve precedere
+            $"DELETE FROM ConsumptionType        WHERE CondominiumId IN ({ids})",
+
+            // ChartOfAccounts (auto-FK padre-figlio: elimina figli prima)
+            $"DELETE FROM ChartOfAccounts        WHERE ParentAccountId IS NOT NULL AND CondominiumId IN ({ids})",
+            $"DELETE FROM ChartOfAccounts        WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM MillesimalTable        WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM SupplierContract       WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM Communication          WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM Document               WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM Message                WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM RealEstateUnit         WHERE CondominiumId IN ({ids})",
+
+            // Radici
+            $"DELETE FROM CondominiumCadastralData WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM CondominiumAddress        WHERE CondominiumId IN ({ids})",
+            $"DELETE FROM Condominium               WHERE Id IN ({ids})",
+        };
+
+        foreach (var sql in statements)
+        {
+            await using var cmd = new SqlCommand(sql, conn);
+            await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
     protected static async Task<string> ReadErrorAsync(HttpResponseMessage response)
     {
         try

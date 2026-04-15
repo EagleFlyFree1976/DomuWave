@@ -57,6 +57,33 @@ public class CreateBudgetItemCommandConsumer
         if (account == null)
             throw new NotFoundException("Conto non trovato.");
 
+        // Unicità (BudgetId, AccountId): se esiste già una voce per questo conto
+        // aggiorna importo e descrizione invece di creare un duplicato.
+        var existing = await session.Query<BudgetItem>()
+            .FirstOrDefaultAsync(x => x.Budget.Id  == budget.Id
+                                   && x.Account.Id == account.Id
+                                   && !x.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (existing != null)
+        {
+            existing.Name   = command.Dto.Description ?? existing.Name;
+            existing.Amount = command.Dto.Amount;
+            existing.Notes  = command.Dto.Notes ?? existing.Notes;
+            await _budgetItemService.UpdateAsync(existing, currentUser, cancellationToken).ConfigureAwait(false);
+
+            var allItemsUpd = await _budgetItemService
+                .GetByBudgetIdAsync(budget.Id, currentUser, cancellationToken).ConfigureAwait(false);
+            var parentIdsUpd = allItemsUpd.Where(i => i.Account?.ParentAccount != null)
+                .Select(i => i.Account.ParentAccount.Id).ToHashSet();
+            var leafItemsUpd = allItemsUpd.Where(i => i.Account != null && !parentIdsUpd.Contains(i.Account.Id)).ToList();
+            budget.TotalExpenses = leafItemsUpd.Where(i => i.Account.Type == ChartOfAccountsType.Uscita).Sum(i => i.Amount);
+            budget.TotalIncome   = leafItemsUpd.Where(i => i.Account.Type != ChartOfAccountsType.Uscita).Sum(i => i.Amount);
+            await _budgetService.UpdateAsync(budget, currentUser, cancellationToken).ConfigureAwait(false);
+
+            return existing.ToReadDto();
+        }
+
         var item = new BudgetItem
         {
             Budget      = budget,

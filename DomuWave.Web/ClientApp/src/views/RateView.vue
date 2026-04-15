@@ -27,10 +27,14 @@
         <option value="open">Aperte</option>
         <option value="overdue">Scadute</option>
       </select>
+      <div class="view-toggle">
+        <button class="btn btn-sm" :class="viewMode === 'by-installment' ? 'btn-primary' : 'btn-ghost'" @click="setViewMode('by-installment')" title="Per rata">Per rata</button>
+        <button class="btn btn-sm" :class="viewMode === 'by-unit' ? 'btn-primary' : 'btn-ghost'" @click="setViewMode('by-unit')" title="Per unità">Per unità</button>
+      </div>
     </div>
 
-    <!-- ── Tabella rate ────────────────────────────── -->
-    <div class="card">
+    <!-- ══ Vista: Per rata ══════════════════════════════════════ -->
+    <div v-if="viewMode === 'by-installment'" class="card">
       <div v-if="loadingInst" class="loading-state"><div class="spinner"></div></div>
       <div v-else-if="!installments.length" class="empty-state">
         <div class="empty-icon">◷</div>
@@ -152,6 +156,107 @@
                         <td class="mono text-right">{{ fmt(fees.reduce((s,f) => s + f.amountDue, 0)) }}</td>
                         <td class="mono text-right text-green">{{ fmt(fees.reduce((s,f) => s + f.amountPaid, 0)) }}</td>
                         <td class="mono text-right text-amber">{{ fmt(fees.reduce((s,f) => s + f.balance, 0)) }}</td>
+                        <td colspan="3"></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </td>
+              </tr>
+
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ Vista: Per unità ════════════════════════════════════ -->
+    <div v-else class="card">
+      <div v-if="loadingByUnit" class="loading-state"><div class="spinner"></div></div>
+      <div v-else-if="!unitGroups.length" class="empty-state">
+        <div class="empty-icon">◷</div>
+        <div>Nessuna quota trovata</div>
+      </div>
+      <div v-else class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:2rem"></th>
+              <th>Unità</th>
+              <th class="text-right">Dovuto</th>
+              <th class="text-right">Pagato</th>
+              <th class="text-right">Saldo</th>
+              <th>Stato</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template v-for="ug in unitGroups" :key="ug.unitId">
+
+              <!-- Riga unità -->
+              <tr
+                class="inst-row"
+                :class="{ 'inst-row--expanded': expandedUnitId === ug.unitId }"
+                @click="expandedUnitId = expandedUnitId === ug.unitId ? null : ug.unitId"
+              >
+                <td class="expand-cell">
+                  <span class="expand-icon">{{ expandedUnitId === ug.unitId ? '▾' : '▸' }}</span>
+                </td>
+                <td>
+                  <span class="unit-number">{{ ug.unitInternalNumber }}</span>
+                  <span v-if="ug.unitDisplayName" class="unit-display-name">{{ ug.unitDisplayName }}</span>
+                </td>
+                <td class="mono text-right">{{ fmt(ug.totalDue) }}</td>
+                <td class="mono text-right text-green">{{ fmt(ug.totalPaid) }}</td>
+                <td class="mono text-right" :class="ug.totalBalance > 0 ? 'text-amber' : 'text-green'">{{ fmt(ug.totalBalance) }}</td>
+                <td>
+                  <span v-if="ug.totalBalance <= 0" class="badge badge-green">Saldata</span>
+                  <span v-else-if="ug.hasOverdue" class="badge badge-red">In ritardo</span>
+                  <span v-else class="badge badge-amber">Aperta</span>
+                </td>
+              </tr>
+
+              <!-- Dettaglio per rata -->
+              <tr v-if="expandedUnitId === ug.unitId" class="fees-row">
+                <td colspan="6" class="fees-body">
+                  <div class="fees-header">
+                    <span class="fees-title">Quote per rata – {{ ug.unitInternalNumber }}{{ ug.unitDisplayName ? ` – ${ug.unitDisplayName}` : '' }}</span>
+                  </div>
+                  <table class="inner-table">
+                    <thead>
+                      <tr>
+                        <th>N° rata</th>
+                        <th>Scadenza</th>
+                        <th class="text-right">Dovuto</th>
+                        <th class="text-right">Pagato</th>
+                        <th class="text-right">Saldo</th>
+                        <th>Stato</th>
+                        <th>Data pagamento</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="f in ug.fees" :key="f.id">
+                        <td class="mono text-muted">{{ f.installmentNumber }}</td>
+                        <td class="mono text-secondary" style="font-size:0.82rem">{{ fmtDate(f.dueDate) }}</td>
+                        <td class="mono text-right">{{ fmt(f.amountDue) }}</td>
+                        <td class="mono text-right text-green">{{ fmt(f.amountPaid) }}</td>
+                        <td class="mono text-right" :class="f.balance > 0 ? 'text-amber' : 'text-green'">{{ fmt(f.balance) }}</td>
+                        <td><span class="badge" :class="feeBadge(f.paymentStatus)">{{ feeStatusLabel(f.paymentStatus) }}</span></td>
+                        <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(f.paymentDate) }}</td>
+                        <td>
+                          <div class="row-actions">
+                            <button v-if="canEdit" class="btn-icon" @click="openPayModal(f, f._installment)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
+                            <button v-if="canEdit" class="btn-icon" @click="openFeeModal(f, f._installment)" title="Modifica">✎</button>
+                            <button v-if="canDelete" class="btn-icon" @click="deleteFeeFromUnitView(f.id, ug.unitId)" style="color:var(--accent-red)">✕</button>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                    <tfoot>
+                      <tr class="fees-total-row">
+                        <td colspan="2" class="text-muted" style="font-size:0.8rem">Totale</td>
+                        <td class="mono text-right">{{ fmt(ug.totalDue) }}</td>
+                        <td class="mono text-right text-green">{{ fmt(ug.totalPaid) }}</td>
+                        <td class="mono text-right text-amber">{{ fmt(ug.totalBalance) }}</td>
                         <td colspan="3"></td>
                       </tr>
                     </tfoot>
@@ -336,6 +441,14 @@ const selectedFiscalYearId = computed({
   get: () => store.selectedFiscalYearId,
   set: (v) => { store.selectedFiscalYearId = v },
 })
+
+// ── Modalità visualizzazione ──────────────────────────────────
+const viewMode = ref('by-installment') // 'by-installment' | 'by-unit'
+
+function setViewMode(mode) {
+  viewMode.value = mode
+  if (mode === 'by-unit') loadByUnit()
+}
 
 // ── Filtro budget (da query param ?budgetId=) ─────────────────
 const budgetIdFilter = computed(() => route.query.budgetId ? Number(route.query.budgetId) : null)
@@ -530,13 +643,17 @@ async function saveFee() {
     }
     store.toast('Quota salvata', 'success')
     showFeeModal.value = false
-    // Ricarica le quote della rata aperta
-    const openId = expandedInstId.value
-    if (openId) {
-      expandedInstId.value = null
-      fees.value = []
-      const inst = installments.value.find(i => i.id === openId)
-      if (inst) await toggleInstExpand(inst)
+    if (viewMode.value === 'by-unit') {
+      await loadByUnit()
+    } else {
+      // Ricarica le quote della rata aperta
+      const openId = expandedInstId.value
+      if (openId) {
+        expandedInstId.value = null
+        fees.value = []
+        const inst = installments.value.find(i => i.id === openId)
+        if (inst) await toggleInstExpand(inst)
+      }
     }
   } catch { store.toast('Errore nel salvataggio', 'error') } finally { savingFee.value = false }
 }
@@ -551,13 +668,96 @@ async function deleteFee(id) {
   } catch { store.toast('Errore', 'error') }
 }
 
+// ── Vista per unità ───────────────────────────────────────────
+const allUnitFees    = ref([])   // tutte le fee di tutte le rate, arricchite con info rata
+const loadingByUnit  = ref(false)
+const expandedUnitId = ref(null)
+
+const unitGroups = computed(() => {
+  const map = new Map()
+  for (const f of allUnitFees.value) {
+    if (!map.has(f.unitId)) {
+      map.set(f.unitId, {
+        unitId:              f.unitId,
+        unitInternalNumber:  f.unitInternalNumber ?? String(f.unitId),
+        unitDisplayName:     f.unitDisplayName ?? '',
+        totalDue:            0,
+        totalPaid:           0,
+        totalBalance:        0,
+        hasOverdue:          false,
+        fees:                [],
+      })
+    }
+    const g = map.get(f.unitId)
+    g.totalDue     += f.amountDue     ?? 0
+    g.totalPaid    += f.amountPaid    ?? 0
+    g.totalBalance += f.balance       ?? 0
+    if (f.paymentStatus === 'Overdue') g.hasOverdue = true
+    g.fees.push(f)
+  }
+  return [...map.values()].sort((a, b) =>
+    a.unitInternalNumber.localeCompare(b.unitInternalNumber, 'it', { numeric: true })
+  )
+})
+
+async function loadByUnit() {
+  if (!store.selectedCondominioId) return
+  loadingByUnit.value = true
+  expandedUnitId.value = null
+  allUnitFees.value = []
+  try {
+    // Prima carica tutte le rate (riutilizza la lista già caricata se disponibile)
+    let insts = installments.value
+    if (!insts.length) {
+      let data
+      if (selectedFiscalYearId.value) {
+        ({ data } = await installmentApi.getByFiscalYear(store.selectedCondominioId, selectedFiscalYearId.value))
+      } else {
+        ({ data } = await installmentApi.getByCondominium(store.selectedCondominioId))
+      }
+      insts = data ?? []
+    }
+
+    // Carica le quote di ogni rata in parallelo
+    const results = await Promise.all(
+      insts.map(inst =>
+        feeApi.getByInstallment(inst.id)
+          .then(({ data }) => (data ?? []).map(f => ({
+            ...f,
+            installmentNumber: inst.installmentNumber,
+            dueDate:           inst.dueDate,
+            _installment:      inst,
+          })))
+          .catch(() => [])
+      )
+    )
+    allUnitFees.value = results.flat()
+  } finally {
+    loadingByUnit.value = false
+  }
+}
+
+async function deleteFeeFromUnitView(feeId, unitId) {
+  if (!confirm('Eliminare questa quota?')) return
+  try {
+    await feeApi.delete(feeId)
+    store.toast('Quota eliminata', 'success')
+    allUnitFees.value = allUnitFees.value.filter(f => f.id !== feeId)
+  } catch { store.toast('Errore', 'error') }
+}
+
 // ── Watchers / Init ───────────────────────────────────────────
 watch(() => store.selectedCondominioId, async () => {
   feeSummaries.value = {}
+  allUnitFees.value  = []
   // loadFiscalYears è gestito dal watch in appStore; attende che si aggiorni
   await loadInstallments()
+  if (viewMode.value === 'by-unit') await loadByUnit()
 })
-watch(() => [store.selectedFiscalYearId, instFilter.value, route.query.budgetId], loadInstallments)
+watch(() => [store.selectedFiscalYearId, instFilter.value, route.query.budgetId], async () => {
+  await loadInstallments()
+  if (viewMode.value === 'by-unit') await loadByUnit()
+})
 onMounted(async () => {
   if (!store.fiscalYears.length) await store.loadFiscalYears()
   await loadInstallments()
@@ -587,6 +787,24 @@ onMounted(async () => {
   gap: 0.75rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+}
+
+.view-toggle {
+  display: flex;
+  gap: 0;
+  margin-left: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.view-toggle .btn {
+  border-radius: 0;
+  border: none;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+}
+.view-toggle .btn + .btn {
+  border-left: 1px solid var(--border);
 }
 
 /* Riga rata cliccabile */

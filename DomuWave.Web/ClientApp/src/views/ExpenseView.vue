@@ -74,10 +74,20 @@
               <td>
                 <div class="row-actions">
                   <button v-if="canEdit && e.paymentStatusId !== 2" class="btn btn-sm btn-ghost"
-                          @click="markPaid(e.id)">Paga</button>
-                  <button v-if="canEdit" class="btn-icon" @click="openExpenseModal(e)">✎</button>
+                          :disabled="actionInProgress[`pay-${e.id}`]"
+                          @click="markPaid(e.id)">
+                    <span v-if="actionInProgress[`pay-${e.id}`]" class="spinner" style="width:12px;height:12px"></span>
+                    <span v-else>Paga</span>
+                  </button>
+                  <button v-if="canEdit" class="btn-icon"
+                          :disabled="actionInProgress[`pay-${e.id}`] || actionInProgress[`del-${e.id}`]"
+                          @click="openExpenseModal(e)">✎</button>
                   <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
-                          @click="deleteExpense(e.id)">✕</button>
+                          :disabled="actionInProgress[`del-${e.id}`]"
+                          @click="deleteExpense(e.id)">
+                    <span v-if="actionInProgress[`del-${e.id}`]" class="spinner" style="width:12px;height:12px"></span>
+                    <span v-else>✕</span>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -293,6 +303,7 @@ const showExpenseModal = ref(false)
 const editingExp       = ref(null)
 const savingExp        = ref(false)
 const expErrors        = ref({})
+const actionInProgress = ref({})
 
 // Filtro lato client: esercizio fiscale + testo (fornitore e descrizione)
 const filteredExpenses = computed(() => {
@@ -498,12 +509,16 @@ async function saveExpense() {
 }
 
 async function markPaid(id) {
-  try { await expenseApi.markAsPaid(id, today, 'BankTransfer'); await loadExpenses() } catch {}
+  actionInProgress.value[`pay-${id}`] = true
+  try { await expenseApi.markAsPaid(id, today, 'BankTransfer'); await loadExpenses() }
+  catch {} finally { actionInProgress.value[`pay-${id}`] = false }
 }
 
 async function deleteExpense(id) {
   if (!confirm('Eliminare questa spesa?')) return
-  try { await expenseApi.delete(id); await loadExpenses() } catch {}
+  actionInProgress.value[`del-${id}`] = true
+  try { await expenseApi.delete(id); await loadExpenses() }
+  catch {} finally { actionInProgress.value[`del-${id}`] = false }
 }
 
 // Ricalcola warning quando cambia la data di registrazione
