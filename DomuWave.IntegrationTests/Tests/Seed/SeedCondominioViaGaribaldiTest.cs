@@ -8,6 +8,7 @@ using DomuWave.Services.Dto.Contabilita.FiscalYear;
 using DomuWave.Services.Dto.MillesimalTable;
 using DomuWave.Services.Dto.RealEstateUnit;
 using DomuWave.Services.Dto.UnitMillesimal;
+using DomuWave.Services.Dto.UnitOpeningBalance;
 using DomuWave.Services.Dto.UnitOwner;
 using DomuWave.Services.Dto.UnitTenant;
 using DomuWave.Services.Models;
@@ -359,6 +360,21 @@ public class SeedCondominioViaGaribaldiTest(
         fyResp.StatusCode.Should().Be(HttpStatusCode.Created, await ReadErrorAsync(fyResp));
         var fyId = fy!.Id;
         output.WriteLine($"  Esercizio 2025 creato: id={fyId}");
+
+        // Saldi iniziali (tutti a zero — primo esercizio)
+        var allUnitIds = apIds.Values.Concat(boxIds.Values).ToList();
+        var bulkBalanceDto = new SetUnitOpeningBalancesBulkDto
+        {
+            FiscalYearId = fyId,
+            Items        = allUnitIds.Select(uid => new UnitOpeningBalanceItemDto
+            {
+                UnitId         = uid,
+                OpeningBalance = 0m,
+            }).ToList(),
+        };
+        var balResp = await Client.PutAsJsonAsync("/api/real-estate-units/opening-balances/bulk", bulkBalanceDto);
+        balResp.StatusCode.Should().Be(HttpStatusCode.NoContent, await ReadErrorAsync(balResp));
+        output.WriteLine($"  Saldi iniziali impostati (0 € × {allUnitIds.Count} unità).");
 
         // Apertura esercizio (Draft → Open)
         var openResp = await Client.PostAsJsonAsync($"/api/fiscal-years/{fyId}/open", new { });
