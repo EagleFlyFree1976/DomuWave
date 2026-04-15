@@ -250,7 +250,27 @@ public class GetConsuntivoDetailCommandConsumer
             });
         }
 
-        // ── 6. Vista per unità (pivot) ────────────────────────────────────────
+        // ── 6. Quote (rate) emesse per l'esercizio — aggregato per unità ────────
+        var feesByUnit = await session.Query<CondominiumFee>()
+            .Where(f => f.Installment.FiscalYear.Id == fiscalYearId && !f.IsDeleted)
+            .Select(f => new
+            {
+                UnitId     = f.Unit.Id,
+                AmountDue  = f.AmountDue,
+                AmountPaid = f.AmountPaid,
+                Balance    = f.Balance,
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var feesByUnitDict = feesByUnit
+            .GroupBy(f => f.UnitId)
+            .ToDictionary(
+                g => g.Key,
+                g => (Due: g.Sum(f => f.AmountDue), Paid: g.Sum(f => f.AmountPaid), Balance: g.Sum(f => f.Balance))
+            );
+
+        // ── 7. Vista per unità (pivot) ────────────────────────────────────────
         // Combina allocazioni da ExpenseAllocation e da ConsumptionChargeItem
         var allAllocRows = allocations
             .Select(a => new { a.UnitId, a.UnitName, a.AllocatedAmount,
@@ -262,16 +282,30 @@ public class GetConsuntivoDetailCommandConsumer
             .Select(ci => new { ci.UnitId, ci.UnitName, AllocatedAmount = ci.Amount, AccountId = 0 })
             .ToList();
 
-        var allUnitRows = allAllocRows.Concat(chargeAllocRows)
-            .GroupBy(a => a.UnitId)
-            .Select(ug =>
+        // Unisce tutte le unità: quelle con allocazioni + quelle con solo fee (senza spese ripartite)
+        var allUnitIds = allAllocRows.Select(a => a.UnitId)
+            .Concat(chargeAllocRows.Select(ci => ci.UnitId))
+            .Concat(feesByUnitDict.Keys)
+            .Distinct()
+            .ToList();
+
+        // Mappa unitId → nome (dalle allocazioni; per le unità senza allocazioni recupera dal dict fee)
+        var unitNameMap = allAllocRows.Select(a => new { a.UnitId, a.UnitName })
+            .Concat(chargeAllocRows.Select(ci => new { ci.UnitId, ci.UnitName }))
+            .GroupBy(x => x.UnitId)
+            .ToDictionary(g => g.Key, g => g.First().UnitName);
+
+        var allUnitRows = allUnitIds
+            .Select(unitId =>
             {
-                var uf = ug.First();
-                var entries = ug
+                var allocsForUnit = allAllocRows.Where(a => a.UnitId == unitId)
+                    .Concat(chargeAllocRows.Where(ci => ci.UnitId == unitId))
+                    .ToList();
+
+                var entries = allocsForUnit
                     .GroupBy(x => x.AccountId)
                     .Select(cg =>
                     {
-                        // Trova nome conto
                         var acct = accountGroups.FirstOrDefault(a => a.AccountId == cg.Key);
                         return new ConsuntivoUnitAccountEntryDto
                         {
@@ -284,12 +318,17 @@ public class GetConsuntivoDetailCommandConsumer
                     .OrderBy(e => e.AccountCode)
                     .ToList();
 
+                feesByUnitDict.TryGetValue(unitId, out var fees);
+
                 return new ConsuntivoUnitRowDto
                 {
-                    UnitId   = ug.Key,
-                    UnitName = uf.UnitName,
-                    Total    = ug.Sum(a => a.AllocatedAmount),
-                    Entries  = entries,
+                    UnitId    = unitId,
+                    UnitName  = unitNameMap.TryGetValue(unitId, out var n) ? n : $"Unità {unitId}",
+                    Total     = allocsForUnit.Sum(a => a.AllocatedAmount),
+                    AmountDue = fees.Due,
+                    AmountPaid = fees.Paid,
+                    Balance   = fees.Balance,
+                    Entries   = entries,
                 };
             })
             .OrderBy(u => u.UnitName)

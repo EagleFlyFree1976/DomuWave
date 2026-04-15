@@ -101,7 +101,10 @@
                   <span class="mono pivot-col-code">{{ acc.accountCode }}</span>
                   <span class="pivot-col-name">{{ acc.accountName }}</span>
                 </th>
-                <th class="text-right pivot-total-col">Totale</th>
+                <th class="text-right pivot-total-col">Spese ripartite</th>
+                <th class="text-right pivot-payment-col">Dovuto (rate)</th>
+                <th class="text-right pivot-payment-col">Pagato</th>
+                <th class="text-right pivot-payment-col">Saldo</th>
               </tr>
             </thead>
             <tbody>
@@ -111,6 +114,11 @@
                   {{ fmt(amountForUnit(unit, acc.accountId)) }}
                 </td>
                 <td class="mono text-right pivot-total-cell">{{ fmt(unit.total) }}</td>
+                <td class="mono text-right pivot-payment-cell">{{ fmt(unit.amountDue) }}</td>
+                <td class="mono text-right pivot-payment-cell text-green">{{ fmt(unit.amountPaid) }}</td>
+                <td class="mono text-right pivot-payment-cell" :class="unit.balance > 0 ? 'text-amber' : 'text-green'">
+                  {{ fmt(unit.balance) }}
+                </td>
               </tr>
             </tbody>
             <tfoot>
@@ -121,6 +129,15 @@
                 </td>
                 <td class="mono text-right pivot-total-cell">
                   {{ fmt(detail.units.reduce((s, u) => s + u.total, 0)) }}
+                </td>
+                <td class="mono text-right pivot-payment-cell">
+                  {{ fmt(detail.units.reduce((s, u) => s + (u.amountDue ?? 0), 0)) }}
+                </td>
+                <td class="mono text-right pivot-payment-cell text-green">
+                  {{ fmt(detail.units.reduce((s, u) => s + (u.amountPaid ?? 0), 0)) }}
+                </td>
+                <td class="mono text-right pivot-payment-cell" :class="detail.units.reduce((s, u) => s + (u.balance ?? 0), 0) > 0 ? 'text-amber' : 'text-green'">
+                  {{ fmt(detail.units.reduce((s, u) => s + (u.balance ?? 0), 0)) }}
                 </td>
               </tr>
             </tfoot>
@@ -279,5 +296,14 @@ onMounted(load)
 .unit-name-cell { font-weight: 500; position: sticky; left: 0; background: var(--bg-base); z-index: 1; }
 .pivot-total-col { background: var(--bg-surface); font-weight: 600; }
 .pivot-total-cell { font-weight: 600; color: var(--accent-red); }
+.pivot-payment-col {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+  border-left: 1px solid var(--border);
+}
+.pivot-payment-cell {
+  border-left: 1px solid var(--border-subtle, rgba(255,255,255,0.06));
+}
 .pivot-footer-row td { font-weight: 600; background: var(--bg-surface); border-top: 2px solid var(--border); }
+.text-green  { color: var(--accent-green, #22c55e); }
+.text-amber  { color: var(--accent-amber, #f59e0b); }
 </style>

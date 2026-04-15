@@ -47,7 +47,14 @@ public class ConsuntivoUnitRowDto
 {
     public int                                  UnitId       { get; set; }
     public string?                              UnitName     { get; set; }
+    /// <summary>Totale spese ripartite millesimalmente a questa unità.</summary>
     public decimal                              Total        { get; set; }
+    /// <summary>Somma degli AmountDue di tutte le quote (rate) emesse per questa unità nell'esercizio.</summary>
+    public decimal                              AmountDue    { get; set; }
+    /// <summary>Somma degli AmountPaid di tutte le quote pagate per questa unità nell'esercizio.</summary>
+    public decimal                              AmountPaid   { get; set; }
+    /// <summary>Saldo residuo (AmountDue - AmountPaid).</summary>
+    public decimal                              Balance      { get; set; }
     public List<ConsuntivoUnitAccountEntryDto>  Entries      { get; set; } = [];
 }
 
