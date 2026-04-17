@@ -36,6 +36,8 @@ public class GetInstallmentsByFiscalYearCommandConsumer : InMemoryConsumerBase<G
             .GetByFiscalYearIdAsync(command.CondominiumId, command.FiscalYearId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
-        return entities.Select(e => e.ToReadDto()).ToList();
+        var dtos = entities.Select(e => e.ToReadDto()).ToList();
+        await InstallmentFeeEnricher.EnrichAsync(session, dtos, cancellationToken).ConfigureAwait(false);
+        return dtos;
     }
 }

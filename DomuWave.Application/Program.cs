@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using Auth.Microservice;
 using Auth.Services;
+using QuestPDF.Infrastructure;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
@@ -18,6 +19,8 @@ using Serilog.Exceptions.Refit.Destructurers;
 
 IConfigurationRoot configuration;
 var NETCoreEnv = OxCore.ChangeEnvironments(args);
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 

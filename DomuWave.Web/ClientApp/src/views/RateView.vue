@@ -83,11 +83,15 @@
                   {{ fmtDate(inst.dueDate) }}
                 </td>
                 <td class="mono text-right">{{ fmt(inst.totalAmount) }}</td>
-                <td class="mono text-right text-green">{{ fmt(instSummary(inst.id)?.paid) }}</td>
-                <td class="mono text-right text-amber">{{ fmt(instSummary(inst.id)?.overdue) }}</td>
+                <td class="mono text-right text-green">{{ fmt(inst.totalPaid) }}</td>
+                <td class="mono text-right text-amber">{{ fmt(inst.totalOverdue) }}</td>
                 <td><span class="badge" :class="instBadge(inst.statusId)">{{ inst.statusName }}</span></td>
                 <td @click.stop>
                   <div class="row-actions">
+                    <button class="btn-icon" @click="downloadInstallmentNoticePdf(inst)" title="Scarica avviso PDF" :disabled="downloadingPdf === inst.id">
+                      <span v-if="downloadingPdf === inst.id" class="spinner" style="width:12px;height:12px"></span>
+                      <span v-else>⬇</span>
+                    </button>
                     <button v-if="canEdit" class="btn-icon" @click="openInstModal(inst)" title="Modifica">✎</button>
                     <button v-if="canDelete" class="btn-icon" @click="deleteInst(inst.id)" style="color:var(--accent-red)" title="Elimina">✕</button>
                   </div>
@@ -186,6 +190,7 @@
               <th class="text-right">Pagato</th>
               <th class="text-right">Saldo</th>
               <th>Stato</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -212,11 +217,19 @@
                   <span v-else-if="ug.hasOverdue" class="badge badge-red">In ritardo</span>
                   <span v-else class="badge badge-amber">Aperta</span>
                 </td>
+                <td @click.stop>
+                  <div class="row-actions">
+                    <button class="btn-icon" @click="downloadUnitNoticePdf(ug)" title="Scarica avviso PDF" :disabled="downloadingPdf === ug.unitId">
+                      <span v-if="downloadingPdf === ug.unitId" class="spinner" style="width:12px;height:12px"></span>
+                      <span v-else>⬇</span>
+                    </button>
+                  </div>
+                </td>
               </tr>
 
               <!-- Dettaglio per rata -->
               <tr v-if="expandedUnitId === ug.unitId" class="fees-row">
-                <td colspan="6" class="fees-body">
+                <td colspan="7" class="fees-body">
                   <div class="fees-header">
                     <span class="fees-title">Quote per rata – {{ ug.unitInternalNumber }}{{ ug.unitDisplayName ? ` – ${ug.unitDisplayName}` : '' }}</span>
                   </div>
@@ -472,14 +485,6 @@ const expandedInstId = ref(null)
 const fees           = ref([])
 const loadingFees    = ref(false)
 
-// Riepilogo importi per rata (calcolati dalle fee caricate)
-// mappa instId → { paid, overdue }
-const feeSummaries = ref({})
-
-function instSummary(instId) {
-  return feeSummaries.value[instId] ?? null
-}
-
 // ── Quote ─────────────────────────────────────────────────────
 const showFeeModal   = ref(false)
 const feeModalMode   = ref('create') // 'create' | 'edit' | 'pay'
@@ -498,11 +503,13 @@ const feeBadge  = (s)  => ({ ToPay: 'badge-amber', Paid: 'badge-green', Overdue:
 const feeStatusLabel = (s) => ({ ToPay: 'Da pagare', Paid: 'Pagata', Overdue: 'Scaduta', PartiallyPaid: 'Parz. pagata' }[s] || s)
 
 // ── Caricamento rate ──────────────────────────────────────────
-async function loadInstallments() {
+async function loadInstallments(preserveExpanded = false) {
   if (!store.selectedCondominioId) return
   loadingInst.value = true
-  expandedInstId.value = null
-  fees.value = []
+  if (!preserveExpanded) {
+    expandedInstId.value = null
+    fees.value = []
+  }
   try {
     let data
     if (budgetIdFilter.value) {
@@ -533,10 +540,6 @@ async function toggleInstExpand(inst) {
   try {
     const { data } = await feeApi.getByInstallment(inst.id)
     fees.value = data ?? []
-    // Calcola e memorizza i totali per questa rata
-    const paid    = fees.value.reduce((s, f) => s + (f.amountPaid ?? 0), 0)
-    const overdue = fees.value.filter(f => f.paymentStatus === 'Overdue').reduce((s, f) => s + (f.balance ?? 0), 0)
-    feeSummaries.value = { ...feeSummaries.value, [inst.id]: { paid, overdue } }
   } catch { fees.value = [] } finally { loadingFees.value = false }
 }
 
@@ -644,10 +647,13 @@ async function saveFee() {
     store.toast('Quota salvata', 'success')
     showFeeModal.value = false
     if (viewMode.value === 'by-unit') {
+      const openUnitId = expandedUnitId.value
       await loadByUnit()
+      expandedUnitId.value = openUnitId
     } else {
-      // Ricarica le quote della rata aperta
+      // Ricarica le rate (aggiorna totalPaid/totalOverdue in testata) preservando l'espansione
       const openId = expandedInstId.value
+      await loadInstallments(true)
       if (openId) {
         expandedInstId.value = null
         fees.value = []
@@ -663,8 +669,14 @@ async function deleteFee(id) {
   try {
     await feeApi.delete(id)
     store.toast('Quota eliminata', 'success')
-    // Ricarica le quote
-    fees.value = fees.value.filter(f => f.id !== id)
+    const openId = expandedInstId.value
+    await loadInstallments(true)
+    if (openId) {
+      expandedInstId.value = null
+      fees.value = []
+      const inst = installments.value.find(i => i.id === openId)
+      if (inst) await toggleInstExpand(inst)
+    }
   } catch { store.toast('Errore', 'error') }
 }
 
@@ -746,9 +758,42 @@ async function deleteFeeFromUnitView(feeId, unitId) {
   } catch { store.toast('Errore', 'error') }
 }
 
+// ── Download PDF ──────────────────────────────────────────────
+const downloadingPdf = ref(null)  // installmentId or unitId while downloading
+
+function triggerBlobDownload(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+async function downloadInstallmentNoticePdf(inst) {
+  downloadingPdf.value = inst.id
+  try {
+    const { data } = await feeApi.getInstallmentBatchNoticePdf(inst.id)
+    triggerBlobDownload(data, `avviso-rata-${inst.installmentNumber}.pdf`)
+  } catch { store.toast('Errore nel download del PDF', 'error') }
+  finally { downloadingPdf.value = null }
+}
+
+async function downloadUnitNoticePdf(ug) {
+  if (!selectedFiscalYearId.value) {
+    store.toast('Seleziona un esercizio fiscale per scaricare l\'avviso', 'error')
+    return
+  }
+  downloadingPdf.value = ug.unitId
+  try {
+    const { data } = await feeApi.getUnitNoticePdf(ug.unitId, selectedFiscalYearId.value)
+    triggerBlobDownload(data, `avviso-unita-${ug.unitInternalNumber}.pdf`)
+  } catch { store.toast('Errore nel download del PDF', 'error') }
+  finally { downloadingPdf.value = null }
+}
+
 // ── Watchers / Init ───────────────────────────────────────────
 watch(() => store.selectedCondominioId, async () => {
-  feeSummaries.value = {}
   allUnitFees.value  = []
   // loadFiscalYears è gestito dal watch in appStore; attende che si aggiorni
   await loadInstallments()

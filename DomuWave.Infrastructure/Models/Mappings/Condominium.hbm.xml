@@ -41,6 +41,14 @@
     <property name="InstallmentDueDay" column="InstallmentDueDay" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
 
+    <property name="Iban"              column="Iban"              type="String" length="34" />
+    <property name="BankAccountHolder" column="BankAccountHolder" type="String" length="200" />
+    <property name="BankName"          column="BankName"          type="String" length="100" />
+
+    <property name="AdministratorName"  column="AdministratorName"  type="String" length="200" />
+    <property name="AdministratorPhone" column="AdministratorPhone" type="String" length="30" />
+    <property name="AdministratorEmail" column="AdministratorEmail" type="String" length="255" />
+
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
     <property name="LastUpdatedBy" column="LastUpdatedById" type="Int32" />

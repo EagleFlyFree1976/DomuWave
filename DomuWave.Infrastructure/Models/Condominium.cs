@@ -32,6 +32,16 @@ namespace DomuWave.Services.Models
         public virtual int InstallmentDueDay { get; set; }
         public virtual bool IsActive { get; set; }
 
+        // ── Dati bancari ──────────────────────────────────────────────────────────
+        public virtual string Iban               { get; set; }
+        public virtual string BankAccountHolder  { get; set; }
+        public virtual string BankName           { get; set; }
+
+        // ── Amministratore ────────────────────────────────────────────────────────
+        public virtual string AdministratorName  { get; set; }
+        public virtual string AdministratorPhone { get; set; }
+        public virtual string AdministratorEmail { get; set; }
+
         public virtual CondominiumAddress Address { get; set; }
         public virtual CondominiumCadastralData CadastralData { get; set; }
         public virtual IList<RealEstateUnit> Units { get; set; } = new List<RealEstateUnit>();

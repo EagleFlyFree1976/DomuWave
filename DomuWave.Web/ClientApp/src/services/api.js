@@ -289,6 +289,8 @@ export const feeApi = {
   recordPayment:      (feeId, amount, paymentDate, paymentMethod) => api.patch(`/condominium-fees/${feeId}/pay`, { amount, paymentDate, paymentMethod }),
   create:             (data)          => api.post('/condominium-fees', data),
   delete:             (id)            => api.delete(`/condominium-fees/${id}`),
+  getUnitNoticePdf:   (unitId, fiscalYearId) => api.get(`/condominium-fees/unit-notice/${unitId}/fiscal-year/${fiscalYearId}/pdf`, { responseType: 'blob' }),
+  getInstallmentBatchNoticePdf: (installmentId) => api.get(`/condominium-fees/installment-notice/${installmentId}/pdf`, { responseType: 'blob' }),
 }
 
 // ─── Tabelle Millesimali ───────────────────────────────────────

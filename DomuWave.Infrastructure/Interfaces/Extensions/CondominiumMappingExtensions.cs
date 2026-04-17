@@ -44,6 +44,12 @@ public static class CondominiumMappingExtensions
             IsActive             = condominium.IsActive,
             Notes                = condominium.Description,
             Address              = condominium.Address?.ToAddressDto(),
+            Iban                 = condominium.Iban,
+            BankAccountHolder    = condominium.BankAccountHolder,
+            BankName             = condominium.BankName,
+            AdministratorName    = condominium.AdministratorName,
+            AdministratorPhone   = condominium.AdministratorPhone,
+            AdministratorEmail   = condominium.AdministratorEmail,
         };
 
         dto.SetTraceInfo(condominium);
@@ -104,6 +110,12 @@ public static class CondominiumMappingExtensions
             Description          = dto.Notes,
             IsActive             = dto.IsActive,
             Tenant               = tenant,
+            Iban                 = dto.Iban,
+            BankAccountHolder    = dto.BankAccountHolder,
+            BankName             = dto.BankName,
+            AdministratorName    = dto.AdministratorName,
+            AdministratorPhone   = dto.AdministratorPhone,
+            AdministratorEmail   = dto.AdministratorEmail,
         };
 
         if (dto.Address != null)
@@ -155,6 +167,12 @@ public static class CondominiumMappingExtensions
         entity.InstallmentDueDay    = dto.InstallmentDueDay;
         entity.Description          = dto.Notes;
         entity.IsActive             = dto.IsActive;
+        entity.Iban                 = dto.Iban;
+        entity.BankAccountHolder    = dto.BankAccountHolder;
+        entity.BankName             = dto.BankName;
+        entity.AdministratorName    = dto.AdministratorName;
+        entity.AdministratorPhone   = dto.AdministratorPhone;
+        entity.AdministratorEmail   = dto.AdministratorEmail;
 
         entity.Address ??= new CondominiumAddress();
         entity.Address.Street       = dto.Address?.Street;

@@ -4,7 +4,6 @@ using DomuWave.IntegrationTests.Infrastructure;
 using DomuWave.Services.Dto.Budget;
 using DomuWave.Services.Dto.ChartOfAccounts;
 using DomuWave.Services.Dto.Condominium;
-using DomuWave.Services.Dto.CondominiumInstallment;
 using DomuWave.Services.Dto.Contabilita.FiscalYear;
 using DomuWave.Services.Dto.Expense;
 using DomuWave.Services.Dto.MillesimalTable;
@@ -471,73 +470,12 @@ public class SeedCondominioLaQuerciaTest(
         approvaConsResp.StatusCode.Should().Be(HttpStatusCode.NoContent, await ReadErrorAsync(approvaConsResp));
         output.WriteLine("  Consuntivo 2024 approvato.");
 
-        // ── 9. Rate condominiali (4 trimestrali) ──────────────────────────────
-        // Totale anno: 12.400 € preventivo — Q1=Q2=30%, Q3=Q4=20%
-        var installments = new[]
-        {
-            (1, "1ª Rata 2024", new DateTime(2024, 3, 15),  3720.00m),
-            (2, "2ª Rata 2024", new DateTime(2024, 6, 15),  3720.00m),
-            (3, "3ª Rata 2024", new DateTime(2024, 9, 15),  2480.00m),
-            (4, "4ª Rata 2024", new DateTime(2024, 12, 15), 2480.00m),
-        };
+        // ── 9. Rate e quote ────────────────────────────────────────────────────
+        // Le rate e le fee per unità vengono generate automaticamente dall'approvazione
+        // del preventivo (ApproveBudgetCommandConsumer). Non servono passi aggiuntivi.
+        output.WriteLine("  Rate e fee generate automaticamente dall'approvazione preventivo.");
 
-        var installmentIds = new int[4];
-        for (int i = 0; i < installments.Length; i++)
-        {
-            var (num, desc, dueDate, total) = installments[i];
-            var dto = new CreateCondominiumInstallmentDto
-            {
-                CondominiumId      = condId,
-                BudgetId           = budPrevId,
-                FiscalYearId       = fyId,
-                InstallmentNumber  = num,
-                Notes              = desc,
-                DueDate            = dueDate,
-                TotalAmount        = total,
-            };
-            var (r, inst) = await PostAsync<CondominiumInstallmentReadDto>("/api/condominium-installments", dto);
-            r.StatusCode.Should().Be(HttpStatusCode.Created, $"rata {num}");
-            installmentIds[i] = inst!.Id;
-        }
-        output.WriteLine("  Rate create (4).");
-
-        // ── 10. Quote per unità (CondominiumFee) ─────────────────────────────
-        // Millesimi TMG degli appartamenti:
-        //   A01=99.7888, A02=129.1289, A03=105.6680
-        //   B01=76.3088, B02=140.8924, B03=111.5483
-        //   C01=93.9228, C02=70.4421,  C03=?  (aggiustato)
-        // Morosità:
-        //   B01 (Galli): Q4 non pagata
-        //   C03 (Greco): Q3+Q4 non pagate
-
-        // (apKey, [Q1paid, Q2paid, Q3paid, Q4paid]) — pagamenti
-        // Importi rate: quota_unità = totale_rata * millesimi / 1000
-        // Per semplicità inseriamo le fee con le quote calcolate sui millesimi TMG effettivi.
-        // Il calcolo esatto è fatto dall'endpoint create-fees o manualmente qui.
-        // Usiamo l'endpoint di generazione automatica rate per unità se esiste,
-        // altrimenti inseriamo manualmente le fee principali.
-
-        // Tentiamo la generazione automatica delle fee da ogni rata
-        foreach (var instId in installmentIds)
-        {
-            var genResp = await Client.PostAsJsonAsync(
-                $"/api/condominium-installments/{instId}/generate-fees", new { });
-            // Se l'endpoint non esiste (404) continuiamo senza errore
-            if (genResp.StatusCode != HttpStatusCode.NotFound)
-                genResp.IsSuccessStatusCode.Should().BeTrue(
-                    $"generazione fee rata id={instId}: {await genResp.Content.ReadAsStringAsync()}");
-        }
-        output.WriteLine("  Fee generate per tutte le rate.");
-
-        // Registriamo i pagamenti ricevuti (tutte tranne morosità)
-        // B01-Galli: Q4 (instId[3]) — non pagata → nessun pagamento
-        // C03-Greco: Q3 (instId[2]) e Q4 (instId[3]) — non pagate → nessun pagamento
-        // Per gli altri: tutti pagati → registriamo il pagamento tramite API se disponibile
-        // (questo step è opzionale/best-effort: le fee sono già create con AmountDue corretto)
-
-        output.WriteLine("  (Pagamenti registrati via generate-fees; morosità: Galli Q4, Greco Q3+Q4)");
-
-        // ── 11. Spese reali 2024 ──────────────────────────────────────────────
+        // ── 10. Spese reali 2024 ─────────────────────────────────────────────
         var suppliers = new Dictionary<string, int>();
 
         // Crea fornitori

@@ -1,3 +1,4 @@
+using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.CondominiumFee;
@@ -7,7 +8,6 @@ using DomuWave.Services.Dto.CondominiumInstallment;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
-using CPQ.Core.Extensions;
 namespace DomuWave.Microservice.Controllers;
 
 // ─── CondominiumFees ─────────────────────────────────────────────────────────
@@ -89,6 +89,24 @@ public class CondominiumFeesController(
         var deleted = await _mediator.GetResponse(new DeleteCondominiumFeeCommand(CurrentUser.Id, id), ct);
         if (!deleted) return NotFound();
         return NoContent();
+    }
+
+    [HttpGet("unit-notice/{unitId:int}/fiscal-year/{fiscalYearId:int}/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), 200)]
+    public async Task<IActionResult> GetUnitPaymentNoticePdf(int unitId, int fiscalYearId, CancellationToken ct)
+    {
+        var bytes = await _mediator.GetResponse(
+            new GetUnitPaymentNoticeCommand(CurrentUser.Id, unitId, fiscalYearId), ct);
+        return File(bytes, "application/pdf", $"avviso-pagamento-unita-{unitId}.pdf");
+    }
+
+    [HttpGet("installment-notice/{installmentId:int}/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), 200)]
+    public async Task<IActionResult> GetInstallmentBatchNoticePdf(int installmentId, CancellationToken ct)
+    {
+        var bytes = await _mediator.GetResponse(
+            new GetInstallmentBatchNoticeCommand(CurrentUser.Id, installmentId), ct);
+        return File(bytes, "application/pdf", $"avviso-pagamento-rata-{installmentId}.pdf");
     }
 }
 

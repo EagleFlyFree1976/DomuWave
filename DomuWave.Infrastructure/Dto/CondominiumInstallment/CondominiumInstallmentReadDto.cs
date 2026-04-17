@@ -16,4 +16,8 @@ public class CondominiumInstallmentReadDto : TraceEntityDTO<int>
     public int      StatusId          { get; set; }
     public string   StatusName        { get; set; } = string.Empty;
     public string?  Notes             { get; set; }
+    /// <summary>Somma degli AmountPaid di tutte le quote della rata.</summary>
+    public decimal  TotalPaid         { get; set; }
+    /// <summary>Somma del Balance delle quote in stato Overdue.</summary>
+    public decimal  TotalOverdue      { get; set; }
 }

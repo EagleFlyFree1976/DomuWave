@@ -34,4 +34,14 @@ public class UpdateCondominiumDto
     public string Notes { get; set; }
     public bool IsActive { get; set; }
     public CondominiumAddressDto Address { get; set; }
+
+    // ── Dati bancari ──────────────────────────────────────────────────────────
+    public string? Iban               { get; set; }
+    public string? BankAccountHolder  { get; set; }
+    public string? BankName           { get; set; }
+
+    // ── Amministratore ────────────────────────────────────────────────────────
+    public string? AdministratorName  { get; set; }
+    public string? AdministratorPhone { get; set; }
+    public string? AdministratorEmail { get; set; }
 }

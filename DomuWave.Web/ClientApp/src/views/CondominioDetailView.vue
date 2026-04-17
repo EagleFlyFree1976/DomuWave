@@ -76,6 +76,38 @@
           </dl>
         </div>
 
+        <!-- Dati bancari -->
+        <div class="card" v-if="condominio.iban || condominio.bankAccountHolder || condominio.bankName">
+          <div class="card-header"><h2>Dati bancari</h2></div>
+          <dl class="info-list">
+            <div class="info-row" v-if="condominio.iban">
+              <dt>IBAN</dt><dd class="mono">{{ condominio.iban }}</dd>
+            </div>
+            <div class="info-row" v-if="condominio.bankAccountHolder">
+              <dt>Intestatario</dt><dd>{{ condominio.bankAccountHolder }}</dd>
+            </div>
+            <div class="info-row" v-if="condominio.bankName">
+              <dt>Banca</dt><dd>{{ condominio.bankName }}</dd>
+            </div>
+          </dl>
+        </div>
+
+        <!-- Amministratore -->
+        <div class="card" v-if="condominio.administratorName || condominio.administratorPhone || condominio.administratorEmail">
+          <div class="card-header"><h2>Amministratore</h2></div>
+          <dl class="info-list">
+            <div class="info-row" v-if="condominio.administratorName">
+              <dt>Nome</dt><dd>{{ condominio.administratorName }}</dd>
+            </div>
+            <div class="info-row" v-if="condominio.administratorPhone">
+              <dt>Telefono</dt><dd>{{ condominio.administratorPhone }}</dd>
+            </div>
+            <div class="info-row" v-if="condominio.administratorEmail">
+              <dt>Email</dt><dd>{{ condominio.administratorEmail }}</dd>
+            </div>
+          </dl>
+        </div>
+
         <!-- Indirizzo -->
         <div class="card">
           <div class="card-header"><h2>Indirizzo</h2></div>
@@ -277,6 +309,42 @@
               <div class="form-group">
                 <label class="form-label">Nazione (cod. ISO)</label>
                 <input class="form-input" v-model="form.address.country" placeholder="IT" maxlength="2" style="text-transform:uppercase" />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-fieldset">
+            <legend class="form-fieldset-legend">Dati bancari</legend>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column:span 2">
+                <label class="form-label">IBAN</label>
+                <input class="form-input" v-model="form.iban" placeholder="IT60 X054 2811 1010 0000 0123 456" maxlength="34" style="font-family:monospace" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Intestatario conto</label>
+                <input class="form-input" v-model="form.bankAccountHolder" placeholder="Condominio Via Roma" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Banca</label>
+                <input class="form-input" v-model="form.bankName" placeholder="Banca Esempio S.p.A." />
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="form-fieldset">
+            <legend class="form-fieldset-legend">Amministratore</legend>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column:span 2">
+                <label class="form-label">Nome e cognome</label>
+                <input class="form-input" v-model="form.administratorName" placeholder="Mario Rossi" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Telefono</label>
+                <input class="form-input" v-model="form.administratorPhone" placeholder="+39 02 1234567" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input class="form-input" type="email" v-model="form.administratorEmail" placeholder="admin@studio.it" />
               </div>
             </div>
           </fieldset>
