@@ -16,7 +16,46 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
 	ProjectSection(SolutionItems) = preProject
 		docs\migrations\add_account_balance.sql = docs\migrations\add_account_balance.sql
+		docs\migrations\add_account_balance_totalbalance_rounding.sql = docs\migrations\add_account_balance_totalbalance_rounding.sql
+		docs\migrations\add_budgetitem_account_snapshot.sql = docs\migrations\add_budgetitem_account_snapshot.sql
+		docs\migrations\add_budgetitem_amount_paid.sql = docs\migrations\add_budgetitem_amount_paid.sql
 		docs\migrations\add_chargeability_type.sql = docs\migrations\add_chargeability_type.sql
+		docs\migrations\add_chart_of_accounts_category.sql = docs\migrations\add_chart_of_accounts_category.sql
+		docs\migrations\add_chart_of_accounts_category_template.sql = docs\migrations\add_chart_of_accounts_category_template.sql
+		docs\migrations\add_chart_of_accounts_template.sql = docs\migrations\add_chart_of_accounts_template.sql
+		docs\migrations\add_chart_of_accounts_template_isdefault.sql = docs\migrations\add_chart_of_accounts_template_isdefault.sql
+		docs\migrations\add_consumption.sql = docs\migrations\add_consumption.sql
+		docs\migrations\add_consumptiontype_account_fk.sql = docs\migrations\add_consumptiontype_account_fk.sql
+		docs\migrations\add_consumption_reading_charge_fk.sql = docs\migrations\add_consumption_reading_charge_fk.sql
+		docs\migrations\add_expense_fiscalyear_fk.sql = docs\migrations\add_expense_fiscalyear_fk.sql
+		docs\migrations\add_fiscalyear_previous_fiscalyear.sql = docs\migrations\add_fiscalyear_previous_fiscalyear.sql
+		docs\migrations\add_isenabled_to_millesimaltable.sql = docs\migrations\add_isenabled_to_millesimaltable.sql
+		docs\migrations\add_millesimal_table_isdraft.sql = docs\migrations\add_millesimal_table_isdraft.sql
+		docs\migrations\add_unit_opening_balance.sql = docs\migrations\add_unit_opening_balance.sql
+		docs\migrations\align_hibernate_unique_key_from_hbm.sql = docs\migrations\align_hibernate_unique_key_from_hbm.sql
+		docs\migrations\alter_unit_opening_balance_add_closing.sql = docs\migrations\alter_unit_opening_balance_add_closing.sql
+		docs\migrations\alter_unit_opening_balance_morosita.sql = docs\migrations\alter_unit_opening_balance_morosita.sql
+		docs\migrations\chart_of_accounts_allocation.sql = docs\migrations\chart_of_accounts_allocation.sql
+		docs\migrations\condominium_fee.sql = docs\migrations\condominium_fee.sql
+		docs\migrations\condominium_installment_status_lookup.sql = docs\migrations\condominium_installment_status_lookup.sql
+		docs\migrations\convert_all_datetime_to_datetime2.sql = docs\migrations\convert_all_datetime_to_datetime2.sql
+		docs\migrations\dynamic_file_repository.sql = docs\migrations\dynamic_file_repository.sql
+		docs\migrations\fiscal_year_status_lookup.sql = docs\migrations\fiscal_year_status_lookup.sql
+		docs\migrations\fix_all_datetime_to_datetime2.sql = docs\migrations\fix_all_datetime_to_datetime2.sql
+		docs\migrations\fix_chartofaccounts_datetime.sql = docs\migrations\fix_chartofaccounts_datetime.sql
+		docs\migrations\fix_consumption_reading_unique_constraint.sql = docs\migrations\fix_consumption_reading_unique_constraint.sql
+		docs\migrations\fix_millesimaltable_unique_index_soft_delete.sql = docs\migrations\fix_millesimaltable_unique_index_soft_delete.sql
+		docs\migrations\real_estate_unit_display_name.sql = docs\migrations\real_estate_unit_display_name.sql
+		docs\migrations\real_estate_unit_inhabitants.sql = docs\migrations\real_estate_unit_inhabitants.sql
+		docs\migrations\recreate_condominium_installment.sql = docs\migrations\recreate_condominium_installment.sql
+		docs\migrations\seed_chart_of_accounts_template_per_tenant.sql = docs\migrations\seed_chart_of_accounts_template_per_tenant.sql
+		docs\migrations\vzcondominio_fix_mapping_deleted_condominium.sql = docs\migrations\vzcondominio_fix_mapping_deleted_condominium.sql
+		docs\migrations\vzcondominio_migration_stage0.sql = docs\migrations\vzcondominio_migration_stage0.sql
+		docs\migrations\vzcondominio_migration_stage0_foundation_procedure.sql = docs\migrations\vzcondominio_migration_stage0_foundation_procedure.sql
+		docs\migrations\vzcondominio_migration_stage0_load_staging.sql = docs\migrations\vzcondominio_migration_stage0_load_staging.sql
+		docs\migrations\vzcondominio_migration_stage1_masterdata.sql = docs\migrations\vzcondominio_migration_stage1_masterdata.sql
+		docs\migrations\vzcondominio_migration_stage2_financials.sql = docs\migrations\vzcondominio_migration_stage2_financials.sql
+		docs\migrations\vzcondominio_migration_step_procedures.sql = docs\migrations\vzcondominio_migration_step_procedures.sql
 	EndProjectSection
 EndProject
 Global
