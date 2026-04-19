@@ -15,7 +15,8 @@ namespace DomuWave.Services.Models
         public virtual string PaymentStatus { get; set; }
         public virtual DateTime? PaymentDate { get; set; }
         public virtual string PaymentMethod { get; set; }
-        public virtual string Notes { get; set; }
+        public virtual string Notes        { get; set; }
+        public virtual string PaymentCode  { get; set; } = string.Empty;
 
         public virtual IList<Receipt> Receipts { get; set; } = new List<Receipt>();
         public override int GetHashCode()

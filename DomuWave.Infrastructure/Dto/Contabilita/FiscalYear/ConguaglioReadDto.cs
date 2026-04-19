@@ -28,30 +28,36 @@ public class ConguaglioReadDto
 }
 
 /// <summary>
-/// Riga di conguaglio per una singola unità immobiliare.
+/// Riga di conguaglio: può rappresentare una singola unità o un gruppo di fatturazione.
+/// Se IsGroup == true, DisplayName è il nome del gruppo e Units contiene le righe delle singole unità.
 /// </summary>
 public class ConguaglioUnitItemDto
 {
-    public int     UnitId            { get; set; }
-    public string  UnitInternalNumber { get; set; }
-    public string  UnitDescription   { get; set; }
+    /// <summary>Id dell'unità (0 se IsGroup == true).</summary>
+    public int     UnitId             { get; set; }
+    public string  UnitInternalNumber { get; set; } = string.Empty;
+    public string  UnitDescription    { get; set; } = string.Empty;
 
-    /// <summary>Millesimi dell'unità nella tabella millesimale usata.</summary>
-    public decimal Millesimal        { get; set; }
+    /// <summary>True se questa riga aggrega più unità tramite un BillingGroup.</summary>
+    public bool    IsGroup            { get; set; }
+    public int?    BillingGroupId     { get; set; }
+    public string? BillingGroupName   { get; set; }
+
+    /// <summary>Millesimi dell'unità (o somma del gruppo).</summary>
+    public decimal Millesimal         { get; set; }
 
     /// <summary>Quota consuntiva: TotalExpenses * Millesimal / TotalMillesimal.</summary>
-    public decimal QuotaConsuntiva   { get; set; }
+    public decimal QuotaConsuntiva    { get; set; }
 
-    /// <summary>Totale già pagato dall'unità sulle rate del preventivo.</summary>
-    public decimal AlreadyPaid       { get; set; }
+    /// <summary>Totale già pagato sulle rate del preventivo.</summary>
+    public decimal AlreadyPaid        { get; set; }
 
-    /// <summary>
-    /// Saldo = QuotaConsuntiva - AlreadyPaid.
-    /// Positivo = deve ancora pagare (conguaglio a debito).
-    /// Negativo = ha pagato troppo (conguaglio a credito).
-    /// </summary>
-    public decimal Saldo             { get; set; }
+    /// <summary>Saldo = QuotaConsuntiva - AlreadyPaid. Positivo = debito; negativo = credito.</summary>
+    public decimal Saldo              { get; set; }
 
     /// <summary>"Debit" | "Credit" | "Even"</summary>
-    public string  SaldoType         { get; set; }
+    public string  SaldoType          { get; set; } = string.Empty;
+
+    /// <summary>Sotto-righe delle singole unità quando IsGroup == true.</summary>
+    public IList<ConguaglioUnitItemDto> Units { get; set; } = new List<ConguaglioUnitItemDto>();
 }

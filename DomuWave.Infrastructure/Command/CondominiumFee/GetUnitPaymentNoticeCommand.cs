@@ -20,3 +20,21 @@ public class GetUnitPaymentNoticeCommand : BaseCommand, IQuery<byte[]>
         FiscalYearId = fiscalYearId;
     }
 }
+
+/// <summary>
+/// Genera il PDF dell'avviso di pagamento per una singola unità limitato a una singola rata.
+/// </summary>
+public class GetUnitInstallmentPaymentNoticeCommand : BaseCommand, IQuery<byte[]>
+{
+    public int UnitId         { get; set; }
+    public int InstallmentId  { get; set; }
+
+    public GetUnitInstallmentPaymentNoticeCommand() { }
+
+    public GetUnitInstallmentPaymentNoticeCommand(int currentUserId, int unitId, int installmentId)
+        : base(currentUserId)
+    {
+        UnitId        = unitId;
+        InstallmentId = installmentId;
+    }
+}

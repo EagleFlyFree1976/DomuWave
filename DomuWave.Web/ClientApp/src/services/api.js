@@ -289,8 +289,10 @@ export const feeApi = {
   recordPayment:      (feeId, amount, paymentDate, paymentMethod) => api.patch(`/condominium-fees/${feeId}/pay`, { amount, paymentDate, paymentMethod }),
   create:             (data)          => api.post('/condominium-fees', data),
   delete:             (id)            => api.delete(`/condominium-fees/${id}`),
-  getUnitNoticePdf:   (unitId, fiscalYearId) => api.get(`/condominium-fees/unit-notice/${unitId}/fiscal-year/${fiscalYearId}/pdf`, { responseType: 'blob' }),
-  getInstallmentBatchNoticePdf: (installmentId) => api.get(`/condominium-fees/installment-notice/${installmentId}/pdf`, { responseType: 'blob' }),
+  getByPaymentCode:             (code)                   => api.get(`/condominium-fees/by-payment-code/${encodeURIComponent(code)}`),
+  getUnitNoticePdf:             (unitId, fiscalYearId)    => api.get(`/condominium-fees/unit-notice/${unitId}/fiscal-year/${fiscalYearId}/pdf`, { responseType: 'blob' }),
+  getUnitInstallmentNoticePdf:  (unitId, installmentId)  => api.get(`/condominium-fees/unit-notice/${unitId}/installment/${installmentId}/pdf`, { responseType: 'blob' }),
+  getInstallmentBatchNoticePdf: (installmentId)          => api.get(`/condominium-fees/installment-notice/${installmentId}/pdf`, { responseType: 'blob' }),
 }
 
 // ─── Tabelle Millesimali ───────────────────────────────────────
@@ -451,6 +453,18 @@ export const consumptionChargeApi = {
   recalculate:     (id)           => api.post(`/consumption/charges/${id}/recalculate`),
   approve:         (id)           => api.post(`/consumption/charges/${id}/approve`),
   delete:          (id)           => api.delete(`/consumption/charges/${id}`),
+}
+
+// ─── Gruppi di fatturazione ───────────────────────────────────
+export const billingGroupApi = {
+  getByCondominium:        (condominiumId)                   => api.get(`/billing-groups/by-condominium/${condominiumId}`),
+  create:                  (data)                            => api.post('/billing-groups', data),
+  update:                  (id, data)                        => api.put(`/billing-groups/${id}`, data),
+  delete:                  (id)                              => api.delete(`/billing-groups/${id}`),
+  suggest:                 (condominiumId)                   => api.get(`/billing-groups/suggest/${condominiumId}`),
+  applySuggestions:        (condominiumId, suggestions)      => api.post(`/billing-groups/apply-suggestions/${condominiumId}`, suggestions),
+  getGroupNoticePdf:       (id, fiscalYearId)                => api.get(`/billing-groups/${id}/fiscal-year/${fiscalYearId}/notice/pdf`, { responseType: 'blob' }),
+  getGroupInstNoticePdf:   (id, installmentId)               => api.get(`/billing-groups/${id}/installment/${installmentId}/notice/pdf`, { responseType: 'blob' }),
 }
 
 export default api

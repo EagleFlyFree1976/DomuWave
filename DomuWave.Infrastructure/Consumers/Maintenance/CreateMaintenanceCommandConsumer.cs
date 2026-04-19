@@ -45,7 +45,7 @@ public class CreateMaintenanceCommandConsumer
         if (condominium == null)
             throw new NotFoundException("Condominio non trovato");
 
-        Services.Models.Supplier supplier = null;
+        Services.Models.Supplier? supplier = null;
         if (command.Dto.SupplierId.HasValue)
         {
             supplier = await _supplierService.GetByIdAsync(command.Dto.SupplierId.Value, currentUser, cancellationToken).ConfigureAwait(false);

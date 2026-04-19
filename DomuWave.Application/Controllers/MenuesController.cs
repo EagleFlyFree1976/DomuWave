@@ -38,9 +38,7 @@ namespace DomuWave.Microservice.Controllers;
 public class MenuesController(
     ILogger<MenuesController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
-    IUserService userService,
     IMenuService menuService,
-    IMemoryCache cache,
     IMediator mediator)
     : PrivateControllerBase(logger,
         configuration)

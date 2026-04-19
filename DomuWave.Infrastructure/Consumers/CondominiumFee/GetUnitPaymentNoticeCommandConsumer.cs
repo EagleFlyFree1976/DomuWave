@@ -104,10 +104,113 @@ public class GetUnitPaymentNoticeCommandConsumer
                 Balance           = f.Balance,
                 PaymentStatus     = f.PaymentStatus ?? string.Empty,
                 PaymentDate       = f.PaymentDate,
+                PaymentCode       = f.PaymentCode,
             }).ToList(),
         };
 
         // 6. Generate PDF
+        var document = new PaymentNoticeDocument(new[] { notice });
+        return document.GeneratePdf();
+    }
+}
+
+public class GetUnitInstallmentPaymentNoticeCommandConsumer
+    : InMemoryConsumerBase<GetUnitInstallmentPaymentNoticeCommand, byte[]>
+{
+    private readonly IUserService _userService;
+
+    public GetUnitInstallmentPaymentNoticeCommandConsumer(
+        ISessionFactoryProvider sessionFactoryProvider,
+        IUserService            userService) : base(sessionFactoryProvider)
+    {
+        _userService = userService;
+    }
+
+    protected override async Task<byte[]> Consume(
+        GetUnitInstallmentPaymentNoticeCommand command,
+        IMediationContext                       mediationContext,
+        CancellationToken                       cancellationToken)
+    {
+        await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken)
+            .ConfigureAwait(false);
+
+        var unit = await session.Query<RealEstateUnit>()
+            .Where(u => u.Id == command.UnitId && !u.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (unit == null)
+            throw new NotFoundException("Unità immobiliare non trovata.");
+
+        var installment = await session.Query<CondominiumInstallment>()
+            .Where(i => i.Id == command.InstallmentId && !i.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (installment == null)
+            throw new NotFoundException("Rata non trovata.");
+
+        var fee = await session.Query<CondominiumFee>()
+            .Where(f => f.Unit.Id == command.UnitId
+                     && f.Installment.Id == command.InstallmentId
+                     && !f.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        if (fee == null)
+            throw new ValidatorException("Nessuna quota trovata per questa unità in questa rata.");
+
+        var condominium = unit.Condominium;
+        var address     = condominium.Address;
+        var fiscalYear  = installment.FiscalYear;
+
+        var owner = await session.Query<UnitOwner>()
+            .Where(o => o.Unit.Id == command.UnitId && o.IsActive && !o.IsDeleted)
+            .OrderByDescending(o => o.StartDate)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var addressLine = address != null
+            ? $"{address.Street} {address.StreetNumber}, {address.PostalCode} {address.City} ({address.Province})"
+            : string.Empty;
+
+        var notice = new PaymentNoticeData
+        {
+            CondominiumName    = condominium.Name,
+            CondominiumCode    = condominium.Code ?? string.Empty,
+            CondominiumTaxCode = condominium.TaxCode ?? string.Empty,
+            CondominiumAddress = addressLine,
+            CondominiumEmail   = condominium.Email ?? string.Empty,
+            CondominiumPhone   = condominium.Phone ?? string.Empty,
+            Iban               = condominium.Iban ?? string.Empty,
+            BankAccountHolder  = condominium.BankAccountHolder ?? string.Empty,
+            BankName           = condominium.BankName ?? string.Empty,
+            AdministratorName  = condominium.AdministratorName ?? string.Empty,
+            AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
+            AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
+            FiscalYearCode     = fiscalYear.Name ?? fiscalYear.Id.ToString(),
+            UnitInternalNumber = unit.InternalNumber ?? string.Empty,
+            UnitDisplayName    = unit.DisplayName    ?? string.Empty,
+            UnitStaircase      = unit.Staircase      ?? string.Empty,
+            UnitFloor          = unit.Floor,
+            OwnerFullName      = owner != null ? $"{owner.FirstName} {owner.LastName}".Trim() : string.Empty,
+            OwnerEmail         = owner?.Email ?? string.Empty,
+            Rows =
+            [
+                new PaymentNoticeRow
+                {
+                    InstallmentNumber = installment.InstallmentNumber,
+                    DueDate           = installment.DueDate,
+                    AmountDue         = fee.AmountDue,
+                    AmountPaid        = fee.AmountPaid,
+                    Balance           = fee.Balance,
+                    PaymentStatus     = fee.PaymentStatus ?? string.Empty,
+                    PaymentDate       = fee.PaymentDate,
+                    PaymentCode       = fee.PaymentCode,
+                }
+            ],
+        };
+
         var document = new PaymentNoticeDocument(new[] { notice });
         return document.GeneratePdf();
     }

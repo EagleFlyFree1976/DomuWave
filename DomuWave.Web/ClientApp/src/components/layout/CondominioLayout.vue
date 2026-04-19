@@ -44,8 +44,10 @@ const condominiumId = computed(() => Number(route.params.id))
 
 const quickNav = [
   { path: '/unita',         icon: '⊞', label: 'Unità' },
-  { path: '/panoramica',    icon: '◫', label: 'Panoramica' },
-  { path: '/budget',        icon: '◎', label: 'Budget' },
+  { path: '/panoramica',           icon: '◫', label: 'Panoramica' },
+  { path: '/gruppi-fatturazione',  icon: '◈', label: 'Gruppi' },
+  { path: '/rendiconto',           icon: '◑', label: 'Rendiconto' },
+  { path: '/budget',               icon: '◎', label: 'Budget' },
   { path: '/spese',         icon: '◑', label: 'Spese' },
   { path: '/consumi',       icon: '◌', label: 'Consumi' },
   { path: '/rate',          icon: '◷', label: 'Rate' },

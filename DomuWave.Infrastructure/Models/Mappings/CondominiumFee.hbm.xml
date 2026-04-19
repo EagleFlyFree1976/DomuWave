@@ -26,7 +26,8 @@
     <property name="PaymentDate" column="PaymentDate" type="DateTime" />
     <property name="PaymentMethod" column="PaymentMethod" type="String" length="50" />
     
-    <property name="Notes" column="Notes" type="String" length="500" insert="false" update="false" />
+    <property name="Notes"        column="Notes"        type="String" length="500"  insert="false" update="false" />
+    <property name="PaymentCode"  column="PaymentCode"  type="String" length="20"   not-null="true" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />

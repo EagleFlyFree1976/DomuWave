@@ -9,7 +9,7 @@ namespace DomuWave.Application.Models
         public UserProfile Profile { get; set; }
         public TenantReadDto? Tenant { get; set; }
 
-        public IList<TenantReadDto> AvailableTenants { get; set; }
+        public IList<TenantReadDto>? AvailableTenants { get; set; }
 
         /// <summary>
         /// Popolato solo per utenti Condomino (Profile == User):

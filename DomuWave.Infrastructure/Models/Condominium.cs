@@ -55,6 +55,7 @@ namespace DomuWave.Services.Models
         public virtual IList<Document> Documents { get; set; } = new List<Document>();
         public virtual IList<Communication> Communications { get; set; } = new List<Communication>();
         public virtual IList<Message> Messages { get; set; } = new List<Message>();
+        public virtual IList<BillingGroup> BillingGroups { get; set; } = new List<BillingGroup>();
         public override int GetHashCode()
         {
             return this.Id.GetHashCode();

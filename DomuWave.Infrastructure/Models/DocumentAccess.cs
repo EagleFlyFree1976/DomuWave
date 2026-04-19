@@ -5,11 +5,11 @@ namespace DomuWave.Services.Models
 {
     public class DocumentAccess : TenantEntity<long>
     {
-        public virtual Document Document { get; set; }
+        public virtual Document Document { get; set; } = null!;
         public virtual long UserId { get; set; }
         public virtual DateTime AccessDate { get; set; }
-        public virtual string AccessType { get; set; }
-        public virtual string IpAddress { get; set; }
+        public virtual string AccessType { get; set; } = string.Empty;
+        public virtual string? IpAddress { get; set; }
         public override int GetHashCode()
         {
             return this.Id.GetHashCode();

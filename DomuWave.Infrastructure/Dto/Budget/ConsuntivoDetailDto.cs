@@ -45,17 +45,27 @@ public class ConsuntivoAllocationRowDto
 
 public class ConsuntivoUnitRowDto
 {
-    public int                                  UnitId       { get; set; }
-    public string?                              UnitName     { get; set; }
-    /// <summary>Totale spese ripartite millesimalmente a questa unità.</summary>
+    /// <summary>Id unità (0 se IsGroup == true).</summary>
+    public int                                  UnitId          { get; set; }
+    public string?                              UnitName        { get; set; }
+
+    /// <summary>True se questa riga aggrega più unità tramite un BillingGroup.</summary>
+    public bool                                 IsGroup         { get; set; }
+    public int?                                 BillingGroupId  { get; set; }
+    public string?                              BillingGroupName { get; set; }
+
+    /// <summary>Totale spese ripartite millesimalmente a questa unità (o somma gruppo).</summary>
     public decimal                              Total        { get; set; }
-    /// <summary>Somma degli AmountDue di tutte le quote (rate) emesse per questa unità nell'esercizio.</summary>
+    /// <summary>Somma degli AmountDue di tutte le quote (rate) emesse nell'esercizio.</summary>
     public decimal                              AmountDue    { get; set; }
-    /// <summary>Somma degli AmountPaid di tutte le quote pagate per questa unità nell'esercizio.</summary>
+    /// <summary>Somma degli AmountPaid di tutte le quote pagate nell'esercizio.</summary>
     public decimal                              AmountPaid   { get; set; }
     /// <summary>Saldo residuo (AmountDue - AmountPaid).</summary>
     public decimal                              Balance      { get; set; }
     public List<ConsuntivoUnitAccountEntryDto>  Entries      { get; set; } = [];
+
+    /// <summary>Sotto-righe delle singole unità quando IsGroup == true.</summary>
+    public List<ConsuntivoUnitRowDto>           Units        { get; set; } = [];
 }
 
 public class ConsuntivoUnitAccountEntryDto

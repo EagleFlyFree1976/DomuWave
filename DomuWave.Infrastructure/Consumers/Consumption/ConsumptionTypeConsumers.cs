@@ -59,7 +59,7 @@ public class CreateConsumptionTypeCommandConsumer
         if (string.IsNullOrWhiteSpace(command.Dto.Name))
             throw new ValidatorException("Il nome è obbligatorio.");
 
-        ChartOfAccounts account = null;
+        ChartOfAccounts? account = null;
         if (command.Dto.AccountId.HasValue)
         {
             account = await session.Query<ChartOfAccounts>()
@@ -88,7 +88,7 @@ public class UpdateConsumptionTypeCommandConsumer
             .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
         if (entity == null) throw new NotFoundException("Tipo consumo non trovato.");
 
-        ChartOfAccounts account = null;
+        ChartOfAccounts? account = null;
         if (command.Dto.AccountId.HasValue)
         {
             account = await session.Query<ChartOfAccounts>()

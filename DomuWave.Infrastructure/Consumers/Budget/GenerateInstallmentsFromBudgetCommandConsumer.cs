@@ -4,6 +4,7 @@ using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Budget;
+using DomuWave.Services.Helpers;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using NHibernate.Linq;
@@ -162,6 +163,7 @@ public class GenerateInstallmentsFromBudgetCommandConsumer
                     AmountPaid    = 0m,
                     Balance       = share,
                     PaymentStatus = "ToPay",
+                    PaymentCode   = PaymentCodeGenerator.Generate(),
                 };
 
                 if (user != null) fee.Trace(user);

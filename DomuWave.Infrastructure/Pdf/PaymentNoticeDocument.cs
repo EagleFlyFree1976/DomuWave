@@ -150,6 +150,11 @@ public class PaymentNoticeDocument : IDocument
                 .Text("Per effettuare il pagamento utilizzare i dati bancari indicati sopra. " +
                       "Indicare nella causale il testo riportato nel riquadro.")
                 .FontSize(7.5f).FontColor(MutedColor).Italic();
+
+            // Tagliandi singola rata
+            var pendingRows = notice.Rows.Where(r => r.Balance > 0).ToList();
+            if (pendingRows.Count > 1)
+                col.Item().PaddingTop(16).Element(c => ComposeInstallmentSlips(c, notice, pendingRows));
         });
     }
 
@@ -170,12 +175,13 @@ public class PaymentNoticeDocument : IDocument
                 row.ConstantItem(80).Text("Pagato").FontSize(8).Bold().FontColor("#ffffff").AlignRight();
                 row.ConstantItem(80).Text("Saldo").FontSize(8).Bold().FontColor("#ffffff").AlignRight();
                 row.ConstantItem(70).Text("Stato").FontSize(8).Bold().FontColor("#ffffff").AlignCenter();
+                row.ConstantItem(110).Text("Cod. Riconciliazione").FontSize(7.5f).Bold().FontColor("#ffffff").AlignCenter();
             });
 
             foreach (var (row, idx) in notice.Rows.Select((r, i) => (r, i)))
             {
-                var bg       = idx % 2 == 0 ? "#ffffff" : LightBg;
-                var isPaid   = row.PaymentStatus == "Paid";
+                var bg        = idx % 2 == 0 ? "#ffffff" : LightBg;
+                var isPaid    = row.PaymentStatus == "Paid";
                 var isOverdue = row.PaymentStatus == "Overdue";
 
                 col.Item().Background(bg).BorderBottom(1).BorderColor(BorderColor)
@@ -190,6 +196,8 @@ public class PaymentNoticeDocument : IDocument
                             .FontColor(row.Balance > 0 ? RedColor : GreenColor);
                         r.ConstantItem(70).Text(StatusLabel(row.PaymentStatus)).FontSize(7.5f).AlignCenter()
                             .FontColor(isPaid ? GreenColor : isOverdue ? RedColor : MutedColor).Bold();
+                        r.ConstantItem(110).Text(row.PaymentCode).FontSize(7).AlignCenter()
+                            .FontFamily("Courier New").FontColor(AccentColor).Bold();
                     });
             }
 
@@ -202,7 +210,7 @@ public class PaymentNoticeDocument : IDocument
                     .FontColor(GreenColor);
                 r.ConstantItem(80).Text(FormatAmount(notice.TotalBalance)).FontSize(8).Bold().AlignRight()
                     .FontColor(notice.TotalBalance > 0 ? RedColor : GreenColor);
-                r.ConstantItem(70);
+                r.ConstantItem(180);
             });
         });
     }
@@ -287,16 +295,16 @@ public class PaymentNoticeDocument : IDocument
         var boxBg      = hasPending ? "#fff7ed" : "#f0fdf4";
         var amtColor   = hasPending ? RedColor  : GreenColor;
 
-        var rateParts = notice.Rows
-            .Where(r => r.Balance > 0)
-            .Select(r => $"rata {r.InstallmentNumber} ({r.DueDate:MM/yyyy})")
-            .ToList();
+        var pendingRows = notice.Rows.Where(r => r.Balance > 0).ToList();
+        var rateParts   = pendingRows.Select(r => $"rata {r.InstallmentNumber} ({r.DueDate:MM/yyyy})").ToList();
+        var codeParts   = pendingRows.Select(r => r.PaymentCode).Where(c => !string.IsNullOrEmpty(c)).ToList();
 
         var causale = rateParts.Count > 0
             ? $"Quote condominiali – {notice.CondominiumName}" +
               (!string.IsNullOrWhiteSpace(notice.CondominiumTaxCode) ? $" – C.F. {notice.CondominiumTaxCode}" : "") +
               $" – Interno {notice.UnitInternalNumber} – {string.Join(", ", rateParts)}" +
-              $" – Esercizio {notice.FiscalYearCode}"
+              $" – Esercizio {notice.FiscalYearCode}" +
+              (codeParts.Count > 0 ? $" – COD: {string.Join(" / ", codeParts)}" : "")
             : $"Quote condominiali – {notice.CondominiumName}" +
               $" – Interno {notice.UnitInternalNumber} – Esercizio {notice.FiscalYearCode}";
 
@@ -320,6 +328,101 @@ public class PaymentNoticeDocument : IDocument
                 col.Item().PaddingTop(6).Text("Intestato a:").FontSize(7).FontColor(MutedColor);
                 col.Item().Text(notice.OwnerFullName).FontSize(8).Bold();
             }
+        });
+    }
+
+    // ── Tagliandi per singola rata ────────────────────────────────────────────
+
+    private void ComposeInstallmentSlips(IContainer container, PaymentNoticeData notice, List<PaymentNoticeRow> rows)
+    {
+        container.Column(col =>
+        {
+            // Separatore tratteggiato con etichetta
+            col.Item().Row(row =>
+            {
+                row.RelativeItem().PaddingTop(6).BorderTop(1).BorderColor("#9ca3af");
+                row.AutoItem().PaddingHorizontal(8)
+                    .Text("✂  TAGLIANDI RATA SINGOLA  ✂")
+                    .FontSize(7).FontColor(MutedColor).Italic();
+                row.RelativeItem().PaddingTop(6).BorderTop(1).BorderColor("#9ca3af");
+            });
+
+            col.Item().PaddingTop(4)
+                .Text("Utilizza i tagliandi sottostanti se desideri pagare le rate separatamente.")
+                .FontSize(7.5f).FontColor(MutedColor).Italic();
+
+            col.Item().PaddingTop(8).Column(slips =>
+            {
+                foreach (var (instRow, idx) in rows.Select((r, i) => (r, i)))
+                {
+                    if (idx > 0)
+                        slips.Item().PaddingTop(8).BorderTop(1).BorderColor(BorderColor);
+
+                    slips.Item().PaddingTop(idx > 0 ? 8 : 0).Row(slip =>
+                    {
+                        // Info unità + rata
+                        slip.RelativeItem().Border(1).BorderColor(BorderColor).Padding(8).Column(c =>
+                        {
+                            c.Item().Text($"RATA N° {instRow.InstallmentNumber}")
+                                .FontSize(7).Bold().FontColor(AccentColor).LetterSpacing(0.05f);
+                            c.Item().PaddingTop(3).Text(t =>
+                            {
+                                t.Span($"Interno {notice.UnitInternalNumber}").Bold().FontSize(10);
+                                if (!string.IsNullOrWhiteSpace(notice.UnitDisplayName))
+                                    t.Span($"  –  {notice.UnitDisplayName}").FontSize(8).FontColor(MutedColor);
+                            });
+                            c.Item().PaddingTop(2).Text($"Scadenza: {instRow.DueDate:dd/MM/yyyy}")
+                                .FontSize(8).FontColor(MutedColor);
+                            if (!string.IsNullOrWhiteSpace(notice.OwnerFullName))
+                                c.Item().Text(notice.OwnerFullName).FontSize(8).FontColor(MutedColor);
+                            c.Item().PaddingTop(4).Text($"Esercizio {notice.FiscalYearCode}")
+                                .FontSize(7).FontColor(MutedColor).Italic();
+                        });
+
+                        slip.ConstantItem(8);
+
+                        // Box causale + importo rata
+                        var causale = $"Quote condominiali – {notice.CondominiumName}" +
+                            (!string.IsNullOrWhiteSpace(notice.CondominiumTaxCode) ? $" – C.F. {notice.CondominiumTaxCode}" : "") +
+                            $" – Interno {notice.UnitInternalNumber}" +
+                            $" – Rata {instRow.InstallmentNumber} ({instRow.DueDate:MM/yyyy})" +
+                            $" – Esercizio {notice.FiscalYearCode}" +
+                            (!string.IsNullOrEmpty(instRow.PaymentCode) ? $" – COD: {instRow.PaymentCode}" : "");
+
+                        slip.RelativeItem(2).Border(2).BorderColor(RedColor).Background("#fff7ed").Padding(8).Column(c =>
+                        {
+                            c.Item().Text("CAUSALE").FontSize(6.5f).Bold().FontColor(RedColor).LetterSpacing(0.05f);
+                            c.Item().PaddingTop(2).Text(causale).FontSize(7).Italic().FontColor(MutedColor);
+
+                            c.Item().PaddingVertical(6).LineHorizontal(0.5f).LineColor(RedColor);
+
+                            c.Item().Row(r =>
+                            {
+                                r.RelativeItem().Column(d =>
+                                {
+                                    d.Item().Text("IMPORTO DA VERSARE").FontSize(6.5f).Bold().FontColor(RedColor).LetterSpacing(0.05f);
+                                    d.Item().PaddingTop(2).Text(FormatAmount(instRow.Balance))
+                                        .FontSize(18).Bold().FontColor(RedColor);
+                                    if (!string.IsNullOrEmpty(instRow.PaymentCode))
+                                    {
+                                        d.Item().PaddingTop(4).Text("COD. RICONCILIAZIONE").FontSize(6).FontColor(MutedColor).LetterSpacing(0.05f);
+                                        d.Item().Text(instRow.PaymentCode).FontSize(9).Bold()
+                                            .FontFamily("Courier New").FontColor(AccentColor);
+                                    }
+                                });
+                                r.AutoItem().AlignBottom().Column(d =>
+                                {
+                                    if (!string.IsNullOrWhiteSpace(notice.Iban))
+                                    {
+                                        d.Item().Text("IBAN").FontSize(6.5f).FontColor(MutedColor);
+                                        d.Item().Text(notice.Iban).FontSize(7).FontFamily("Courier New").FontColor("#1d4ed8");
+                                    }
+                                });
+                            });
+                        });
+                    });
+                }
+            });
         });
     }
 

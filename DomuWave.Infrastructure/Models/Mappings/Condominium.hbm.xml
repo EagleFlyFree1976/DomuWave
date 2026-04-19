@@ -116,6 +116,11 @@
       <one-to-many class="DomuWave.Services.Models.Message, DomuWave.Services" />
     </bag>
 
+    <bag name="BillingGroups" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="CondominiumId" />
+      <one-to-many class="DomuWave.Services.Models.BillingGroup, DomuWave.Services" />
+    </bag>
+
   </class>
 
 </hibernate-mapping>

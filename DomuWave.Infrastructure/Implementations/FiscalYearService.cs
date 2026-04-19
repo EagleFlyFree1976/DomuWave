@@ -50,7 +50,7 @@ namespace DomuWave.Services.Implementations
         }
 
         /// <inheritdoc />
-        public async Task<FiscalYear?> GetByIdAsync(int id, IUser currentUser, CancellationToken ct)
+        public async Task<FiscalYear> GetByIdAsync(int id, IUser currentUser, CancellationToken ct)
         {
             return await session.Query<FiscalYear>()
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, ct);
@@ -136,7 +136,7 @@ namespace DomuWave.Services.Implementations
 
                 // Un esercizio già usato come precedente non può essere riutilizzato
                 var alreadyUsedAsPrevious = await session.Query<FiscalYear>()
-                    .AnyAsync(x => x.PreviousFiscalYear.Id == previousFiscalYearId.Value
+                    .AnyAsync(x => x.PreviousFiscalYear != null && x.PreviousFiscalYear.Id == previousFiscalYearId.Value
                                 && !x.IsDeleted, ct)
                     .ConfigureAwait(false);
                 if (alreadyUsedAsPrevious)

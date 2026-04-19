@@ -55,9 +55,9 @@ public class GetInstallmentBatchNoticeCommandConsumer
         if (fees.Count == 0)
             throw new ValidatorException("Nessuna quota trovata per questa rata.");
 
-        // 3. Load all active owners for the units in this installment, grouped by unit
         var unitIds = fees.Select(f => f.Unit.Id).Distinct().ToList();
 
+        // 3. Load active owners per unit
         var owners = await session.Query<UnitOwner>()
             .Where(o => unitIds.Contains(o.Unit.Id) && o.IsActive && !o.IsDeleted)
             .ToListAsync(cancellationToken)
@@ -69,18 +69,94 @@ public class GetInstallmentBatchNoticeCommandConsumer
                 g => g.Key,
                 g => g.OrderByDescending(o => o.StartDate).First());
 
-        // 4. Build address line
+        // 4. Load billing groups for these units
+        var billingGroups = await session.Query<BillingGroup>()
+            .Where(bg => bg.Condominium.Id == condominium.Id && !bg.IsDeleted)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var bg in billingGroups)
+            await NHibernate.NHibernateUtil.InitializeAsync(bg.Units, cancellationToken)
+                .ConfigureAwait(false);
+
+        // Map unitId → billingGroup
+        var billingGroupByUnit = new Dictionary<int, BillingGroup>();
+        foreach (var bg in billingGroups)
+            foreach (var u in bg.Units.Where(u => !u.IsDeleted))
+                billingGroupByUnit[u.Id] = bg;
+
+        // 5. Build address line
         var addressLine = address != null
             ? $"{address.Street} {address.StreetNumber}, {address.PostalCode} {address.City} ({address.Province})"
             : string.Empty;
 
-        // 5. Build one PaymentNoticeData per unit
-        var notices = fees.Select(fee =>
+        // 6. Group fees: billing-group units → aggregated notice; ungrouped → individual notice
+        var notices = new List<PaymentNoticeData>();
+
+        // Fees belonging to a billing group
+        var feesByGroup = fees
+            .Where(f => billingGroupByUnit.ContainsKey(f.Unit.Id))
+            .GroupBy(f => billingGroupByUnit[f.Unit.Id].Id)
+            .ToList();
+
+        foreach (var group in feesByGroup)
+        {
+            var bg        = billingGroups.First(b => b.Id == group.Key);
+            var groupFees = group.ToList();
+
+            // Representative owner: first unit's owner in the group
+            var firstUnitId = groupFees.First().Unit.Id;
+            ownerByUnit.TryGetValue(firstUnitId, out var repOwner);
+
+            // Unit description: all internal numbers joined
+            var unitNumbers = string.Join(" + ", groupFees.Select(f => f.Unit.InternalNumber ?? f.Unit.Id.ToString()));
+
+            notices.Add(new PaymentNoticeData
+            {
+                CondominiumName    = condominium.Name,
+                CondominiumCode    = condominium.Code ?? string.Empty,
+                CondominiumTaxCode = condominium.TaxCode ?? string.Empty,
+                CondominiumAddress = addressLine,
+                CondominiumEmail   = condominium.Email ?? string.Empty,
+                CondominiumPhone   = condominium.Phone ?? string.Empty,
+                Iban               = condominium.Iban ?? string.Empty,
+                BankAccountHolder  = condominium.BankAccountHolder ?? string.Empty,
+                BankName           = condominium.BankName ?? string.Empty,
+                AdministratorName  = condominium.AdministratorName ?? string.Empty,
+                AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
+                AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
+                FiscalYearCode     = fiscalYear.Name ?? fiscalYear.Id.ToString(),
+                UnitInternalNumber = unitNumbers,
+                UnitDisplayName    = bg.Name,
+                UnitStaircase      = string.Empty,
+                UnitFloor          = 0,
+                OwnerFullName      = bg.Name,
+                OwnerEmail         = bg.ContactEmail ?? repOwner?.Email ?? string.Empty,
+                Rows =
+                [
+                    new PaymentNoticeRow
+                    {
+                        InstallmentNumber = installment.InstallmentNumber,
+                        DueDate           = installment.DueDate,
+                        AmountDue         = groupFees.Sum(f => f.AmountDue),
+                        AmountPaid        = groupFees.Sum(f => f.AmountPaid),
+                        Balance           = groupFees.Sum(f => f.Balance),
+                        PaymentStatus     = groupFees.Any(f => f.Balance > 0) ? "Aperta" : "Saldata",
+                        PaymentDate       = groupFees.Max(f => f.PaymentDate),
+                        PaymentCode       = string.Join(" / ", groupFees.Select(f => f.PaymentCode).Where(c => !string.IsNullOrEmpty(c))),
+                    }
+                ],
+            });
+        }
+
+        // Individual notices for units not in any billing group
+        var ungroupedFees = fees.Where(f => !billingGroupByUnit.ContainsKey(f.Unit.Id)).ToList();
+        foreach (var fee in ungroupedFees)
         {
             var unit = fee.Unit;
             ownerByUnit.TryGetValue(unit.Id, out var owner);
 
-            return new PaymentNoticeData
+            notices.Add(new PaymentNoticeData
             {
                 CondominiumName    = condominium.Name,
                 CondominiumCode    = condominium.Code ?? string.Empty,
@@ -96,8 +172,8 @@ public class GetInstallmentBatchNoticeCommandConsumer
                 AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
                 FiscalYearCode     = fiscalYear.Name ?? fiscalYear.Id.ToString(),
                 UnitInternalNumber = unit.InternalNumber ?? string.Empty,
-                UnitDisplayName    = unit.DisplayName ?? string.Empty,
-                UnitStaircase      = unit.Staircase ?? string.Empty,
+                UnitDisplayName    = unit.DisplayName    ?? string.Empty,
+                UnitStaircase      = unit.Staircase      ?? string.Empty,
                 UnitFloor          = unit.Floor,
                 OwnerFullName      = owner != null ? $"{owner.FirstName} {owner.LastName}".Trim() : string.Empty,
                 OwnerEmail         = owner?.Email ?? string.Empty,
@@ -112,12 +188,15 @@ public class GetInstallmentBatchNoticeCommandConsumer
                         Balance           = fee.Balance,
                         PaymentStatus     = fee.PaymentStatus ?? string.Empty,
                         PaymentDate       = fee.PaymentDate,
+                        PaymentCode       = fee.PaymentCode,
                     }
                 ],
-            };
-        }).ToList();
+            });
+        }
 
-        // 6. Generate multi-page PDF
+        // 7. Sort notices by owner name and generate PDF
+        notices = notices.OrderBy(n => n.OwnerFullName).ToList();
+
         var document = new PaymentNoticeDocument(notices);
         return document.GeneratePdf();
     }

@@ -31,7 +31,7 @@ public class UpdateQuoteCommandConsumer
         var entity = await _quoteService.GetByIdAsync(command.QuoteId, currentUser, cancellationToken).ConfigureAwait(false);
         if (entity == null) return null;
 
-        Services.Models.Supplier supplier = null;
+        Services.Models.Supplier? supplier = null;
         if (command.Dto.SupplierId.HasValue)
         {
             supplier = await _supplierService.GetByIdAsync(command.Dto.SupplierId.Value, currentUser, cancellationToken).ConfigureAwait(false);

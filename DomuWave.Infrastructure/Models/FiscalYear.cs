@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using DomuWave.Services.Models;
-using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Models
 {
@@ -15,13 +14,13 @@ namespace DomuWave.Services.Models
     public class FiscalYear : TenantEntity<int>
     {
         /// <summary>Condominio di appartenenza.</summary>
-        public virtual Condominium Condominium { get; set; }
+        public virtual Condominium Condominium { get; set; } = null!;
 
         /// <summary>Codice identificativo dell'esercizio (es. "2024-2025", "ES-001").</summary>
-        public virtual string Code { get; set; }
+        public virtual string Code { get; set; } = string.Empty;
 
         /// <summary>Descrizione libera dell'esercizio.</summary>
-        public virtual string Description { get; set; }
+        public virtual new string? Description { get; set; }
 
         /// <summary>Data di inizio del periodo di esercizio.</summary>
         public virtual DateTime StartDate { get; set; }
@@ -54,7 +53,7 @@ namespace DomuWave.Services.Models
         public virtual int? ClosedByUserId { get; set; }
 
         /// <summary>Note dell'amministratore registrate in fase di chiusura.</summary>
-        public virtual string ClosingNotes { get; set; }
+        public virtual string? ClosingNotes { get; set; }
 
         /// <summary>
         /// Esercizio di provenienza (precedente), impostato al momento della creazione

@@ -57,7 +57,7 @@ public class OpenFiscalYearCommandConsumer : InMemoryConsumerBase<OpenFiscalYear
         object currentUser,
         CancellationToken cancellationToken)
     {
-        var previousFiscalYearId = fiscalYear.PreviousFiscalYear.Id;
+        var previousFiscalYearId = fiscalYear.PreviousFiscalYear!.Id;
 
         // ClosingBalance dell'esercizio precedente per unità
         var previousBalances = await session.Query<Models.UnitOpeningBalance>()

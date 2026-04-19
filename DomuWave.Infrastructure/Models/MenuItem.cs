@@ -14,20 +14,20 @@ namespace DomuWave.Services.Models
 
         public virtual int? ParentMenuId { get; set; }
 
-        public virtual string Icon { get; set; }
-        public virtual string Description { get; set; }
-        public virtual string Action { get; set; }
+        public virtual string? Icon { get; set; }
+        public virtual string? Description { get; set; }
+        public virtual string Action { get; set; } = string.Empty;
 
-        public virtual string AuthorizationCode { get; set; }
-        public virtual string PopulateEvent { get; set; }
+        public virtual string AuthorizationCode { get; set; } = string.Empty;
+        public virtual string? PopulateEvent { get; set; }
 
         public virtual int OrderKey { get; set; }
 
- 
+
 
         /// <summary>
         /// Etichette aggiuntive separate da virgola (es. "admin,report,beta")
         /// </summary>
-        public virtual string Tags { get; set; }
+        public virtual string? Tags { get; set; }
     }
 }

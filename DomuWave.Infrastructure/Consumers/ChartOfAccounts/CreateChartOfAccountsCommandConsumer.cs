@@ -46,8 +46,7 @@ public class CreateChartOfAccountsCommandConsumer
             throw new ValidatorException("Il codice conto è obbligatorio.");
         if (string.IsNullOrWhiteSpace(dto.Name))
             throw new ValidatorException("Il nome conto è obbligatorio.");
-        if (dto.Type == null)
-            throw new ValidatorException("Il tipo conto è obbligatorio.");
+        // dto.Type is a non-nullable enum — always has a value
 
         var condominium = await _condominiumService
             .GetByIdAsync(dto.CondominiumId, currentUser, cancellationToken)

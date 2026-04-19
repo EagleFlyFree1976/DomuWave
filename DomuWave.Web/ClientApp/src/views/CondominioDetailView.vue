@@ -138,7 +138,7 @@
 
     <!-- Edit Modal -->
     <div class="modal-overlay" v-if="showEdit" @click.self="showEdit=false">
-      <div class="modal modal--wide">
+      <div class="modal modal-wide">
         <div class="modal-header">
           <h2>Modifica condominio</h2>
           <button class="btn-icon" @click="showEdit=false">✕</button>
@@ -492,4 +492,5 @@ dd { font-size: 0.875rem; color: var(--text-primary); text-align: right; }
 .has-error .form-input,
 .has-error .form-select { border-color: var(--accent-red, #e53e3e); }
 .field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; }
+
 </style>

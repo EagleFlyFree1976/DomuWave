@@ -25,6 +25,7 @@ namespace DomuWave.Services.Models
         public virtual string DisplayName { get; set; }
         public virtual int    NumeroAbitanti { get; set; } = 1;
         public virtual bool IsActive { get; set; }
+        public virtual BillingGroup? BillingGroup { get; set; }
 
         public virtual IList<UnitOwner> Owners { get; set; } = new List<UnitOwner>();
         public virtual IList<UnitTenant> Tenants { get; set; } = new List<UnitTenant>();

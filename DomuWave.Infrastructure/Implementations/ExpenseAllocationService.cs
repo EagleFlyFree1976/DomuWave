@@ -192,7 +192,7 @@ namespace DomuWave.Services.Implementations
 
             decimal totalMillesimal = millesimalMap.Values
                 .Where(e => e != null)
-                .Sum(e => e.Millesimal);
+                .Sum(e => e!.Millesimal);
 
             if (totalMillesimal == 0)
                 return false;

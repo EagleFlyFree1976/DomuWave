@@ -2,8 +2,8 @@ namespace DomuWave.Services.Models;
 
 public class ConsumptionChargeItem : TenantEntity<int>
 {
-    public virtual ConsumptionCharge Charge           { get; set; }
-    public virtual RealEstateUnit    Unit             { get; set; }
+    public virtual ConsumptionCharge Charge           { get; set; } = null!;
+    public virtual RealEstateUnit    Unit             { get; set; } = null!;
     public virtual decimal           Consumption      { get; set; } = 0;
     public virtual decimal           TotalConsumption { get; set; } = 0;
     public virtual decimal           Percentage       { get; set; } = 0;

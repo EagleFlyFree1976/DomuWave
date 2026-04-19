@@ -5,5 +5,5 @@ namespace DomuWave.Services.Interfaces;
 
 public interface IChartOfAccountsCategoryService : IBaseService<ChartOfAccountsCategory, int>
 {
-    Task<IList<ChartOfAccountsCategory>> GetByTenantIdAsync(Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
+    new Task<IList<ChartOfAccountsCategory>> GetByTenantIdAsync(Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
 }

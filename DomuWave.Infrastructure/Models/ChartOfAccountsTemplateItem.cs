@@ -2,7 +2,7 @@ namespace DomuWave.Services.Models;
 
 public class ChartOfAccountsTemplateItem : TenantEntity<int>
 {
-    public virtual ChartOfAccountsTemplate  Template      { get; set; }
+    public virtual ChartOfAccountsTemplate  Template      { get; set; } = null!;
     public virtual ChartOfAccountsTemplateItem? ParentItem { get; set; }
     public virtual string               Code          { get; set; } = string.Empty;
     public virtual string               Name          { get; set; } = string.Empty;

@@ -13,16 +13,16 @@ namespace DomuWave.Services.Models
     public class CondominiumInstallment : TenantEntity<int>
     {
         /// <summary>Il condominio a cui appartiene questa rata.</summary>
-        public virtual Condominium Condominium { get; set; }
+        public virtual Condominium Condominium { get; set; } = null!;
 
         /// <summary>
         /// Il budget/preventivo di riferimento da cui è stata generata la rata.
         /// Può essere null se la rata è stata creata manualmente.
         /// </summary>
-        public virtual Budget Budget { get; set; }
+        public virtual Budget? Budget { get; set; }
 
         /// <summary>L'anno fiscale di competenza della rata.</summary>
-        public virtual FiscalYear FiscalYear { get; set; }
+        public virtual FiscalYear FiscalYear { get; set; } = null!;
 
         /// <summary>
         /// Numero progressivo della rata all'interno del piano di rateizzazione
@@ -43,7 +43,7 @@ namespace DomuWave.Services.Models
         public virtual CondominiumInstallmentStatus Status { get; set; }
 
         /// <summary>Note libere aggiuntive sulla rata.</summary>
-        public virtual string Notes { get; set; }
+        public virtual string? Notes { get; set; }
 
         /// <summary>
         /// Elenco delle singole quote (CondominiumFee) associate a questa rata,

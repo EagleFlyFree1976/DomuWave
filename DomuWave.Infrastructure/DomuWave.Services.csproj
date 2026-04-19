@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <None Remove="Models\Mappings\BillingGroup.hbm.xml" />
     <None Remove="Models\Mappings\DynamicFile.hbm.xml" />
     <None Remove="Models\Mappings\DynamicFileContent.hbm.xml" />
     <None Remove="Models\Mappings\DynamicFileStorageType.hbm.xml" />
@@ -57,6 +58,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Models\Mappings\AccountBalance.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BillingGroup.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Budget.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\BudgetItem.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\BudgetStatus.hbm.xml" />

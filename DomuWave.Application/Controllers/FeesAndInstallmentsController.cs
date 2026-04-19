@@ -108,6 +108,25 @@ public class CondominiumFeesController(
             new GetInstallmentBatchNoticeCommand(CurrentUser.Id, installmentId), ct);
         return File(bytes, "application/pdf", $"avviso-pagamento-rata-{installmentId}.pdf");
     }
+
+    [HttpGet("by-payment-code/{code}")]
+    [ProducesResponseType(typeof(IList<FeeByPaymentCodeResultDto>), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetByPaymentCode(string code, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new GetFeeByPaymentCodeCommand(CurrentUser.Id, code), ct);
+        if (result == null || result.Count == 0) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpGet("unit-notice/{unitId:int}/installment/{installmentId:int}/pdf")]
+    [ProducesResponseType(typeof(FileContentResult), 200)]
+    public async Task<IActionResult> GetUnitInstallmentNoticePdf(int unitId, int installmentId, CancellationToken ct)
+    {
+        var bytes = await _mediator.GetResponse(
+            new GetUnitInstallmentPaymentNoticeCommand(CurrentUser.Id, unitId, installmentId), ct);
+        return File(bytes, "application/pdf", $"avviso-unita-{unitId}-rata-{installmentId}.pdf");
+    }
 }
 
 public record RecordFeePaymentRequest(decimal Amount, DateTime PaymentDate, string PaymentMethod);

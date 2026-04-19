@@ -59,4 +59,5 @@ public class PaymentNoticeRow
     public decimal  Balance           { get; set; }
     public string   PaymentStatus     { get; set; } = string.Empty;
     public DateTime? PaymentDate      { get; set; }
+    public string   PaymentCode       { get; set; } = string.Empty;
 }

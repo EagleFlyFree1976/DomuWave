@@ -5,6 +5,90 @@
       <button v-if="canCreate" class="btn btn-primary" @click="openInstModal()">+ Nuova rata</button>
     </div>
 
+    <!-- ── Box riconciliazione per codice ───────────── -->
+    <div class="reconcile-box">
+      <div class="reconcile-input-row">
+        <span class="reconcile-label">Riconciliazione bonifico</span>
+        <input
+          class="form-input reconcile-input"
+          v-model.trim="reconcileCode"
+          placeholder="Incolla la causale del bonifico…"
+          @keydown.enter="searchByCode"
+          @input="reconcileResults = []; reconcileNotFound = false"
+        />
+        <button class="btn btn-primary btn-sm" @click="searchByCode" :disabled="searchingCode || !reconcileCode">
+          <span v-if="searchingCode" class="spinner" style="width:12px;height:12px"></span>
+          <span v-else>Cerca</span>
+        </button>
+        <button v-if="reconcileResults.length || reconcileNotFound" class="btn btn-ghost btn-sm" @click="reconcileCode=''; reconcileResults=[]; reconcileNotFound=false">✕</button>
+      </div>
+
+      <div v-if="reconcileNotFound" class="reconcile-result reconcile-notfound">
+        Nessuna quota trovata nella causale inserita.
+      </div>
+
+      <div v-if="reconcileResults.length" class="reconcile-result reconcile-found">
+        <!-- Intestazione + azioni globali -->
+        <div class="reconcile-found-header">
+          <span class="reconcile-found-title">
+            {{ reconcileResults.length }} quota{{ reconcileResults.length > 1 ? 'e' : '' }} trovata{{ reconcileResults.length > 1 ? 'e' : '' }}
+            <span v-if="reconcileResults.length > 1">
+              — totale saldo:
+              <strong :class="reconcileResults.reduce((s,r)=>s+r.balance,0) > 0 ? 'text-amber' : 'text-green'">
+                {{ fmt(reconcileResults.reduce((s,r) => s+r.balance, 0)) }}
+              </strong>
+            </span>
+          </span>
+          <button
+            v-if="reconcileResults.some(r => r.balance > 0)"
+            class="btn btn-primary btn-sm"
+            @click="payAllFromCode"
+            :disabled="payingAll"
+          >
+            <span v-if="payingAll" class="spinner" style="width:12px;height:12px"></span>
+            <span v-else>€ Salda tutto ({{ fmt(reconcileResults.reduce((s,r) => s+r.balance, 0)) }})</span>
+          </button>
+        </div>
+
+        <!-- Tabella risultati -->
+        <table class="inner-table reconcile-table">
+          <thead>
+            <tr>
+              <th>Unità</th>
+              <th>Intestatario</th>
+              <th>Rata</th>
+              <th>Esercizio</th>
+              <th class="text-right">Dovuto</th>
+              <th class="text-right">Pagato</th>
+              <th class="text-right">Saldo</th>
+              <th>Stato</th>
+              <th>Cod.</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in reconcileResults" :key="r.feeId">
+              <td>
+                <span class="unit-number">{{ r.unitInternalNumber }}</span>
+                <span v-if="r.unitDisplayName" class="unit-display-name">{{ r.unitDisplayName }}</span>
+              </td>
+              <td class="text-secondary">{{ r.ownerFullName || '—' }}</td>
+              <td class="mono text-muted">N°{{ r.installmentNumber }} · {{ fmtDate(r.dueDate) }}</td>
+              <td class="text-secondary">{{ r.fiscalYearCode }}</td>
+              <td class="mono text-right">{{ fmt(r.amountDue) }}</td>
+              <td class="mono text-right text-green">{{ fmt(r.amountPaid) }}</td>
+              <td class="mono text-right" :class="r.balance > 0 ? 'text-amber' : 'text-green'">{{ fmt(r.balance) }}</td>
+              <td><span class="badge" :class="feeBadge(r.paymentStatus)">{{ feeStatusLabel(r.paymentStatus) }}</span></td>
+              <td class="mono" style="font-size:0.72rem;color:var(--accent)">{{ r.paymentCode }}</td>
+              <td>
+                <button v-if="r.balance > 0" class="btn-icon" style="color:var(--accent-green)" title="Registra pagamento" @click="openPayModalFromCodeRow(r)">€</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- ── Banner filtro budget ────────────────────── -->
     <div v-if="budgetIdFilter" class="budget-filter-banner">
       <span>Stai visualizzando le rate del budget #{{ budgetIdFilter }}</span>
@@ -90,7 +174,7 @@
                   <div class="row-actions">
                     <button class="btn-icon" @click="downloadInstallmentNoticePdf(inst)" title="Scarica avviso PDF" :disabled="downloadingPdf === inst.id">
                       <span v-if="downloadingPdf === inst.id" class="spinner" style="width:12px;height:12px"></span>
-                      <span v-else>⬇</span>
+                      <span v-else style="font-size:0.62rem;font-weight:700;letter-spacing:0.04em;color:var(--accent-red)">PDF</span>
                     </button>
                     <button v-if="canEdit" class="btn-icon" @click="openInstModal(inst)" title="Modifica">✎</button>
                     <button v-if="canDelete" class="btn-icon" @click="deleteInst(inst.id)" style="color:var(--accent-red)" title="Elimina">✕</button>
@@ -121,6 +205,7 @@
                   <table v-else class="inner-table">
                     <thead>
                       <tr>
+                        <th style="width:2rem"></th>
                         <th>Unità</th>
                         <th class="text-right">Dovuto</th>
                         <th class="text-right">Pagato</th>
@@ -131,31 +216,75 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="f in fees" :key="f.id">
-                        <td>
-                          <span class="unit-number">{{ f.unitInternalNumber || f.unitId }}</span>
-                          <span v-if="f.unitDisplayName" class="unit-display-name">{{ f.unitDisplayName }}</span>
-                          <span class="origin-badge" :class="f.isAutoGenerated ? 'origin-auto' : 'origin-manual'" :title="f.isAutoGenerated ? 'Generata automaticamente da budget' : 'Inserita manualmente'">
-                            {{ f.isAutoGenerated ? 'AUTO' : 'MAN' }}
-                          </span>
-                        </td>
-                        <td class="mono text-right">{{ fmt(f.amountDue) }}</td>
-                        <td class="mono text-right text-green">{{ fmt(f.amountPaid) }}</td>
-                        <td class="mono text-right" :class="f.balance > 0 ? 'text-amber' : 'text-green'">{{ fmt(f.balance) }}</td>
-                        <td><span class="badge" :class="feeBadge(f.paymentStatus)">{{ feeStatusLabel(f.paymentStatus) }}</span></td>
-                        <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(f.paymentDate) }}</td>
-                        <td>
-                          <div class="row-actions">
-                            <button v-if="canEdit" class="btn-icon" @click="openPayModal(f, inst)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
-                            <button v-if="canEdit" class="btn-icon" @click="openFeeModal(f, inst)" title="Modifica">✎</button>
-                            <button v-if="canDelete" class="btn-icon" @click="deleteFee(f.id)" style="color:var(--accent-red)">✕</button>
-                          </div>
-                        </td>
-                      </tr>
+                      <template v-for="row in feeGroups" :key="row.isGroup ? `fg-${row.groupId}` : row.fee.id">
+
+                        <!-- Riga GRUPPO -->
+                        <template v-if="row.isGroup">
+                          <tr class="fee-group-row" :class="{ 'fee-group-row--expanded': expandedFeeGroupId === row.groupId }"
+                              @click="expandedFeeGroupId = expandedFeeGroupId === row.groupId ? null : row.groupId">
+                            <td class="expand-cell"><span class="expand-icon">{{ expandedFeeGroupId === row.groupId ? '▾' : '▸' }}</span></td>
+                            <td>
+                              <span class="group-badge">Gruppo</span>
+                              <span class="unit-number">{{ row.groupName }}</span>
+                            </td>
+                            <td class="mono text-right">{{ fmt(row.totalDue) }}</td>
+                            <td class="mono text-right text-green">{{ fmt(row.totalPaid) }}</td>
+                            <td class="mono text-right" :class="row.totalBalance > 0 ? 'text-amber' : 'text-green'">{{ fmt(row.totalBalance) }}</td>
+                            <td colspan="3"></td>
+                          </tr>
+                          <!-- Sub-righe del gruppo -->
+                          <tr v-if="expandedFeeGroupId === row.groupId" v-for="f in row.fees" :key="f.id" class="fee-subrow">
+                            <td></td>
+                            <td>
+                              <span class="unit-number">{{ f.unitInternalNumber || f.unitId }}</span>
+                              <span v-if="f.unitDisplayName" class="unit-display-name">{{ f.unitDisplayName }}</span>
+                              <span class="origin-badge" :class="f.isAutoGenerated ? 'origin-auto' : 'origin-manual'">{{ f.isAutoGenerated ? 'AUTO' : 'MAN' }}</span>
+                            </td>
+                            <td class="mono text-right">{{ fmt(f.amountDue) }}</td>
+                            <td class="mono text-right text-green">{{ fmt(f.amountPaid) }}</td>
+                            <td class="mono text-right" :class="f.balance > 0 ? 'text-amber' : 'text-green'">{{ fmt(f.balance) }}</td>
+                            <td><span class="badge" :class="feeBadge(f.paymentStatus)">{{ feeStatusLabel(f.paymentStatus) }}</span></td>
+                            <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(f.paymentDate) }}</td>
+                            <td>
+                              <div class="row-actions">
+                                <button v-if="canEdit" class="btn-icon" @click="openPayModal(f, inst)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
+                                <button v-if="canEdit" class="btn-icon" @click="openFeeModal(f, inst)" title="Modifica">✎</button>
+                                <button v-if="canDelete" class="btn-icon" @click="deleteFee(f.id)" style="color:var(--accent-red)">✕</button>
+                              </div>
+                            </td>
+                          </tr>
+                        </template>
+
+                        <!-- Riga singola unità -->
+                        <tr v-else>
+                          <td></td>
+                          <td>
+                            <span class="unit-number">{{ row.fee.unitInternalNumber || row.fee.unitId }}</span>
+                            <span v-if="row.fee.unitDisplayName" class="unit-display-name">{{ row.fee.unitDisplayName }}</span>
+                            <span class="origin-badge" :class="row.fee.isAutoGenerated ? 'origin-auto' : 'origin-manual'" :title="row.fee.isAutoGenerated ? 'Generata automaticamente da budget' : 'Inserita manualmente'">
+                              {{ row.fee.isAutoGenerated ? 'AUTO' : 'MAN' }}
+                            </span>
+                          </td>
+                          <td class="mono text-right">{{ fmt(row.fee.amountDue) }}</td>
+                          <td class="mono text-right text-green">{{ fmt(row.fee.amountPaid) }}</td>
+                          <td class="mono text-right" :class="row.fee.balance > 0 ? 'text-amber' : 'text-green'">{{ fmt(row.fee.balance) }}</td>
+                          <td><span class="badge" :class="feeBadge(row.fee.paymentStatus)">{{ feeStatusLabel(row.fee.paymentStatus) }}</span></td>
+                          <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(row.fee.paymentDate) }}</td>
+                          <td>
+                            <div class="row-actions">
+                              <button v-if="canEdit" class="btn-icon" @click="openPayModal(row.fee, inst)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
+                              <button v-if="canEdit" class="btn-icon" @click="openFeeModal(row.fee, inst)" title="Modifica">✎</button>
+                              <button v-if="canDelete" class="btn-icon" @click="deleteFee(row.fee.id)" style="color:var(--accent-red)">✕</button>
+                            </div>
+                          </td>
+                        </tr>
+
+                      </template>
                     </tbody>
                     <!-- Totali -->
                     <tfoot>
                       <tr class="fees-total-row">
+                        <td></td>
                         <td class="text-muted" style="font-size:0.8rem">Totale</td>
                         <td class="mono text-right">{{ fmt(fees.reduce((s,f) => s + f.amountDue, 0)) }}</td>
                         <td class="mono text-right text-green">{{ fmt(fees.reduce((s,f) => s + f.amountPaid, 0)) }}</td>
@@ -194,88 +323,200 @@
             </tr>
           </thead>
           <tbody>
-            <template v-for="ug in unitGroups" :key="ug.unitId">
+            <template v-for="row in unitGroups" :key="row.isGroup ? `g-${row.groupId}` : row.unitId">
 
-              <!-- Riga unità -->
-              <tr
-                class="inst-row"
-                :class="{ 'inst-row--expanded': expandedUnitId === ug.unitId }"
-                @click="expandedUnitId = expandedUnitId === ug.unitId ? null : ug.unitId"
-              >
-                <td class="expand-cell">
-                  <span class="expand-icon">{{ expandedUnitId === ug.unitId ? '▾' : '▸' }}</span>
-                </td>
-                <td>
-                  <span class="unit-number">{{ ug.unitInternalNumber }}</span>
-                  <span v-if="ug.unitDisplayName" class="unit-display-name">{{ ug.unitDisplayName }}</span>
-                </td>
-                <td class="mono text-right">{{ fmt(ug.totalDue) }}</td>
-                <td class="mono text-right text-green">{{ fmt(ug.totalPaid) }}</td>
-                <td class="mono text-right" :class="ug.totalBalance > 0 ? 'text-amber' : 'text-green'">{{ fmt(ug.totalBalance) }}</td>
-                <td>
-                  <span v-if="ug.totalBalance <= 0" class="badge badge-green">Saldata</span>
-                  <span v-else-if="ug.hasOverdue" class="badge badge-red">In ritardo</span>
-                  <span v-else class="badge badge-amber">Aperta</span>
-                </td>
-                <td @click.stop>
-                  <div class="row-actions">
-                    <button class="btn-icon" @click="downloadUnitNoticePdf(ug)" title="Scarica avviso PDF" :disabled="downloadingPdf === ug.unitId">
-                      <span v-if="downloadingPdf === ug.unitId" class="spinner" style="width:12px;height:12px"></span>
-                      <span v-else>⬇</span>
-                    </button>
-                  </div>
-                </td>
-              </tr>
+              <!-- ── Riga GRUPPO ── -->
+              <template v-if="row.isGroup">
+                <tr
+                  class="inst-row row-group"
+                  :class="{ 'inst-row--expanded': expandedGroupId === row.groupId }"
+                  @click="expandedGroupId = expandedGroupId === row.groupId ? null : row.groupId; expandedGroupInstKey = null"
+                >
+                  <td class="expand-cell">
+                    <span class="expand-icon">{{ expandedGroupId === row.groupId ? '▾' : '▸' }}</span>
+                  </td>
+                  <td>
+                    <span class="group-badge">Gruppo</span>
+                    <span class="unit-number">{{ row.groupName }}</span>
+                  </td>
+                  <td class="mono text-right">{{ fmt(row.totalDue) }}</td>
+                  <td class="mono text-right text-green">{{ fmt(row.totalPaid) }}</td>
+                  <td class="mono text-right" :class="row.totalBalance > 0 ? 'text-amber' : 'text-green'">{{ fmt(row.totalBalance) }}</td>
+                  <td>
+                    <span v-if="row.totalBalance <= 0" class="badge badge-green">Saldata</span>
+                    <span v-else-if="row.hasOverdue" class="badge badge-red">In ritardo</span>
+                    <span v-else class="badge badge-amber">Aperta</span>
+                  </td>
+                  <td @click.stop>
+                    <div class="row-actions">
+                      <button class="btn-icon" @click="downloadGroupNoticePdf(row)" title="Avviso PDF intero esercizio" :disabled="downloadingPdf === `group-${row.groupId}`">
+                        <span v-if="downloadingPdf === `group-${row.groupId}`" class="spinner" style="width:12px;height:12px"></span>
+                        <span v-else style="font-size:0.62rem;font-weight:700;letter-spacing:0.04em;color:var(--accent-red)">PDF</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
 
-              <!-- Dettaglio per rata -->
-              <tr v-if="expandedUnitId === ug.unitId" class="fees-row">
-                <td colspan="7" class="fees-body">
-                  <div class="fees-header">
-                    <span class="fees-title">Quote per rata – {{ ug.unitInternalNumber }}{{ ug.unitDisplayName ? ` – ${ug.unitDisplayName}` : '' }}</span>
-                  </div>
-                  <table class="inner-table">
-                    <thead>
-                      <tr>
-                        <th>N° rata</th>
-                        <th>Scadenza</th>
-                        <th class="text-right">Dovuto</th>
-                        <th class="text-right">Pagato</th>
-                        <th class="text-right">Saldo</th>
-                        <th>Stato</th>
-                        <th>Data pagamento</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr v-for="f in ug.fees" :key="f.id">
-                        <td class="mono text-muted">{{ f.installmentNumber }}</td>
-                        <td class="mono text-secondary" style="font-size:0.82rem">{{ fmtDate(f.dueDate) }}</td>
-                        <td class="mono text-right">{{ fmt(f.amountDue) }}</td>
-                        <td class="mono text-right text-green">{{ fmt(f.amountPaid) }}</td>
-                        <td class="mono text-right" :class="f.balance > 0 ? 'text-amber' : 'text-green'">{{ fmt(f.balance) }}</td>
-                        <td><span class="badge" :class="feeBadge(f.paymentStatus)">{{ feeStatusLabel(f.paymentStatus) }}</span></td>
-                        <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(f.paymentDate) }}</td>
-                        <td>
-                          <div class="row-actions">
-                            <button v-if="canEdit" class="btn-icon" @click="openPayModal(f, f._installment)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
-                            <button v-if="canEdit" class="btn-icon" @click="openFeeModal(f, f._installment)" title="Modifica">✎</button>
-                            <button v-if="canDelete" class="btn-icon" @click="deleteFeeFromUnitView(f.id, ug.unitId)" style="color:var(--accent-red)">✕</button>
-                          </div>
-                        </td>
-                      </tr>
-                    </tbody>
-                    <tfoot>
-                      <tr class="fees-total-row">
-                        <td colspan="2" class="text-muted" style="font-size:0.8rem">Totale</td>
-                        <td class="mono text-right">{{ fmt(ug.totalDue) }}</td>
-                        <td class="mono text-right text-green">{{ fmt(ug.totalPaid) }}</td>
-                        <td class="mono text-right text-amber">{{ fmt(ug.totalBalance) }}</td>
-                        <td colspan="3"></td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </td>
-              </tr>
+                <!-- Quote per rata aggregate sul gruppo -->
+                <template v-if="expandedGroupId === row.groupId">
+                  <template v-for="ir in row.instRows" :key="`${row.groupId}-${ir.installmentNumber}`">
+                    <tr
+                      class="inst-row row-subunit"
+                      :class="{ 'inst-row--expanded': expandedGroupInstKey === `${row.groupId}-${ir.installmentNumber}` }"
+                      @click="expandedGroupInstKey = expandedGroupInstKey === `${row.groupId}-${ir.installmentNumber}` ? null : `${row.groupId}-${ir.installmentNumber}`"
+                    >
+                      <td class="expand-cell">
+                        <span class="expand-icon">{{ expandedGroupInstKey === `${row.groupId}-${ir.installmentNumber}` ? '▾' : '▸' }}</span>
+                      </td>
+                      <td>
+                        <span class="mono text-muted" style="margin-right:0.4rem">Rata {{ ir.installmentNumber }}</span>
+                        <span class="text-secondary" style="font-size:0.82rem">{{ fmtDate(ir.dueDate) }}</span>
+                      </td>
+                      <td class="mono text-right">{{ fmt(ir.totalDue) }}</td>
+                      <td class="mono text-right text-green">{{ fmt(ir.totalPaid) }}</td>
+                      <td class="mono text-right" :class="ir.totalBalance > 0 ? 'text-amber' : 'text-green'">{{ fmt(ir.totalBalance) }}</td>
+                      <td>
+                        <span v-if="ir.totalBalance <= 0" class="badge badge-green">Saldata</span>
+                        <span v-else-if="ir.hasOverdue" class="badge badge-red">In ritardo</span>
+                        <span v-else class="badge badge-amber">Aperta</span>
+                      </td>
+                      <td @click.stop>
+                        <div class="row-actions">
+                          <button class="btn-icon" @click="downloadGroupInstNoticePdf(row, ir)" title="Avviso PDF questa rata" :disabled="downloadingPdf === `group-inst-${row.groupId}-${ir.installmentNumber}`">
+                            <span v-if="downloadingPdf === `group-inst-${row.groupId}-${ir.installmentNumber}`" class="spinner" style="width:12px;height:12px"></span>
+                            <span v-else style="font-size:0.62rem;font-weight:700;letter-spacing:0.04em;color:var(--accent-red)">PDF</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- Dettaglio unità per questa rata -->
+                    <tr v-if="expandedGroupInstKey === `${row.groupId}-${ir.installmentNumber}`" class="fees-row">
+                      <td colspan="7" class="fees-body">
+                        <div class="fees-header">
+                          <span class="fees-title">Unità – {{ row.groupName }} · Rata {{ ir.installmentNumber }} ({{ fmtDate(ir.dueDate) }})</span>
+                        </div>
+                        <table class="inner-table">
+                          <thead><tr>
+                            <th>Unità</th>
+                            <th class="text-right">Dovuto</th><th class="text-right">Pagato</th>
+                            <th class="text-right">Saldo</th><th>Stato</th><th>Data pag.</th><th></th>
+                          </tr></thead>
+                          <tbody>
+                            <tr v-for="f in ir.unitFees" :key="f.id">
+                              <td>
+                                <span class="unit-number">{{ f.unitInternalNumber || f.unitId }}</span>
+                                <span v-if="f.unitDisplayName" class="unit-display-name">{{ f.unitDisplayName }}</span>
+                              </td>
+                              <td class="mono text-right">{{ fmt(f.amountDue) }}</td>
+                              <td class="mono text-right text-green">{{ fmt(f.amountPaid) }}</td>
+                              <td class="mono text-right" :class="f.balance > 0 ? 'text-amber' : 'text-green'">{{ fmt(f.balance) }}</td>
+                              <td><span class="badge" :class="feeBadge(f.paymentStatus)">{{ feeStatusLabel(f.paymentStatus) }}</span></td>
+                              <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(f.paymentDate) }}</td>
+                              <td>
+                                <div class="row-actions">
+                                  <button v-if="canEdit" class="btn-icon" @click="openPayModal(f, f._installment)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
+                                  <button v-if="canEdit" class="btn-icon" @click="openFeeModal(f, f._installment)" title="Modifica">✎</button>
+                                  <button v-if="canDelete" class="btn-icon" @click="deleteFeeFromUnitView(f.id, f.unitId)" style="color:var(--accent-red)">✕</button>
+                                </div>
+                              </td>
+                            </tr>
+                          </tbody>
+                          <tfoot>
+                            <tr class="fees-total-row">
+                              <td class="text-muted" style="font-size:0.8rem">Totale</td>
+                              <td class="mono text-right">{{ fmt(ir.totalDue) }}</td>
+                              <td class="mono text-right text-green">{{ fmt(ir.totalPaid) }}</td>
+                              <td class="mono text-right text-amber">{{ fmt(ir.totalBalance) }}</td>
+                              <td colspan="3"></td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </td>
+                    </tr>
+                  </template>
+                </template>
+              </template>
+
+              <!-- ── Riga UNITÀ singola (non in gruppo) ── -->
+              <template v-else>
+                <tr
+                  class="inst-row"
+                  :class="{ 'inst-row--expanded': expandedUnitId === row.unitId }"
+                  @click="expandedUnitId = expandedUnitId === row.unitId ? null : row.unitId"
+                >
+                  <td class="expand-cell">
+                    <span class="expand-icon">{{ expandedUnitId === row.unitId ? '▾' : '▸' }}</span>
+                  </td>
+                  <td>
+                    <span class="unit-number">{{ row.unitInternalNumber }}</span>
+                    <span v-if="row.unitDisplayName" class="unit-display-name">{{ row.unitDisplayName }}</span>
+                  </td>
+                  <td class="mono text-right">{{ fmt(row.totalDue) }}</td>
+                  <td class="mono text-right text-green">{{ fmt(row.totalPaid) }}</td>
+                  <td class="mono text-right" :class="row.totalBalance > 0 ? 'text-amber' : 'text-green'">{{ fmt(row.totalBalance) }}</td>
+                  <td>
+                    <span v-if="row.totalBalance <= 0" class="badge badge-green">Saldata</span>
+                    <span v-else-if="row.hasOverdue" class="badge badge-red">In ritardo</span>
+                    <span v-else class="badge badge-amber">Aperta</span>
+                  </td>
+                  <td @click.stop>
+                    <div class="row-actions">
+                      <button class="btn-icon" @click="downloadUnitNoticePdf(row)" title="Scarica avviso PDF" :disabled="downloadingPdf === row.unitId">
+                        <span v-if="downloadingPdf === row.unitId" class="spinner" style="width:12px;height:12px"></span>
+                        <span v-else style="font-size:0.62rem;font-weight:700;letter-spacing:0.04em;color:var(--accent-red)">PDF</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Dettaglio per rata -->
+                <tr v-if="expandedUnitId === row.unitId" class="fees-row">
+                  <td colspan="7" class="fees-body">
+                    <div class="fees-header">
+                      <span class="fees-title">Quote per rata – {{ row.unitInternalNumber }}{{ row.unitDisplayName ? ` – ${row.unitDisplayName}` : '' }}</span>
+                    </div>
+                    <table class="inner-table">
+                      <thead><tr>
+                        <th>N° rata</th><th>Scadenza</th>
+                        <th class="text-right">Dovuto</th><th class="text-right">Pagato</th>
+                        <th class="text-right">Saldo</th><th>Stato</th><th>Data pag.</th><th></th>
+                      </tr></thead>
+                      <tbody>
+                        <tr v-for="f in row.fees" :key="f.id">
+                          <td class="mono text-muted">{{ f.installmentNumber }}</td>
+                          <td class="mono text-secondary" style="font-size:0.82rem">{{ fmtDate(f.dueDate) }}</td>
+                          <td class="mono text-right">{{ fmt(f.amountDue) }}</td>
+                          <td class="mono text-right text-green">{{ fmt(f.amountPaid) }}</td>
+                          <td class="mono text-right" :class="f.balance > 0 ? 'text-amber' : 'text-green'">{{ fmt(f.balance) }}</td>
+                          <td><span class="badge" :class="feeBadge(f.paymentStatus)">{{ feeStatusLabel(f.paymentStatus) }}</span></td>
+                          <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(f.paymentDate) }}</td>
+                          <td>
+                            <div class="row-actions">
+                              <button class="btn-icon" @click="downloadUnitInstNoticePdf(row, f)" title="Avviso PDF questa rata" :disabled="downloadingPdf === `unit-inst-${row.unitId}-${f._installment?.id}`">
+                                <span v-if="downloadingPdf === `unit-inst-${row.unitId}-${f._installment?.id}`" class="spinner" style="width:12px;height:12px"></span>
+                                <span v-else style="font-size:0.62rem;font-weight:700;letter-spacing:0.04em;color:var(--accent-red)">PDF</span>
+                              </button>
+                              <button v-if="canEdit" class="btn-icon" @click="openPayModal(f, f._installment)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
+                              <button v-if="canEdit" class="btn-icon" @click="openFeeModal(f, f._installment)" title="Modifica">✎</button>
+                              <button v-if="canDelete" class="btn-icon" @click="deleteFeeFromUnitView(f.id, row.unitId)" style="color:var(--accent-red)">✕</button>
+                            </div>
+                          </td>
+                        </tr>
+                      </tbody>
+                      <tfoot>
+                        <tr class="fees-total-row">
+                          <td colspan="2" class="text-muted" style="font-size:0.8rem">Totale</td>
+                          <td class="mono text-right">{{ fmt(row.totalDue) }}</td>
+                          <td class="mono text-right text-green">{{ fmt(row.totalPaid) }}</td>
+                          <td class="mono text-right text-amber">{{ fmt(row.totalBalance) }}</td>
+                          <td colspan="3"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </td>
+                </tr>
+              </template>
 
             </template>
           </tbody>
@@ -440,7 +681,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { installmentApi, feeApi, unitApi } from '@/services/api'
+import { installmentApi, feeApi, unitApi, billingGroupApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 
 const route  = useRoute()
@@ -502,6 +743,69 @@ const instBadge = (id) => ({ 1: 'badge-muted', 2: 'badge-blue', 3: 'badge-green'
 const feeBadge  = (s)  => ({ ToPay: 'badge-amber', Paid: 'badge-green', Overdue: 'badge-red', PartiallyPaid: 'badge-purple' }[s] || 'badge-muted')
 const feeStatusLabel = (s) => ({ ToPay: 'Da pagare', Paid: 'Pagata', Overdue: 'Scaduta', PartiallyPaid: 'Parz. pagata' }[s] || s)
 
+// ── Riconciliazione per codice ────────────────────────────────
+const reconcileCode     = ref('')
+const reconcileResults  = ref([])
+const reconcileNotFound = ref(false)
+const searchingCode     = ref(false)
+const payingAll         = ref(false)
+
+async function searchByCode() {
+  if (!reconcileCode.value) return
+  searchingCode.value     = true
+  reconcileResults.value  = []
+  reconcileNotFound.value = false
+  try {
+    const { data } = await feeApi.getByPaymentCode(reconcileCode.value)
+    reconcileResults.value = data ?? []
+  } catch (err) {
+    if (err?.response?.status === 404) reconcileNotFound.value = true
+    else if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    searchingCode.value = false
+  }
+}
+
+function openPayModalFromCodeRow(r) {
+  const fakeInst = { id: r.installmentId, installmentNumber: r.installmentNumber, dueDate: r.dueDate }
+  openPayModal({
+    id:            r.feeId,
+    amountDue:     r.amountDue,
+    amountPaid:    r.amountPaid,
+    paymentMethod: 'BankTransfer',
+  }, fakeInst)
+}
+
+async function payAllFromCode() {
+  const pending = reconcileResults.value.filter(r => r.balance > 0)
+  if (!pending.length) return
+  if (!confirm(`Registrare ${pending.length} pagament${pending.length > 1 ? 'i' : 'o'} per un totale di ${fmt(pending.reduce((s, r) => s + r.balance, 0))}?`)) return
+  payingAll.value = true
+  const today = new Date().toISOString()
+  let errors = 0
+  for (const r of pending) {
+    try {
+      await feeApi.recordPayment(r.feeId, r.balance, today, 'BankTransfer')
+    } catch {
+      errors++
+    }
+  }
+  payingAll.value = false
+  if (errors) store.toast(`${errors} pagament${errors > 1 ? 'i' : 'o'} non registrat${errors > 1 ? 'i' : 'o'}`, 'error')
+  else store.toast('Tutti i pagamenti registrati', 'success')
+  // refresh search to show updated balances
+  await searchByCode()
+}
+
+// ── Billing groups (condivisi tra le due viste) ───────────────
+async function loadBillingGroups() {
+  if (!store.selectedCondominioId) return
+  try {
+    const { data } = await billingGroupApi.getByCondominium(store.selectedCondominioId)
+    billingGroups.value = data ?? []
+  } catch { billingGroups.value = [] }
+}
+
 // ── Caricamento rate ──────────────────────────────────────────
 async function loadInstallments(preserveExpanded = false) {
   if (!store.selectedCondominioId) return
@@ -527,6 +831,49 @@ async function loadInstallments(preserveExpanded = false) {
   } catch { installments.value = [] } finally { loadingInst.value = false }
 }
 
+// Raggruppa le quote della rata espansa per BillingGroup
+const feeGroups = computed(() => {
+  const unitToGroup = new Map()
+  for (const bg of billingGroups.value) {
+    for (const u of (bg.units ?? [])) {
+      unitToGroup.set(u.unitId, bg)
+    }
+  }
+
+  const rows = []
+  const groupMap = new Map()
+
+  for (const f of fees.value) {
+    const bg = unitToGroup.get(f.unitId)
+    if (bg) {
+      if (!groupMap.has(bg.id)) groupMap.set(bg.id, { bg, fees: [] })
+      groupMap.get(bg.id).fees.push(f)
+    } else {
+      rows.push({ isGroup: false, fee: f })
+    }
+  }
+
+  for (const { bg, fees: gfees } of groupMap.values()) {
+    rows.push({
+      isGroup:      true,
+      groupId:      bg.id,
+      groupName:    bg.name,
+      totalDue:     gfees.reduce((s, f) => s + (f.amountDue  ?? 0), 0),
+      totalPaid:    gfees.reduce((s, f) => s + (f.amountPaid ?? 0), 0),
+      totalBalance: gfees.reduce((s, f) => s + (f.balance    ?? 0), 0),
+      fees: gfees,
+    })
+  }
+
+  return rows.sort((a, b) => {
+    const na = a.isGroup ? a.groupName : (a.fee.unitInternalNumber ?? '')
+    const nb = b.isGroup ? b.groupName : (b.fee.unitInternalNumber ?? '')
+    return na.localeCompare(nb, 'it', { numeric: true })
+  })
+})
+
+const expandedFeeGroupId = ref(null)
+
 // ── Expand rata → carica quote ────────────────────────────────
 async function toggleInstExpand(inst) {
   if (expandedInstId.value === inst.id) {
@@ -536,6 +883,7 @@ async function toggleInstExpand(inst) {
   }
   expandedInstId.value = inst.id
   fees.value = []
+  expandedFeeGroupId.value = null
   loadingFees.value = true
   try {
     const { data } = await feeApi.getByInstallment(inst.id)
@@ -683,67 +1031,131 @@ async function deleteFee(id) {
 // ── Vista per unità ───────────────────────────────────────────
 const allUnitFees    = ref([])   // tutte le fee di tutte le rate, arricchite con info rata
 const loadingByUnit  = ref(false)
-const expandedUnitId = ref(null)
+const expandedUnitId      = ref(null)  // id unità singola espansa
+const expandedGroupId     = ref(null)  // id gruppo espanso
+const expandedGroupInstKey = ref(null) // `${groupId}-${installmentNumber}` rata espansa dentro gruppo
+const billingGroups       = ref([])
 
 const unitGroups = computed(() => {
-  const map = new Map()
+  // Build per-unit map
+  const unitMap = new Map()
   for (const f of allUnitFees.value) {
-    if (!map.has(f.unitId)) {
-      map.set(f.unitId, {
-        unitId:              f.unitId,
-        unitInternalNumber:  f.unitInternalNumber ?? String(f.unitId),
-        unitDisplayName:     f.unitDisplayName ?? '',
-        totalDue:            0,
-        totalPaid:           0,
-        totalBalance:        0,
-        hasOverdue:          false,
-        fees:                [],
+    if (!unitMap.has(f.unitId)) unitMap.set(f.unitId, [])
+    unitMap.get(f.unitId).push(f)
+  }
+
+  // Build unitToGroup map
+  const unitToGroup = new Map()
+  for (const bg of billingGroups.value) {
+    for (const u of (bg.units ?? [])) unitToGroup.set(u.unitId, bg)
+  }
+
+  const rows    = []
+  const groupMap = new Map()
+
+  for (const [unitId, fees] of unitMap) {
+    const bg = unitToGroup.get(unitId)
+    if (bg) {
+      if (!groupMap.has(bg.id)) groupMap.set(bg.id, { bg, allFees: [] })
+      groupMap.get(bg.id).allFees.push(...fees)
+    } else {
+      const first = fees[0]
+      rows.push({
+        isGroup:            false,
+        unitId,
+        unitInternalNumber: first.unitInternalNumber ?? String(unitId),
+        unitDisplayName:    first.unitDisplayName ?? '',
+        totalDue:           fees.reduce((s, f) => s + (f.amountDue  ?? 0), 0),
+        totalPaid:          fees.reduce((s, f) => s + (f.amountPaid ?? 0), 0),
+        totalBalance:       fees.reduce((s, f) => s + (f.balance    ?? 0), 0),
+        hasOverdue:         fees.some(f => f.paymentStatus === 'Overdue'),
+        fees,
       })
     }
-    const g = map.get(f.unitId)
-    g.totalDue     += f.amountDue     ?? 0
-    g.totalPaid    += f.amountPaid    ?? 0
-    g.totalBalance += f.balance       ?? 0
-    if (f.paymentStatus === 'Overdue') g.hasOverdue = true
-    g.fees.push(f)
   }
-  return [...map.values()].sort((a, b) =>
-    a.unitInternalNumber.localeCompare(b.unitInternalNumber, 'it', { numeric: true })
-  )
+
+  for (const { bg, allFees } of groupMap.values()) {
+    // Aggrega per rata (installmentNumber + dueDate)
+    const instMap = new Map()
+    for (const f of allFees) {
+      const key = f.installmentNumber
+      if (!instMap.has(key)) {
+        instMap.set(key, {
+          installmentNumber: f.installmentNumber,
+          dueDate:           f.dueDate,
+          _installment:      f._installment,
+          totalDue:          0,
+          totalPaid:         0,
+          totalBalance:      0,
+          hasOverdue:        false,
+          unitFees:          [],  // fee singole per questa rata
+        })
+      }
+      const r = instMap.get(key)
+      r.totalDue     += f.amountDue  ?? 0
+      r.totalPaid    += f.amountPaid ?? 0
+      r.totalBalance += f.balance    ?? 0
+      if (f.paymentStatus === 'Overdue') r.hasOverdue = true
+      r.unitFees.push(f)
+    }
+    const instRows = [...instMap.values()].sort((a, b) => a.installmentNumber - b.installmentNumber)
+
+    rows.push({
+      isGroup:      true,
+      groupId:      bg.id,
+      groupName:    bg.name,
+      totalDue:     allFees.reduce((s, f) => s + (f.amountDue  ?? 0), 0),
+      totalPaid:    allFees.reduce((s, f) => s + (f.amountPaid ?? 0), 0),
+      totalBalance: allFees.reduce((s, f) => s + (f.balance    ?? 0), 0),
+      hasOverdue:   allFees.some(f => f.paymentStatus === 'Overdue'),
+      instRows,
+    })
+  }
+
+  return rows.sort((a, b) => {
+    const na = a.isGroup ? a.groupName : a.unitInternalNumber
+    const nb = b.isGroup ? b.groupName : b.unitInternalNumber
+    return na.localeCompare(nb, 'it', { numeric: true })
+  })
 })
 
 async function loadByUnit() {
   if (!store.selectedCondominioId) return
   loadingByUnit.value = true
-  expandedUnitId.value = null
-  allUnitFees.value = []
+  expandedUnitId.value  = null
+  expandedGroupId.value = null
+  allUnitFees.value     = []
   try {
-    // Prima carica tutte le rate (riutilizza la lista già caricata se disponibile)
-    let insts = installments.value
-    if (!insts.length) {
-      let data
-      if (selectedFiscalYearId.value) {
-        ({ data } = await installmentApi.getByFiscalYear(store.selectedCondominioId, selectedFiscalYearId.value))
-      } else {
-        ({ data } = await installmentApi.getByCondominium(store.selectedCondominioId))
-      }
-      insts = data ?? []
-    }
-
-    // Carica le quote di ogni rata in parallelo
-    const results = await Promise.all(
-      insts.map(inst =>
-        feeApi.getByInstallment(inst.id)
-          .then(({ data }) => (data ?? []).map(f => ({
-            ...f,
-            installmentNumber: inst.installmentNumber,
-            dueDate:           inst.dueDate,
-            _installment:      inst,
-          })))
-          .catch(() => [])
-      )
-    )
-    allUnitFees.value = results.flat()
+    const [instsResult, groupsResult] = await Promise.allSettled([
+      (async () => {
+        let insts = installments.value
+        if (!insts.length) {
+          let data
+          if (selectedFiscalYearId.value) {
+            ({ data } = await installmentApi.getByFiscalYear(store.selectedCondominioId, selectedFiscalYearId.value))
+          } else {
+            ({ data } = await installmentApi.getByCondominium(store.selectedCondominioId))
+          }
+          insts = data ?? []
+        }
+        const results = await Promise.all(
+          insts.map(inst =>
+            feeApi.getByInstallment(inst.id)
+              .then(({ data }) => (data ?? []).map(f => ({
+                ...f,
+                installmentNumber: inst.installmentNumber,
+                dueDate:           inst.dueDate,
+                _installment:      inst,
+              })))
+              .catch(() => [])
+          )
+        )
+        return results.flat()
+      })(),
+      billingGroupApi.getByCondominium(store.selectedCondominioId).then(r => r.data ?? []).catch(() => []),
+    ])
+    allUnitFees.value  = instsResult.status === 'fulfilled'  ? instsResult.value  : []
+    billingGroups.value = groupsResult.status === 'fulfilled' ? groupsResult.value : []
   } finally {
     loadingByUnit.value = false
   }
@@ -792,11 +1204,42 @@ async function downloadUnitNoticePdf(ug) {
   finally { downloadingPdf.value = null }
 }
 
+async function downloadUnitInstNoticePdf(ug, f) {
+  downloadingPdf.value = `unit-inst-${ug.unitId}-${f._installment?.id ?? f.id}`
+  try {
+    const { data } = await feeApi.getUnitInstallmentNoticePdf(ug.unitId, f._installment.id)
+    triggerBlobDownload(data, `avviso-unita-${ug.unitInternalNumber}-rata-${f.installmentNumber}.pdf`)
+  } catch { store.toast('Errore nel download del PDF', 'error') }
+  finally { downloadingPdf.value = null }
+}
+
+async function downloadGroupNoticePdf(row) {
+  if (!selectedFiscalYearId.value) {
+    store.toast('Seleziona un esercizio fiscale per scaricare l\'avviso', 'error')
+    return
+  }
+  downloadingPdf.value = `group-${row.groupId}`
+  try {
+    const { data } = await billingGroupApi.getGroupNoticePdf(row.groupId, selectedFiscalYearId.value)
+    triggerBlobDownload(data, `avviso-gruppo-${row.groupName}.pdf`)
+  } catch { store.toast('Errore nel download del PDF', 'error') }
+  finally { downloadingPdf.value = null }
+}
+
+async function downloadGroupInstNoticePdf(row, ir) {
+  downloadingPdf.value = `group-inst-${row.groupId}-${ir.installmentNumber}`
+  try {
+    const { data } = await billingGroupApi.getGroupInstNoticePdf(row.groupId, ir._installment.id)
+    triggerBlobDownload(data, `avviso-gruppo-${row.groupName}-rata-${ir.installmentNumber}.pdf`)
+  } catch { store.toast('Errore nel download del PDF', 'error') }
+  finally { downloadingPdf.value = null }
+}
+
 // ── Watchers / Init ───────────────────────────────────────────
 watch(() => store.selectedCondominioId, async () => {
   allUnitFees.value  = []
-  // loadFiscalYears è gestito dal watch in appStore; attende che si aggiorni
-  await loadInstallments()
+  billingGroups.value = []
+  await Promise.all([loadInstallments(), loadBillingGroups()])
   if (viewMode.value === 'by-unit') await loadByUnit()
 })
 watch(() => [store.selectedFiscalYearId, instFilter.value, route.query.budgetId], async () => {
@@ -805,11 +1248,81 @@ watch(() => [store.selectedFiscalYearId, instFilter.value, route.query.budgetId]
 })
 onMounted(async () => {
   if (!store.fiscalYears.length) await store.loadFiscalYears()
-  await loadInstallments()
+  await Promise.all([loadInstallments(), loadBillingGroups()])
 })
 </script>
 
 <style scoped>
+/* Box riconciliazione */
+.reconcile-box {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+.reconcile-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.reconcile-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.reconcile-input {
+  flex: 1;
+  min-width: 220px;
+  max-width: 320px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+.reconcile-result {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+.reconcile-notfound {
+  background: color-mix(in srgb, var(--accent-red) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-red) 30%, transparent);
+  color: var(--accent-red);
+}
+.reconcile-found {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.reconcile-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.4rem 1rem;
+}
+.reconcile-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.reconcile-item-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.reconcile-item-value {
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.reconcile-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
 .budget-filter-banner {
   display: flex;
   align-items: center;
@@ -979,4 +1492,45 @@ onMounted(async () => {
 .text-secondary { color: var(--text-secondary); }
 .text-muted  { color: var(--text-muted); }
 .mono { font-family: var(--font-mono, monospace); }
+
+/* Righe gruppo nel pannello quote (tab per rata) */
+.fee-group-row { cursor: pointer; }
+.fee-group-row td {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  font-weight: 600;
+}
+.fee-group-row:hover td {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.fee-subrow td {
+  padding-left: 2.5rem;
+  font-size: 0.82rem;
+}
+
+/* Gruppi di fatturazione nella vista per unità */
+.row-group td {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  font-weight: 600;
+}
+.row-group:hover td {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.row-subunit td {
+  padding-left: 2.5rem;
+  font-size: 0.87rem;
+}
+.group-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  margin-right: 0.45rem;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  vertical-align: middle;
+}
 </style>

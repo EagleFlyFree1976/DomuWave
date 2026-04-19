@@ -35,7 +35,7 @@ public class CreateQuoteCommandConsumer
         if (work == null)
             throw new NotFoundException("Lavoro straordinario non trovato");
 
-        Services.Models.Supplier supplier = null;
+        Services.Models.Supplier? supplier = null;
         if (command.Dto.SupplierId.HasValue)
         {
             supplier = await _supplierService.GetByIdAsync(command.Dto.SupplierId.Value, currentUser, cancellationToken).ConfigureAwait(false);

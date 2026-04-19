@@ -33,6 +33,8 @@
     <property name="NumeroAbitanti" column="NumeroAbitanti" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
 
+    <many-to-one name="BillingGroup" class="DomuWave.Services.Models.BillingGroup, DomuWave.Services" column="BillingGroupId" />
+
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
     <property name="LastUpdatedBy" column="LastUpdatedById" type="Int32" />

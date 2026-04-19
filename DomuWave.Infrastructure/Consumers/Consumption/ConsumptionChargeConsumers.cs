@@ -6,6 +6,7 @@ using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Consumption;
 using DomuWave.Services.Dto.Consumption;
+using DomuWave.Services.Helpers;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
 using NHibernate;
@@ -71,7 +72,7 @@ public class CreateConsumptionChargeCommandConsumer
         if (budget == null) throw new ValidatorException(
             "Non esiste un budget preventivo per questo esercizio. Crea prima il preventivo.");
 
-        Expense expense = null;
+        Expense? expense = null;
         if (command.Dto.ExpenseId.HasValue)
         {
             expense = await session.Query<Expense>()
@@ -253,6 +254,7 @@ public class ApproveConsumptionChargeCommandConsumer
                 Balance       = item.Amount,
                 PaymentStatus = "ToPay",
                 Notes         = $"[Ripartizione consumi #{entity.Id}] {entity.ConsumptionType?.Name} – {entity.FiscalYear?.Code}",
+                PaymentCode   = PaymentCodeGenerator.Generate(),
             };
             if (user != null) fee.Trace(user);
             await session.SaveAsync(fee, ct).ConfigureAwait(false);

@@ -41,7 +41,7 @@ public class UpdateMaintenanceCommandConsumer
         if (string.IsNullOrWhiteSpace(command.Dto.Title))
             throw new ValidatorException("Il titolo della manutenzione è obbligatorio");
 
-        Services.Models.Supplier supplier = null;
+        Services.Models.Supplier? supplier = null;
         if (command.Dto.SupplierId.HasValue)
         {
             supplier = await _supplierService.GetByIdAsync(command.Dto.SupplierId.Value, currentUser, cancellationToken).ConfigureAwait(false);

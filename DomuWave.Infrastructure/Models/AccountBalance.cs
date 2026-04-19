@@ -2,8 +2,8 @@ namespace DomuWave.Services.Models;
 
 public class AccountBalance : TenantEntity<int>
 {
-    public virtual FiscalYear      FiscalYear     { get; set; }
-    public virtual ChartOfAccounts Account        { get; set; }
+    public virtual FiscalYear      FiscalYear     { get; set; } = null!;
+    public virtual ChartOfAccounts Account        { get; set; } = null!;
     /// <summary>Saldo iniziale dell'esercizio per questo conto.</summary>
     public virtual decimal         OpeningBalance { get; set; } = 0;
     /// <summary>Saldo finale generato alla chiusura dell'esercizio (0 finché non chiuso).</summary>

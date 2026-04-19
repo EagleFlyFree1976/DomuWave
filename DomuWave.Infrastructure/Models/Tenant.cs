@@ -6,13 +6,10 @@ namespace DomuWave.Services.Models
     public class Tenant : TraceEntity<Guid>
     {
   
-        public virtual string Name { get; set; }
-        public virtual string Code { get; set; }
+        public virtual string Name { get; set; } = string.Empty;
+        public virtual string Code { get; set; } = string.Empty;
         public virtual bool IsActive { get; set; }
 
-        public override int GetHashCode()
-        {
-            return this.GetHashCode();
-        }
+        public override int GetHashCode() => Id.GetHashCode();
     }
 }

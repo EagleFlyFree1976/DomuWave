@@ -78,7 +78,7 @@ public class UserTenantService : BaseService, IUserTenantService
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<UserTenant?> GetByIdAsync(
+    public async Task<UserTenant> GetByIdAsync(
         int userTenantId, IUser currentUser, CancellationToken ct)
     {
         return await session.Query<UserTenant>()

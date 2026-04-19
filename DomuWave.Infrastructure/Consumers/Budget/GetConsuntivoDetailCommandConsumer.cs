@@ -250,7 +250,18 @@ public class GetConsuntivoDetailCommandConsumer
             });
         }
 
-        // ── 6. Quote (rate) emesse per l'esercizio — aggregato per unità ────────
+        // ── 6. Billing groups del condominio ─────────────────────────────────────
+        var billingGroups = await session.Query<BillingGroup>()
+            .Where(bg => bg.Condominium.Id == condominiumId && !bg.IsDeleted)
+            .FetchMany(bg => bg.Units)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var unitToGroup = billingGroups
+            .SelectMany(bg => bg.Units.Select(u => (UnitId: u.Id, Group: bg)))
+            .ToDictionary(x => x.UnitId, x => x.Group);
+
+        // ── 7. Quote (rate) emesse per l'esercizio — aggregato per unità ────────
         var feesByUnit = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.FiscalYear.Id == fiscalYearId && !f.IsDeleted)
             .Select(f => new
@@ -270,7 +281,7 @@ public class GetConsuntivoDetailCommandConsumer
                 g => (Due: g.Sum(f => f.AmountDue), Paid: g.Sum(f => f.AmountPaid), Balance: g.Sum(f => f.Balance))
             );
 
-        // ── 7. Vista per unità (pivot) ────────────────────────────────────────
+        // ── 8. Vista per unità (pivot) ────────────────────────────────────────
         // Combina allocazioni da ExpenseAllocation e da ConsumptionChargeItem
         var allAllocRows = allocations
             .Select(a => new { a.UnitId, a.UnitName, a.AllocatedAmount,
@@ -295,44 +306,94 @@ public class GetConsuntivoDetailCommandConsumer
             .GroupBy(x => x.UnitId)
             .ToDictionary(g => g.Key, g => g.First().UnitName);
 
-        var allUnitRows = allUnitIds
-            .Select(unitId =>
-            {
-                var allocsForUnit = allAllocRows.Where(a => a.UnitId == unitId)
-                    .Concat(chargeAllocRows.Where(ci => ci.UnitId == unitId))
-                    .ToList();
+        ConsuntivoUnitRowDto BuildUnitRow(int unitId)
+        {
+            var allocsForUnit = allAllocRows.Where(a => a.UnitId == unitId)
+                .Concat(chargeAllocRows.Where(ci => ci.UnitId == unitId))
+                .ToList();
 
-                var entries = allocsForUnit
-                    .GroupBy(x => x.AccountId)
-                    .Select(cg =>
+            var entries = allocsForUnit
+                .GroupBy(x => x.AccountId)
+                .Select(cg =>
+                {
+                    var acct = accountGroups.FirstOrDefault(a => a.AccountId == cg.Key);
+                    return new ConsuntivoUnitAccountEntryDto
                     {
-                        var acct = accountGroups.FirstOrDefault(a => a.AccountId == cg.Key);
+                        AccountId       = cg.Key,
+                        AccountCode     = acct?.AccountCode,
+                        AccountName     = acct?.AccountName,
+                        AllocatedAmount = cg.Sum(x => x.AllocatedAmount),
+                    };
+                })
+                .OrderBy(e => e.AccountCode)
+                .ToList();
+
+            feesByUnitDict.TryGetValue(unitId, out var fees);
+
+            return new ConsuntivoUnitRowDto
+            {
+                UnitId     = unitId,
+                UnitName   = unitNameMap.TryGetValue(unitId, out var n) ? n : $"Unità {unitId}",
+                Total      = allocsForUnit.Sum(a => a.AllocatedAmount),
+                AmountDue  = fees.Due,
+                AmountPaid = fees.Paid,
+                Balance    = fees.Balance,
+                Entries    = entries,
+            };
+        }
+
+        // Raggruppa per billing group dove applicabile
+        var allUnitRows    = new List<ConsuntivoUnitRowDto>();
+        var groupedUnits   = new Dictionary<int, List<ConsuntivoUnitRowDto>>(); // groupId → sub-rows
+
+        foreach (var unitId in allUnitIds)
+        {
+            if (unitToGroup.TryGetValue(unitId, out var grp))
+            {
+                if (!groupedUnits.ContainsKey(grp.Id)) groupedUnits[grp.Id] = new List<ConsuntivoUnitRowDto>();
+                groupedUnits[grp.Id].Add(BuildUnitRow(unitId));
+            }
+            else
+            {
+                allUnitRows.Add(BuildUnitRow(unitId));
+            }
+        }
+
+        foreach (var (groupId, subRows) in groupedUnits)
+        {
+            var grp = billingGroups.First(bg => bg.Id == groupId);
+            allUnitRows.Add(new ConsuntivoUnitRowDto
+            {
+                UnitId           = 0,
+                UnitName         = grp.Name,
+                IsGroup          = true,
+                BillingGroupId   = grp.Id,
+                BillingGroupName = grp.Name,
+                Total            = subRows.Sum(r => r.Total),
+                AmountDue        = subRows.Sum(r => r.AmountDue),
+                AmountPaid       = subRows.Sum(r => r.AmountPaid),
+                Balance          = subRows.Sum(r => r.Balance),
+                Entries          = subRows
+                    .SelectMany(r => r.Entries)
+                    .GroupBy(e => e.AccountId)
+                    .Select(g =>
+                    {
+                        var first = g.First();
                         return new ConsuntivoUnitAccountEntryDto
                         {
-                            AccountId       = cg.Key,
-                            AccountCode     = acct?.AccountCode,
-                            AccountName     = acct?.AccountName,
-                            AllocatedAmount = cg.Sum(x => x.AllocatedAmount),
+                            AccountId       = g.Key,
+                            AccountCode     = first.AccountCode,
+                            AccountName     = first.AccountName,
+                            AllocatedAmount = g.Sum(e => e.AllocatedAmount),
                         };
                     })
                     .OrderBy(e => e.AccountCode)
-                    .ToList();
+                    .ToList(),
+                Units = subRows,
+            });
+        }
 
-                feesByUnitDict.TryGetValue(unitId, out var fees);
-
-                return new ConsuntivoUnitRowDto
-                {
-                    UnitId    = unitId,
-                    UnitName  = unitNameMap.TryGetValue(unitId, out var n) ? n : $"Unità {unitId}",
-                    Total     = allocsForUnit.Sum(a => a.AllocatedAmount),
-                    AmountDue = fees.Due,
-                    AmountPaid = fees.Paid,
-                    Balance   = fees.Balance,
-                    Entries   = entries,
-                };
-            })
-            .OrderBy(u => u.UnitName)
-            .ToList();
+        allUnitRows = allUnitRows.OrderBy(u => u.IsGroup ? u.BillingGroupName : u.UnitName).ToList();
 
         return new ConsuntivoDetailDto
         {

@@ -1,4 +1,3 @@
-using DomuWave.Services.Interfaces.Extensions;
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
 using CPQ.Core.Persistence.SessionFactories;
@@ -6,6 +5,7 @@ using CPQ.Core.Services;
 using DomuWave.Services.Command.FiscalYear;
 using DomuWave.Services.Dto.Contabilita.FiscalYear;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
 using NHibernate.Linq;
 using SimpleMediator.Core;
@@ -83,19 +83,27 @@ public class GetConguaglioCommandConsumer
 
         var totalPaid = paidMap.Values.Sum();
 
-        // Costruisce le righe per unità
-        var unitItems = new List<ConguaglioUnitItemDto>();
+        // Carica i billing group del condominio con le unità associate
+        var billingGroups = await session.Query<BillingGroup>()
+            .Where(bg => bg.Condominium.Id == fiscalYear.Condominium.Id && !bg.IsDeleted)
+            .FetchMany(bg => bg.Units)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
-        foreach (var um in unitMillesimals.OrderBy(x => x.Unit?.InternalNumber))
+        // Mappa unitId → groupId
+        var unitToGroup = billingGroups
+            .SelectMany(bg => bg.Units.Select(u => (UnitId: u.Id, Group: bg)))
+            .ToDictionary(x => x.UnitId, x => x.Group);
+
+        // Costruisce le righe individuali per ogni unità millesimale
+        ConguaglioUnitItemDto BuildUnitRow(UnitMillesimal um)
         {
             var quotaConsuntiva = totalMillesimal > 0
                 ? Math.Round(totalExpenses * um.Millesimal / totalMillesimal, 2)
                 : 0m;
-
             var alreadyPaid = paidMap.TryGetValue(um.Unit.Id, out var p) ? p : 0m;
             var saldo       = quotaConsuntiva - alreadyPaid;
-
-            unitItems.Add(new ConguaglioUnitItemDto
+            return new ConguaglioUnitItemDto
             {
                 UnitId             = um.Unit.Id,
                 UnitInternalNumber = um.Unit.InternalNumber,
@@ -105,8 +113,50 @@ public class GetConguaglioCommandConsumer
                 AlreadyPaid        = alreadyPaid,
                 Saldo              = saldo,
                 SaldoType          = saldo > 0 ? "Debit" : saldo < 0 ? "Credit" : "Even",
+            };
+        }
+
+        // Raggruppa: unità con gruppo → aggregato; unità senza gruppo → individuale
+        var unitItems = new List<ConguaglioUnitItemDto>();
+        var grouped   = new Dictionary<int, List<ConguaglioUnitItemDto>>(); // groupId → sub-rows
+
+        foreach (var um in unitMillesimals.OrderBy(x => x.Unit?.InternalNumber))
+        {
+            var row = BuildUnitRow(um);
+            if (unitToGroup.TryGetValue(um.Unit.Id, out var grp))
+            {
+                if (!grouped.ContainsKey(grp.Id)) grouped[grp.Id] = new List<ConguaglioUnitItemDto>();
+                grouped[grp.Id].Add(row);
+            }
+            else
+            {
+                unitItems.Add(row);
+            }
+        }
+
+        // Costruisce le righe aggregate per ogni gruppo
+        foreach (var (groupId, subRows) in grouped.OrderBy(kv => billingGroups.First(bg => bg.Id == kv.Key).Name))
+        {
+            var grp  = billingGroups.First(bg => bg.Id == groupId);
+            var saldo = subRows.Sum(r => r.Saldo);
+            unitItems.Add(new ConguaglioUnitItemDto
+            {
+                UnitId             = 0,
+                UnitInternalNumber = string.Empty,
+                UnitDescription    = grp.Name,
+                IsGroup            = true,
+                BillingGroupId     = grp.Id,
+                BillingGroupName   = grp.Name,
+                Millesimal         = subRows.Sum(r => r.Millesimal),
+                QuotaConsuntiva    = subRows.Sum(r => r.QuotaConsuntiva),
+                AlreadyPaid        = subRows.Sum(r => r.AlreadyPaid),
+                Saldo              = saldo,
+                SaldoType          = saldo > 0 ? "Debit" : saldo < 0 ? "Credit" : "Even",
+                Units              = subRows,
             });
         }
+
+        unitItems = unitItems.OrderBy(r => r.IsGroup ? r.BillingGroupName : r.UnitInternalNumber).ToList();
 
         return new ConguaglioReadDto
         {
