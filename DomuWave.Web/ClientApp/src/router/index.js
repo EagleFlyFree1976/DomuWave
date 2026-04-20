@@ -66,7 +66,8 @@ const routes = [
       { path: 'lavori-straordinari', component: () => import('@/views/LavoriStraordinariView.vue'), meta: { title: 'Lavori Straordinari', requiresTenant: true } },
       { path: 'documenti', component: () => import('@/views/DocumentiView.vue'), meta: { title: 'Documenti', requiresTenant: true } },
       { path: 'comunicazioni', component: () => import('@/views/ComunicazioniView.vue'), meta: { title: 'Comunicazioni', requiresTenant: true } },
-
+      { path: 'template-notifiche', component: () => import('@/views/NotificationTemplatesView.vue'), meta: { title: 'Template Notifiche', requiresTenant: true } },
+      { path: 'impostazioni-smtp', component: () => import('@/views/SmtpSettingsView.vue'), meta: { title: 'Configurazione Email', requiresTenant: true } },
 
       { path: 'tenants', name:'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
       {

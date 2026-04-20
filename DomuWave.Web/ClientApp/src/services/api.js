@@ -467,4 +467,29 @@ export const billingGroupApi = {
   getGroupInstNoticePdf:   (id, installmentId)               => api.get(`/billing-groups/${id}/installment/${installmentId}/notice/pdf`, { responseType: 'blob' }),
 }
 
+export const notificationTemplateApi = {
+  getByCondominium: (condominiumId)  => api.get(`/notification-templates/by-condominium/${condominiumId}`),
+  getById:          (id)             => api.get(`/notification-templates/${id}`),
+  create:           (data)           => api.post('/notification-templates', data),
+  update:           (id, data)       => api.put(`/notification-templates/${id}`, data),
+  delete:           (id)             => api.delete(`/notification-templates/${id}`),
+}
+
+export const tenantSmtpApi = {
+  get:    ()      => api.get('/tenant-smtp'),
+  upsert: (data)  => api.put('/tenant-smtp', data),
+  test:   (email) => api.post('/tenant-smtp/test', { emailTo: email }),
+}
+
+export const communicationNotificationApi = {
+  getByCommunication: (communicationId)       => api.get(`/communication-notifications/by-communication/${communicationId}`),
+  generate:           (communicationId, data) => api.post(`/communication-notifications/generate/${communicationId}`, data),
+  sendEmail:          (communicationId)       => api.post(`/communication-notifications/send-email/${communicationId}`),
+  markPrinted:        (id)                    => api.post(`/communication-notifications/${id}/mark-printed`),
+  markSent:           (id, data)              => api.post(`/communication-notifications/${id}/mark-sent`, data ?? {}),
+  markDelivered:      (id, data)              => api.post(`/communication-notifications/${id}/mark-delivered`, data ?? {}),
+  getBatchPdf:        (communicationId)       => api.get(`/communication-notifications/batch-pdf/${communicationId}`, { responseType: 'blob' }),
+  delete:             (id)                    => api.delete(`/communication-notifications/${id}`),
+}
+
 export default api

@@ -46,6 +46,10 @@ public class PaymentNoticeData
     public decimal TotalPaid    => Rows.Sum(r => r.AmountPaid);
     public decimal TotalBalance => Rows.Sum(r => r.Balance);
 
+    // ── Contenuto libero (per lettere/comunicazioni) ──────────────────────────
+    public string? CustomSubject { get; set; }
+    public string? CustomBody    { get; set; }
+
     // ── Metadati ──────────────────────────────────────────────────────────────
     public DateTime GeneratedAt { get; set; } = DateTime.Now;
 }

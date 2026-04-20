@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.CommunicationNotification, DomuWave.Services" table="CommunicationNotification" lazy="true">
+
+    <id name="Id" column="Id" type="Int64">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='CommunicationNotification'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant"        class="DomuWave.Services.Models.Tenant,        DomuWave.Services" column="TenantId"        not-null="true" />
+    <many-to-one name="Communication" class="DomuWave.Services.Models.Communication, DomuWave.Services" column="CommunicationId" not-null="true" />
+    <many-to-one name="Unit"          class="DomuWave.Services.Models.RealEstateUnit, DomuWave.Services" column="UnitId"          />
+
+    <property name="Name"              column="Name"              type="String"     length="200"  not-null="true" />
+    <property name="Description"       column="Description"       type="StringClob"               />
+    <property name="RecipientUserId"   column="RecipientUserId"   type="Int64"                    not-null="true" />
+    <property name="RecipientFullName" column="RecipientFullName" type="String"     length="200"  />
+    <property name="DeliveryMethod"    column="DeliveryMethod"    type="Int32"                    not-null="true" />
+    <property name="Status"            column="Status"            type="Int32"                    not-null="true" />
+    <property name="ScheduledAt"       column="ScheduledAt"       type="datetime2"               />
+    <property name="SentAt"            column="SentAt"            type="datetime2"               />
+    <property name="DeliveredAt"       column="DeliveredAt"       type="datetime2"               />
+    <property name="PrintedAt"         column="PrintedAt"         type="datetime2"               />
+    <property name="TrackingNumber"    column="TrackingNumber"    type="String"     length="100"  />
+    <property name="ErrorMessage"      column="ErrorMessage"      type="String"     length="500"  />
+    <property name="EmailAddress"      column="EmailAddress"      type="String"     length="255"  />
+    <property name="PostalAddress"     column="PostalAddress"     type="String"     length="500"  />
+    <property name="SubjectResolved"   column="SubjectResolved"   type="String"     length="500"  />
+    <property name="BodyResolved"      column="BodyResolved"      type="StringClob"               />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"  length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean" not-null="true" />
+    <property name="IsEnabled"             column="IsDeleted"             type="Boolean" insert="false" update="false" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+  </class>
+
+</hibernate-mapping>

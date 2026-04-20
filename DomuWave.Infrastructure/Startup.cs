@@ -96,6 +96,11 @@ public static class Startup
         services.AddScoped<IWorkQuoteService, WorkQuoteService>();
         services.AddScoped<IUnitTenantService, UnitTenantService>();
         services.AddScoped<IUserTenantService, UserTenantService>();
+
+        // ─── Notification system ──────────────────────────────────────────────
+        services.AddScoped<IEmailService, SmtpEmailService>();
+        services.AddScoped<INotificationTemplateVariableResolver, NotificationTemplateVariableResolver>();
+
         return services;
     }
 }

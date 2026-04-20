@@ -53,9 +53,17 @@
         </div>
         <div class="comm-actions">
           <button v-if="canEdit && !c.isVisible" class="btn btn-sm btn-ghost" @click="publishComm(c.id)">Pubblica</button>
+          <button class="btn btn-sm btn-ghost" @click="toggleNotifPanel(c.id)" :class="{ 'btn-active': notifPanelId === c.id }">
+            🔔 Notifiche
+          </button>
           <button v-if="canEdit" class="btn-icon" @click="openModal(c)">✎</button>
           <button v-if="canDelete" class="btn-icon" @click="deleteItem(c.id)" style="color:var(--accent-red)">✕</button>
         </div>
+      </div>
+
+      <!-- Pannello notifiche inline -->
+      <div v-if="notifPanelId === c.id" class="notif-panel">
+        <NotifPanel :communication="c" :condominiumId="store.selectedCondominioId" @close="notifPanelId = null" />
       </div>
     </div>
 
@@ -131,9 +139,15 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { communicationApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import NotifPanel from '@/components/NotifPanel.vue'
 
 const store = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
+const notifPanelId = ref(null)
+
+function toggleNotifPanel(id) {
+  notifPanelId.value = notifPanelId.value === id ? null : id
+}
 const communications = ref([])
 const loading = ref(false)
 const saving = ref(false)
@@ -240,4 +254,11 @@ onMounted(loadData)
 .comm-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
 .comm-actions { display: flex; align-items: center; gap: 0.4rem; padding: 0.9rem 0.75rem; flex-shrink: 0; }
+.btn-active { color: var(--accent) !important; border-color: var(--accent) !important; }
+
+.notif-panel {
+  border-top: 1px solid var(--border);
+  padding: 16px;
+  background: var(--bg-base);
+}
 </style>

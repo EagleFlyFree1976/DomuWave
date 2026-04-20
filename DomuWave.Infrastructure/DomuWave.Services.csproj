@@ -54,6 +54,9 @@
     <None Remove="Models\Mappings\ConsumptionChargeStatus.hbm.xml" />
     <None Remove="Models\Mappings\ConsumptionCharge.hbm.xml" />
     <None Remove="Models\Mappings\ConsumptionChargeItem.hbm.xml" />
+    <None Remove="Models\Mappings\NotificationTemplate.hbm.xml" />
+    <None Remove="Models\Mappings\TenantSmtpSettings.hbm.xml" />
+    <None Remove="Models\Mappings\CommunicationNotification.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -111,6 +114,9 @@
     <EmbeddedResource Include="Models\Mappings\ConsumptionChargeStatus.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ConsumptionCharge.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ConsumptionChargeItem.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\NotificationTemplate.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\TenantSmtpSettings.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\CommunicationNotification.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>
