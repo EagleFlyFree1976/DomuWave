@@ -490,6 +490,7 @@ export const communicationNotificationApi = {
   markPrinted:        (id)                    => api.post(`/communication-notifications/${id}/mark-printed`),
   markSent:           (id, data)              => api.post(`/communication-notifications/${id}/mark-sent`, data ?? {}),
   markDelivered:      (id, data)              => api.post(`/communication-notifications/${id}/mark-delivered`, data ?? {}),
+  getAttachmentPdf:   (id)                    => api.get(`/communication-notifications/${id}/attachment-pdf`, { responseType: 'blob' }),
   getBatchPdf:        (communicationId)       => api.get(`/communication-notifications/batch-pdf/${communicationId}`, { responseType: 'blob' }),
   updateText:         (id, data)              => api.put(`/communication-notifications/${id}/text`, data),
   delete:             (id)                    => api.delete(`/communication-notifications/${id}`),

@@ -217,6 +217,10 @@
           </div>
         </div>
         <div class="modal-footer">
+          <button v-if="isFeeNotice" class="btn btn-ghost" @click="downloadAttachment(previewModal.notif)" :disabled="previewModal.downloading">
+            <span v-if="previewModal.downloading" class="spinner" style="width:13px;height:13px"></span>
+            <span v-else>⬇ Scarica cedolini PDF</span>
+          </button>
           <button class="btn btn-ghost" @click="previewModal.show=false">Chiudi</button>
         </div>
       </div>
@@ -334,7 +338,7 @@ const filteredGroups = computed(() => {
 })
 
 const trackingModal  = ref({ show: false, notif: null, action: '', trackingNumber: '', saving: false })
-const previewModal   = ref({ show: false, notif: null })
+const previewModal   = ref({ show: false, notif: null, downloading: false })
 const editTextModal  = ref({ show: false, notif: null, subject: '', body: '', saving: false })
 
 // ── Modal selezione rate (solo per FeeNotice) ─────────────────────────────────
@@ -491,7 +495,25 @@ async function saveEditText() {
 
 // ── Preview ───────────────────────────────────────────────────────────────────
 function openPreview(n) {
-  previewModal.value = { show: true, notif: n }
+  previewModal.value = { show: true, notif: n, downloading: false }
+}
+
+async function downloadAttachment(n) {
+  if (!n) return
+  previewModal.value.downloading = true
+  try {
+    const { data } = await communicationNotificationApi.getAttachmentPdf(n.id)
+    const url = URL.createObjectURL(new Blob([data], { type: 'application/pdf' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `cedolini-${(n.recipientFullName ?? n.id).replace(/\s+/g, '-')}.pdf`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    previewModal.value.downloading = false
+  }
 }
 
 function emailBody(body) {

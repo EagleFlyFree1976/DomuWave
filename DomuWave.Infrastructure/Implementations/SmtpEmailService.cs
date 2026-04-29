@@ -23,6 +23,15 @@ public class SmtpEmailService : IEmailService
         };
         mail.To.Add(new MailAddress(message.To, message.ToName));
 
+        if (message.Attachments != null)
+        {
+            foreach (var att in message.Attachments)
+            {
+                var stream = new MemoryStream(att.Content);
+                mail.Attachments.Add(new Attachment(stream, att.FileName, att.ContentType));
+            }
+        }
+
         await client.SendMailAsync(mail, ct).ConfigureAwait(false);
     }
 }

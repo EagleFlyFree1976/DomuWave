@@ -202,7 +202,10 @@ public class SendEmailNotificationsCommandConsumer
                      && !n.IsDeleted)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        var result = new SendNotificationsResultDto();
+        var result        = new SendNotificationsResultDto();
+        var isFeeNotice   = communication.CommunicationType == "FeeNotice";
+        var condominium   = communication.Condominium;
+        var culture       = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
 
         foreach (var notification in notifications)
         {
@@ -218,11 +221,91 @@ public class SendEmailNotificationsCommandConsumer
 
             try
             {
+                // Per FeeNotice genera il PDF dei cedolini come allegato
+                IList<EmailAttachment>? attachments = null;
+                if (isFeeNotice && notification.Unit != null)
+                {
+                    // Carica tutte le fee legate a questa comunicazione per questo destinatario
+                    // Identifica le unità del destinatario tramite UnitsDisplay o Unit
+                    var unitIds = new List<long>();
+                    if (!string.IsNullOrEmpty(notification.UnitsDisplay))
+                    {
+                        // Risolvi i codici unità nei loro Id
+                        var codes = notification.UnitsDisplay.Split(',').Select(s => s.Trim()).ToList();
+                        var units = await session.Query<RealEstateUnit>()
+                            .Where(u => u.Condominium.Id == condominium.Id && codes.Contains(u.InternalNumber) && !u.IsDeleted)
+                            .ToListAsync(cancellationToken).ConfigureAwait(false);
+                        unitIds = units.Select(u => (long)u.Id).ToList();
+                    }
+                    else
+                    {
+                        unitIds.Add(notification.Unit.Id);
+                    }
+
+                    // Carica le fee per queste unità associate agli installment di questa comunicazione
+                    var fees = await session.Query<CondominiumFee>()
+                        .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted)
+                        .OrderBy(f => f.Installment.InstallmentNumber)
+                        .ThenBy(f => f.Unit.InternalNumber)
+                        .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+                    if (fees.Count > 0)
+                    {
+                        var addressParts = condominium.Address != null
+                            ? $"{condominium.Address.Street} {condominium.Address.StreetNumber}, {condominium.Address.PostalCode} {condominium.Address.City}"
+                            : string.Empty;
+
+                        // Raggruppa per unità — una pagina PDF per unità
+                        var notices = fees
+                            .GroupBy(f => f.Unit.Id)
+                            .Select(g =>
+                            {
+                                var unit  = g.First().Unit;
+                                var owner = notification.RecipientFullName ?? string.Empty;
+                                return new PaymentNoticeData
+                                {
+                                    CondominiumName    = condominium.Name,
+                                    CondominiumAddress = addressParts,
+                                    AdministratorName  = condominium.AdministratorName ?? string.Empty,
+                                    AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
+                                    AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
+                                    Iban               = condominium.Iban ?? string.Empty,
+                                    FiscalYearCode     = g.First().Installment?.FiscalYear?.Name ?? string.Empty,
+                                    UnitInternalNumber = unit.InternalNumber,
+                                    UnitDisplayName    = unit.DisplayName ?? unit.InternalNumber,
+                                    OwnerFullName      = owner,
+                                    OwnerEmail         = notification.EmailAddress ?? string.Empty,
+                                    Rows               = g.Select(f => new PaymentNoticeRow
+                                    {
+                                        InstallmentNumber = f.Installment?.InstallmentNumber ?? 0,
+                                        DueDate           = f.Installment?.DueDate ?? DateTime.Now,
+                                        AmountDue         = f.AmountDue,
+                                        AmountPaid        = 0,
+                                        Balance           = f.AmountDue,
+                                        PaymentCode       = f.PaymentCode ?? string.Empty,
+                                        PaymentStatus     = "Da pagare",
+                                    }).ToList(),
+                                };
+                            }).ToList();
+
+                        var pdfBytes = new PaymentNoticeDocument(notices).GeneratePdf();
+                        attachments = [new EmailAttachment(
+                            FileName:    $"cedolini-{notification.RecipientFullName?.Replace(" ", "-")}.pdf",
+                            Content:     pdfBytes,
+                            ContentType: "application/pdf")];
+                    }
+                }
+
+                // Converti il body in HTML (newline → <br>)
+                var bodyHtml = (notification.BodyResolved ?? communication.Content ?? string.Empty)
+                               .Replace("\n", "<br/>");
+
                 var msg = new EmailMessage(
-                    To:       notification.EmailAddress,
-                    ToName:   notification.RecipientFullName ?? string.Empty,
-                    Subject:  notification.SubjectResolved   ?? communication.Title,
-                    BodyHtml: notification.BodyResolved      ?? communication.Content);
+                    To:          notification.EmailAddress,
+                    ToName:      notification.RecipientFullName ?? string.Empty,
+                    Subject:     notification.SubjectResolved   ?? communication.Title,
+                    BodyHtml:    bodyHtml,
+                    Attachments: attachments);
 
                 await _emailService.SendAsync(msg, config, cancellationToken).ConfigureAwait(false);
 
@@ -634,6 +717,100 @@ public class GenerateNotificationsFromFeesCommandConsumer
             CommunicationId = communication.Id,
             Notifications   = created.Select(n => n.ToReadDto()).ToList(),
         };
+    }
+}
+
+// ── GET ATTACHMENT PDF ────────────────────────────────────────────────────────
+
+public class GetNotificationAttachmentPdfCommandConsumer
+    : InMemoryConsumerBase<GetNotificationAttachmentPdfCommand, byte[]>
+{
+    private readonly IUserService _userService;
+
+    public GetNotificationAttachmentPdfCommandConsumer(
+        ISessionFactoryProvider sessionFactoryProvider,
+        IUserService            userService) : base(sessionFactoryProvider)
+        => _userService = userService;
+
+    protected override async Task<byte[]> Consume(
+        GetNotificationAttachmentPdfCommand command,
+        IMediationContext                    mediationContext,
+        CancellationToken                   cancellationToken)
+    {
+        await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
+
+        var notification = await session.GetAsync<CommunicationNotification>(command.NotificationId, cancellationToken).ConfigureAwait(false)
+                           ?? throw new NotFoundException("Notifica non trovata.");
+
+        var communication = notification.Communication;
+        if (communication.CommunicationType != "FeeNotice")
+            throw new ValidatorException("L'allegato PDF è disponibile solo per le comunicazioni di tipo avviso di pagamento.");
+
+        var condominium = communication.Condominium;
+
+        // Risolvi le unità del destinatario
+        var unitIds = new List<long>();
+        if (!string.IsNullOrEmpty(notification.UnitsDisplay))
+        {
+            var codes = notification.UnitsDisplay.Split(',').Select(s => s.Trim()).ToList();
+            var units = await session.Query<RealEstateUnit>()
+                .Where(u => u.Condominium.Id == condominium.Id && codes.Contains(u.InternalNumber) && !u.IsDeleted)
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+            unitIds = units.Select(u => (long)u.Id).ToList();
+        }
+        else if (notification.Unit != null)
+        {
+            unitIds.Add(notification.Unit.Id);
+        }
+
+        if (unitIds.Count == 0)
+            throw new ValidatorException("Nessuna unità trovata per questa notifica.");
+
+        var fees = await session.Query<CondominiumFee>()
+            .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted)
+            .OrderBy(f => f.Installment.InstallmentNumber)
+            .ThenBy(f => f.Unit.InternalNumber)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        if (fees.Count == 0)
+            throw new ValidatorException("Nessuna quota trovata per questa notifica.");
+
+        var addressParts = condominium.Address != null
+            ? $"{condominium.Address.Street} {condominium.Address.StreetNumber}, {condominium.Address.PostalCode} {condominium.Address.City}"
+            : string.Empty;
+
+        var notices = fees
+            .GroupBy(f => f.Unit.Id)
+            .Select(g =>
+            {
+                var unit = g.First().Unit;
+                return new PaymentNoticeData
+                {
+                    CondominiumName    = condominium.Name,
+                    CondominiumAddress = addressParts,
+                    AdministratorName  = condominium.AdministratorName ?? string.Empty,
+                    AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
+                    AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
+                    Iban               = condominium.Iban ?? string.Empty,
+                    FiscalYearCode     = g.First().Installment?.FiscalYear?.Name ?? string.Empty,
+                    UnitInternalNumber = unit.InternalNumber,
+                    UnitDisplayName    = unit.DisplayName ?? unit.InternalNumber,
+                    OwnerFullName      = notification.RecipientFullName ?? string.Empty,
+                    OwnerEmail         = notification.EmailAddress ?? string.Empty,
+                    Rows               = g.Select(f => new PaymentNoticeRow
+                    {
+                        InstallmentNumber = f.Installment?.InstallmentNumber ?? 0,
+                        DueDate           = f.Installment?.DueDate ?? DateTime.Now,
+                        AmountDue         = f.AmountDue,
+                        AmountPaid        = 0,
+                        Balance           = f.AmountDue,
+                        PaymentCode       = f.PaymentCode ?? string.Empty,
+                        PaymentStatus     = "Da pagare",
+                    }).ToList(),
+                };
+            }).ToList();
+
+        return new PaymentNoticeDocument(notices).GeneratePdf();
     }
 }
 

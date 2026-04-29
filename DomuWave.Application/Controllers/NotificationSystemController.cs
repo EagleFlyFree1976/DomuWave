@@ -172,6 +172,14 @@ public class CommunicationNotificationsController(
     public async Task<IActionResult> MarkDelivered(long id, [FromBody] UpdateNotificationStatusDto dto, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new MarkNotificationDeliveredCommand(CurrentUser.Id, id, dto), ct));
 
+    [HttpGet("{id:long}/attachment-pdf")]
+    [ProducesResponseType(typeof(FileContentResult), 200)]
+    public async Task<IActionResult> GetAttachmentPdf(long id, CancellationToken ct)
+    {
+        var bytes = await _mediator.GetResponse(new GetNotificationAttachmentPdfCommand(CurrentUser.Id, id), ct);
+        return File(bytes, "application/pdf", $"cedolini-{id}.pdf");
+    }
+
     [HttpGet("batch-pdf/{communicationId:int}")]
     [ProducesResponseType(typeof(FileContentResult), 200)]
     public async Task<IActionResult> GetBatchPdf(int communicationId, CancellationToken ct)

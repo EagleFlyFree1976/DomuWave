@@ -15,7 +15,13 @@ public record SmtpConfig(
     string FromName);
 
 public record EmailMessage(
-    string   To,
-    string   ToName,
-    string   Subject,
-    string   BodyHtml);
+    string                  To,
+    string                  ToName,
+    string                  Subject,
+    string                  BodyHtml,
+    IList<EmailAttachment>? Attachments = null);
+
+public record EmailAttachment(
+    string FileName,
+    byte[] Content,
+    string ContentType = "application/pdf");

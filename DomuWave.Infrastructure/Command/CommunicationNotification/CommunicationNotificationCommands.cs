@@ -71,6 +71,14 @@ public class GetNotificationBatchPdfCommand : BaseCommand, IQuery<byte[]>
         => CommunicationId = communicationId;
 }
 
+public class GetNotificationAttachmentPdfCommand : BaseCommand, IQuery<byte[]>
+{
+    public long NotificationId { get; set; }
+    public GetNotificationAttachmentPdfCommand() { }
+    public GetNotificationAttachmentPdfCommand(int currentUserId, long notificationId) : base(currentUserId)
+        => NotificationId = notificationId;
+}
+
 public class UpdateNotificationTextCommand : BaseCommand, IQuery<CommunicationNotificationReadDto>
 {
     public long                    NotificationId { get; set; }
