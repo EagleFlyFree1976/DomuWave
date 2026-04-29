@@ -99,6 +99,27 @@ public class DeleteCommunicationNotificationCommand : BaseCommand, IQuery<bool>
         => NotificationId = notificationId;
 }
 
+public class SendSingleEmailNotificationCommand : BaseCommand, IQuery<CommunicationNotificationReadDto>
+{
+    public long NotificationId { get; set; }
+    public SendSingleEmailNotificationCommand() { }
+    public SendSingleEmailNotificationCommand(int currentUserId, long notificationId) : base(currentUserId)
+        => NotificationId = notificationId;
+}
+
+public class RegenerateNotificationTextsCommand : BaseCommand, IQuery<int>
+{
+    public int  CommunicationId         { get; set; }
+    public int? NotificationTemplateId  { get; set; }
+
+    public RegenerateNotificationTextsCommand() { }
+    public RegenerateNotificationTextsCommand(int currentUserId, int communicationId, int? notificationTemplateId) : base(currentUserId)
+    {
+        CommunicationId        = communicationId;
+        NotificationTemplateId = notificationTemplateId;
+    }
+}
+
 public class GenerateNotificationsFromFeesCommand : BaseCommand, IQuery<GenerateFromFeesResultDto>
 {
     public GenerateNotificationsFromFeesDto Dto { get; set; } = null!;

@@ -23,6 +23,7 @@ public static class CommunicationMappingExtensions
             EmailSentAt       = entity.EmailSentAt,
             IsVisible         = entity.IsVisible,
             AttachmentPath    = entity.AttachmentPath,
+            IsArchived        = entity.IsArchived,
         };
         dto.SetTraceInfo(entity);
         return dto;

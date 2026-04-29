@@ -17,6 +17,7 @@ namespace DomuWave.Services.Models
         public virtual DateTime? EmailSentAt { get; set; }
         public virtual bool IsVisible { get; set; }
         public virtual string? AttachmentPath { get; set; }
+        public virtual bool IsArchived { get; set; }
 
         public virtual IList<CommunicationRead> Reads { get; set; } = new List<CommunicationRead>();
         public override int GetHashCode()

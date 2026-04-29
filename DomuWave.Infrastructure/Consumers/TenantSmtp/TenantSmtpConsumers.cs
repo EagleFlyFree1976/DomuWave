@@ -78,9 +78,7 @@ public class UpsertTenantSmtpSettingsCommandConsumer
             if (string.IsNullOrWhiteSpace(command.Dto.Password))
                 throw new ValidatorException("La password SMTP è obbligatoria per la prima configurazione.");
 
-            var tenant = await session.Query<Models.Tenant>()
-                .Where(t => t.Id == command.TenantId)
-                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
+            var tenant = await session.GetAsync<Models.Tenant>(command.TenantId, cancellationToken).ConfigureAwait(false)
                 ?? throw new NotFoundException("Tenant non trovato.");
 
             var entity = command.Dto.ToEntity(tenant, encryptedPwd!);

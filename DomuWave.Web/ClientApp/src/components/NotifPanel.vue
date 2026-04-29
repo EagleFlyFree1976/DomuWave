@@ -9,7 +9,7 @@
           <span v-if="pendingCount > 0" style="color:var(--accent)">· {{ pendingCount }} da inviare</span>
         </span>
       </div>
-      <div class="notif-toolbar-right">
+      <div v-if="!readonly" class="notif-toolbar-right">
         <!-- Genera -->
         <div class="notif-generate-row">
           <select class="form-select form-select-sm" v-model="genMethod">
@@ -21,15 +21,23 @@
             <span v-else>↺ Genera</span>
           </button>
         </div>
-        <!-- Invia email -->
-        <button v-if="hasEmailPending" class="btn btn-sm btn-primary" @click="sendAll" :disabled="sending">
-          <span v-if="sending" class="spinner" style="width:11px;height:11px"></span>
-          <span v-else>📧 Invia tutto</span>
-        </button>
-        <!-- PDF raccomandate -->
-        <button v-if="hasRaccomandatePending" class="btn btn-sm btn-ghost" @click="downloadBatchPdf" :disabled="downloadingPdf">
-          <span v-if="downloadingPdf" class="spinner" style="width:11px;height:11px"></span>
-          <span v-else>🖨 Stampa raccomandate</span>
+        <!-- Rigenera testi -->
+        <div v-if="hasPendingNotifications" class="notif-generate-row">
+          <select class="form-select form-select-sm" v-model="regenTemplateId" style="min-width:140px">
+            <option :value="null">— template automatico —</option>
+            <option v-for="t in availableTemplates" :key="t.id" :value="t.id">{{ t.name }}</option>
+          </select>
+          <button class="btn btn-sm btn-ghost" @click="regenerateTexts" :disabled="regenerating">
+            <span v-if="regenerating" class="spinner" style="width:11px;height:11px"></span>
+            <span v-else>✎ Rigenera testi</span>
+          </button>
+        </div>
+        <!-- Invia tutto — comportamento basato su genMethod -->
+        <button v-if="hasPendingForMethod" class="btn btn-sm btn-primary"
+                @click="genMethod === 0 ? sendAll() : downloadBatchPdf()"
+                :disabled="sending || sendingId !== null || downloadingPdf">
+          <span v-if="sending || downloadingPdf" class="spinner" style="width:11px;height:11px"></span>
+          <span v-else>{{ genMethod === 0 ? '📧' : '🖨' }} Invia tutto</span>
         </button>
       </div>
     </div>
@@ -107,19 +115,26 @@
                 <span v-else class="text-muted" style="font-size:0.78rem">—</span>
               </td>
               <td class="row-actions">
-                <!-- Preview -->
+                <!-- Preview — sempre visibile -->
                 <button class="btn-icon" title="Anteprima messaggio" style="font-size:0.78rem" @click="openPreview(n)">👁</button>
-                <!-- Modifica testo (solo se non ancora inviata) -->
-                <button v-if="n.status <= 1" class="btn-icon" title="Modifica testo" style="font-size:0.78rem" @click="openEditText(n)">✎</button>
-                <!-- Raccomandata: mark sent / delivered -->
-                <template v-if="n.deliveryMethod === 1">
-                  <button v-if="n.status <= 5" class="btn-icon" title="Segna come spedita"
-                          style="font-size:0.78rem" @click="openTrackingModal(n, 'sent')">✉</button>
-                  <button v-if="n.status === 2" class="btn-icon" title="Segna come consegnata"
-                          style="font-size:0.78rem;color:var(--accent-green)" @click="openTrackingModal(n, 'delivered')">✓</button>
+                <!-- Azioni operative — solo se non readonly -->
+                <template v-if="!readonly">
+                  <button v-if="n.status <= 1" class="btn-icon" title="Modifica testo" style="font-size:0.78rem" @click="openEditText(n)">✎</button>
+                  <button v-if="n.deliveryMethod === 0 && n.status <= 1" class="btn-icon" title="Invia email"
+                          style="font-size:0.78rem" :disabled="sendingId === n.id || sending" @click="sendSingleEmail(n)">
+                    <span v-if="sendingId === n.id" class="spinner" style="width:10px;height:10px;display:inline-block"></span>
+                    <span v-else>📧</span>
+                  </button>
+                  <template v-if="n.deliveryMethod === 1">
+                    <button v-if="n.status <= 5" class="btn-icon" title="Segna come spedita"
+                            style="font-size:0.78rem" @click="openTrackingModal(n, 'sent')">✉</button>
+                    <button v-if="n.status === 2" class="btn-icon" title="Segna come consegnata"
+                            style="font-size:0.78rem;color:var(--accent-green)" @click="openTrackingModal(n, 'delivered')">✓</button>
+                  </template>
+                  <button v-if="n.status < 2" class="btn-icon" style="color:var(--accent-red);font-size:0.78rem" title="Elimina"
+                          :disabled="sending || sendingId !== null"
+                          @click="deleteNotif(n.id)">✕</button>
                 </template>
-                <button class="btn-icon" style="color:var(--accent-red);font-size:0.78rem" title="Elimina"
-                        @click="deleteNotif(n.id)">✕</button>
               </td>
             </tr>
             <!-- Separatore visivo tra gruppi -->
@@ -287,17 +302,22 @@ import { communicationNotificationApi, installmentApi, notificationTemplateApi }
 const props = defineProps({
   communication:  { type: Object, required: true },
   condominiumId:  { type: Number, required: true },
+  readonly:       { type: Boolean, default: false },
 })
 const emit = defineEmits(['close'])
 
-const store         = useAppStore()
-const loading       = ref(false)
-const generating    = ref(false)
-const sending       = ref(false)
+const store          = useAppStore()
+const loading        = ref(false)
+const generating     = ref(false)
+const regenerating   = ref(false)
+const sending        = ref(false)
+const sendingId      = ref(null)
 const downloadingPdf = ref(false)
-const notifications = ref([])
-const sendResult    = ref(null)
-const genMethod     = ref(0)
+const notifications  = ref([])
+const sendResult     = ref(null)
+const genMethod      = ref(0)
+const regenTemplateId    = ref(null)
+const availableTemplates = ref([])
 
 // ── Filtri ────────────────────────────────────────────────────────────────────
 const filterSearch = ref('')
@@ -384,16 +404,20 @@ async function confirmFeeGen() {
   } finally { generating.value = false }
 }
 
-const pendingCount           = computed(() => notifications.value.filter(n => n.status <= 1).length)
-const hasEmailPending        = computed(() => notifications.value.some(n => n.deliveryMethod === 0 && n.status <= 1))
-const hasRaccomandatePending = computed(() => notifications.value.some(n => n.deliveryMethod === 1 && n.status <= 1))
+const pendingCount            = computed(() => notifications.value.filter(n => n.status <= 1).length)
+const hasPendingNotifications = computed(() => notifications.value.some(n => n.status <= 1))
+const hasPendingForMethod     = computed(() => notifications.value.some(n => n.deliveryMethod === genMethod.value && n.status <= 1))
 
 // ── Load ──────────────────────────────────────────────────────────────────────
 async function load() {
   loading.value = true
   try {
-    const { data } = await communicationNotificationApi.getByCommunication(props.communication.id)
-    notifications.value = data ?? []
+    const [notifRes, tmplRes] = await Promise.all([
+      communicationNotificationApi.getByCommunication(props.communication.id),
+      notificationTemplateApi.getByCondominium(props.condominiumId),
+    ])
+    notifications.value  = notifRes.data ?? []
+    availableTemplates.value = (tmplRes.data ?? []).filter(t => t.communicationType === props.communication.communicationType)
   } catch { notifications.value = [] } finally { loading.value = false }
 }
 
@@ -409,6 +433,21 @@ async function generate() {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally {
     generating.value = false
+  }
+}
+
+// ── Regenerate texts ──────────────────────────────────────────────────────────
+async function regenerateTexts() {
+  if (!confirm(`Rigenerare il testo di tutte le notifiche non ancora inviate (${pendingCount.value})?`)) return
+  regenerating.value = true
+  try {
+    const { data } = await communicationNotificationApi.regenerateTexts(props.communication.id, regenTemplateId.value)
+    store.toast(`Testo rigenerato per ${data} notifiche`, 'success')
+    await load()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    regenerating.value = false
   }
 }
 
@@ -519,6 +558,20 @@ async function downloadAttachment(n) {
 function emailBody(body) {
   if (!body) return '<em style="color:var(--text-muted)">Nessun contenuto</em>'
   return body.replace(/\n/g, '<br>')
+}
+
+// ── Send single email ─────────────────────────────────────────────────────────
+async function sendSingleEmail(n) {
+  sendingId.value = n.id
+  try {
+    await communicationNotificationApi.sendSingleEmail(n.id)
+    store.toast(`Email inviata a ${n.recipientFullName}`, 'success')
+    await load()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    sendingId.value = null
+  }
 }
 
 // ── Delete ────────────────────────────────────────────────────────────────────

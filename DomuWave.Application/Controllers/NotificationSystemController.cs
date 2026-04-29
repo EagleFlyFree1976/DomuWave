@@ -87,14 +87,14 @@ public class TenantSmtpController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
+    
 
     [HttpGet]
     [ProducesResponseType(typeof(TenantSmtpSettingsReadDto), 200)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> Get(CancellationToken ct)
     {
-        var result = await _mediator.GetResponse(new GetTenantSmtpSettingsCommand(CurrentUser.Id, TenantGuid), ct);
+        var result = await _mediator.GetResponse(new GetTenantSmtpSettingsCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -104,19 +104,20 @@ public class TenantSmtpController(
     public async Task<IActionResult> Upsert([FromBody] UpsertTenantSmtpSettingsDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new UpsertTenantSmtpSettingsCommand(CurrentUser.Id, TenantGuid, dto), ct);
+        var result = await _mediator.GetResponse(new UpsertTenantSmtpSettingsCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
         return Ok(result);
     }
 
     [HttpPost("test")]
     public async Task<IActionResult> Test([FromBody] TestSmtpRequest request, CancellationToken ct)
     {
-        await _mediator.GetResponse(new TestTenantSmtpCommand(CurrentUser.Id, TenantGuid, request.EmailTo), ct);
+        await _mediator.GetResponse(new TestTenantSmtpCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), request.EmailTo), ct);
         return Ok(new { sent = true });
     }
 }
 
 public record TestSmtpRequest(string EmailTo);
+public record RegenerateTextsRequest(int? NotificationTemplateId);
 
 // ─── CommunicationNotifications ──────────────────────────────────────────────
 
@@ -157,6 +158,11 @@ public class CommunicationNotificationsController(
     public async Task<IActionResult> SendEmail(int communicationId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new SendEmailNotificationsCommand(CurrentUser.Id, communicationId), ct));
 
+    [HttpPost("{id:long}/send-email")]
+    [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]
+    public async Task<IActionResult> SendSingleEmail(long id, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new SendSingleEmailNotificationCommand(CurrentUser.Id, id), ct));
+
     [HttpPost("{id:long}/mark-printed")]
     [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]
     public async Task<IActionResult> MarkPrinted(long id, CancellationToken ct)
@@ -187,6 +193,11 @@ public class CommunicationNotificationsController(
         var bytes = await _mediator.GetResponse(new GetNotificationBatchPdfCommand(CurrentUser.Id, communicationId), ct);
         return File(bytes, "application/pdf", $"comunicazioni-{communicationId}.pdf");
     }
+
+    [HttpPost("regenerate-texts/{communicationId:int}")]
+    [ProducesResponseType(typeof(int), 200)]
+    public async Task<IActionResult> RegenerateTexts(int communicationId, [FromBody] RegenerateTextsRequest request, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new RegenerateNotificationTextsCommand(CurrentUser.Id, communicationId, request.NotificationTemplateId), ct));
 
     [HttpPut("{id:long}/text")]
     [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]

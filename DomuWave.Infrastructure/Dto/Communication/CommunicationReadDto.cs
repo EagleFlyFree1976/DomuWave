@@ -16,4 +16,6 @@ public class CommunicationReadDto : TraceEntityDTO<int>
     public DateTime? EmailSentAt     { get; set; }
     public bool    IsVisible         { get; set; }
     public string? AttachmentPath    { get; set; }
+    public bool    IsArchived            { get; set; }
+    public bool    HasSentNotifications  { get; set; }
 }

@@ -1,5 +1,4 @@
 using CPQ.Core.Consumers;
-using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
@@ -11,19 +10,19 @@ using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class DeleteCommunicationCommandConsumer : InMemoryConsumerBase<DeleteCommunicationCommand, bool>
+public class ArchiveCommunicationCommandConsumer : InMemoryConsumerBase<ArchiveCommunicationCommand, bool>
 {
     private readonly IUserService _userService;
 
-    public DeleteCommunicationCommandConsumer(
+    public ArchiveCommunicationCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUserService            userService) : base(sessionFactoryProvider)
         => _userService = userService;
 
     protected override async Task<bool> Consume(
-        DeleteCommunicationCommand command,
-        IMediationContext           mediationContext,
-        CancellationToken          cancellationToken)
+        ArchiveCommunicationCommand command,
+        IMediationContext            mediationContext,
+        CancellationToken           cancellationToken)
     {
         var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
 
@@ -33,14 +32,7 @@ public class DeleteCommunicationCommandConsumer : InMemoryConsumerBase<DeleteCom
 
         if (entity == null) return false;
 
-        var hasSentNotifications = await session.Query<CommunicationNotification>()
-            .AnyAsync(n => n.Communication.Id == command.CommunicationId && !n.IsDeleted && n.Status >= 2, cancellationToken)
-            .ConfigureAwait(false);
-
-        if (hasSentNotifications)
-            throw new ValidatorException("Non è possibile eliminare una comunicazione che ha notifiche già inviate.");
-
-        entity.IsDeleted = true;
+        entity.IsArchived = command.Archive;
         entity.Trace(currentUser);
         await session.UpdateAsync(entity, cancellationToken).ConfigureAwait(false);
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);

@@ -3,6 +3,7 @@ using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
+using Microsoft.Extensions.Configuration;
 using DomuWave.Services.Command.CommunicationNotification;
 using DomuWave.Services.Dto.CommunicationNotification;
 using DomuWave.Services.Dto.PaymentNotice;
@@ -159,16 +160,20 @@ public class GenerateCommunicationNotificationsCommandConsumer
 public class SendEmailNotificationsCommandConsumer
     : InMemoryConsumerBase<SendEmailNotificationsCommand, SendNotificationsResultDto>
 {
-    private readonly IUserService  _userService;
-    private readonly IEmailService _emailService;
+    private readonly IUserService    _userService;
+    private readonly IEmailService   _emailService;
+    private readonly string?         _testEmail;
 
     public SendEmailNotificationsCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUserService            userService,
-        IEmailService           emailService) : base(sessionFactoryProvider)
+        IEmailService           emailService,
+        IConfiguration          configuration) : base(sessionFactoryProvider)
     {
         _userService  = userService;
         _emailService = emailService;
+        _testEmail    = configuration["DomuWave:TestEmail"]?.Trim();
+        if (string.IsNullOrEmpty(_testEmail)) _testEmail = null;
     }
 
     protected override async Task<SendNotificationsResultDto> Consume(
@@ -300,9 +305,24 @@ public class SendEmailNotificationsCommandConsumer
                 var bodyHtml = (notification.BodyResolved ?? communication.Content ?? string.Empty)
                                .Replace("\n", "<br/>");
 
+                var toAddress = notification.EmailAddress!;
+                var toName    = notification.RecipientFullName ?? string.Empty;
+
+                if (_testEmail != null)
+                {
+                    var testNotice =
+                        $"<div style=\"background:#fff3cd;border:1px solid #ffc107;padding:12px 16px;margin-bottom:20px;font-family:sans-serif;font-size:13px;\">" +
+                        $"<strong>⚠ MODALITÀ TEST</strong><br/>" +
+                        $"Questa email sarebbe stata inviata a: <strong>{toAddress}</strong> ({toName})" +
+                        $"</div><hr style=\"margin-bottom:20px\"/>";
+                    bodyHtml  = testNotice + bodyHtml;
+                    toAddress = _testEmail;
+                    toName    = $"[TEST] {toName}";
+                }
+
                 var msg = new EmailMessage(
-                    To:          notification.EmailAddress,
-                    ToName:      notification.RecipientFullName ?? string.Empty,
+                    To:          toAddress,
+                    ToName:      toName,
                     Subject:     notification.SubjectResolved   ?? communication.Title,
                     BodyHtml:    bodyHtml,
                     Attachments: attachments);
@@ -334,6 +354,163 @@ public class SendEmailNotificationsCommandConsumer
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
         return result;
+    }
+}
+
+// ── SEND SINGLE EMAIL ─────────────────────────────────────────────────────────
+
+public class SendSingleEmailNotificationCommandConsumer
+    : InMemoryConsumerBase<SendSingleEmailNotificationCommand, CommunicationNotificationReadDto>
+{
+    private readonly IUserService  _userService;
+    private readonly IEmailService _emailService;
+    private readonly string?       _testEmail;
+
+    public SendSingleEmailNotificationCommandConsumer(
+        ISessionFactoryProvider sessionFactoryProvider,
+        IUserService            userService,
+        IEmailService           emailService,
+        IConfiguration          configuration) : base(sessionFactoryProvider)
+    {
+        _userService  = userService;
+        _emailService = emailService;
+        _testEmail    = configuration["DomuWave:TestEmail"]?.Trim();
+        if (string.IsNullOrEmpty(_testEmail)) _testEmail = null;
+    }
+
+    protected override async Task<CommunicationNotificationReadDto> Consume(
+        SendSingleEmailNotificationCommand command,
+        IMediationContext                   mediationContext,
+        CancellationToken                  cancellationToken)
+    {
+        var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
+
+        var notification = await session.Query<CommunicationNotification>()
+            .Where(n => n.Id == command.NotificationId && !n.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
+            ?? throw new NotFoundException("Notifica non trovata.");
+
+        if (notification.DeliveryMethod != 0)
+            throw new ValidatorException("La notifica non è di tipo email.");
+
+        if (string.IsNullOrWhiteSpace(notification.EmailAddress))
+            throw new ValidatorException("Indirizzo email non disponibile per questa notifica.");
+
+        var communication = notification.Communication
+            ?? throw new NotFoundException("Comunicazione associata non trovata.");
+
+        var smtpSettings = await session.Query<TenantSmtpSettings>()
+            .Where(s => s.Tenant.Id == communication.Condominium.Tenant.Id && !s.IsDeleted && s.IsEnabled)
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
+            ?? throw new ValidatorException("Configurazione SMTP non trovata. Configura il server email nelle impostazioni.");
+
+        var password = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(smtpSettings.PasswordEncrypted));
+        var config   = new SmtpConfig(smtpSettings.Host, smtpSettings.Port, smtpSettings.UseSsl,
+                                      smtpSettings.Username, password,
+                                      smtpSettings.FromEmail, smtpSettings.FromName);
+
+        var condominium = communication.Condominium;
+        var isFeeNotice = communication.CommunicationType == "FeeNotice";
+
+        // Per FeeNotice genera il PDF allegato
+        IList<EmailAttachment>? attachments = null;
+        if (isFeeNotice && notification.Unit != null)
+        {
+            var unitIds = new List<long>();
+            if (!string.IsNullOrEmpty(notification.UnitsDisplay))
+            {
+                var codes = notification.UnitsDisplay.Split(',').Select(s => s.Trim()).ToList();
+                var units = await session.Query<RealEstateUnit>()
+                    .Where(u => u.Condominium.Id == condominium.Id && codes.Contains(u.InternalNumber) && !u.IsDeleted)
+                    .ToListAsync(cancellationToken).ConfigureAwait(false);
+                unitIds = units.Select(u => (long)u.Id).ToList();
+            }
+            else
+            {
+                unitIds.Add(notification.Unit.Id);
+            }
+
+            var fees = await session.Query<CondominiumFee>()
+                .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted)
+                .OrderBy(f => f.Installment.InstallmentNumber)
+                .ThenBy(f => f.Unit.InternalNumber)
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+            if (fees.Count > 0)
+            {
+                var addressParts = condominium.Address != null
+                    ? $"{condominium.Address.Street} {condominium.Address.StreetNumber}, {condominium.Address.PostalCode} {condominium.Address.City}"
+                    : string.Empty;
+
+                var notices = fees.GroupBy(f => f.Unit.Id).Select(g =>
+                {
+                    var unit = g.First().Unit;
+                    return new PaymentNoticeData
+                    {
+                        CondominiumName    = condominium.Name,
+                        CondominiumAddress = addressParts,
+                        AdministratorName  = condominium.AdministratorName ?? string.Empty,
+                        AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
+                        AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
+                        Iban               = condominium.Iban ?? string.Empty,
+                        FiscalYearCode     = g.First().Installment?.FiscalYear?.Name ?? string.Empty,
+                        UnitInternalNumber = unit.InternalNumber,
+                        UnitDisplayName    = unit.DisplayName ?? unit.InternalNumber,
+                        OwnerFullName      = notification.RecipientFullName ?? string.Empty,
+                        OwnerEmail         = notification.EmailAddress ?? string.Empty,
+                        Rows               = g.Select(f => new PaymentNoticeRow
+                        {
+                            InstallmentNumber = f.Installment?.InstallmentNumber ?? 0,
+                            DueDate           = f.Installment?.DueDate ?? DateTime.Now,
+                            AmountDue         = f.AmountDue,
+                            AmountPaid        = 0,
+                            Balance           = f.AmountDue,
+                            PaymentCode       = f.PaymentCode ?? string.Empty,
+                            PaymentStatus     = "Da pagare",
+                        }).ToList(),
+                    };
+                }).ToList();
+
+                var pdfBytes = new PaymentNoticeDocument(notices).GeneratePdf();
+                attachments = [new EmailAttachment(
+                    FileName:    $"cedolini-{notification.RecipientFullName?.Replace(" ", "-")}.pdf",
+                    Content:     pdfBytes,
+                    ContentType: "application/pdf")];
+            }
+        }
+
+        var bodyHtml  = (notification.BodyResolved ?? communication.Content ?? string.Empty).Replace("\n", "<br/>");
+        var toAddress = notification.EmailAddress!;
+        var toName    = notification.RecipientFullName ?? string.Empty;
+
+        if (_testEmail != null)
+        {
+            var testNotice =
+                $"<div style=\"background:#fff3cd;border:1px solid #ffc107;padding:12px 16px;margin-bottom:20px;font-family:sans-serif;font-size:13px;\">" +
+                $"<strong>⚠ MODALITÀ TEST</strong><br/>" +
+                $"Questa email sarebbe stata inviata a: <strong>{toAddress}</strong> ({toName})" +
+                $"</div><hr style=\"margin-bottom:20px\"/>";
+            bodyHtml  = testNotice + bodyHtml;
+            toAddress = _testEmail;
+            toName    = $"[TEST] {toName}";
+        }
+
+        var msg = new EmailMessage(
+            To:          toAddress,
+            ToName:      toName,
+            Subject:     notification.SubjectResolved ?? communication.Title,
+            BodyHtml:    bodyHtml,
+            Attachments: attachments);
+
+        await _emailService.SendAsync(msg, config, cancellationToken).ConfigureAwait(false);
+
+        notification.Status = 2; // Sent
+        notification.SentAt = DateTime.UtcNow;
+        notification.Trace(currentUser);
+        await session.UpdateAsync(notification, cancellationToken).ConfigureAwait(false);
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        return notification.ToReadDto();
     }
 }
 
@@ -848,6 +1025,79 @@ public class UpdateNotificationTextCommandConsumer
     }
 }
 
+// ── REGENERATE TEXTS ─────────────────────────────────────────────────────────
+
+public class RegenerateNotificationTextsCommandConsumer
+    : InMemoryConsumerBase<RegenerateNotificationTextsCommand, int>
+{
+    private readonly IUserService                          _userService;
+    private readonly INotificationTemplateVariableResolver _resolver;
+
+    public RegenerateNotificationTextsCommandConsumer(
+        ISessionFactoryProvider                 sessionFactoryProvider,
+        IUserService                            userService,
+        INotificationTemplateVariableResolver   resolver) : base(sessionFactoryProvider)
+    {
+        _userService = userService;
+        _resolver    = resolver;
+    }
+
+    protected override async Task<int> Consume(
+        RegenerateNotificationTextsCommand command,
+        IMediationContext                   mediationContext,
+        CancellationToken                  cancellationToken)
+    {
+        var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
+
+        var communication = await session.Query<Communication>()
+            .Where(c => c.Id == command.CommunicationId && !c.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
+            ?? throw new NotFoundException("Comunicazione non trovata.");
+
+        var condominium = communication.Condominium;
+
+        // Risolvi il template
+        NotificationTemplate? template = null;
+        if (command.NotificationTemplateId.HasValue)
+            template = await session.GetAsync<NotificationTemplate>(command.NotificationTemplateId.Value, cancellationToken).ConfigureAwait(false);
+
+        template ??= await session.Query<NotificationTemplate>()
+            .Where(t => t.Condominium.Id == condominium.Id
+                     && t.CommunicationType == communication.CommunicationType
+                     && t.IsDefault && !t.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
+        // Carica tutte le notifiche non ancora inviate
+        var pending = await session.Query<CommunicationNotification>()
+            .Where(n => n.Communication.Id == command.CommunicationId && n.Status <= 1 && !n.IsDeleted)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (var n in pending)
+        {
+            var ctx = new NotificationVariableContext
+            {
+                RecipientName      = n.RecipientFullName ?? string.Empty,
+                UnitNumber         = n.Unit?.InternalNumber ?? string.Empty,
+                CondominiumName    = condominium.Name,
+                CommunicationTitle = communication.Title,
+                CommunicationBody  = communication.Content,
+                AdministratorName  = condominium.AdministratorName ?? string.Empty,
+                AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
+                AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
+                Iban               = condominium.Iban ?? string.Empty,
+            };
+
+            n.SubjectResolved = template != null ? _resolver.Resolve(template.SubjectTemplate, ctx) : communication.Title;
+            n.BodyResolved    = template != null ? _resolver.Resolve(template.BodyTemplate,    ctx) : communication.Content;
+            n.Trace(currentUser);
+            await session.UpdateAsync(n, cancellationToken).ConfigureAwait(false);
+        }
+
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        return pending.Count;
+    }
+}
+
 // ── DELETE ────────────────────────────────────────────────────────────────────
 
 public class DeleteCommunicationNotificationCommandConsumer
@@ -869,6 +1119,9 @@ public class DeleteCommunicationNotificationCommandConsumer
 
         var entity = await session.GetAsync<CommunicationNotification>(command.NotificationId, cancellationToken).ConfigureAwait(false);
         if (entity == null) return false;
+
+        if (entity.Status >= 2)
+            throw new ValidatorException("Non è possibile eliminare una notifica già inviata.");
 
         entity.IsDeleted = true;
         entity.Trace(currentUser);

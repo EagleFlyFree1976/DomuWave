@@ -8,6 +8,7 @@ using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
+ 
 
 namespace DomuWave.Microservice.Controllers;
 
@@ -40,8 +41,8 @@ public class CommunicationsController(
     [HttpGet("condominium/{condominiumId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.AuthModule)]
     [ProducesResponseType(typeof(IList<CommunicationReadDto>), 200)]
-    public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetCommunicationsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
+    public async Task<IActionResult> GetByCondominium(int condominiumId, [FromQuery] bool archived = false, CancellationToken ct = default)
+        => Ok(await _mediator.GetResponse(new GetCommunicationsByCondominiumCommand(CurrentUser.Id, condominiumId, archived), ct));
 
     [HttpGet("condominium/{condominiumId:int}/visible")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.AuthModule)]
@@ -93,6 +94,24 @@ public class CommunicationsController(
     public async Task<IActionResult> Publish(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(new PublishCommunicationCommand(CurrentUser.Id, id), ct);
+        if (!result) return NotFound();
+        return Ok();
+    }
+
+    [HttpPost("{id:int}/archive")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Authorizations, Modules.AuthModule)]
+    public async Task<IActionResult> Archive(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new ArchiveCommunicationCommand(CurrentUser.Id, id, true), ct);
+        if (!result) return NotFound();
+        return Ok();
+    }
+
+    [HttpPost("{id:int}/unarchive")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Authorizations, Modules.AuthModule)]
+    public async Task<IActionResult> Unarchive(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new ArchiveCommunicationCommand(CurrentUser.Id, id, false), ct);
         if (!result) return NotFound();
         return Ok();
     }

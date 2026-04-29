@@ -27,11 +27,32 @@ public class GetCommunicationsByCondominiumCommandConsumer : InMemoryConsumerBas
     {
         await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
 
-        var list = await session.Query<Communication>()
-            .Where(c => c.Condominium.Id == command.CondominiumId && !c.IsDeleted)
+        var query = session.Query<Communication>()
+            .Where(c => c.Condominium.Id == command.CondominiumId && !c.IsDeleted);
+
+        query = command.IncludeArchived
+            ? query.Where(c => c.IsArchived)
+            : query.Where(c => !c.IsArchived);
+
+        var list = await query
             .OrderByDescending(c => c.PublicationDate)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        return list.Select(c => c.ToReadDto()).ToList();
+        var communicationIds = list.Select(c => c.Id).ToList();
+
+        var sentSet = await session.Query<CommunicationNotification>()
+            .Where(n => communicationIds.Contains(n.Communication.Id) && !n.IsDeleted && n.Status >= 2)
+            .Select(n => n.Communication.Id)
+            .Distinct()
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        var sentIds = new HashSet<int>(sentSet);
+
+        return list.Select(c =>
+        {
+            var dto = c.ToReadDto();
+            dto.HasSentNotifications = sentIds.Contains(c.Id);
+            return dto;
+        }).ToList();
     }
 }

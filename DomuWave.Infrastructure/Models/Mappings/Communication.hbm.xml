@@ -29,6 +29,7 @@
     <property name="EmailSentAt" column="EmailSentAt" type="DateTime" />
     <property name="IsVisible" column="IsVisible" type="Boolean" not-null="true" />
     <property name="AttachmentPath" column="AttachmentPath" type="String" length="500" />
+    <property name="IsArchived" column="IsArchived" type="Boolean" not-null="true" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />

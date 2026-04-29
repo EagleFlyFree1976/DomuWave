@@ -6,6 +6,10 @@
     </div>
 
     <div class="toolbar">
+      <div class="tab-toggle">
+        <button class="tab-btn" :class="{ active: !showArchived }" @click="switchTab(false)">Attive</button>
+        <button class="tab-btn" :class="{ active: showArchived }"  @click="switchTab(true)">Archiviate</button>
+      </div>
       <input class="form-input search-input" v-model="search" placeholder="Cerca per titolo…" />
       <select class="form-select" v-model="filterType" style="width:160px">
         <option value="">Tutti i tipi</option>
@@ -41,6 +45,7 @@
               <span class="badge" :class="typeBadge(c.communicationType)">{{ typeLabel(c.communicationType) }}</span>
               <span class="badge" :class="priorityBadge(c.priority)">{{ c.priority }}</span>
               <span class="badge badge-muted" v-if="!c.isVisible">Nascosta</span>
+              <span class="badge badge-amber" v-if="c.isArchived">Archiviata</span>
             </div>
           </div>
           <div class="comm-preview">{{ preview(c.content) }}</div>
@@ -53,17 +58,31 @@
           </div>
         </div>
         <div class="comm-actions">
-          <button v-if="canEdit && !c.isVisible" class="btn btn-sm btn-ghost" @click="publishComm(c.id)">Pubblica</button>
-          <button class="btn btn-sm btn-ghost" @click="toggleNotifPanel(c.id)" :class="{ 'btn-active': notifPanelId === c.id }">
-            🔔 Notifiche
-          </button>
-          <button v-if="canEdit" class="btn-icon" @click="openModal(c)">✎</button>
-          <button v-if="canDelete" class="btn-icon" @click="deleteItem(c.id)" style="color:var(--accent-red)">✕</button>
+          <template v-if="!c.isArchived">
+            <button v-if="canEdit && !c.isVisible" class="btn btn-sm btn-ghost" @click="publishComm(c.id)">Pubblica</button>
+            <button class="btn btn-sm btn-ghost" @click="toggleNotifPanel(c.id)" :class="{ 'btn-active': notifPanelId === c.id }">
+              🔔 Notifiche
+            </button>
+            <button v-if="canEdit" class="btn btn-sm btn-ghost btn-send-email" @click="sendEmail(c.id)" :disabled="sendingEmail === c.id" title="Invia email">
+              <span v-if="sendingEmail === c.id" class="spinner" style="width:12px;height:12px"></span>
+              <span v-else>📧</span>
+              Invia email
+            </button>
+            <button v-if="canEdit" class="btn-icon" @click="openModal(c)">✎</button>
+            <button v-if="canEdit" class="btn-icon" title="Archivia" @click="archiveItem(c.id)">🗂</button>
+            <button v-if="canDelete && !c.hasSentNotifications" class="btn-icon" @click="deleteItem(c.id)" style="color:var(--accent-red)">✕</button>
+          </template>
+          <template v-else>
+            <button class="btn btn-sm btn-ghost" @click="toggleNotifPanel(c.id)" :class="{ 'btn-active': notifPanelId === c.id }">
+              🔔 Notifiche
+            </button>
+            <button v-if="canEdit" class="btn btn-sm btn-ghost" @click="unarchiveItem(c.id)">↩ Ripristina</button>
+          </template>
         </div>
 
         <!-- Pannello notifiche inline -->
         <div v-if="notifPanelId === c.id" class="notif-panel">
-          <NotifPanel :communication="c" :condominiumId="store.selectedCondominioId" @close="notifPanelId = null" />
+          <NotifPanel :communication="c" :condominiumId="store.selectedCondominioId" :readonly="c.isArchived" @close="notifPanelId = null" />
         </div>
       </div>
     </div>
@@ -139,16 +158,32 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { communicationApi } from '@/services/api'
+import { communicationApi, communicationNotificationApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import NotifPanel from '@/components/NotifPanel.vue'
 
 const store = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
-const notifPanelId = ref(null)
+const notifPanelId  = ref(null)
+const sendingEmail  = ref(null)
+const showArchived  = ref(false)
 
 function toggleNotifPanel(id) {
   notifPanelId.value = notifPanelId.value === id ? null : id
+}
+
+async function sendEmail(id) {
+  if (!confirm('Inviare le email per questa comunicazione?')) return
+  sendingEmail.value = id
+  try {
+    const { data } = await communicationNotificationApi.sendEmail(id)
+    store.toast(`Email inviate: ${data.sent}, fallite: ${data.failed}`, data.failed ? 'error' : 'success')
+    await loadData()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    sendingEmail.value = null
+  }
 }
 const communications = ref([])
 const loading = ref(false)
@@ -190,9 +225,18 @@ async function loadData() {
   if (!store.selectedCondominioId) return
   loading.value = true
   try {
-    const { data } = await communicationApi.getByCondominium(store.selectedCondominioId)
+    const { data } = showArchived.value
+      ? await communicationApi.getArchived(store.selectedCondominioId)
+      : await communicationApi.getByCondominium(store.selectedCondominioId)
     communications.value = data
   } catch { communications.value = [] } finally { loading.value = false }
+}
+
+function switchTab(archived) {
+  if (showArchived.value === archived) return
+  showArchived.value = archived
+  notifPanelId.value = null
+  loadData()
 }
 
 function openModal(c = null) {
@@ -218,10 +262,21 @@ async function publishComm(id) {
   catch { store.toast('Errore', 'error') }
 }
 
+async function archiveItem(id) {
+  if (!confirm('Archiviare questa comunicazione?')) return
+  try { await communicationApi.archive(id); store.toast('Comunicazione archiviata', 'success'); loadData() }
+  catch (err) { if (!err?.response) store.toast('Impossibile raggiungere il server', 'error') }
+}
+
+async function unarchiveItem(id) {
+  try { await communicationApi.unarchive(id); store.toast('Comunicazione ripristinata', 'success'); loadData() }
+  catch (err) { if (!err?.response) store.toast('Impossibile raggiungere il server', 'error') }
+}
+
 async function deleteItem(id) {
   if (!confirm('Eliminare questa comunicazione?')) return
   try { await communicationApi.delete(id); store.toast('Comunicazione eliminata', 'success'); loadData() }
-  catch { store.toast('Errore', 'error') }
+  catch (err) { if (!err?.response) store.toast('Impossibile raggiungere il server', 'error') }
 }
 
 watch(() => store.selectedCondominioId, loadData)
@@ -230,6 +285,11 @@ onMounted(loadData)
 
 <style scoped>
 .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+
+.tab-toggle { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+.tab-btn { padding: 5px 14px; font-size: 0.82rem; background: transparent; border: none; cursor: pointer; color: var(--text-muted); transition: background 0.15s, color 0.15s; }
+.tab-btn.active { background: var(--accent); color: #fff; }
+.tab-btn:not(.active):hover { background: var(--bg-base); color: var(--text); }
 .search-input { flex: 1; min-width: 200px; max-width: 320px; }
 
 .comms-list { display: flex; flex-direction: column; gap: 0.5rem; }
