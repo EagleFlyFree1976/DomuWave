@@ -1,6 +1,7 @@
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
+using CPQ.Core.Memberships;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Condominium;
@@ -133,6 +134,128 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
             }
         }
 
+        // Crea i template di notifica standard
+        await SeedNotificationTemplatesAsync(created, tenant, currentUser, cancellationToken);
+
         return created.ToReadDto();
+    }
+
+    private async Task SeedNotificationTemplatesAsync(
+        Models.Condominium condominium,
+        Models.Tenant             tenant,
+        IUser              currentUser,
+        CancellationToken  cancellationToken)
+    {
+        var defaults = new[]
+        {
+            new
+            {
+                Type    = "FeeNotice",
+                Name    = "Avviso di pagamento quote",
+                Subject = "Avviso di pagamento quote condominiali — {{CondominiumName}}",
+                Body    =
+                    "Gentile {{RecipientName}},\n\n" +
+                    "Le ricordiamo che risultano le seguenti quote condominiali a Suo carico relative all'unità {{UnitNumber}}:\n\n" +
+                    "{{FeeTable}}\n\n" +
+                    "Totale da versare: {{TotalAmount}}\n\n" +
+                    "Il pagamento dovrà essere effettuato tramite bonifico bancario al seguente IBAN:\n" +
+                    "{{Iban}}\n" +
+                    "causale: Quote condominiali — {{CondominiumName}} — {{FiscalYearCode}}\n\n" +
+                    "Per qualsiasi chiarimento non esiti a contattarci.\n\n" +
+                    "Cordiali saluti,\n" +
+                    "{{AdministratorName}}\n" +
+                    "{{AdministratorEmail}}\n" +
+                    "{{AdministratorPhone}}",
+            },
+            new
+            {
+                Type    = "Notice",
+                Name    = "Avviso generico",
+                Subject = "{{CommunicationTitle}} — {{CondominiumName}}",
+                Body    =
+                    "Gentile {{RecipientName}},\n\n" +
+                    "{{CommunicationBody}}\n\n" +
+                    "Cordiali saluti,\n" +
+                    "{{AdministratorName}}\n" +
+                    "{{AdministratorEmail}}\n" +
+                    "{{AdministratorPhone}}",
+            },
+            new
+            {
+                Type    = "Meeting",
+                Name    = "Convocazione assemblea",
+                Subject = "Convocazione assemblea condominiale — {{CondominiumName}}",
+                Body    =
+                    "Gentile {{RecipientName}},\n\n" +
+                    "La informiamo che è stata convocata un'assemblea condominiale.\n\n" +
+                    "{{CommunicationBody}}\n\n" +
+                    "La Sua presenza è gradita.\n\n" +
+                    "Cordiali saluti,\n" +
+                    "{{AdministratorName}}\n" +
+                    "{{AdministratorEmail}}\n" +
+                    "{{AdministratorPhone}}",
+            },
+            new
+            {
+                Type    = "Maintenance",
+                Name    = "Comunicazione lavori",
+                Subject = "Comunicazione lavori — {{CondominiumName}}",
+                Body    =
+                    "Gentile {{RecipientName}},\n\n" +
+                    "La informiamo che sono previsti i seguenti interventi di manutenzione:\n\n" +
+                    "{{CommunicationBody}}\n\n" +
+                    "Ci scusiamo per gli eventuali disagi.\n\n" +
+                    "Cordiali saluti,\n" +
+                    "{{AdministratorName}}\n" +
+                    "{{AdministratorEmail}}\n" +
+                    "{{AdministratorPhone}}",
+            },
+            new
+            {
+                Type    = "Emergency",
+                Name    = "Comunicazione urgente",
+                Subject = "URGENTE — {{CommunicationTitle}} — {{CondominiumName}}",
+                Body    =
+                    "Gentile {{RecipientName}},\n\n" +
+                    "COMUNICAZIONE URGENTE\n\n" +
+                    "{{CommunicationBody}}\n\n" +
+                    "La preghiamo di prenderne immediata visione.\n\n" +
+                    "{{AdministratorName}}\n" +
+                    "{{AdministratorEmail}}\n" +
+                    "{{AdministratorPhone}}",
+            },
+            new
+            {
+                Type    = "Info",
+                Name    = "Comunicazione informativa",
+                Subject = "{{CommunicationTitle}} — {{CondominiumName}}",
+                Body    =
+                    "Gentile {{RecipientName}},\n\n" +
+                    "La informiamo che:\n\n" +
+                    "{{CommunicationBody}}\n\n" +
+                    "Cordiali saluti,\n" +
+                    "{{AdministratorName}}\n" +
+                    "{{AdministratorEmail}}\n" +
+                    "{{AdministratorPhone}}",
+            },
+        };
+
+        foreach (var d in defaults)
+        {
+            var tmpl = new NotificationTemplate
+            {
+                Condominium       = condominium,
+                Tenant            = tenant,
+                Name              = d.Name,
+                CommunicationType = d.Type,
+                SubjectTemplate   = d.Subject,
+                BodyTemplate      = d.Body,
+                IsDefault         = true,
+            };
+            tmpl.Trace(currentUser);
+            await session.SaveAsync(tmpl, cancellationToken).ConfigureAwait(false);
+        }
+
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 }

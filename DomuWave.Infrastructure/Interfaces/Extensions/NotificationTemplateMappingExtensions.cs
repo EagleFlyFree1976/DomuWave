@@ -13,6 +13,7 @@ public static class NotificationTemplateMappingExtensions
         {
             CondominiumId     = entity.Condominium?.Id   ?? 0,
             CondominiumName   = entity.Condominium?.Name,
+            Name              = entity.Name,
             CommunicationType = entity.CommunicationType,
             SubjectTemplate   = entity.SubjectTemplate,
             BodyTemplate      = entity.BodyTemplate,

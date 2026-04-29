@@ -30,13 +30,15 @@
 <style scoped>
   .app-layout {
     display: flex;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     background: var(--bg-base);
   }
 
   .app-main {
     flex: 1;
     min-width: 0;
+    height: 100vh;
     overflow-y: auto;
     display: flex;
     flex-direction: column;

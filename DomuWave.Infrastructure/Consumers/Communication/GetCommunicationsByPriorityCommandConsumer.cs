@@ -1,38 +1,39 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Communication;
+using DomuWave.Services.Dto.Communication;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
+using DomuWave.Services.Models;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class GetCommunicationsByPriorityCommandConsumer : InMemoryConsumerBase<GetCommunicationsByPriorityCommand, IList<Communication>>
+public class GetCommunicationsByPriorityCommandConsumer : InMemoryConsumerBase<GetCommunicationsByPriorityCommand, IList<CommunicationReadDto>>
 {
-    private readonly ICommunicationService _communicationService;
     private readonly IUserService _userService;
 
     public GetCommunicationsByPriorityCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
-        ICommunicationService communicationService,
-        IUserService userService) : base(sessionFactoryProvider)
-    {
-        _communicationService = communicationService;
-        _userService = userService;
-    }
+        IUserService            userService) : base(sessionFactoryProvider)
+        => _userService = userService;
 
-    protected override async Task<IList<Communication>> Consume(
+    protected override async Task<IList<CommunicationReadDto>> Consume(
         GetCommunicationsByPriorityCommand command,
-        IMediationContext mediationContext,
-        CancellationToken cancellationToken)
+        IMediationContext                   mediationContext,
+        CancellationToken                  cancellationToken)
     {
-        var currentUser = await _userService
-            .GetByIdAsync(command.CurrentUserId, cancellationToken)
-            .ConfigureAwait(false);
+        await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
 
-        return await _communicationService
-            .GetByPriorityAsync(command.CondominiumId, command.Priority, currentUser, cancellationToken)
-            .ConfigureAwait(false);
+        var list = await session.Query<Communication>()
+            .Where(c => c.Condominium.Id == command.CondominiumId
+                     && c.Priority == command.Priority
+                     && !c.IsDeleted)
+            .OrderByDescending(c => c.PublicationDate)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return list.Select(c => c.ToReadDto()).ToList();
     }
 }

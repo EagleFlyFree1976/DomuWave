@@ -3,6 +3,7 @@
     <div class="page-header">
       <h1>Rate</h1>
       <button v-if="canCreate" class="btn btn-primary" @click="openInstModal()">+ Nuova rata</button>
+      <button v-if="installments.length" class="btn btn-ghost" @click="openNotifModal()">📧 Notifica condomini</button>
     </div>
 
     <!-- ── Box riconciliazione per codice ───────────── -->
@@ -674,6 +675,81 @@
       </div>
     </div>
 
+    <!-- Modal notifiche rate -->
+    <div class="modal-overlay" v-if="showNotifModal" @click.self="showNotifModal=false">
+      <div class="modal" style="max-width:560px">
+        <div class="modal-header">
+          <h2>📧 Notifica condomini</h2>
+          <button class="btn-icon" @click="showNotifModal=false">✕</button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Selezione rate -->
+          <div class="form-group">
+            <label class="form-label">Rate da notificare</label>
+            <div style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;padding:8px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px">
+              <label v-for="inst in installments" :key="inst.id" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" :value="inst.id" v-model="notifSelectedInst" />
+                <span>Rata {{ inst.installmentNumber }} — scad. {{ fmtDate(inst.dueDate) }} — {{ fmt(inst.totalAmount) }}</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Selezione unità -->
+          <div class="form-group">
+            <label class="form-label">Destinatari</label>
+            <div style="display:flex;gap:16px;margin-bottom:8px">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="radio" :value="true" v-model="notifAllUnits" /> Tutte le unità
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                <input type="radio" :value="false" v-model="notifAllUnits" /> Seleziona unità
+              </label>
+            </div>
+            <div v-if="!notifAllUnits" style="display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;padding:8px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px">
+              <label v-for="u in notifAvailableUnits" :key="u.id" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                <input type="checkbox" :value="u.id" v-model="notifSelectedUnits" />
+                <span>{{ u.label }}</span>
+              </label>
+              <div v-if="!notifAvailableUnits.length" class="text-muted" style="font-size:0.85rem">Seleziona almeno una rata per vedere le unità</div>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <!-- Metodo di consegna -->
+            <div class="form-group">
+              <label class="form-label">Metodo</label>
+              <select class="form-select" v-model.number="notifDeliveryMethod">
+                <option :value="0">📧 Email</option>
+                <option :value="1">✉️ Raccomandata</option>
+              </select>
+            </div>
+
+            <!-- Template -->
+            <div class="form-group">
+              <label class="form-label">Template</label>
+              <select class="form-select" v-model="notifTemplateId">
+                <option :value="null">— automatico —</option>
+                <option v-for="t in notifTemplates" :key="t.id" :value="t.id">{{ t.name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <p v-if="!notifTemplates.length" style="font-size:0.82rem;color:var(--text-muted);margin:0">
+            Nessun template "Avviso di pagamento" trovato. Puoi crearne uno in <strong>Template Notifiche</strong>.
+          </p>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="showNotifModal=false">Annulla</button>
+          <button class="btn btn-primary" @click="sendNotifiche" :disabled="notifSaving">
+            <span v-if="notifSaving" class="spinner" style="width:14px;height:14px"></span>
+            Genera notifiche
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -681,7 +757,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { installmentApi, feeApi, unitApi, billingGroupApi } from '@/services/api'
+import { installmentApi, feeApi, unitApi, billingGroupApi, communicationNotificationApi, notificationTemplateApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 
 const route  = useRoute()
@@ -1233,6 +1309,83 @@ async function downloadGroupInstNoticePdf(row, ir) {
     triggerBlobDownload(data, `avviso-gruppo-${row.groupName}-rata-${ir.installmentNumber}.pdf`)
   } catch { store.toast('Errore nel download del PDF', 'error') }
   finally { downloadingPdf.value = null }
+}
+
+// ── Notifiche rate ────────────────────────────────────────────
+const showNotifModal      = ref(false)
+const notifSaving         = ref(false)
+const notifTemplates      = ref([])
+const notifSelectedInst   = ref([])   // ids delle rate selezionate
+const notifSelectedUnits  = ref([])   // ids unità (vuoto = tutte)
+const notifDeliveryMethod = ref(0)
+const notifTemplateId     = ref(null)
+const notifAllUnits       = ref(true) // se true → tutte le unità
+
+// Unità disponibili per le rate selezionate (calcolate dalle fees caricate)
+const notifAvailableUnits = computed(() => {
+  const seen = new Set()
+  const units = []
+  for (const inst of installments.value) {
+    if (!notifSelectedInst.value.includes(inst.id)) continue
+    for (const fee of (inst._fees ?? [])) {
+      if (!seen.has(fee.unitId)) {
+        seen.add(fee.unitId)
+        units.push({ id: fee.unitId, label: `${fee.unitInternalNumber}${fee.unitDisplayName ? ' – ' + fee.unitDisplayName : ''}` })
+      }
+    }
+  }
+  return units
+})
+
+async function openNotifModal() {
+  // Pre-seleziona tutte le rate visibili
+  notifSelectedInst.value  = installments.value.map(i => i.id)
+  notifSelectedUnits.value = []
+  notifAllUnits.value      = true
+  notifDeliveryMethod.value = 0
+  notifTemplateId.value    = null
+
+  // Carica le quotes per le rate se non già caricate
+  for (const inst of installments.value) {
+    if (!inst._fees) {
+      try {
+        const { data } = await feeApi.getByInstallment(inst.id)
+        inst._fees = data ?? []
+      } catch { inst._fees = [] }
+    }
+  }
+
+  // Carica i template FeeNotice per il condominio
+  try {
+    const { data } = await notificationTemplateApi.getByCondominium(store.selectedCondominioId)
+    notifTemplates.value = (data ?? []).filter(t => t.communicationType === 'FeeNotice')
+    const def = notifTemplates.value.find(t => t.isDefault)
+    if (def) notifTemplateId.value = def.id
+  } catch { notifTemplates.value = [] }
+
+  showNotifModal.value = true
+}
+
+async function sendNotifiche() {
+  if (!notifSelectedInst.value.length) {
+    store.toast('Seleziona almeno una rata', 'error'); return
+  }
+  notifSaving.value = true
+  try {
+    const payload = {
+      installmentIds:        notifSelectedInst.value,
+      unitIds:               notifAllUnits.value ? null : notifSelectedUnits.value,
+      deliveryMethod:        notifDeliveryMethod.value,
+      notificationTemplateId: notifTemplateId.value ?? null,
+    }
+    const { data } = await communicationNotificationApi.generateFromFees(payload)
+    store.toast(`${data.notifications?.length ?? 0} notifiche generate`, 'success')
+    showNotifModal.value = false
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    notifSaving.value = false
+  }
 }
 
 // ── Watchers / Init ───────────────────────────────────────────

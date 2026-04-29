@@ -417,6 +417,260 @@ public class GetNotificationBatchPdfCommandConsumer
     }
 }
 
+// ── GENERATE FROM FEES ───────────────────────────────────────────────────────
+
+public class GenerateNotificationsFromFeesCommandConsumer
+    : InMemoryConsumerBase<GenerateNotificationsFromFeesCommand, GenerateFromFeesResultDto>
+{
+    private readonly IUserService                          _userService;
+    private readonly INotificationTemplateVariableResolver _resolver;
+
+    public GenerateNotificationsFromFeesCommandConsumer(
+        ISessionFactoryProvider                sessionFactoryProvider,
+        IUserService                           userService,
+        INotificationTemplateVariableResolver  resolver) : base(sessionFactoryProvider)
+    {
+        _userService = userService;
+        _resolver    = resolver;
+    }
+
+    protected override async Task<GenerateFromFeesResultDto> Consume(
+        GenerateNotificationsFromFeesCommand command,
+        IMediationContext                     mediationContext,
+        CancellationToken                    cancellationToken)
+    {
+        var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
+        var dto         = command.Dto;
+
+        // Load fees for selected installments, filtered by unit if specified
+        var feesQuery = session.Query<CondominiumFee>()
+            .Where(f => dto.InstallmentIds.Contains(f.Installment.Id) && !f.IsDeleted);
+        if (dto.UnitIds != null && dto.UnitIds.Count > 0)
+            feesQuery = feesQuery.Where(f => dto.UnitIds.Contains(f.Unit.Id));
+
+        var fees = await feesQuery
+            .OrderBy(f => f.Unit.InternalNumber)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        if (fees.Count == 0)
+            throw new ValidatorException("Nessuna quota trovata per le rate e le unità selezionate.");
+
+        // All fees belong to the same condominium — take it from the first
+        var firstInstallment = await session.GetAsync<CondominiumInstallment>(dto.InstallmentIds[0], cancellationToken).ConfigureAwait(false)
+                               ?? throw new NotFoundException("Rata non trovata.");
+        var condominium = firstInstallment.Condominium;
+
+        // Resolve or create the Communication
+        Communication communication;
+        if (dto.CommunicationId.HasValue)
+        {
+            communication = await session.Query<Communication>()
+                .Where(c => c.Id == dto.CommunicationId.Value && !c.IsDeleted)
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
+                ?? throw new NotFoundException("Comunicazione non trovata.");
+        }
+        else
+        {
+            var installmentNumbers = fees.Select(f => f.Installment.InstallmentNumber).Distinct().OrderBy(x => x);
+            var title = $"Avviso rate {string.Join(", ", installmentNumbers.Select(n => $"#{n}"))} — {condominium.Name}";
+            communication = new Communication
+            {
+                Condominium       = condominium,
+                Tenant            = condominium.Tenant,
+                Name              = title,
+                Description       = title,
+                CommunicationType = "FeeNotice",
+                Priority          = "Normal",
+                PublicationDate   = DateTime.Now,
+                IsVisible         = true,
+                SendEmail         = dto.DeliveryMethod == 0,
+            };
+            communication.Trace(currentUser);
+            await session.SaveAsync(communication, cancellationToken).ConfigureAwait(false);
+            await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        // Load template
+        NotificationTemplate? template = null;
+        if (dto.NotificationTemplateId.HasValue)
+            template = await session.GetAsync<NotificationTemplate>(dto.NotificationTemplateId.Value, cancellationToken).ConfigureAwait(false);
+        template ??= await session.Query<NotificationTemplate>()
+            .Where(t => t.Condominium.Id == condominium.Id
+                     && t.CommunicationType == "FeeNotice"
+                     && t.IsDefault && !t.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
+        // Delete existing Draft notifications for this communication on the same fees
+        var feeUnitIds = fees.Select(f => f.Unit.Id).Distinct().ToList();
+        var existing = await session.Query<CommunicationNotification>()
+            .Where(n => n.Communication.Id == communication.Id && n.Status == 0 && !n.IsDeleted)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        var existingForUnits = existing.Where(n => n.Unit != null && feeUnitIds.Contains(n.Unit.Id)).ToList();
+        foreach (var old in existingForUnits)
+        {
+            old.IsDeleted = true;
+            await session.UpdateAsync(old, cancellationToken).ConfigureAwait(false);
+        }
+
+        var addressParts = condominium.Address != null
+            ? $"{condominium.Address.Street} {condominium.Address.StreetNumber}, {condominium.Address.PostalCode} {condominium.Address.City}"
+            : string.Empty;
+
+        // Load all owners for affected units in one query
+        var unitIds = fees.Select(f => f.Unit.Id).Distinct().ToList();
+        var allOwners = await session.Query<UnitOwner>()
+            .Where(o => unitIds.Contains(o.Unit.Id) && o.IsActive && !o.IsDeleted)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+        var ownerByUnit = allOwners.GroupBy(o => o.Unit.Id).ToDictionary(g => g.Key, g => g.First());
+
+        // Group fees by owner identity: email if available, otherwise FirstName+LastName, otherwise unit
+        var feesByOwner = fees
+            .GroupBy(f =>
+            {
+                if (!ownerByUnit.TryGetValue(f.Unit.Id, out var o)) return $"unit:{f.Unit.Id}";
+                if (!string.IsNullOrWhiteSpace(o.Email))             return $"email:{o.Email.Trim().ToLowerInvariant()}";
+                var name = $"{o.FirstName?.Trim()} {o.LastName?.Trim()}".Trim().ToLowerInvariant();
+                if (!string.IsNullOrEmpty(name))                     return $"name:{name}";
+                return $"unit:{f.Unit.Id}";
+            })
+            .ToList();
+
+        var culture = System.Globalization.CultureInfo.GetCultureInfo("it-IT");
+        var created = new List<CommunicationNotification>();
+
+        foreach (var group in feesByOwner)
+        {
+            var groupFees = group.ToList();
+            var firstFee  = groupFees[0];
+            ownerByUnit.TryGetValue(firstFee.Unit.Id, out var owner);
+
+            var recipientName = owner != null
+                ? $"{owner.FirstName} {owner.LastName}".Trim()
+                : firstFee.Unit.DisplayName ?? firstFee.Unit.InternalNumber;
+
+            // Build fee table: grouped by installment, detail per unit, subtotal per installment
+            var feesByInstallment = groupFees
+                .GroupBy(f => f.Installment.Id)
+                .OrderBy(g => g.First().Installment.InstallmentNumber);
+
+            var tableLines = new List<string>();
+            foreach (var instGroup in feesByInstallment)
+            {
+                var inst         = instGroup.First().Installment;
+                var instTotal    = instGroup.Sum(f => f.AmountDue);
+                tableLines.Add($"Rata {inst.InstallmentNumber} — scad. {inst.DueDate:dd/MM/yyyy} — Totale: {instTotal.ToString("C", culture)}");
+                foreach (var f in instGroup.OrderBy(f => f.Unit.InternalNumber))
+                {
+                    var line = $"  {f.Unit.InternalNumber}: {f.AmountDue.ToString("C", culture)}";
+                    if (!string.IsNullOrEmpty(f.PaymentCode)) line += $" — cod. {f.PaymentCode}";
+                    tableLines.Add(line);
+                }
+            }
+            tableLines.Add(new string('─', 40));
+            var totalAmount = groupFees.Sum(f => f.AmountDue);
+            tableLines.Add($"Totale complessivo: {totalAmount.ToString("C", culture)}");
+            var feeTable       = string.Join("\n", tableLines);
+            var totalAmountStr = totalAmount.ToString("C", culture);
+
+            // Use first fee's installment for single-value variables (fallback)
+            var firstInst = firstFee.Installment;
+            var ctx = new NotificationVariableContext
+            {
+                RecipientName      = recipientName,
+                UnitNumber         = firstFee.Unit?.InternalNumber ?? string.Empty,
+                CondominiumName    = condominium.Name,
+                CommunicationTitle = communication.Title,
+                CommunicationBody  = communication.Content,
+                AdministratorName  = condominium.AdministratorName ?? string.Empty,
+                AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
+                AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
+                FiscalYearCode     = firstInst?.FiscalYear?.Name ?? string.Empty,
+                DueDate            = firstInst?.DueDate.ToString("dd/MM/yyyy") ?? string.Empty,
+                Amount             = firstFee.AmountDue.ToString("C", culture),
+                PaymentCode        = firstFee.PaymentCode ?? string.Empty,
+                Iban               = condominium.Iban ?? string.Empty,
+                FeeTable           = feeTable,
+                TotalAmount        = totalAmountStr,
+            };
+
+            var subject = template != null ? _resolver.Resolve(template.SubjectTemplate, ctx) : communication.Title;
+            var body    = template != null ? _resolver.Resolve(template.BodyTemplate,    ctx) : communication.Content;
+
+            // Codici unità del gruppo (distinti, ordinati)
+            var unitCodes = groupFees
+                .Select(f => f.Unit?.InternalNumber ?? f.Unit?.DisplayName ?? string.Empty)
+                .Where(s => !string.IsNullOrEmpty(s))
+                .Distinct()
+                .OrderBy(s => s)
+                .ToList();
+            var unitsDisplay = string.Join(", ", unitCodes);
+
+            var notification = new CommunicationNotification
+            {
+                Tenant            = condominium.Tenant,
+                Communication     = communication,
+                Name              = $"{recipientName} — {communication.Title}",
+                RecipientUserId   = owner?.UserId ?? 0,
+                RecipientFullName = recipientName,
+                Unit              = firstFee.Unit,
+                UnitsDisplay      = unitsDisplay,
+                DeliveryMethod    = dto.DeliveryMethod,
+                Status            = 0, // Draft
+                ScheduledAt       = dto.ScheduledAt,
+                EmailAddress      = owner?.Email,
+                PostalAddress     = addressParts,
+                SubjectResolved   = subject,
+                BodyResolved      = body,
+            };
+            notification.Trace(currentUser);
+            await session.SaveAsync(notification, cancellationToken).ConfigureAwait(false);
+            created.Add(notification);
+        }
+
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        return new GenerateFromFeesResultDto
+        {
+            CommunicationId = communication.Id,
+            Notifications   = created.Select(n => n.ToReadDto()).ToList(),
+        };
+    }
+}
+
+// ── UPDATE TEXT ───────────────────────────────────────────────────────────────
+
+public class UpdateNotificationTextCommandConsumer
+    : InMemoryConsumerBase<UpdateNotificationTextCommand, CommunicationNotificationReadDto>
+{
+    private readonly IUserService _userService;
+
+    public UpdateNotificationTextCommandConsumer(
+        ISessionFactoryProvider sessionFactoryProvider,
+        IUserService            userService) : base(sessionFactoryProvider)
+        => _userService = userService;
+
+    protected override async Task<CommunicationNotificationReadDto> Consume(
+        UpdateNotificationTextCommand command,
+        IMediationContext              mediationContext,
+        CancellationToken             cancellationToken)
+    {
+        var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
+
+        var entity = await session.GetAsync<CommunicationNotification>(command.NotificationId, cancellationToken).ConfigureAwait(false)
+                     ?? throw new NotFoundException("Notifica non trovata.");
+
+        if (entity.Status > 1)
+            throw new ValidatorException("Non è possibile modificare una notifica già inviata.");
+
+        entity.SubjectResolved = command.Dto.SubjectResolved ?? entity.SubjectResolved;
+        entity.BodyResolved    = command.Dto.BodyResolved;
+        entity.Trace(currentUser);
+        await session.UpdateAsync(entity, cancellationToken).ConfigureAwait(false);
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        return entity.ToReadDto();
+    }
+}
+
 // ── DELETE ────────────────────────────────────────────────────────────────────
 
 public class DeleteCommunicationNotificationCommandConsumer

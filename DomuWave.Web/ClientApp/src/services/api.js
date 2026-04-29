@@ -473,6 +473,7 @@ export const notificationTemplateApi = {
   create:           (data)           => api.post('/notification-templates', data),
   update:           (id, data)       => api.put(`/notification-templates/${id}`, data),
   delete:           (id)             => api.delete(`/notification-templates/${id}`),
+  seedDefaults:     (condominiumId)  => api.post(`/notification-templates/seed-defaults/${condominiumId}`),
 }
 
 export const tenantSmtpApi = {
@@ -484,11 +485,13 @@ export const tenantSmtpApi = {
 export const communicationNotificationApi = {
   getByCommunication: (communicationId)       => api.get(`/communication-notifications/by-communication/${communicationId}`),
   generate:           (communicationId, data) => api.post(`/communication-notifications/generate/${communicationId}`, data),
+  generateFromFees:   (data)                  => api.post('/communication-notifications/generate-from-fees', data),
   sendEmail:          (communicationId)       => api.post(`/communication-notifications/send-email/${communicationId}`),
   markPrinted:        (id)                    => api.post(`/communication-notifications/${id}/mark-printed`),
   markSent:           (id, data)              => api.post(`/communication-notifications/${id}/mark-sent`, data ?? {}),
   markDelivered:      (id, data)              => api.post(`/communication-notifications/${id}/mark-delivered`, data ?? {}),
   getBatchPdf:        (communicationId)       => api.get(`/communication-notifications/batch-pdf/${communicationId}`, { responseType: 'blob' }),
+  updateText:         (id, data)              => api.put(`/communication-notifications/${id}/text`, data),
   delete:             (id)                    => api.delete(`/communication-notifications/${id}`),
 }
 

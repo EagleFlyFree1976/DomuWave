@@ -1,38 +1,37 @@
-using DomuWave.Services.Models;
 using CPQ.Core.Consumers;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Communication;
+using DomuWave.Services.Dto.Communication;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Interfaces.Extensions;
+using DomuWave.Services.Models;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class GetAllCommunicationsCommandConsumer : InMemoryConsumerBase<GetAllCommunicationsCommand, IList<Models.Communication>>
+public class GetAllCommunicationsCommandConsumer : InMemoryConsumerBase<GetAllCommunicationsCommand, IList<CommunicationReadDto>>
 {
-    private readonly ICommunicationService _communicationService;
     private readonly IUserService _userService;
 
     public GetAllCommunicationsCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
-        ICommunicationService communicationService,
-        IUserService userService) : base(sessionFactoryProvider)
-    {
-        _communicationService = communicationService;
-        _userService = userService;
-    }
+        IUserService            userService) : base(sessionFactoryProvider)
+        => _userService = userService;
 
-    protected override async Task<IList<Models.Communication>> Consume(
+    protected override async Task<IList<CommunicationReadDto>> Consume(
         GetAllCommunicationsCommand command,
-        IMediationContext mediationContext,
-        CancellationToken cancellationToken)
+        IMediationContext            mediationContext,
+        CancellationToken           cancellationToken)
     {
-        var currentUser = await _userService
-            .GetByIdAsync(command.CurrentUserId, cancellationToken)
-            .ConfigureAwait(false);
+        await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
 
-        return await _communicationService
-            .GetAllAsync(currentUser, cancellationToken)
-            .ConfigureAwait(false);
+        var list = await session.Query<Communication>()
+            .Where(c => !c.IsDeleted)
+            .OrderByDescending(c => c.PublicationDate)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return list.Select(c => c.ToReadDto()).ToList();
     }
 }

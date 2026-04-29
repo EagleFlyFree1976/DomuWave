@@ -198,7 +198,11 @@
 <style scoped>
   .app-sidebar {
     width: 248px;
-    min-height: 100vh;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    flex-shrink: 0;
     background: #0f172a;
     border-right: 1px solid #1e293b;
     display: flex;

@@ -25,4 +25,7 @@ public class NotificationVariableContext
     public string Amount             { get; set; } = string.Empty;
     public string PaymentCode        { get; set; } = string.Empty;
     public string Iban               { get; set; } = string.Empty;
+    // Multi-fee: riepilogo di tutte le rate del destinatario ({{FeeTable}})
+    public string FeeTable           { get; set; } = string.Empty;
+    public string TotalAmount        { get; set; } = string.Empty;
 }

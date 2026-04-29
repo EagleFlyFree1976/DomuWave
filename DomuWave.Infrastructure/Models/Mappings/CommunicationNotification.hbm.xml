@@ -34,6 +34,7 @@
     <property name="PostalAddress"     column="PostalAddress"     type="String"     length="500"  />
     <property name="SubjectResolved"   column="SubjectResolved"   type="String"     length="500"  />
     <property name="BodyResolved"      column="BodyResolved"      type="StringClob"               />
+    <property name="UnitsDisplay"      column="UnitsDisplay"      type="String"     length="500"  />
 
     <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
     <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />

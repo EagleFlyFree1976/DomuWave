@@ -4,6 +4,7 @@ using DomuWave.Application.Code;
 using DomuWave.Services.Command.CommunicationNotification;
 using DomuWave.Services.Command.NotificationTemplate;
 using DomuWave.Services.Command.TenantSmtp;
+using DomuWave.Services.Command.Communication;
 using DomuWave.Services.Dto.CommunicationNotification;
 using DomuWave.Services.Dto.NotificationTemplate;
 using DomuWave.Services.Dto.TenantSmtp;
@@ -64,6 +65,14 @@ public class NotificationTemplatesController(
         var deleted = await _mediator.GetResponse(new DeleteNotificationTemplateCommand(CurrentUser.Id, id), ct);
         if (!deleted) return NotFound();
         return NoContent();
+    }
+
+    [HttpPost("seed-defaults/{condominiumId:int}")]
+    [ProducesResponseType(typeof(IList<NotificationTemplateReadDto>), 201)]
+    public async Task<IActionResult> SeedDefaults(int condominiumId, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new SeedDefaultNotificationTemplatesCommand(CurrentUser.Id, condominiumId), ct);
+        return StatusCode(201, result);
     }
 }
 
@@ -134,6 +143,15 @@ public class CommunicationNotificationsController(
         return StatusCode(201, result);
     }
 
+    [HttpPost("generate-from-fees")]
+    [ProducesResponseType(typeof(GenerateFromFeesResultDto), 201)]
+    public async Task<IActionResult> GenerateFromFees([FromBody] GenerateNotificationsFromFeesDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(new GenerateNotificationsFromFeesCommand(CurrentUser.Id, dto), ct);
+        return StatusCode(201, result);
+    }
+
     [HttpPost("send-email/{communicationId:int}")]
     [ProducesResponseType(typeof(SendNotificationsResultDto), 200)]
     public async Task<IActionResult> SendEmail(int communicationId, CancellationToken ct)
@@ -160,6 +178,15 @@ public class CommunicationNotificationsController(
     {
         var bytes = await _mediator.GetResponse(new GetNotificationBatchPdfCommand(CurrentUser.Id, communicationId), ct);
         return File(bytes, "application/pdf", $"comunicazioni-{communicationId}.pdf");
+    }
+
+    [HttpPut("{id:long}/text")]
+    [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]
+    public async Task<IActionResult> UpdateText(long id, [FromBody] UpdateNotificationTextDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(new UpdateNotificationTextCommand(CurrentUser.Id, id, dto), ct);
+        return Ok(result);
     }
 
     [HttpDelete("{id:long}")]

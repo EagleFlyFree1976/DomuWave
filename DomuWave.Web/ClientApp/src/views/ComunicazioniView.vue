@@ -14,6 +14,7 @@
         <option value="Maintenance">Manutenzione</option>
         <option value="Emergency">Urgente</option>
         <option value="Info">Informazione</option>
+        <option value="FeeNotice">Avviso di pagamento</option>
       </select>
       <select class="form-select" v-model="filterPriority" style="width:140px">
         <option value="">Tutte le priorità</option>
@@ -37,7 +38,7 @@
           <div class="comm-header">
             <span class="comm-title">{{ c.title }}</span>
             <div class="comm-badges">
-              <span class="badge" :class="typeBadge(c.communicationType)">{{ c.communicationType }}</span>
+              <span class="badge" :class="typeBadge(c.communicationType)">{{ typeLabel(c.communicationType) }}</span>
               <span class="badge" :class="priorityBadge(c.priority)">{{ c.priority }}</span>
               <span class="badge badge-muted" v-if="!c.isVisible">Nascosta</span>
             </div>
@@ -59,11 +60,11 @@
           <button v-if="canEdit" class="btn-icon" @click="openModal(c)">✎</button>
           <button v-if="canDelete" class="btn-icon" @click="deleteItem(c.id)" style="color:var(--accent-red)">✕</button>
         </div>
-      </div>
 
-      <!-- Pannello notifiche inline -->
-      <div v-if="notifPanelId === c.id" class="notif-panel">
-        <NotifPanel :communication="c" :condominiumId="store.selectedCondominioId" @close="notifPanelId = null" />
+        <!-- Pannello notifiche inline -->
+        <div v-if="notifPanelId === c.id" class="notif-panel">
+          <NotifPanel :communication="c" :condominiumId="store.selectedCondominioId" @close="notifPanelId = null" />
+        </div>
       </div>
     </div>
 
@@ -88,6 +89,7 @@
                 <option value="Maintenance">Manutenzione</option>
                 <option value="Emergency">Urgente</option>
                 <option value="Info">Informazione</option>
+                <option value="FeeNotice">Avviso di pagamento</option>
               </select>
             </div>
             <div class="form-group">
@@ -167,7 +169,9 @@ const form = ref(defaultForm())
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT', { day:'2-digit', month:'short', year:'numeric' }) : '—'
 const preview = (t) => t?.length > 120 ? t.slice(0, 120) + '…' : t
 
-const typeBadge = (t) => ({ Notice: 'badge-blue', Meeting: 'badge-purple', Maintenance: 'badge-amber', Emergency: 'badge-red', Info: 'badge-muted' }[t] || 'badge-muted')
+const commTypes = { Notice: 'Avviso', Meeting: 'Assemblea', Maintenance: 'Manutenzione', Emergency: 'Urgente', Info: 'Informazione', FeeNotice: 'Avviso di pagamento' }
+const typeLabel = (t) => commTypes[t] ?? t
+const typeBadge = (t) => ({ Notice: 'badge-blue', Meeting: 'badge-purple', Maintenance: 'badge-amber', Emergency: 'badge-red', Info: 'badge-muted', FeeNotice: 'badge-green' }[t] || 'badge-muted')
 const priorityBadge = (p) => ({ High: 'badge-red', Normal: 'badge-blue', Low: 'badge-muted' }[p] || 'badge-muted')
 const priorityBar = (p) => ({ High: 'bar-red', Normal: 'bar-blue', Low: 'bar-muted' }[p] || 'bar-muted')
 

@@ -203,3 +203,109 @@ public class DeleteNotificationTemplateCommandConsumer
         return true;
     }
 }
+
+// ── SEED DEFAULT TEMPLATES ────────────────────────────────────────────────────
+
+public class SeedDefaultNotificationTemplatesCommandConsumer
+    : InMemoryConsumerBase<SeedDefaultNotificationTemplatesCommand, IList<NotificationTemplateReadDto>>
+{
+    private readonly IUserService _userService;
+
+    public SeedDefaultNotificationTemplatesCommandConsumer(
+        ISessionFactoryProvider sessionFactoryProvider,
+        IUserService            userService) : base(sessionFactoryProvider)
+        => _userService = userService;
+
+    protected override async Task<IList<NotificationTemplateReadDto>> Consume(
+        SeedDefaultNotificationTemplatesCommand command,
+        IMediationContext                        mediationContext,
+        CancellationToken                       cancellationToken)
+    {
+        var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
+
+        var condominium = await session.GetAsync<Models.Condominium>(command.CondominiumId, cancellationToken).ConfigureAwait(false)
+                          ?? throw new NotFoundException("Condominio non trovato.");
+
+        var defaults = new[]
+        {
+            new { Type = "FeeNotice",    Name = "Avviso di pagamento quote",
+                  Subject = "Avviso di pagamento quote condominiali — {{CondominiumName}}",
+                  Body =
+                      "Gentile {{RecipientName}},\n\n" +
+                      "Le ricordiamo che risultano le seguenti quote condominiali a Suo carico relative all'unità {{UnitNumber}}:\n\n" +
+                      "{{FeeTable}}\n\n" +
+                      "Totale da versare: {{TotalAmount}}\n\n" +
+                      "Il pagamento dovrà essere effettuato tramite bonifico bancario al seguente IBAN:\n" +
+                      "{{Iban}}\n" +
+                      "causale: Quote condominiali — {{CondominiumName}} — {{FiscalYearCode}}\n\n" +
+                      "Per qualsiasi chiarimento non esiti a contattarci.\n\n" +
+                      "Cordiali saluti,\n{{AdministratorName}}\n{{AdministratorEmail}}\n{{AdministratorPhone}}" },
+            new { Type = "Notice",       Name = "Avviso generico",
+                  Subject = "{{CommunicationTitle}} — {{CondominiumName}}",
+                  Body =
+                      "Gentile {{RecipientName}},\n\n" +
+                      "{{CommunicationBody}}\n\n" +
+                      "Cordiali saluti,\n{{AdministratorName}}\n{{AdministratorEmail}}\n{{AdministratorPhone}}" },
+            new { Type = "Meeting",      Name = "Convocazione assemblea",
+                  Subject = "Convocazione assemblea condominiale — {{CondominiumName}}",
+                  Body =
+                      "Gentile {{RecipientName}},\n\n" +
+                      "La informiamo che è stata convocata un'assemblea condominiale.\n\n" +
+                      "{{CommunicationBody}}\n\n" +
+                      "La Sua presenza è gradita.\n\n" +
+                      "Cordiali saluti,\n{{AdministratorName}}\n{{AdministratorEmail}}\n{{AdministratorPhone}}" },
+            new { Type = "Maintenance",  Name = "Comunicazione lavori",
+                  Subject = "Comunicazione lavori — {{CondominiumName}}",
+                  Body =
+                      "Gentile {{RecipientName}},\n\n" +
+                      "La informiamo che sono previsti i seguenti interventi di manutenzione:\n\n" +
+                      "{{CommunicationBody}}\n\n" +
+                      "Ci scusiamo per gli eventuali disagi.\n\n" +
+                      "Cordiali saluti,\n{{AdministratorName}}\n{{AdministratorEmail}}\n{{AdministratorPhone}}" },
+            new { Type = "Emergency",    Name = "Comunicazione urgente",
+                  Subject = "URGENTE — {{CommunicationTitle}} — {{CondominiumName}}",
+                  Body =
+                      "Gentile {{RecipientName}},\n\n" +
+                      "COMUNICAZIONE URGENTE\n\n" +
+                      "{{CommunicationBody}}\n\n" +
+                      "La preghiamo di prenderne immediata visione.\n\n" +
+                      "{{AdministratorName}}\n{{AdministratorEmail}}\n{{AdministratorPhone}}" },
+            new { Type = "Info",         Name = "Comunicazione informativa",
+                  Subject = "{{CommunicationTitle}} — {{CondominiumName}}",
+                  Body =
+                      "Gentile {{RecipientName}},\n\n" +
+                      "La informiamo che:\n\n" +
+                      "{{CommunicationBody}}\n\n" +
+                      "Cordiali saluti,\n{{AdministratorName}}\n{{AdministratorEmail}}\n{{AdministratorPhone}}" },
+        };
+
+        var created = new List<NotificationTemplate>();
+        foreach (var d in defaults)
+        {
+            // Salta i tipi per cui esiste già almeno un template default
+            var alreadyExists = await session.Query<NotificationTemplate>()
+                .AnyAsync(t => t.Condominium.Id == command.CondominiumId
+                            && t.CommunicationType == d.Type
+                            && t.IsDefault && !t.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (alreadyExists) continue;
+
+            var tmpl = new NotificationTemplate
+            {
+                Condominium       = condominium,
+                Tenant            = condominium.Tenant,
+                Name              = d.Name,
+                CommunicationType = d.Type,
+                SubjectTemplate   = d.Subject,
+                BodyTemplate      = d.Body,
+                IsDefault         = true,
+            };
+            tmpl.Trace(currentUser);
+            await session.SaveAsync(tmpl, cancellationToken).ConfigureAwait(false);
+            created.Add(tmpl);
+        }
+
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+        return created.Select(t => t.ToReadDto()).ToList();
+    }
+}

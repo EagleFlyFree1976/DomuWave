@@ -24,4 +24,5 @@ public class CommunicationNotificationReadDto : TraceEntityDTO<long>
     public string? PostalAddress      { get; set; }
     public string? SubjectResolved    { get; set; }
     public string? BodyResolved       { get; set; }
+    public string? UnitsDisplay       { get; set; }
 }

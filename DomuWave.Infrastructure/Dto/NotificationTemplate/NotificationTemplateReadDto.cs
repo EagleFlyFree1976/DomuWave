@@ -6,6 +6,7 @@ public class NotificationTemplateReadDto : TraceEntityDTO<int>
 {
     public int     CondominiumId      { get; set; }
     public string? CondominiumName    { get; set; }
+    public string  Name               { get; set; } = string.Empty;
     public string  CommunicationType  { get; set; } = string.Empty;
     public string  SubjectTemplate    { get; set; } = string.Empty;
     public string  BodyTemplate       { get; set; } = string.Empty;

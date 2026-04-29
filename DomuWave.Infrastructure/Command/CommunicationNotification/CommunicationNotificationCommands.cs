@@ -71,12 +71,38 @@ public class GetNotificationBatchPdfCommand : BaseCommand, IQuery<byte[]>
         => CommunicationId = communicationId;
 }
 
+public class UpdateNotificationTextCommand : BaseCommand, IQuery<CommunicationNotificationReadDto>
+{
+    public long                    NotificationId { get; set; }
+    public UpdateNotificationTextDto Dto          { get; set; } = null!;
+    public UpdateNotificationTextCommand() { }
+    public UpdateNotificationTextCommand(int currentUserId, long notificationId, UpdateNotificationTextDto dto) : base(currentUserId)
+    {
+        NotificationId = notificationId;
+        Dto            = dto;
+    }
+}
+
 public class DeleteCommunicationNotificationCommand : BaseCommand, IQuery<bool>
 {
     public long NotificationId { get; set; }
     public DeleteCommunicationNotificationCommand() { }
     public DeleteCommunicationNotificationCommand(int currentUserId, long notificationId) : base(currentUserId)
         => NotificationId = notificationId;
+}
+
+public class GenerateNotificationsFromFeesCommand : BaseCommand, IQuery<GenerateFromFeesResultDto>
+{
+    public GenerateNotificationsFromFeesDto Dto { get; set; } = null!;
+    public GenerateNotificationsFromFeesCommand() { }
+    public GenerateNotificationsFromFeesCommand(int currentUserId, GenerateNotificationsFromFeesDto dto) : base(currentUserId)
+        => Dto = dto;
+}
+
+public class GenerateFromFeesResultDto
+{
+    public int CommunicationId         { get; set; }
+    public IList<CommunicationNotificationReadDto> Notifications { get; set; } = [];
 }
 
 public class SendNotificationsResultDto

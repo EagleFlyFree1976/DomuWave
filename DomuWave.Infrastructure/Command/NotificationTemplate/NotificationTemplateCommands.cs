@@ -46,3 +46,11 @@ public class DeleteNotificationTemplateCommand : BaseCommand, IQuery<bool>
     public DeleteNotificationTemplateCommand(int currentUserId, int templateId) : base(currentUserId)
         => TemplateId = templateId;
 }
+
+public class SeedDefaultNotificationTemplatesCommand : BaseCommand, IQuery<IList<NotificationTemplateReadDto>>
+{
+    public int CondominiumId { get; set; }
+    public SeedDefaultNotificationTemplatesCommand() { }
+    public SeedDefaultNotificationTemplatesCommand(int currentUserId, int condominiumId) : base(currentUserId)
+        => CondominiumId = condominiumId;
+}

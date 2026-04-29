@@ -1,18 +1,17 @@
+using DomuWave.Services.Dto.Communication;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Communication;
 
-public class UpdateCommunicationCommand : BaseCommand, IQuery<Models.Communication>
+public class UpdateCommunicationCommand : BaseCommand, IQuery<CommunicationReadDto?>
 {
-    public int CommunicationId { get; set; }
-    public Models.Communication Entity { get; set; }
+    public int               Id  { get; set; }
+    public UpdateCommunicationDto Dto { get; set; }
 
     public UpdateCommunicationCommand() { }
-
-    public UpdateCommunicationCommand(int currentUserId) : base(currentUserId) { }
-    public UpdateCommunicationCommand(int currentUserId, int communicationId, Models.Communication entity) : base(currentUserId)
+    public UpdateCommunicationCommand(int currentUserId, int id, UpdateCommunicationDto dto) : base(currentUserId)
     {
-        CommunicationId = communicationId;
-        Entity = entity;
+        Id  = id;
+        Dto = dto;
     }
 }

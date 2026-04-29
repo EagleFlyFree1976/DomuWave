@@ -16,7 +16,7 @@
             <option :value="0">Email</option>
             <option :value="1">Raccomandata</option>
           </select>
-          <button class="btn btn-sm btn-ghost" @click="generate" :disabled="generating">
+          <button class="btn btn-sm btn-ghost" @click="isFeeNotice ? openFeeGenModal() : generate()" :disabled="generating">
             <span v-if="generating" class="spinner" style="width:11px;height:11px"></span>
             <span v-else>↺ Genera</span>
           </button>
@@ -40,12 +40,35 @@
       <span v-if="sendResult.errors?.length"> — {{ sendResult.errors.join('; ') }}</span>
     </div>
 
+    <!-- Filtri -->
+    <div v-if="notifications.length" class="notif-filters">
+      <input class="form-input form-input-sm" v-model="filterSearch" placeholder="🔍 Cerca destinatario…" style="flex:1;min-width:140px" />
+      <select class="form-select form-select-sm" v-model="filterMethod" style="min-width:130px">
+        <option value="">Tutti i metodi</option>
+        <option value="0">Email</option>
+        <option value="1">Raccomandata</option>
+      </select>
+      <select class="form-select form-select-sm" v-model="filterStatus" style="min-width:130px">
+        <option value="">Tutti gli stati</option>
+        <option value="0">Bozza</option>
+        <option value="1">Pianificata</option>
+        <option value="2">Inviata</option>
+        <option value="3">Consegnata</option>
+        <option value="4">Fallita</option>
+        <option value="5">Stampata</option>
+      </select>
+      <button v-if="filterSearch || filterMethod !== '' || filterStatus !== ''" class="btn btn-sm btn-ghost" @click="clearFilters" title="Rimuovi filtri">✕</button>
+    </div>
+
     <!-- Tabella notifiche -->
     <div v-if="loading" class="loading-state" style="padding:8px">Caricamento…</div>
     <div v-else-if="!notifications.length" class="empty-state" style="padding:12px 0">
       Nessuna notifica generata. Clicca "Genera" per creare le notifiche per tutti i condomini.
     </div>
-    <div v-else class="table-wrap" style="margin-top:8px">
+    <div v-else-if="!filteredGroups.length" class="empty-state" style="padding:12px 0">
+      Nessun risultato per i filtri selezionati.
+    </div>
+    <div v-else class="table-wrap" style="margin-top:4px">
       <table>
         <thead>
           <tr>
@@ -60,38 +83,77 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="n in notifications" :key="n.id">
-            <td>{{ n.recipientFullName || '—' }}</td>
-            <td class="text-muted mono" style="font-size:0.78rem">{{ n.unitDisplayName || '—' }}</td>
-            <td>
-              <span class="badge" :class="n.deliveryMethod === 0 ? 'badge-blue' : 'badge-purple'">
-                {{ n.deliveryMethodName }}
-              </span>
-            </td>
-            <td><span class="badge" :class="statusBadge(n.status)">{{ n.statusName }}</span></td>
-            <td class="text-muted mono" style="font-size:0.75rem">{{ fmtDt(n.sentAt) }}</td>
-            <td class="text-muted mono" style="font-size:0.75rem">{{ fmtDt(n.deliveredAt) }}</td>
-            <td>
-              <span v-if="n.deliveryMethod === 1">
-                <span v-if="n.trackingNumber" class="mono text-secondary" style="font-size:0.78rem">{{ n.trackingNumber }}</span>
+          <template v-for="group in filteredGroups" :key="group.recipient">
+            <!-- Prima notifica del gruppo: mostra destinatario -->
+            <tr v-for="(n, idx) in group.notifications" :key="n.id" :class="idx > 0 ? 'grouped-row' : 'group-first-row'">
+              <td>
+                <span v-if="idx === 0" class="recipient-name">{{ group.recipient || '—' }}</span>
+                <span v-else class="text-muted" style="font-size:0.78rem;padding-left:12px">↳</span>
+              </td>
+              <td class="text-muted mono" style="font-size:0.78rem">{{ n.unitsDisplay || n.unitDisplayName || '—' }}</td>
+              <td>
+                <span class="badge" :class="n.deliveryMethod === 0 ? 'badge-blue' : 'badge-purple'">
+                  {{ n.deliveryMethodName }}
+                </span>
+              </td>
+              <td><span class="badge" :class="statusBadge(n.status)">{{ n.statusName }}</span></td>
+              <td class="text-muted mono" style="font-size:0.75rem">{{ fmtDt(n.sentAt) }}</td>
+              <td class="text-muted mono" style="font-size:0.75rem">{{ fmtDt(n.deliveredAt) }}</td>
+              <td>
+                <span v-if="n.deliveryMethod === 1">
+                  <span v-if="n.trackingNumber" class="mono text-secondary" style="font-size:0.78rem">{{ n.trackingNumber }}</span>
+                  <span v-else class="text-muted" style="font-size:0.78rem">—</span>
+                </span>
                 <span v-else class="text-muted" style="font-size:0.78rem">—</span>
-              </span>
-              <span v-else class="text-muted" style="font-size:0.78rem">—</span>
-            </td>
-            <td class="row-actions">
-              <!-- Raccomandata: mark sent / delivered -->
-              <template v-if="n.deliveryMethod === 1">
-                <button v-if="n.status <= 5" class="btn-icon" title="Segna come spedita"
-                        style="font-size:0.78rem" @click="openTrackingModal(n, 'sent')">✉</button>
-                <button v-if="n.status === 2" class="btn-icon" title="Segna come consegnata"
-                        style="font-size:0.78rem;color:var(--accent-green)" @click="openTrackingModal(n, 'delivered')">✓</button>
-              </template>
-              <button class="btn-icon" style="color:var(--accent-red);font-size:0.78rem" title="Elimina"
-                      @click="deleteNotif(n.id)">✕</button>
-            </td>
-          </tr>
+              </td>
+              <td class="row-actions">
+                <!-- Preview -->
+                <button class="btn-icon" title="Anteprima messaggio" style="font-size:0.78rem" @click="openPreview(n)">👁</button>
+                <!-- Modifica testo (solo se non ancora inviata) -->
+                <button v-if="n.status <= 1" class="btn-icon" title="Modifica testo" style="font-size:0.78rem" @click="openEditText(n)">✎</button>
+                <!-- Raccomandata: mark sent / delivered -->
+                <template v-if="n.deliveryMethod === 1">
+                  <button v-if="n.status <= 5" class="btn-icon" title="Segna come spedita"
+                          style="font-size:0.78rem" @click="openTrackingModal(n, 'sent')">✉</button>
+                  <button v-if="n.status === 2" class="btn-icon" title="Segna come consegnata"
+                          style="font-size:0.78rem;color:var(--accent-green)" @click="openTrackingModal(n, 'delivered')">✓</button>
+                </template>
+                <button class="btn-icon" style="color:var(--accent-red);font-size:0.78rem" title="Elimina"
+                        @click="deleteNotif(n.id)">✕</button>
+              </td>
+            </tr>
+            <!-- Separatore visivo tra gruppi -->
+            <tr class="group-separator"><td colspan="8"></td></tr>
+          </template>
         </tbody>
       </table>
+    </div>
+
+    <!-- Modal modifica testo notifica -->
+    <div class="modal-overlay" v-if="editTextModal.show" @click.self="editTextModal.show=false">
+      <div class="modal" style="max-width:640px;width:95vw">
+        <div class="modal-header">
+          <h2>Modifica testo — {{ editTextModal.notif?.recipientFullName }}</h2>
+          <button class="btn-icon" @click="editTextModal.show=false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Oggetto</label>
+            <input class="form-input" v-model="editTextModal.subject" placeholder="Oggetto del messaggio" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Testo</label>
+            <textarea class="form-textarea" v-model="editTextModal.body" rows="12" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="editTextModal.show=false">Annulla</button>
+          <button class="btn btn-primary" @click="saveEditText" :disabled="editTextModal.saving">
+            <span v-if="editTextModal.saving" class="spinner" style="width:14px;height:14px"></span>
+            Salva
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Modal tracking raccomandata -->
@@ -116,13 +178,107 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal preview messaggio -->
+    <div class="modal-overlay" v-if="previewModal.show" @click.self="previewModal.show=false">
+      <div class="modal" style="max-width:620px">
+        <div class="modal-header">
+          <h2>Anteprima messaggio</h2>
+          <button class="btn-icon" @click="previewModal.show=false">✕</button>
+        </div>
+        <div class="modal-body" style="padding:0">
+          <!-- Email preview -->
+          <div v-if="previewModal.notif?.deliveryMethod === 0" class="preview-email">
+            <div class="preview-email-header">
+              <div class="preview-email-row">
+                <span class="preview-label">A:</span>
+                <span>{{ previewModal.notif.recipientFullName }}</span>
+                <span v-if="previewModal.notif.recipientEmail" class="text-muted" style="margin-left:6px">&lt;{{ previewModal.notif.recipientEmail }}&gt;</span>
+              </div>
+              <div class="preview-email-row">
+                <span class="preview-label">Oggetto:</span>
+                <span>{{ previewModal.notif.subjectResolved || '—' }}</span>
+              </div>
+            </div>
+            <div class="preview-email-body" v-html="emailBody(previewModal.notif.bodyResolved)"></div>
+          </div>
+          <!-- Raccomandata preview -->
+          <div v-else class="preview-letter">
+            <div class="preview-letter-inner">
+              <div class="preview-letter-address">
+                <strong>{{ previewModal.notif?.recipientFullName }}</strong>
+                <span v-if="previewModal.notif?.unitDisplayName" class="text-muted" style="font-size:0.85rem;display:block">{{ previewModal.notif.unitDisplayName }}</span>
+              </div>
+              <div class="preview-letter-subject" v-if="previewModal.notif?.subjectResolved">
+                <strong>Oggetto:</strong> {{ previewModal.notif.subjectResolved }}
+              </div>
+              <div class="preview-letter-body">{{ previewModal.notif?.bodyResolved || '—' }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="previewModal.show=false">Chiudi</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal selezione rate per FeeNotice -->
+    <div class="modal-overlay" v-if="feeModal.show" @click.self="feeModal.show=false">
+      <div class="modal" style="max-width:520px">
+        <div class="modal-header">
+          <h2>Genera notifiche avvisi di pagamento</h2>
+          <button class="btn-icon" @click="feeModal.show=false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div v-if="feeModal.loading" class="loading-state">Caricamento…</div>
+          <template v-else>
+            <div class="form-group">
+              <label class="form-label">Rate</label>
+              <div style="display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto;padding:8px;background:var(--bg-base);border:1px solid var(--border);border-radius:6px">
+                <label v-for="inst in feeModal.installments" :key="inst.id" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                  <input type="checkbox" :value="inst.id" v-model="feeModal.selectedInst" />
+                  <span>Rata {{ inst.installmentNumber }} — scad. {{ inst.dueDate?.slice(0,10) }}</span>
+                </label>
+                <div v-if="!feeModal.installments.length" class="text-muted" style="font-size:0.85rem">Nessuna rata trovata</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Destinatari</label>
+              <div style="display:flex;gap:16px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="radio" :value="true" v-model="feeModal.allUnits" /> Tutte le unità
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="radio" :value="false" v-model="feeModal.allUnits" /> Seleziona unità
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Template</label>
+              <select class="form-select" v-model="feeModal.templateId">
+                <option :value="null">— automatico —</option>
+                <option v-for="t in feeModal.templates" :key="t.id" :value="t.id">{{ t.name }}</option>
+              </select>
+            </div>
+          </template>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="feeModal.show=false">Annulla</button>
+          <button class="btn btn-primary" @click="confirmFeeGen" :disabled="generating || feeModal.loading">
+            <span v-if="generating" class="spinner" style="width:14px;height:14px"></span>
+            Genera
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { communicationNotificationApi } from '@/services/api'
+import { communicationNotificationApi, installmentApi, notificationTemplateApi } from '@/services/api'
 
 const props = defineProps({
   communication:  { type: Object, required: true },
@@ -139,10 +295,93 @@ const notifications = ref([])
 const sendResult    = ref(null)
 const genMethod     = ref(0)
 
-const trackingModal = ref({ show: false, notif: null, action: '', trackingNumber: '', saving: false })
+// ── Filtri ────────────────────────────────────────────────────────────────────
+const filterSearch = ref('')
+const filterMethod = ref('')
+const filterStatus = ref('')
 
-const pendingCount      = computed(() => notifications.value.filter(n => n.status <= 1).length)
-const hasEmailPending   = computed(() => notifications.value.some(n => n.deliveryMethod === 0 && n.status <= 1))
+function clearFilters() {
+  filterSearch.value = ''
+  filterMethod.value = ''
+  filterStatus.value = ''
+}
+
+// ── Grouping + filtering ──────────────────────────────────────────────────────
+const filteredGroups = computed(() => {
+  let list = notifications.value
+
+  if (filterSearch.value.trim()) {
+    const q = filterSearch.value.trim().toLowerCase()
+    list = list.filter(n => (n.recipientFullName ?? '').toLowerCase().includes(q))
+  }
+  if (filterMethod.value !== '') {
+    const m = parseInt(filterMethod.value)
+    list = list.filter(n => n.deliveryMethod === m)
+  }
+  if (filterStatus.value !== '') {
+    const s = parseInt(filterStatus.value)
+    list = list.filter(n => n.status === s)
+  }
+
+  // Group by recipientFullName
+  const map = new Map()
+  for (const n of list) {
+    const key = n.recipientFullName ?? ''
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(n)
+  }
+  return Array.from(map.entries()).map(([recipient, notifs]) => ({ recipient, notifications: notifs }))
+})
+
+const trackingModal  = ref({ show: false, notif: null, action: '', trackingNumber: '', saving: false })
+const previewModal   = ref({ show: false, notif: null })
+const editTextModal  = ref({ show: false, notif: null, subject: '', body: '', saving: false })
+
+// ── Modal selezione rate (solo per FeeNotice) ─────────────────────────────────
+const isFeeNotice = computed(() => props.communication.communicationType === 'FeeNotice')
+const feeModal    = ref({ show: false, installments: [], selectedInst: [], allUnits: true, selectedUnits: [], availableUnits: [], templates: [], templateId: null, loading: false })
+
+async function openFeeGenModal() {
+  feeModal.value.loading = true
+  feeModal.value.show    = true
+  try {
+    const [instRes, tmplRes] = await Promise.all([
+      installmentApi.getByCondominium(props.condominiumId),
+      notificationTemplateApi.getByCondominium(props.condominiumId),
+    ])
+    feeModal.value.installments  = instRes.data ?? []
+    feeModal.value.selectedInst  = feeModal.value.installments.map(i => i.id)
+    feeModal.value.templates     = (tmplRes.data ?? []).filter(t => t.communicationType === 'FeeNotice')
+    const def = feeModal.value.templates.find(t => t.isDefault)
+    feeModal.value.templateId    = def?.id ?? null
+    feeModal.value.allUnits      = true
+    feeModal.value.selectedUnits = []
+    feeModal.value.availableUnits = []
+  } catch { /* errors handled globally */ } finally { feeModal.value.loading = false }
+}
+
+async function confirmFeeGen() {
+  if (!feeModal.value.selectedInst.length) { store.toast('Seleziona almeno una rata', 'error'); return }
+  generating.value = true
+  try {
+    const payload = {
+      communicationId:        props.communication.id,
+      installmentIds:         feeModal.value.selectedInst,
+      unitIds:                feeModal.value.allUnits ? null : feeModal.value.selectedUnits,
+      deliveryMethod:         genMethod.value,
+      notificationTemplateId: feeModal.value.templateId ?? null,
+    }
+    await communicationNotificationApi.generateFromFees(payload)
+    store.toast('Notifiche generate', 'success')
+    feeModal.value.show = false
+    await load()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { generating.value = false }
+}
+
+const pendingCount           = computed(() => notifications.value.filter(n => n.status <= 1).length)
+const hasEmailPending        = computed(() => notifications.value.some(n => n.deliveryMethod === 0 && n.status <= 1))
 const hasRaccomandatePending = computed(() => notifications.value.some(n => n.deliveryMethod === 1 && n.status <= 1))
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -229,6 +468,37 @@ async function confirmTracking() {
   }
 }
 
+// ── Edit text ─────────────────────────────────────────────────────────────────
+function openEditText(n) {
+  editTextModal.value = { show: true, notif: n, subject: n.subjectResolved ?? '', body: n.bodyResolved ?? '', saving: false }
+}
+
+async function saveEditText() {
+  const m = editTextModal.value
+  if (!m.body.trim()) { store.toast('Il testo non può essere vuoto', 'error'); return }
+  m.saving = true
+  try {
+    await communicationNotificationApi.updateText(m.notif.id, { subjectResolved: m.subject, bodyResolved: m.body })
+    store.toast('Testo aggiornato', 'success')
+    m.show = false
+    await load()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    m.saving = false
+  }
+}
+
+// ── Preview ───────────────────────────────────────────────────────────────────
+function openPreview(n) {
+  previewModal.value = { show: true, notif: n }
+}
+
+function emailBody(body) {
+  if (!body) return '<em style="color:var(--text-muted)">Nessun contenuto</em>'
+  return body.replace(/\n/g, '<br>')
+}
+
 // ── Delete ────────────────────────────────────────────────────────────────────
 async function deleteNotif(id) {
   if (!confirm('Eliminare questa notifica?')) return
@@ -275,6 +545,18 @@ onMounted(load)
 .notif-toolbar-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .notif-generate-row { display: flex; align-items: center; gap: 4px; }
 .form-select-sm { height: 30px; font-size: 0.8rem; padding: 0 8px; }
+.form-input-sm  { height: 30px; font-size: 0.8rem; padding: 0 8px; }
+
+.notif-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
 
 .send-result {
   font-size: 0.82rem;
@@ -285,4 +567,63 @@ onMounted(load)
 .result-warn { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
 
 .badge-purple { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+
+/* Grouping rows */
+.group-first-row td:first-child { border-top: 1px solid var(--border); }
+.grouped-row td { background: var(--bg-base); }
+.grouped-row td:first-child { border-left: 2px solid var(--border); }
+.group-separator td { height: 4px; background: transparent; border: none; padding: 0; }
+.recipient-name { font-weight: 500; font-size: 0.85rem; }
+
+/* Email preview */
+.preview-email { display: flex; flex-direction: column; }
+.preview-email-header {
+  padding: 14px 20px;
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.preview-email-row { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; }
+.preview-label { color: var(--text-muted); min-width: 60px; font-size: 0.82rem; }
+.preview-email-body {
+  padding: 20px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  min-height: 120px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+/* Raccomandata / letter preview */
+.preview-letter {
+  padding: 24px;
+  background: #fafafa;
+}
+.preview-letter-inner {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 32px 36px;
+  max-width: 560px;
+  margin: 0 auto;
+  font-family: 'Times New Roman', serif;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+.preview-letter-address {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.preview-letter-subject {
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+.preview-letter-body {
+  white-space: pre-wrap;
+  min-height: 80px;
+}
 </style>

@@ -36,6 +36,7 @@ public static class CommunicationNotificationMappingExtensions
             PostalAddress      = entity.PostalAddress,
             SubjectResolved    = entity.SubjectResolved,
             BodyResolved       = entity.BodyResolved,
+            UnitsDisplay       = entity.UnitsDisplay,
         };
         dto.SetTraceInfo(entity);
         return dto;

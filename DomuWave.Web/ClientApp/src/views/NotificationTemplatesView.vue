@@ -2,7 +2,13 @@
   <div>
     <div class="page-header">
       <h1>Template Notifiche</h1>
-      <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuovo template</button>
+      <div style="display:flex;gap:8px">
+        <button v-if="canCreate" class="btn btn-ghost" @click="seedDefaults" :disabled="seeding" title="Crea i template standard mancanti">
+          <span v-if="seeding" class="spinner" style="width:13px;height:13px"></span>
+          <span v-else>⚙ Ripristina default</span>
+        </button>
+        <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuovo template</button>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:12px;padding:12px 16px;background:var(--accent-glow);border:1px solid var(--accent);border-radius:8px">
@@ -10,7 +16,7 @@
         I template vengono usati per generare automaticamente il testo delle notifiche ai condomini.
         Usa le variabili per personalizzare il messaggio:
         <span class="var-chips">
-          <span v-for="v in variables" :key="v" class="var-chip" @click="copyVar(v)">{{'{{'}}{{v}}{{'}}'}}</span>
+          <span v-for="v in variables" :key="v" class="var-chip" @click="copyVar(v)">{{ wrapVar(v) }}</span>
         </span>
       </p>
     </div>
@@ -66,7 +72,7 @@
             </div>
             <div class="form-group" :class="{ 'has-error': errors.communicationType }">
               <label class="form-label">Tipo comunicazione *</label>
-              <select class="form-select" v-model="form.communicationType" @change="clearError('communicationType')">
+              <select class="form-select" v-model="form.communicationType" @change="clearError('communicationType')" :disabled="!!editing">
                 <option value="">— Seleziona —</option>
                 <option v-for="t in commTypes" :key="t.value" :value="t.value">{{ t.label }}</option>
               </select>
@@ -81,7 +87,7 @@
             <div class="form-group form-group--full" :class="{ 'has-error': errors.bodyTemplate }">
               <label class="form-label">Corpo del messaggio *</label>
               <div class="var-chips" style="margin-bottom:6px">
-                <span v-for="v in variables" :key="v" class="var-chip" @click="insertVar(v)" title="Inserisci variabile">{{'{{'}}{{v}}{{'}}'}}</span>
+                <span v-for="v in variables" :key="v" class="var-chip" @click="insertVar(v)" title="Inserisci variabile">{{ wrapVar(v) }}</span>
               </div>
               <textarea class="form-textarea" v-model="form.bodyTemplate" @input="clearError('bodyTemplate')"
                         rows="10" ref="bodyRef"
@@ -126,6 +132,7 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 
 const loading   = ref(false)
 const saving    = ref(false)
+const seeding   = ref(false)
 const templates = ref([])
 const showModal = ref(false)
 const editing   = ref(null)
@@ -138,6 +145,7 @@ const variables = [
   'CommunicationTitle', 'CommunicationBody',
   'AdministratorName', 'AdministratorEmail', 'AdministratorPhone',
   'FiscalYearCode', 'DueDate', 'Amount', 'PaymentCode', 'Iban',
+  'FeeTable', 'TotalAmount',
 ]
 
 const commTypes = [
@@ -175,10 +183,17 @@ async function loadTemplates() {
 // ── Modal ─────────────────────────────────────────────────────────────────────
 function openModal(t = null) {
   editing.value = t?.id ?? null
-  form.value    = t ? { name: t.name, communicationType: t.communicationType,
-                        subjectTemplate: t.subjectTemplate, bodyTemplate: t.bodyTemplate,
-                        isDefault: t.isDefault }
-                    : defaultForm()
+  if (t) {
+    form.value = {
+      name:              t.name              ?? t.description ?? '',
+      communicationType: t.communicationType ?? '',
+      subjectTemplate:   t.subjectTemplate   ?? '',
+      bodyTemplate:      t.bodyTemplate      ?? '',
+      isDefault:         t.isDefault         ?? false,
+    }
+  } else {
+    form.value = defaultForm()
+  }
   errors.value  = {}
   showModal.value = true
 }
@@ -189,7 +204,7 @@ function clearError(f) { delete errors.value[f] }
 function validate() {
   const e = {}
   if (!form.value.name?.trim())             e.name             = 'Il nome è obbligatorio'
-  if (!form.value.communicationType)        e.communicationType = 'Seleziona il tipo'
+  if (!editing.value && !form.value.communicationType) e.communicationType = 'Seleziona il tipo'
   if (!form.value.subjectTemplate?.trim())  e.subjectTemplate  = "L'oggetto è obbligatorio"
   if (!form.value.bodyTemplate?.trim())     e.bodyTemplate     = 'Il corpo è obbligatorio'
   errors.value = e
@@ -215,8 +230,28 @@ async function save() {
     await loadTemplates()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+    else store.toast(err.response.data?.Errors?.[0] ?? err.response.data?.message ?? 'Errore nel salvataggio', 'error')
   } finally {
     saving.value = false
+  }
+}
+
+// ── Seed defaults ─────────────────────────────────────────────────────────────
+async function seedDefaults() {
+  if (!store.selectedCondominioId) return
+  seeding.value = true
+  try {
+    const { data } = await notificationTemplateApi.seedDefaults(store.selectedCondominioId)
+    if (data?.length) {
+      store.toast(`${data.length} template standard creati`, 'success')
+    } else {
+      store.toast('Tutti i template standard sono già presenti', 'info')
+    }
+    await loadTemplates()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    seeding.value = false
   }
 }
 
@@ -247,6 +282,8 @@ function previewBody(body) {
   const lines = body?.split('\n') ?? []
   return lines.slice(0, 3).join(' ').substring(0, 120) + (body?.length > 120 ? '…' : '')
 }
+
+function wrapVar(v) { return `{{${v}}}` }
 
 function copyVar(v) {
   navigator.clipboard?.writeText(`{{${v}}}`)

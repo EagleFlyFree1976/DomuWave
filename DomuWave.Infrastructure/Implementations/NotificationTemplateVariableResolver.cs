@@ -22,6 +22,8 @@ public class NotificationTemplateVariableResolver : INotificationTemplateVariabl
             .Replace("{{DueDate}}",            ctx.DueDate)
             .Replace("{{Amount}}",             ctx.Amount)
             .Replace("{{PaymentCode}}",        ctx.PaymentCode)
-            .Replace("{{Iban}}",               ctx.Iban);
+            .Replace("{{Iban}}",               ctx.Iban)
+            .Replace("{{FeeTable}}",           ctx.FeeTable)
+            .Replace("{{TotalAmount}}",        ctx.TotalAmount);
     }
 }

@@ -20,6 +20,7 @@ namespace DomuWave.Services.Models
         public virtual string?            PostalAddress     { get; set; }
         public virtual string?            SubjectResolved   { get; set; }
         public virtual string?            BodyResolved      { get; set; }
+        public virtual string?            UnitsDisplay      { get; set; }
 
         public override int GetHashCode() => Id.GetHashCode();
     }
