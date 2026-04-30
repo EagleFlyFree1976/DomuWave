@@ -74,3 +74,12 @@
 DomuWave.IntegrationTests/bin/
 DomuWave.IntegrationTests/obj/
 DomuWave.IntegrationTests/Logs/
+/DomuWave.IntegrationTests/obj/Debug/net8.0/DomuWave.IntegrationTests.AssemblyInfo.cs
+/DomuWave.IntegrationTests/obj/Debug/net8.0/DomuWave.IntegrationTests.AssemblyInfoInputs.cache
+/DomuWave.IntegrationTests/obj/Debug/net8.0/DomuWave.IntegrationTests.csproj.AssemblyReference.cache
+/DomuWave.UnitTest/obj/DomuWave.Tests.csproj.nuget.dgspec.json
+/DomuWave.UnitTest/obj/project.assets.json
+/DomuWave.UnitTest/obj/project.nuget.cache
+/DomuWave.Web/obj/DomuWave.Web.csproj.nuget.dgspec.json
+/DomuWave.Web/obj/project.assets.json
+/DomuWave.Web/obj/project.nuget.cache
