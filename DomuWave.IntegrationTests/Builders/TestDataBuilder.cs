@@ -1,7 +1,14 @@
 using DomuWave.Services.Dto.Budget;
+using DomuWave.Services.Dto.ChartOfAccounts;
 using DomuWave.Services.Dto.Condominium;
 using DomuWave.Services.Dto.Contabilita.FiscalYear;
+using DomuWave.Services.Dto.MillesimalTable;
 using DomuWave.Services.Dto.RealEstateUnit;
+using DomuWave.Services.Dto.Supplier;
+using DomuWave.Services.Dto.SupplierContract;
+using DomuWave.Services.Dto.UnitMillesimal;
+using DomuWave.Services.Dto.UnitOwner;
+using DomuWave.Services.Dto.UnitTenant;
 using DomuWave.Services.Models;
 
 namespace DomuWave.IntegrationTests.Builders;
@@ -185,6 +192,137 @@ public static class TestDataBuilder
         Type               = type,
         Notes              = "Budget di test",
         IncreasePercentage = 0,
+    };
+
+    // ── Supplier ──────────────────────────────────────────────────────────────
+
+    public static CreateSupplierDto Supplier(
+        string? companyName  = null,
+        string? supplierType = null) => new()
+    {
+        CompanyName   = companyName ?? $"Fornitore Test {ShortId()}",
+        VatNumber     = $"IT{ShortId()}",
+        Email         = $"fornitore-{ShortId()}@test.it",
+        Phone         = "0123456789",
+        City          = "Milano",
+        Province      = "MI",
+        SupplierType  = supplierType ?? "Generico",
+        IsActive      = true,
+    };
+
+    public static UpdateSupplierDto UpdateSupplier(
+        SupplierReadDto existing,
+        string? companyName = null) => new()
+    {
+        CompanyName   = companyName ?? existing.CompanyName,
+        VatNumber     = existing.VatNumber,
+        Email         = existing.Email,
+        Phone         = existing.Phone,
+        City          = existing.City,
+        Province      = existing.Province,
+        SupplierType  = existing.SupplierType,
+        IsActive      = existing.IsActive,
+    };
+
+    // ── SupplierContract ──────────────────────────────────────────────────────
+
+    public static CreateSupplierContractDto SupplierContract(
+        int condominiumId,
+        int supplierId,
+        string? subject = null) => new()
+    {
+        CondominiumId  = condominiumId,
+        SupplierId     = supplierId,
+        Subject        = subject ?? $"Contratto manutenzione {ShortId()}",
+        ContractNumber = $"CNT-{ShortId()}",
+        StartDate      = new DateTime(DateTime.UtcNow.Year, 1, 1),
+        EndDate        = new DateTime(DateTime.UtcNow.Year, 12, 31),
+        AnnualAmount   = 1200m,
+        Frequency      = "Mensile",
+        AutoRenewal    = false,
+        Status         = "Active",
+    };
+
+    // ── ChartOfAccounts ───────────────────────────────────────────────────────
+
+    public static CreateChartOfAccountsDto ChartOfAccounts(
+        int condominiumId,
+        ChartOfAccountsType type = ChartOfAccountsType.Uscita,
+        string? code = null,
+        string? name = null) => new()
+    {
+        CondominiumId        = condominiumId,
+        Code                 = code ?? $"COA-{ShortId()}",
+        Name                 = name ?? $"Conto Test {ShortId()}",
+        Type                 = type,
+        IsActive             = true,
+        AllocationMethod     = AllocationMethod.Standard,
+        ChargeabilityTypeId  = ChargeabilityType.Owner,
+    };
+
+    // ── MillesimalTable ───────────────────────────────────────────────────────
+
+    public static CreateMillesimalTableDto MillesimalTable(
+        int condominiumId,
+        string? code = null,
+        string? name = null) => new()
+    {
+        CondominiumId   = condominiumId,
+        Code            = code ?? $"MT-{ShortId()}",
+        Name            = name ?? $"Tabella Millesimale {ShortId()}",
+        TotalMillesimal = 1000m,
+    };
+
+    // ── UnitMillesimal ────────────────────────────────────────────────────────
+
+    public static CreateUnitMillesimalDto UnitMillesimal(
+        int tableId,
+        int unitId,
+        decimal millesimal = 100m) => new()
+    {
+        MillesimalTableId = tableId,
+        UnitId            = unitId,
+        Millesimal        = millesimal,
+        Notes             = "Millesimale di test",
+    };
+
+    // ── UnitOwner ─────────────────────────────────────────────────────────────
+
+    public static CreateUnitOwnerDto UnitOwner(
+        int unitId,
+        string? firstName = null,
+        string? lastName  = null) => new()
+    {
+        UnitId          = unitId,
+        UserId          = 0,
+        FirstName       = firstName ?? "Mario",
+        LastName        = lastName  ?? $"Proprietario {ShortId()}",
+        Email           = $"proprietario-{ShortId()}@test.it",
+        OwnerType       = "Principale",
+        OwnershipQuota  = 100m,
+        StartDate       = new DateTime(DateTime.UtcNow.Year, 1, 1),
+        IsResident      = false,
+        IsActive        = true,
+        IsAccessEnabled = false,
+    };
+
+    // ── UnitTenant ────────────────────────────────────────────────────────────
+
+    public static CreateUnitTenantDto UnitTenant(
+        int unitId,
+        string? firstName = null,
+        string? lastName  = null) => new()
+    {
+        UnitId         = unitId,
+        UserId         = 0,
+        FirstName      = firstName ?? "Giuseppe",
+        LastName       = lastName  ?? $"Inquilino {ShortId()}",
+        Email          = $"inquilino-{ShortId()}@test.it",
+        Phone          = "0123456789",
+        LeaseStartDate = new DateTime(DateTime.UtcNow.Year, 1, 1),
+        LeaseEndDate   = new DateTime(DateTime.UtcNow.Year, 12, 31),
+        IsActive       = true,
+        ExpensePayer   = "Owner",
     };
 
     // ── Helpers ───────────────────────────────────────────────────────────────
