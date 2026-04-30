@@ -1,13 +1,13 @@
 -- ============================================================
--- Migrazione Eagle_Auth → DomuWave (schema auth)
--- Crea lo schema auth nel database DomuWave e ricrea
--- tutte le tabelle/view di Eagle_Auth.
+-- Migrazione Eagle_Auth → DomuWave_SDB (schema auth)
+-- Ricrea tutte le tabelle di Eagle_Auth.dbo nello schema auth
+-- del database DomuWave_SDB, con struttura identica alla sorgente.
 --
 -- Per tornare al setup a due database: nessuna modifica al
--- codice, basta ripristinare sql-auth in appsettings.
+-- codice, basta ripristinare sql-auth su Eagle_Auth in appsettings.
 -- ============================================================
 
-USE DomuWave;
+USE DomuWave_SDB;
 GO
 
 -- ── Schema ────────────────────────────────────────────────────
@@ -15,12 +15,8 @@ IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = 'auth')
     EXEC('CREATE SCHEMA auth');
 GO
 
--- ── hibernate_unique_key (se non esiste già nello schema auth) ─
--- Le entry per le entità auth devono coesistere nella tabella
--- che la factory AUTH usa. Poiché la factory AUTH punta ora
--- allo stesso DB, usiamo la stessa tabella dbo.hibernate_unique_key.
--- Aggiungiamo solo le entry mancanti.
-
+-- ── hibernate_unique_key ──────────────────────────────────────
+-- Le entità auth usano la stessa tabella hilo del DB principale.
 INSERT INTO dbo.hibernate_unique_key (entity_type, next_hi)
 SELECT e.entity_type, 1
 FROM (VALUES
@@ -38,23 +34,23 @@ GO
 -- ── auth_Modules ──────────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'auth_Modules' AND schema_id = SCHEMA_ID('auth'))
 CREATE TABLE auth.auth_Modules (
-    ModuleId    INT           NOT NULL PRIMARY KEY,
-    Code        NVARCHAR(50)  NOT NULL UNIQUE,
-    Description NVARCHAR(255) NULL,
-    SortIndex   INT           NULL,
-    IsDefault   BIT           NOT NULL DEFAULT 0,
-    IsActive    BIT           NOT NULL DEFAULT 1
+    ModuleId    INT            NOT NULL PRIMARY KEY,
+    Code        NVARCHAR(50)   NOT NULL UNIQUE,
+    Description NVARCHAR(255)  NULL,
+    IsActive    BIT            NOT NULL DEFAULT 1,
+    SortIndex   INT            NOT NULL DEFAULT 0,
+    IsDefault   BIT            NOT NULL DEFAULT 0
 );
 GO
 
 -- ── auth_Areas ────────────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'auth_Areas' AND schema_id = SCHEMA_ID('auth'))
 CREATE TABLE auth.auth_Areas (
-    AreaId      INT           NOT NULL PRIMARY KEY,
-    Code        NVARCHAR(50)  NOT NULL UNIQUE,
-    Description NVARCHAR(255) NULL,
-    IsActive    BIT           NOT NULL DEFAULT 1,
-    ModuleId    INT           NOT NULL,
+    AreaId      INT            NOT NULL PRIMARY KEY,
+    ModuleId    INT            NOT NULL,
+    Code        NVARCHAR(50)   NOT NULL UNIQUE,
+    Description NVARCHAR(255)  NULL,
+    IsActive    BIT            NOT NULL DEFAULT 1,
     CONSTRAINT FK_auth_Areas_Modules FOREIGN KEY (ModuleId) REFERENCES auth.auth_Modules(ModuleId)
 );
 GO
@@ -62,55 +58,71 @@ GO
 -- ── auth_Authorizations ───────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'auth_Authorizations' AND schema_id = SCHEMA_ID('auth'))
 CREATE TABLE auth.auth_Authorizations (
-    AuthorizationId INT           NOT NULL PRIMARY KEY,
-    Code            NVARCHAR(50)  NOT NULL UNIQUE,
-    Description     NVARCHAR(255) NOT NULL,
-    AreaId          INT           NOT NULL,
+    AuthorizationId INT            NOT NULL PRIMARY KEY,
+    Code            NVARCHAR(50)   NOT NULL UNIQUE,
+    Description     NVARCHAR(255)  NOT NULL,
+    AreaId          INT            NOT NULL,
     CONSTRAINT FK_auth_Authorizations_Areas FOREIGN KEY (AreaId) REFERENCES auth.auth_Areas(AreaId)
 );
 GO
 
--- ── auth_Groups (GroupBase + Group + Role via discriminator) ───
+-- ── auth_Groups ───────────────────────────────────────────────
+-- Contiene GroupBase + Group + Role via discriminator ('group'|'role')
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'auth_Groups' AND schema_id = SCHEMA_ID('auth'))
 CREATE TABLE auth.auth_Groups (
-    GroupId         INT            NOT NULL PRIMARY KEY,
-    Discriminator   NVARCHAR(50)   NOT NULL,          -- 'group' | 'role'
-    Code            NVARCHAR(50)   NOT NULL UNIQUE,
-    Description     NVARCHAR(1000) NOT NULL,
-    Weight          INT            NULL,
-    IsActive        BIT            NOT NULL DEFAULT 1,
-    IsFieldForceGroup BIT          NOT NULL DEFAULT 0,
-    IsSystemEntity  BIT            NOT NULL DEFAULT 0,
-    IsDefault       BIT            NOT NULL DEFAULT 0,
-    IsDeleted       BIT            NOT NULL DEFAULT 0,
-    ParentId        INT            NULL
+    GroupId           INT            NOT NULL PRIMARY KEY,
+    Code              NVARCHAR(50)   NOT NULL UNIQUE,
+    Description       NVARCHAR(1000) NOT NULL,
+    IsActive          BIT            NOT NULL DEFAULT 1,
+    Discriminator     NVARCHAR(255)  NULL,
+    IsSystemEntity    BIT            NOT NULL DEFAULT 0,
+    Weight            INT            NULL,
+    IsFieldForceGroup BIT            NULL,
+    IsDefault         BIT            NOT NULL DEFAULT 0,
+    CompanyType       NVARCHAR(50)   NOT NULL DEFAULT '',
+    IsDeleted         BIT            NOT NULL DEFAULT 0,
+    CompanyId         INT            NULL,
+    ParentId          INT            NULL,
+    UseInternal       BIT            NOT NULL DEFAULT 0
 );
 GO
 
 -- ── base_Users ────────────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'base_Users' AND schema_id = SCHEMA_ID('auth'))
 CREATE TABLE auth.base_Users (
-    UserId          INT            NOT NULL PRIMARY KEY,
-    Login           NVARCHAR(255)  NOT NULL UNIQUE,
-    Email           NVARCHAR(255)  NOT NULL,
-    FirstName       NVARCHAR(200)  NOT NULL,
-    LastName        NVARCHAR(200)  NOT NULL,
-    Password        NVARCHAR(MAX)  NULL,
-    Code            NVARCHAR(100)  NULL,
-    Token           NVARCHAR(MAX)  NULL,
-    AvatarPath      NVARCHAR(500)  NULL DEFAULT '/content/images/avatar/avatar.png',
-    Path            NVARCHAR(MAX)  NULL,
-    IsActive        BIT            NOT NULL DEFAULT 1,
-    IsDeleted       BIT            NOT NULL DEFAULT 0,
-    IsSystemUser    BIT            NOT NULL DEFAULT 0,
-    PasswordExpired BIT            NOT NULL DEFAULT 0,
-    RoleId          INT            NULL,
-    SupervisorUserId INT           NULL,
-    CreatedById     INT            NOT NULL,
-    CreationDate    DATETIME2      NOT NULL,
-    LastUpdatedById INT            NOT NULL DEFAULT 0,
-    LastUpdateDate  DATETIME2      NULL,
-    CONSTRAINT FK_base_Users_Role    FOREIGN KEY (RoleId)           REFERENCES auth.auth_Groups(GroupId),
+    UserId             INT            NOT NULL PRIMARY KEY,
+    RoleId             INT            NULL,
+    SupervisorUserId   INT            NULL,
+    Code               NVARCHAR(50)   NULL,
+    Login              NVARCHAR(255)  NOT NULL UNIQUE,
+    Email              NVARCHAR(255)  NOT NULL,
+    FirstName          NVARCHAR(255)  NOT NULL,
+    LastName           NVARCHAR(255)  NOT NULL,
+    Culture            NVARCHAR(10)   NOT NULL DEFAULT 'it-IT',
+    IsActive           BIT            NOT NULL DEFAULT 1,
+    IsSystemUser       BIT            NOT NULL DEFAULT 0,
+    Password           NVARCHAR(256)  NULL,
+    AvatarPath         NVARCHAR(255)  NULL DEFAULT '/content/images/avatar/avatar.png',
+    Color              NVARCHAR(20)   NULL,
+    HomePageMenuId     INT            NULL,
+    HierarchicalLevel  SMALLINT       NOT NULL DEFAULT 0,
+    CreatedById        INT            NOT NULL,
+    CreationDate       DATETIME       NOT NULL,
+    LastUpdatedById    INT            NOT NULL DEFAULT 0,
+    LastUpdateDate     DATETIME       NULL,
+    PasswordExpired    BIT            NOT NULL DEFAULT 0,
+    _FullName          NVARCHAR(511)  NOT NULL DEFAULT '',
+    TzDislpayName      NVARCHAR(512)  NULL,
+    Path               NVARCHAR(MAX)  NULL,
+    LastAccess         DATETIME       NULL,
+    IsDeleted          BIT            NULL DEFAULT 0,
+    Token              NVARCHAR(256)  NULL,
+    Discriminator      NVARCHAR(50)   NULL,
+    RefreshTokenId     NVARCHAR(256)  NULL,
+    IsEmailConfirmed   BIT            NULL,
+    FailedLoginAttempts INT           NULL,
+    LockoutUntil       DATETIME       NULL,
+    CONSTRAINT FK_base_Users_Role       FOREIGN KEY (RoleId)           REFERENCES auth.auth_Groups(GroupId),
     CONSTRAINT FK_base_Users_Supervisor FOREIGN KEY (SupervisorUserId) REFERENCES auth.base_Users(UserId)
 );
 GO
@@ -123,9 +135,9 @@ CREATE TABLE auth.auth_GroupsAuthorizations (
     GroupId              INT  NULL,
     RoleId               INT  NULL,
     CanView              BIT  NOT NULL DEFAULT 0,
+    CanDelete            BIT  NOT NULL DEFAULT 0,
     CanCreate            BIT  NOT NULL DEFAULT 0,
     CanModify            BIT  NOT NULL DEFAULT 0,
-    CanDelete            BIT  NOT NULL DEFAULT 0,
     CanAction            BIT  NOT NULL DEFAULT 0,
     CONSTRAINT FK_auth_GA_Authorization FOREIGN KEY (AuthorizationId) REFERENCES auth.auth_Authorizations(AuthorizationId),
     CONSTRAINT FK_auth_GA_Group         FOREIGN KEY (GroupId)         REFERENCES auth.auth_Groups(GroupId),
@@ -137,30 +149,30 @@ GO
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'auth_UsersAuthorizations' AND schema_id = SCHEMA_ID('auth'))
 CREATE TABLE auth.auth_UsersAuthorizations (
     UserAuthorizationId INT  NOT NULL PRIMARY KEY,
-    UserId              INT  NOT NULL,
     AuthorizationId     INT  NOT NULL,
+    UserId              INT  NOT NULL,
     CanView             BIT  NOT NULL DEFAULT 0,
+    CanDelete           BIT  NOT NULL DEFAULT 0,
     CanCreate           BIT  NOT NULL DEFAULT 0,
     CanModify           BIT  NOT NULL DEFAULT 0,
-    CanDelete           BIT  NOT NULL DEFAULT 0,
     CanAction           BIT  NOT NULL DEFAULT 0,
     CONSTRAINT FK_auth_UA_User          FOREIGN KEY (UserId)          REFERENCES auth.base_Users(UserId),
     CONSTRAINT FK_auth_UA_Authorization FOREIGN KEY (AuthorizationId) REFERENCES auth.auth_Authorizations(AuthorizationId)
 );
 GO
 
--- ── auth_UsersGroups (join table) ─────────────────────────────
+-- ── auth_UsersGroups ──────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'auth_UsersGroups' AND schema_id = SCHEMA_ID('auth'))
 CREATE TABLE auth.auth_UsersGroups (
-    UserId  INT NOT NULL,
     GroupId INT NOT NULL,
-    CONSTRAINT PK_auth_UsersGroups PRIMARY KEY (UserId, GroupId),
-    CONSTRAINT FK_auth_UG_User  FOREIGN KEY (UserId)  REFERENCES auth.base_Users(UserId),
-    CONSTRAINT FK_auth_UG_Group FOREIGN KEY (GroupId) REFERENCES auth.auth_Groups(GroupId)
+    UserId  INT NOT NULL,
+    CONSTRAINT PK_auth_UsersGroups PRIMARY KEY (GroupId, UserId),
+    CONSTRAINT FK_auth_UG_Group FOREIGN KEY (GroupId) REFERENCES auth.auth_Groups(GroupId),
+    CONSTRAINT FK_auth_UG_User  FOREIGN KEY (UserId)  REFERENCES auth.base_Users(UserId)
 );
 GO
 
--- ── auth_GroupsModules (join table) ───────────────────────────
+-- ── auth_GroupsModules ────────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'auth_GroupsModules' AND schema_id = SCHEMA_ID('auth'))
 CREATE TABLE auth.auth_GroupsModules (
     GroupId  INT NOT NULL,
@@ -172,13 +184,10 @@ CREATE TABLE auth.auth_GroupsModules (
 GO
 
 -- ── vw_flatuserauthorizations ─────────────────────────────────
--- Vista che piatta tutte le autorizzazioni dell'utente
--- (dirette + da gruppo + da ruolo)
 IF EXISTS (SELECT 1 FROM sys.views WHERE name = 'vw_flatuserauthorizations' AND schema_id = SCHEMA_ID('auth'))
     DROP VIEW auth.vw_flatuserauthorizations;
 GO
 CREATE VIEW auth.vw_flatuserauthorizations AS
--- Autorizzazioni dirette dell'utente
 SELECT
     ua.UserAuthorizationId  AS Id,
     ua.UserId,
@@ -195,7 +204,6 @@ JOIN auth.auth_Areas          ar ON ar.AreaId          = a.AreaId
 
 UNION ALL
 
--- Autorizzazioni via gruppo
 SELECT
     ga.GroupAuthorizationId AS Id,
     ug.UserId,
@@ -214,7 +222,6 @@ WHERE ga.GroupId IS NOT NULL
 
 UNION ALL
 
--- Autorizzazioni via ruolo
 SELECT
     ga.GroupAuthorizationId AS Id,
     u.UserId,
@@ -241,26 +248,78 @@ SELECT
     ga.GroupAuthorizationId AS DefaultStatusFilterId,
     a.Code,
     ga.GroupId,
-    NULL AS EntityFullName     -- Popolato se necessario tramite metadati applicativi
+    NULL AS EntityFullName
 FROM auth.auth_GroupsAuthorizations ga
 JOIN auth.auth_Authorizations a ON a.AuthorizationId = ga.AuthorizationId
-WHERE 1 = 0;  -- Vista placeholder: la logica reale dipende dall'implementazione specifica
+WHERE 1 = 0;
 GO
 
 -- ============================================================
--- MIGRAZIONE DATI da Eagle_Auth (eseguire solo se entrambi
--- i database sono raggiungibili dallo stesso server)
+-- MIGRAZIONE DATI da Eagle_Auth
+-- Eseguire solo se entrambi i database sono sullo stesso server.
+-- Ordine rispetta i vincoli FK.
 -- ============================================================
--- Se Eagle_Auth è sullo stesso SQL Server instance:
---
--- INSERT INTO auth.auth_Modules    SELECT * FROM Eagle_Auth.dbo.auth_Modules;
--- INSERT INTO auth.auth_Areas      SELECT * FROM Eagle_Auth.dbo.auth_Areas;
--- INSERT INTO auth.auth_Authorizations SELECT * FROM Eagle_Auth.dbo.auth_Authorizations;
--- INSERT INTO auth.auth_Groups     SELECT * FROM Eagle_Auth.dbo.auth_Groups;
--- INSERT INTO auth.base_Users      SELECT * FROM Eagle_Auth.dbo.base_Users;
--- INSERT INTO auth.auth_GroupsAuthorizations SELECT * FROM Eagle_Auth.dbo.auth_GroupsAuthorizations;
--- INSERT INTO auth.auth_UsersAuthorizations  SELECT * FROM Eagle_Auth.dbo.auth_UsersAuthorizations;
--- INSERT INTO auth.auth_UsersGroups   SELECT * FROM Eagle_Auth.dbo.auth_UsersGroups;
--- INSERT INTO auth.auth_GroupsModules SELECT * FROM Eagle_Auth.dbo.auth_GroupsModules;
---
--- ============================================================
+
+INSERT INTO auth.auth_Modules (ModuleId, Code, Description, IsActive, SortIndex, IsDefault)
+SELECT ModuleId, Code, Description, IsActive, SortIndex, IsDefault
+FROM Eagle_Auth.dbo.auth_Modules;
+
+INSERT INTO auth.auth_Areas (AreaId, ModuleId, Code, Description, IsActive)
+SELECT AreaId, ModuleId, Code, Description, IsActive
+FROM Eagle_Auth.dbo.auth_Areas;
+
+INSERT INTO auth.auth_Authorizations (AuthorizationId, Code, Description, AreaId)
+SELECT AuthorizationId, Code, Description, AreaId
+FROM Eagle_Auth.dbo.auth_Authorizations;
+
+INSERT INTO auth.auth_Groups (
+    GroupId, Code, Description, IsActive, Discriminator, IsSystemEntity,
+    Weight, IsFieldForceGroup, IsDefault, CompanyType, IsDeleted,
+    CompanyId, ParentId, UseInternal)
+SELECT
+    GroupId, Code, Description, IsActive, Discriminator, IsSystemEntity,
+    Weight, IsFieldForceGroup, IsDefault, CompanyType, IsDeleted,
+    CompanyId, ParentId, UseInternal
+FROM Eagle_Auth.dbo.auth_Groups;
+
+INSERT INTO auth.base_Users (
+    UserId, RoleId, SupervisorUserId, Code, Login, Email,
+    FirstName, LastName, Culture, IsActive, IsSystemUser,
+    Password, AvatarPath, Color, HomePageMenuId, HierarchicalLevel,
+    CreatedById, CreationDate, LastUpdatedById, LastUpdateDate,
+    PasswordExpired, _FullName, TzDislpayName, Path, LastAccess,
+    IsDeleted, Token, Discriminator, RefreshTokenId,
+    IsEmailConfirmed, FailedLoginAttempts, LockoutUntil)
+SELECT
+    UserId, RoleId, SupervisorUserId, Code, Login, Email,
+    FirstName, LastName, Culture, IsActive, IsSystemUser,
+    Password, AvatarPath, Color, HomePageMenuId, HierarchicalLevel,
+    CreatedById, CreationDate, LastUpdatedById, LastUpdateDate,
+    PasswordExpired, _FullName, TzDislpayName, Path, LastAccess,
+    IsDeleted, Token, Discriminator, RefreshTokenId,
+    IsEmailConfirmed, FailedLoginAttempts, LockoutUntil
+FROM Eagle_Auth.dbo.base_Users;
+
+INSERT INTO auth.auth_GroupsAuthorizations (
+    GroupAuthorizationId, AuthorizationId, GroupId, RoleId,
+    CanView, CanDelete, CanCreate, CanModify, CanAction)
+SELECT
+    GroupAuthorizationId, AuthorizationId, GroupId, RoleId,
+    CanView, CanDelete, CanCreate, CanModify, CanAction
+FROM Eagle_Auth.dbo.auth_GroupsAuthorizations;
+
+INSERT INTO auth.auth_UsersAuthorizations (
+    UserAuthorizationId, AuthorizationId, UserId,
+    CanView, CanDelete, CanCreate, CanModify, CanAction)
+SELECT
+    UserAuthorizationId, AuthorizationId, UserId,
+    CanView, CanDelete, CanCreate, CanModify, CanAction
+FROM Eagle_Auth.dbo.auth_UsersAuthorizations;
+
+INSERT INTO auth.auth_UsersGroups (GroupId, UserId)
+SELECT GroupId, UserId
+FROM Eagle_Auth.dbo.auth_UsersGroups;
+
+INSERT INTO auth.auth_GroupsModules (GroupId, ModuleId)
+SELECT GroupId, ModuleId
+FROM Eagle_Auth.dbo.auth_GroupsModules;
