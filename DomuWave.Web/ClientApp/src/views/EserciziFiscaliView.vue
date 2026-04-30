@@ -487,7 +487,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { fiscalYearApi, accountBalanceApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
@@ -923,6 +923,8 @@ watch(() => store.selectedCondominioId, () => {
   loadFiscalYears()
 })
 onMounted(loadFiscalYears)
+onUnmounted(() => window.removeEventListener('app:refresh', loadFiscalYears))
+window.addEventListener('app:refresh', loadFiscalYears)
 </script>
 
 <style scoped>

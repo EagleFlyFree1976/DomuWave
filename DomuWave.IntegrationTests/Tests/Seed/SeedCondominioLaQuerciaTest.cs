@@ -41,8 +41,8 @@ public class SeedCondominioLaQuerciaTest(
     ITestOutputHelper output)
     : IntegrationTestBase(factory)
 {
-    private const string CondominioCode = "LQ-001";
-    private const string CondominioName = "Condominio La Quercia";
+    private const string CondominioCode = "LQ-003";
+    private const string CondominioName = "Condominio Il Pioppo";
 
     [Fact]
     public async Task Seed_CondominioLaQuercia_Complete()

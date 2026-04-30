@@ -156,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { communicationApi, communicationNotificationApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
@@ -281,6 +281,8 @@ async function deleteItem(id) {
 
 watch(() => store.selectedCondominioId, loadData)
 onMounted(loadData)
+onUnmounted(() => window.removeEventListener('app:refresh', loadData))
+window.addEventListener('app:refresh', loadData)
 </script>
 
 <style scoped>

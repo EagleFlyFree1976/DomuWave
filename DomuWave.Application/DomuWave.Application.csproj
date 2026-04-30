@@ -91,7 +91,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Update="appsettings.json">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>
@@ -104,6 +104,9 @@
     <Folder Include="Controllers\Admin\" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="config\sessionfactory-AUTH-dbo.cfg.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="config\sessionfactory-DomuWave.cfg.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

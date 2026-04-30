@@ -754,7 +754,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { installmentApi, feeApi, unitApi, billingGroupApi, communicationNotificationApi, notificationTemplateApi } from '@/services/api'
@@ -1403,6 +1403,8 @@ onMounted(async () => {
   if (!store.fiscalYears.length) await store.loadFiscalYears()
   await Promise.all([loadInstallments(), loadBillingGroups()])
 })
+onUnmounted(() => window.removeEventListener('app:refresh', loadInstallments))
+window.addEventListener('app:refresh', loadInstallments)
 </script>
 
 <style scoped>

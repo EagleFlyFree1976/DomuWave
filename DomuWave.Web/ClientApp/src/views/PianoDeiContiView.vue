@@ -399,7 +399,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { chartOfAccountsApi, chartOfAccountsCategoryApi, millesimalTableApi, chartOfAccountsTemplateApi } from '@/services/api'
 
@@ -515,7 +515,10 @@ async function loadMillesimalTables() {
 }
 
 watch(() => store.selectedCondominioId, () => { load(); loadMillesimalTables() })
-onMounted(() => { load(); loadCategories(); loadMillesimalTables() })
+function loadAll() { load(); loadCategories(); loadMillesimalTables() }
+onMounted(loadAll)
+onUnmounted(() => window.removeEventListener('app:refresh', loadAll))
+window.addEventListener('app:refresh', loadAll)
 
 // ── Conti CRUD ─────────────────────────────────────────────────
 function clearError(f) { delete errors.value[f] }

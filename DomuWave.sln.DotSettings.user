@@ -11,6 +11,7 @@
     &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.Expense.ExpenseRegistrationDateTests&lt;/TestId&gt;&#xD;
     &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.Seed.SeedCondominioViaGaribaldiTest&lt;/TestId&gt;&#xD;
     &lt;TestId&gt;xUnit::4A7C2D1E-5B8F-4C3A-9D0E-6F2B8A1C7E4D::net8.0::DomuWave.IntegrationTests.Tests.Seed.SeedCondominioLaQuerciaTest&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::21F7CF9C-EC96-9962-61BE-4A2B6172A3BD::net8.0::DomuWave.Tests.Services.ExpenseServiceTests&lt;/TestId&gt;&#xD;
   &lt;/TestAncestor&gt;&#xD;
 &lt;/SessionState&gt;</s:String>
 	<s:Boolean x:Key="/Default/Housekeeping/Bookmarks/NumberedBookmarks/=Bookmark1/@KeyIndexDefined">True</s:Boolean>

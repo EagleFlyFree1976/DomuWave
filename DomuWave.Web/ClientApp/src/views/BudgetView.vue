@@ -454,7 +454,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { useSessionStore } from '@/stores/sessionStore'
@@ -1019,6 +1019,8 @@ onMounted(async () => {
     if (b) await openItemsModal(b)
   }
 })
+onUnmounted(() => window.removeEventListener('app:refresh', loadBudgets))
+window.addEventListener('app:refresh', loadBudgets)
 </script>
 
 <style scoped>

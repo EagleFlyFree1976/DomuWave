@@ -279,7 +279,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi } from '@/services/api'
@@ -526,6 +526,8 @@ async function saveBalance() {
 }
 
 onMounted(loadData)
+onUnmounted(() => window.removeEventListener('app:refresh', loadData))
+window.addEventListener('app:refresh', loadData)
 </script>
 
 <style scoped>

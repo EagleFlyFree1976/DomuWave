@@ -37,7 +37,8 @@
       "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/Condominium/*.cs)",
       "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/UnitOwner/*.cs)",
       "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/UnitTenant/*.cs)",
-      "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/FiscalYear/*.cs)"
+      "Bash(ls /c/Projects/Works/DomuWave/DomuWave.Infrastructure/Consumers/FiscalYear/*.cs)",
+      "Bash(sqlcmd -S eaglefly -U Cashflow -P 'XiBw$2aun.J!2vt' -Q ' *)"
     ]
   }
 }

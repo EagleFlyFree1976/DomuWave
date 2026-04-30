@@ -163,7 +163,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { maintenanceApi, supplierApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
@@ -303,7 +303,10 @@ async function deleteItem(id) {
 watch(() => store.selectedCondominioId, loadData)
 watch(statusFilter,  loadData)
 watch(priorityFilter, loadData)
-onMounted(() => { loadData(); loadSuppliers() })
+function loadAll() { loadData(); loadSuppliers() }
+onMounted(loadAll)
+onUnmounted(() => window.removeEventListener('app:refresh', loadAll))
+window.addEventListener('app:refresh', loadAll)
 </script>
 
 <style scoped>

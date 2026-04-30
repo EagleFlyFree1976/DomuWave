@@ -306,7 +306,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { extraordinaryWorkApi, supplierApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
@@ -574,7 +574,10 @@ async function deleteDocument(workId, quoteId, docId) {
 
 watch(() => store.selectedCondominioId, loadWorks)
 watch(statusFilter, loadWorks)
-onMounted(() => { loadWorks(); loadSuppliers() })
+function loadAll() { loadWorks(); loadSuppliers() }
+onMounted(loadAll)
+onUnmounted(() => window.removeEventListener('app:refresh', loadAll))
+window.addEventListener('app:refresh', loadAll)
 </script>
 
 <style scoped>

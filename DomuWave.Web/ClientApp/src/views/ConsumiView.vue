@@ -502,7 +502,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { usePermissions } from '@/composables/usePermissions'
 import {
@@ -1009,6 +1009,8 @@ async function loadAll() {
 }
 
 onMounted(loadAll)
+onUnmounted(() => window.removeEventListener('app:refresh', loadAll))
+window.addEventListener('app:refresh', loadAll)
 watch(() => store.selectedCondominioId, () => {
   selectedTypeId.value       = null
   selectedFiscalYearId.value = null

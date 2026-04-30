@@ -235,7 +235,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { millesimalTableApi, unitMillesimalApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
@@ -504,6 +504,8 @@ watch(() => store.selectedCondominioId, () => {
   loadTables()
 })
 onMounted(loadTables)
+onUnmounted(() => window.removeEventListener('app:refresh', loadTables))
+window.addEventListener('app:refresh', loadTables)
 </script>
 
 <style scoped>

@@ -240,7 +240,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { expenseApi, chartOfAccountsApi, supplierApi, millesimalTableApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
@@ -552,6 +552,8 @@ onMounted(async () => {
   if (!store.fiscalYears.length) await store.loadFiscalYears()
   await loadExpenses()
 })
+onUnmounted(() => window.removeEventListener('app:refresh', loadExpenses))
+window.addEventListener('app:refresh', loadExpenses)
 </script>
 
 <style scoped>

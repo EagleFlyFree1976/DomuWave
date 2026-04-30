@@ -269,7 +269,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { supplierApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
@@ -409,7 +409,10 @@ async function deleteContract(id) {
 watch(() => store.selectedCondominioId, loadContracts)
 watch(contractFilter, loadContracts)
 watch(activeTab, (t) => { if (t === 'contratti') loadContracts() })
-onMounted(() => { loadData(); loadContracts() })
+function loadAll() { loadData(); loadContracts() }
+onMounted(loadAll)
+onUnmounted(() => window.removeEventListener('app:refresh', loadAll))
+window.addEventListener('app:refresh', loadAll)
 </script>
 
 <style scoped>
