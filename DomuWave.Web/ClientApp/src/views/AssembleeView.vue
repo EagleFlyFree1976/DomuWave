@@ -3,14 +3,16 @@
     <div class="toolbar">
       <select class="form-select filter-select" v-model="filterStatus">
         <option value="">Tutti gli stati</option>
-        <option value="0">Convocata</option>
-        <option value="1">Svolta</option>
-        <option value="2">Annullata</option>
+        <option value="1">Bozza</option>
+        <option value="2">Pianificata</option>
+        <option value="3">Convocata</option>
+        <option value="4">Svolta</option>
+        <option value="5">Annullata</option>
       </select>
       <select class="form-select filter-select" v-model="filterType">
         <option value="">Tutti i tipi</option>
-        <option value="0">Ordinaria</option>
-        <option value="1">Straordinaria</option>
+        <option value="1">Ordinaria</option>
+        <option value="2">Straordinaria</option>
       </select>
       <button v-if="canCreate" class="btn btn-primary" style="margin-left:auto" @click="openModal()">+ Nuova assemblea</button>
     </div>
@@ -48,8 +50,9 @@
               <td class="text-center text-secondary">{{ a.attendanceCount }}</td>
               <td @click.stop>
                 <div class="row-actions">
-                  <button v-if="canEdit && a.statusId === 0" class="btn-icon" @click="openCloseModal(a)" title="Segna come svolta">✓</button>
-                  <button v-if="canEdit && a.statusId === 0" class="btn-icon" style="color:var(--accent-red)" @click="cancelAssembly(a)" title="Annulla assemblea"><i class="pi pi-ban"></i></button>
+                  <button v-if="canEdit && a.statusId === 1" class="btn-icon" @click="planAssembly(a)" title="Sposta in Pianificata"><i class="pi pi-send"></i></button>
+                  <button v-if="canEdit && a.statusId === 3" class="btn-icon" @click="openCloseModal(a)" title="Segna come svolta">✓</button>
+                  <button v-if="canEdit && [1,2,3].includes(a.statusId)" class="btn-icon" style="color:var(--accent-red)" @click="cancelAssembly(a)" title="Annulla assemblea"><i class="pi pi-ban"></i></button>
                   <button v-if="canEdit" class="btn-icon" @click="openModal(a)" title="Modifica">✎</button>
                   <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)" @click="deleteItem(a.id)" title="Elimina">✕</button>
                 </div>
@@ -77,15 +80,15 @@
             <div class="form-group">
               <label class="form-label">Tipo *</label>
               <select class="form-select" v-model.number="form.assemblyTypeId">
-                <option :value="0">Ordinaria</option>
-                <option :value="1">Straordinaria</option>
+                <option :value="1">Ordinaria</option>
+                <option :value="2">Straordinaria</option>
               </select>
             </div>
             <div class="form-group">
               <label class="form-label">Esercizio fiscale</label>
               <select class="form-select" v-model.number="form.fiscalYearId">
                 <option :value="null">— Nessuno —</option>
-                <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">{{ fy.name }}</option>
+                <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">{{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}</option>
               </select>
             </div>
             <div class="form-group" :class="{ 'has-error': errors.scheduledDate }">
@@ -167,7 +170,7 @@ const closingAssembly = ref(null)
 
 const defaultForm = () => ({
   title:          '',
-  assemblyTypeId: 0,
+  assemblyTypeId: 1,
   fiscalYearId:   null,
   scheduledDate:  '',
   location:       '',
@@ -191,9 +194,11 @@ function fmtDate(d) {
 }
 
 function statusClass(statusId) {
-  if (statusId === 1) return 'badge-green'
-  if (statusId === 2) return 'badge-muted'
-  return 'badge-blue'
+  if (statusId === 4) return 'badge-green'
+  if (statusId === 5) return 'badge-muted'
+  if (statusId === 3) return 'badge-blue'
+  if (statusId === 2) return 'badge-purple'
+  return 'badge-gray'   // Bozza = 1
 }
 
 function toLocalDatetimeInput(d) {
@@ -287,6 +292,17 @@ async function confirmClose() {
   }
 }
 
+async function planAssembly(assembly) {
+  if (!confirm(`Spostare l'assemblea "${assembly.title}" in Pianificata?`)) return
+  try {
+    await assemblyApi.plan(assembly.id)
+    store.toast('Assemblea spostata in Pianificata', 'success')
+    await loadData()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
 async function cancelAssembly(assembly) {
   if (!confirm(`Annullare l'assemblea "${assembly.title}"?`)) return
   try {
@@ -327,7 +343,9 @@ watch(condominiumId, loadData)
 .clickable-row { cursor: pointer; }
 .clickable-row:hover td { background: var(--bg-surface); }
 
-.badge-blue { background: rgba(99,102,241,.12); color: #6366f1; }
+.badge-blue   { background: rgba(99,102,241,.12); color: #6366f1; }
+.badge-purple { background: rgba(168,85,247,.12); color: #a855f7; }
+.badge-gray   { background: rgba(107,114,128,.12); color: #6b7280; }
 
 .filter-select { max-width: 160px; }
 </style>

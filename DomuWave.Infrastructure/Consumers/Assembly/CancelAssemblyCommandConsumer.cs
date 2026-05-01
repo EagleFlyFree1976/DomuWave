@@ -35,6 +35,9 @@ public class CancelAssemblyCommandConsumer : InMemoryConsumerBase<CancelAssembly
         var entity      = await _assemblyService.GetByIdAsync(command.AssemblyId, currentUser, cancellationToken).ConfigureAwait(false)
                           ?? throw new NotFoundException("Assemblea non trovata.");
 
+        if (entity.Status?.Id == AssemblyStatusLookup.Svolta || entity.Status?.Id == AssemblyStatusLookup.Annullata)
+            throw new ValidatorException("L'assemblea non può essere annullata nel suo stato attuale.");
+
         var status = await session.GetAsync<AssemblyStatusLookup>(AssemblyStatusLookup.Annullata, cancellationToken).ConfigureAwait(false)!;
         entity.Status = status;
         entity.Trace(currentUser);

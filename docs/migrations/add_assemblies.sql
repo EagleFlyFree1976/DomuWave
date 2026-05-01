@@ -10,8 +10,8 @@ BEGIN
         Name NVARCHAR(50) NOT NULL
     );
 END
-IF NOT EXISTS (SELECT 1 FROM AssemblyTypeLookup WHERE Id = 0) INSERT INTO AssemblyTypeLookup (Id, Name) VALUES (0, 'Ordinaria');
-IF NOT EXISTS (SELECT 1 FROM AssemblyTypeLookup WHERE Id = 1) INSERT INTO AssemblyTypeLookup (Id, Name) VALUES (1, 'Straordinaria');
+IF NOT EXISTS (SELECT 1 FROM AssemblyTypeLookup WHERE Id = 1) INSERT INTO AssemblyTypeLookup (Id, Name) VALUES (1, 'Ordinaria');
+IF NOT EXISTS (SELECT 1 FROM AssemblyTypeLookup WHERE Id = 2) INSERT INTO AssemblyTypeLookup (Id, Name) VALUES (2, 'Straordinaria');
 
 -- ── Lookup: stato assemblea ───────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AssemblyStatusLookup')
@@ -21,9 +21,11 @@ BEGIN
         Name NVARCHAR(50) NOT NULL
     );
 END
-IF NOT EXISTS (SELECT 1 FROM AssemblyStatusLookup WHERE Id = 0) INSERT INTO AssemblyStatusLookup (Id, Name) VALUES (0, 'Convocata');
-IF NOT EXISTS (SELECT 1 FROM AssemblyStatusLookup WHERE Id = 1) INSERT INTO AssemblyStatusLookup (Id, Name) VALUES (1, 'Svolta');
-IF NOT EXISTS (SELECT 1 FROM AssemblyStatusLookup WHERE Id = 2) INSERT INTO AssemblyStatusLookup (Id, Name) VALUES (2, 'Annullata');
+IF NOT EXISTS (SELECT 1 FROM AssemblyStatusLookup WHERE Id = 1) INSERT INTO AssemblyStatusLookup (Id, Name) VALUES (1, 'Bozza');
+IF NOT EXISTS (SELECT 1 FROM AssemblyStatusLookup WHERE Id = 2) INSERT INTO AssemblyStatusLookup (Id, Name) VALUES (2, 'Pianificata');
+IF NOT EXISTS (SELECT 1 FROM AssemblyStatusLookup WHERE Id = 3) INSERT INTO AssemblyStatusLookup (Id, Name) VALUES (3, 'Convocata');
+IF NOT EXISTS (SELECT 1 FROM AssemblyStatusLookup WHERE Id = 4) INSERT INTO AssemblyStatusLookup (Id, Name) VALUES (4, 'Svolta');
+IF NOT EXISTS (SELECT 1 FROM AssemblyStatusLookup WHERE Id = 5) INSERT INTO AssemblyStatusLookup (Id, Name) VALUES (5, 'Annullata');
 
 -- ── Lookup: esito votazione punto OdG ────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AgendaItemVoteResultLookup')
@@ -33,10 +35,10 @@ BEGIN
         Name NVARCHAR(50) NOT NULL
     );
 END
-IF NOT EXISTS (SELECT 1 FROM AgendaItemVoteResultLookup WHERE Id = 0) INSERT INTO AgendaItemVoteResultLookup (Id, Name) VALUES (0, 'Non Votato');
-IF NOT EXISTS (SELECT 1 FROM AgendaItemVoteResultLookup WHERE Id = 1) INSERT INTO AgendaItemVoteResultLookup (Id, Name) VALUES (1, 'Approvato');
-IF NOT EXISTS (SELECT 1 FROM AgendaItemVoteResultLookup WHERE Id = 2) INSERT INTO AgendaItemVoteResultLookup (Id, Name) VALUES (2, 'Respinto');
-IF NOT EXISTS (SELECT 1 FROM AgendaItemVoteResultLookup WHERE Id = 3) INSERT INTO AgendaItemVoteResultLookup (Id, Name) VALUES (3, 'Rinviato');
+IF NOT EXISTS (SELECT 1 FROM AgendaItemVoteResultLookup WHERE Id = 1) INSERT INTO AgendaItemVoteResultLookup (Id, Name) VALUES (1, 'Non Votato');
+IF NOT EXISTS (SELECT 1 FROM AgendaItemVoteResultLookup WHERE Id = 2) INSERT INTO AgendaItemVoteResultLookup (Id, Name) VALUES (2, 'Approvato');
+IF NOT EXISTS (SELECT 1 FROM AgendaItemVoteResultLookup WHERE Id = 3) INSERT INTO AgendaItemVoteResultLookup (Id, Name) VALUES (3, 'Respinto');
+IF NOT EXISTS (SELECT 1 FROM AgendaItemVoteResultLookup WHERE Id = 4) INSERT INTO AgendaItemVoteResultLookup (Id, Name) VALUES (4, 'Rinviato');
 
 -- ── Lookup: tipo presenza ────────────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AttendanceTypeLookup')
@@ -46,9 +48,9 @@ BEGIN
         Name NVARCHAR(50) NOT NULL
     );
 END
-IF NOT EXISTS (SELECT 1 FROM AttendanceTypeLookup WHERE Id = 0) INSERT INTO AttendanceTypeLookup (Id, Name) VALUES (0, 'Presente');
-IF NOT EXISTS (SELECT 1 FROM AttendanceTypeLookup WHERE Id = 1) INSERT INTO AttendanceTypeLookup (Id, Name) VALUES (1, 'Delegato');
-IF NOT EXISTS (SELECT 1 FROM AttendanceTypeLookup WHERE Id = 2) INSERT INTO AttendanceTypeLookup (Id, Name) VALUES (2, 'Assente');
+IF NOT EXISTS (SELECT 1 FROM AttendanceTypeLookup WHERE Id = 1) INSERT INTO AttendanceTypeLookup (Id, Name) VALUES (1, 'Presente');
+IF NOT EXISTS (SELECT 1 FROM AttendanceTypeLookup WHERE Id = 2) INSERT INTO AttendanceTypeLookup (Id, Name) VALUES (2, 'Delegato');
+IF NOT EXISTS (SELECT 1 FROM AttendanceTypeLookup WHERE Id = 3) INSERT INTO AttendanceTypeLookup (Id, Name) VALUES (3, 'Assente');
 
 -- ── Tabella principale: Assembly ──────────────────────────────
 IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'Assembly')
@@ -59,8 +61,8 @@ BEGIN
         CondominiumId         INT              NOT NULL,
         FiscalYearId          INT              NULL,
         Title                 NVARCHAR(200)    NOT NULL,
-        AssemblyTypeId        INT              NOT NULL DEFAULT 0,
-        StatusId              INT              NOT NULL DEFAULT 0,
+        AssemblyTypeId        INT              NOT NULL DEFAULT 1,
+        StatusId              INT              NOT NULL DEFAULT 1,
         ScheduledDate         DATETIME2        NOT NULL,
         ActualDate            DATETIME2        NULL,
         Location              NVARCHAR(200)    NULL,
@@ -77,7 +79,7 @@ BEGIN
 
         CONSTRAINT FK_Assembly_Tenant        FOREIGN KEY (TenantId)       REFERENCES Tenant(Id),
         CONSTRAINT FK_Assembly_Condominium   FOREIGN KEY (CondominiumId)  REFERENCES Condominium(Id),
-        CONSTRAINT FK_Assembly_FiscalYear    FOREIGN KEY (FiscalYearId)   REFERENCES FiscalYear(FiscalYearId),
+        CONSTRAINT FK_Assembly_FiscalYear    FOREIGN KEY (FiscalYearId)   REFERENCES FiscalYear(Id),
         CONSTRAINT FK_Assembly_Type          FOREIGN KEY (AssemblyTypeId) REFERENCES AssemblyTypeLookup(Id),
         CONSTRAINT FK_Assembly_Status        FOREIGN KEY (StatusId)       REFERENCES AssemblyStatusLookup(Id)
     );
@@ -94,7 +96,7 @@ BEGIN
         Title                 NVARCHAR(200)    NOT NULL,
         Description           NVARCHAR(MAX)    NULL,
         Resolution            NVARCHAR(MAX)    NULL,
-        VoteResultId          INT              NOT NULL DEFAULT 0,
+        VoteResultId          INT              NOT NULL DEFAULT 1,
         CreatedById           INT              NOT NULL,
         CreatedByFullName     NVARCHAR(200)    NULL,
         LastUpdatedById       INT              NULL,
@@ -117,7 +119,7 @@ BEGIN
         TenantId              UNIQUEIDENTIFIER NOT NULL,
         AssemblyId            INT              NOT NULL,
         UnitOwnerId           INT              NOT NULL,
-        AttendanceTypeId      INT              NOT NULL DEFAULT 0,
+        AttendanceTypeId      INT              NOT NULL DEFAULT 1,
         DelegateName          NVARCHAR(200)    NULL,
         MillesimalValue       DECIMAL(18,4)    NOT NULL DEFAULT 0,
         Notes                 NVARCHAR(500)    NULL,

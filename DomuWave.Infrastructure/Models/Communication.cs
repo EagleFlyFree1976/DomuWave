@@ -8,6 +8,7 @@ namespace DomuWave.Services.Models
     {
         public virtual Condominium Condominium { get; set; } = null!;
         public virtual CondominiumInstallment? Installment { get; set; }
+        public virtual Assembly? Assembly { get; set; }
         public virtual string Title { get; set; } = string.Empty;
         public virtual string Content { get; set; } = string.Empty;
         public virtual string CommunicationType { get; set; } = string.Empty;

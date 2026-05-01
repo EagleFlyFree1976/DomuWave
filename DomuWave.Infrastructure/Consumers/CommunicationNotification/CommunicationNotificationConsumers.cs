@@ -71,6 +71,7 @@ public class GenerateCommunicationNotificationsCommandConsumer
 
         var communication = await session.Query<Communication>()
             .Where(c => c.Id == command.CommunicationId && !c.IsDeleted)
+            .Fetch(c => c.Assembly)
             .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
             ?? throw new NotFoundException("Comunicazione non trovata.");
 
@@ -123,6 +124,9 @@ public class GenerateCommunicationNotificationsCommandConsumer
                 AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
                 AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
                 Iban               = condominium.Iban ?? string.Empty,
+                AssemblyDate       = communication.Assembly?.ScheduledDate.ToString("dd/MM/yyyy HH:mm") ?? string.Empty,
+                AssemblyLocation   = communication.Assembly?.Location ?? string.Empty,
+                AssemblyType       = communication.Assembly?.AssemblyType?.Name ?? string.Empty,
             };
 
             var subject = template != null ? _resolver.Resolve(template.SubjectTemplate, ctx) : communication.Title;
@@ -1064,6 +1068,7 @@ public class RegenerateNotificationTextsCommandConsumer
 
         var communication = await session.Query<Communication>()
             .Where(c => c.Id == command.CommunicationId && !c.IsDeleted)
+            .Fetch(c => c.Assembly)
             .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false)
             ?? throw new NotFoundException("Comunicazione non trovata.");
 
@@ -1098,6 +1103,9 @@ public class RegenerateNotificationTextsCommandConsumer
                 AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
                 AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
                 Iban               = condominium.Iban ?? string.Empty,
+                AssemblyDate       = communication.Assembly?.ScheduledDate.ToString("dd/MM/yyyy HH:mm") ?? string.Empty,
+                AssemblyLocation   = communication.Assembly?.Location ?? string.Empty,
+                AssemblyType       = communication.Assembly?.AssemblyType?.Name ?? string.Empty,
             };
 
             n.SubjectResolved = template != null ? _resolver.Resolve(template.SubjectTemplate, ctx) : communication.Title;

@@ -28,4 +28,8 @@ public class NotificationVariableContext
     // Multi-fee: riepilogo di tutte le rate del destinatario ({{FeeTable}})
     public string FeeTable           { get; set; } = string.Empty;
     public string TotalAmount        { get; set; } = string.Empty;
+    // Assembly-specific (Meeting type)
+    public string AssemblyDate       { get; set; } = string.Empty;
+    public string AssemblyLocation   { get; set; } = string.Empty;
+    public string AssemblyType       { get; set; } = string.Empty;
 }

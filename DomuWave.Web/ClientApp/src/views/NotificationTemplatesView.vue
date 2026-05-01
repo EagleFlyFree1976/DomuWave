@@ -146,6 +146,7 @@ const variables = [
   'AdministratorName', 'AdministratorEmail', 'AdministratorPhone',
   'FiscalYearCode', 'DueDate', 'Amount', 'PaymentCode', 'Iban',
   'FeeTable', 'TotalAmount',
+  'AssemblyDate', 'AssemblyLocation', 'AssemblyType',
 ]
 
 const commTypes = [

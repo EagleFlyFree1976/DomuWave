@@ -50,7 +50,17 @@ public class CreateCommunicationCommandConsumer : InMemoryConsumerBase<CreateCom
                 throw new ValidatorException("Esiste già una comunicazione associata a questa rata.");
         }
 
-        var entity = command.Dto.ToEntity(condominium, installment);
+        Models.Assembly? assembly = null;
+        if (command.Dto.CommunicationType == "Meeting")
+        {
+            if (!command.Dto.AssemblyId.HasValue)
+                throw new ValidatorException("Per le comunicazioni di tipo 'Assemblea' è obbligatorio selezionare un'assemblea.");
+
+            assembly = await session.GetAsync<Models.Assembly>(command.Dto.AssemblyId.Value, cancellationToken).ConfigureAwait(false)
+                       ?? throw new NotFoundException("Assemblea non trovata.");
+        }
+
+        var entity = command.Dto.ToEntity(condominium, installment, assembly);
         entity.Trace(currentUser);
         await session.SaveAsync(entity, cancellationToken).ConfigureAwait(false);
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);

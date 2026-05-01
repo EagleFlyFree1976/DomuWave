@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DomuWave.IntegrationTests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+047aad210947e93bc159fd4d582c9825056c1807")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2b6124fb961a3309f819b989d66e8d7cff926265")]
 [assembly: System.Reflection.AssemblyProductAttribute("DomuWave.IntegrationTests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DomuWave.IntegrationTests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

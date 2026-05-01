@@ -4,6 +4,7 @@ public class CreateCommunicationDto
 {
     public int     CondominiumId     { get; set; }
     public int?    InstallmentId     { get; set; }
+    public int?    AssemblyId        { get; set; }
     public string  Title             { get; set; } = string.Empty;
     public string  Content           { get; set; } = string.Empty;
     public string  CommunicationType { get; set; } = string.Empty;

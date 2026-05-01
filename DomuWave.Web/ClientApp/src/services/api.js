@@ -387,6 +387,7 @@ export const assemblyApi = {
   create:           (data)         => api.post('/assemblies', data),
   update:           (id, data)     => api.put(`/assemblies/${id}`, data),
   delete:           (id)           => api.delete(`/assemblies/${id}`),
+  plan:             (id)           => api.post(`/assemblies/${id}/plan`, {}),
   close:            (id, data)     => api.post(`/assemblies/${id}/close`, data),
   cancel:           (id)           => api.post(`/assemblies/${id}/cancel`, {}),
   // Agenda Items

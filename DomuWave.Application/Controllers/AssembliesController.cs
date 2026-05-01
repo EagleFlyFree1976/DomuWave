@@ -67,6 +67,15 @@ public class AssembliesController(
         return NoContent();
     }
 
+    [HttpPost("{id:int}/plan")]
+    [ProducesResponseType(typeof(AssemblyReadDto), 200)]
+    public async Task<IActionResult> Plan(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new PlanAssemblyCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpPost("{id:int}/close")]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> Close(int id, [FromBody] CloseAssemblyRequestDto dto, CancellationToken ct)

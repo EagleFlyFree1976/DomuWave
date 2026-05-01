@@ -111,6 +111,14 @@
                 <option value="FeeNotice">Avviso di pagamento</option>
               </select>
             </div>
+            <div v-if="form.communicationType === 'Meeting'" class="form-group form-group--full">
+              <label class="form-label">Assemblea collegata *</label>
+              <select class="form-select" v-model.number="form.assemblyId">
+                <option :value="null">— Seleziona assemblea —</option>
+                <option v-for="a in assembliesBozza" :key="a.id" :value="a.id">{{ a.title }} ({{ fmtDate(a.scheduledDate) }})</option>
+              </select>
+              <span v-if="!assembliesBozza.length" class="field-error">Nessuna assemblea in stato Bozza disponibile</span>
+            </div>
             <div class="form-group">
               <label class="form-label">Priorità</label>
               <select class="form-select" v-model="form.priority">
@@ -158,7 +166,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { communicationApi, communicationNotificationApi } from '@/services/api'
+import { communicationApi, communicationNotificationApi, assemblyApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import NotifPanel from '@/components/NotifPanel.vue'
 
@@ -194,10 +202,22 @@ const search = ref('')
 const filterType = ref('')
 const filterPriority = ref('')
 
+const assembliesBozza = ref([])
+
+async function loadAssemblies() {
+  if (!store.selectedCondominioId) return
+  try {
+    const { data } = await assemblyApi.getByCondominium(store.selectedCondominioId)
+    // Bozza = statusId 1
+    assembliesBozza.value = (data ?? []).filter(a => a.statusId === 1)
+  } catch { assembliesBozza.value = [] }
+}
+
 const defaultForm = () => ({
   title: '', content: '', communicationType: 'Notice', priority: 'Normal',
   publicationDate: new Date().toISOString().slice(0,16),
-  expirationDate: '', sendEmail: false, isVisible: true, attachmentPath: ''
+  expirationDate: '', sendEmail: false, isVisible: true, attachmentPath: '',
+  assemblyId: null,
 })
 const form = ref(defaultForm())
 
@@ -241,12 +261,21 @@ function switchTab(archived) {
 
 function openModal(c = null) {
   editing.value = c?.id ?? null
-  form.value = c ? { ...c, publicationDate: c.publicationDate?.slice(0,16), expirationDate: c.expirationDate?.slice(0,16) } : defaultForm()
+  form.value = c
+    ? { ...c, publicationDate: c.publicationDate?.slice(0,16), expirationDate: c.expirationDate?.slice(0,16), assemblyId: c.assemblyId ?? null }
+    : defaultForm()
+  if (form.value.communicationType === 'Meeting') loadAssemblies()
   showModal.value = true
 }
 
+watch(() => form.value.communicationType, (val) => {
+  if (val === 'Meeting') loadAssemblies()
+  else form.value.assemblyId = null
+})
+
 async function save() {
   if (!form.value.title || !form.value.content) return store.toast('Titolo e contenuto sono obbligatori', 'error')
+  if (form.value.communicationType === 'Meeting' && !form.value.assemblyId) return store.toast("Seleziona l'assemblea collegata", 'error')
   saving.value = true
   try {
     if (editing.value) await communicationApi.update(editing.value, form.value)

@@ -143,7 +143,6 @@ public static class AssemblyMappingExtensions
             Tenant          = tenant,
             UnitOwner       = unitOwner,
             AttendanceType  = attendanceType,
-            Name            = $"{unitOwner.FirstName} {unitOwner.LastName}".Trim(),
             DelegateName    = dto.DelegateName,
             MillesimalValue = dto.MillesimalValue,
             Description     = dto.Notes,

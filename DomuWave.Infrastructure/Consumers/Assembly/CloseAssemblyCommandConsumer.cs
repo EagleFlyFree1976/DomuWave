@@ -35,6 +35,9 @@ public class CloseAssemblyCommandConsumer : InMemoryConsumerBase<CloseAssemblyCo
         var entity      = await _assemblyService.GetByIdAsync(command.AssemblyId, currentUser, cancellationToken).ConfigureAwait(false)
                           ?? throw new NotFoundException("Assemblea non trovata.");
 
+        if (entity.Status?.Id != AssemblyStatusLookup.Convocata)
+            throw new ValidatorException("Solo le assemblee in stato 'Convocata' possono essere segnate come svolte.");
+
         var status = await session.GetAsync<AssemblyStatusLookup>(AssemblyStatusLookup.Svolta, cancellationToken).ConfigureAwait(false)!;
         entity.Status     = status;
         entity.ActualDate = command.ActualDate;

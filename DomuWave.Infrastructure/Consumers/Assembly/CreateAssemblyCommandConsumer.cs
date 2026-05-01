@@ -42,7 +42,7 @@ public class CreateAssemblyCommandConsumer : InMemoryConsumerBase<CreateAssembly
         var assemblyType = await session.GetAsync<AssemblyTypeLookup>(command.Dto.AssemblyTypeId, cancellationToken).ConfigureAwait(false)
                            ?? throw new NotFoundException("Tipo assemblea non valido.");
 
-        var status = await session.GetAsync<AssemblyStatusLookup>(AssemblyStatusLookup.Convocata, cancellationToken).ConfigureAwait(false)!;
+        var status = await session.GetAsync<AssemblyStatusLookup>(AssemblyStatusLookup.Bozza, cancellationToken).ConfigureAwait(false)!;
 
         FiscalYear? fiscalYear = null;
         if (command.Dto.FiscalYearId.HasValue)

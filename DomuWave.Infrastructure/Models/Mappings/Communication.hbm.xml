@@ -17,6 +17,7 @@
     <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
     <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
     <many-to-one name="Installment" class="DomuWave.Services.Models.CondominiumInstallment, DomuWave.Services" column="InstallmentId" not-null="false" />
+    <many-to-one name="Assembly"    class="DomuWave.Services.Models.Assembly, DomuWave.Services"               column="AssemblyId"    not-null="false" />
 
     <property name="Name" column="Title" type="String" length="200" not-null="true" />
     <property name="Description" column="Content" type="StringClob" />

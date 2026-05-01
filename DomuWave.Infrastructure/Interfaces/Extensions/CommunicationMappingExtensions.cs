@@ -14,6 +14,8 @@ public static class CommunicationMappingExtensions
             CondominiumId     = entity.Condominium?.Id   ?? 0,
             CondominiumName   = entity.Condominium?.Name,
             InstallmentId     = entity.Installment?.Id,
+            AssemblyId        = entity.Assembly?.Id,
+            AssemblyTitle     = entity.Assembly?.Name,
             Title             = entity.Title,
             Content           = entity.Content,
             CommunicationType = entity.CommunicationType,
@@ -30,7 +32,7 @@ public static class CommunicationMappingExtensions
         return dto;
     }
 
-    public static Communication ToEntity(this CreateCommunicationDto dto, Condominium condominium, CondominiumInstallment? installment = null)
+    public static Communication ToEntity(this CreateCommunicationDto dto, Condominium condominium, CondominiumInstallment? installment = null, Assembly? assembly = null)
     {
         if (dto == null) return null!;
         return new Communication
@@ -38,6 +40,7 @@ public static class CommunicationMappingExtensions
             Condominium       = condominium,
             Tenant            = condominium.Tenant,
             Installment       = installment,
+            Assembly          = assembly,
             Name              = dto.Title,
             Description       = dto.Content,
             CommunicationType = dto.CommunicationType,
