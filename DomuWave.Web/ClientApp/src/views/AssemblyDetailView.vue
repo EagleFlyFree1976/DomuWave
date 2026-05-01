@@ -38,6 +38,12 @@
           <span class="info-label">Note</span>
           <span class="info-value">{{ assembly.notes }}</span>
         </div>
+        <div class="info-item" v-if="assembly.communicationId">
+          <span class="info-label">Comunicazione</span>
+          <router-link class="info-link" :to="communicationPath">
+            <i class="pi pi-envelope"></i> {{ assembly.communicationTitle || 'Vai alla comunicazione' }}
+          </router-link>
+        </div>
       </div>
     </div>
 
@@ -48,6 +54,9 @@
       </button>
       <button class="tab-pill" :class="{ active: tab === 'presenze' }" @click="tab = 'presenze'">
         <i class="pi pi-users"></i> Presenze ({{ attendances.length }})
+      </button>
+      <button v-if="assembly.statusId >= 3" class="tab-pill" :class="{ active: tab === 'verbale' }" @click="tab = 'verbale'">
+        <i class="pi pi-file-edit"></i> Verbale
       </button>
     </div>
 
@@ -129,6 +138,44 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verbale Tab -->
+    <div v-if="tab === 'verbale'">
+      <div class="card" style="padding:1.25rem 1.5rem">
+        <div class="form-fieldset">
+          <span class="form-fieldset-legend">Consiglieri / Ufficio di presidenza</span>
+          <div class="form-group form-group--full">
+            <label class="form-label">Nomi dei consiglieri</label>
+            <textarea
+              class="form-textarea"
+              v-model="minutesForm.boardMembers"
+              rows="3"
+              placeholder="Es. Presidente: Mario Rossi — Segretario: Anna Bianchi — Scrutatori: …"
+              :disabled="assembly.statusId === 5"
+            ></textarea>
+          </div>
+        </div>
+        <div class="form-fieldset" style="margin-top:1rem">
+          <span class="form-fieldset-legend">Trascrizione del verbale</span>
+          <div class="form-group form-group--full">
+            <label class="form-label">Verbale assemblea</label>
+            <textarea
+              class="form-textarea minutes-editor"
+              v-model="minutesForm.minutes"
+              rows="18"
+              placeholder="Testo integrale del verbale…"
+              :disabled="assembly.statusId === 5"
+            ></textarea>
+          </div>
+        </div>
+        <div class="toolbar" style="margin-top:1rem; justify-content:flex-end; border-top:1px solid var(--border); padding-top:1rem" v-if="canEdit && assembly.statusId !== 5">
+          <button class="btn btn-primary" @click="saveMinutes" :disabled="savingMinutes">
+            <span v-if="savingMinutes" class="spinner" style="width:14px;height:14px"></span>
+            Salva verbale
+          </button>
         </div>
       </div>
     </div>
@@ -274,7 +321,8 @@ const route = useRoute()
 const store = useAppStore()
 const { canCreate, canEdit } = usePermissions()
 
-const assemblyId = computed(() => Number(route.params.assemblyId || route.params.id))
+const assemblyId       = computed(() => Number(route.params.assemblyId || route.params.id))
+const communicationPath = computed(() => `/condomini/${route.params.id}/comunicazioni`)
 
 // ── State ──────────────────────────────────────────────────────────────────
 const loading            = ref(false)
@@ -307,6 +355,10 @@ const attendanceForm         = ref(defaultAttendanceForm())
 const showCloseModal = ref(false)
 const savingClose    = ref(false)
 const closeForm      = ref({ actualDate: '' })
+
+// Minutes
+const savingMinutes = ref(false)
+const minutesForm   = ref({ boardMembers: '', minutes: '' })
 
 // ── Computed ───────────────────────────────────────────────────────────────
 const totMillesimi = computed(() =>
@@ -353,6 +405,7 @@ async function loadAssembly() {
   try {
     const { data } = await assemblyApi.getById(assemblyId.value)
     assembly.value = data
+    minutesForm.value = { boardMembers: data.boardMembers ?? '', minutes: data.minutes ?? '' }
     await Promise.all([loadAgendaItems(), loadAttendances()])
     if (assembly.value?.condominiumId) loadOwners(assembly.value.condominiumId)
   } catch { /* handled globally */ }
@@ -517,6 +570,20 @@ async function cancelAssembly() {
   }
 }
 
+// ── Minutes ────────────────────────────────────────────────────────────────
+async function saveMinutes() {
+  savingMinutes.value = true
+  try {
+    const { data } = await assemblyApi.saveMinutes(assemblyId.value, minutesForm.value)
+    assembly.value = data
+    store.toast('Verbale salvato', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    savingMinutes.value = false
+  }
+}
+
 onMounted(loadAssembly)
 </script>
 
@@ -553,4 +620,9 @@ onMounted(loadAssembly)
 .badge-yellow { background: rgba(234,179,8,.12);  color: #b45309; }
 
 .quorum-info strong { color: var(--text); }
+
+.info-link { color: var(--accent); text-decoration: none; font-size: .9rem; display: flex; align-items: center; gap: .3rem; }
+.info-link:hover { text-decoration: underline; }
+
+.minutes-editor { font-family: var(--font-mono, monospace); font-size: .875rem; line-height: 1.6; resize: vertical; }
 </style>

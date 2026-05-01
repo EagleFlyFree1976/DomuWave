@@ -14,6 +14,8 @@ public class Assembly : TenantEntity<int>
     public virtual string?               Location      { get; set; }
     public virtual string?               Notes         { get; set; }
     public virtual string?               MinutesPath   { get; set; }
+    public virtual string?               BoardMembers  { get; set; }
+    public virtual string?               Minutes       { get; set; }
 
     public virtual IList<AssemblyAgendaItem> AgendaItems { get; set; } = new List<AssemblyAgendaItem>();
     public virtual IList<AssemblyAttendance> Attendances { get; set; } = new List<AssemblyAttendance>();

@@ -29,6 +29,8 @@ public static class AssemblyMappingExtensions
             Location         = entity.Location,
             Notes            = entity.Notes,
             MinutesPath      = entity.MinutesPath,
+            BoardMembers     = entity.BoardMembers,
+            Minutes          = entity.Minutes,
             AgendaItemCount  = entity.AgendaItems?.Count(i => !i.IsDeleted) ?? 0,
             AttendanceCount  = entity.Attendances?.Count(a => !a.IsDeleted) ?? 0,
         };
@@ -63,6 +65,8 @@ public static class AssemblyMappingExtensions
         if (dto.Location      != null) entity.Location      = dto.Location;
         if (dto.Notes         != null) entity.Notes         = dto.Notes;
         if (dto.MinutesPath   != null) entity.MinutesPath   = dto.MinutesPath;
+        if (dto.BoardMembers  != null) entity.BoardMembers  = dto.BoardMembers;
+        if (dto.Minutes       != null) entity.Minutes       = dto.Minutes;
         if (assemblyType      != null) entity.AssemblyType  = assemblyType;
         if (fiscalYear        != null) entity.FiscalYear    = fiscalYear;
     }

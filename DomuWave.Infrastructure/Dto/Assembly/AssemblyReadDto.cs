@@ -18,6 +18,10 @@ public class AssemblyReadDto : TraceEntityDTO<int>
     public string?   Location         { get; set; }
     public string?   Notes            { get; set; }
     public string?   MinutesPath      { get; set; }
+    public string?   BoardMembers     { get; set; }
+    public string?   Minutes          { get; set; }
     public int       AgendaItemCount  { get; set; }
     public int       AttendanceCount  { get; set; }
+    public int?      CommunicationId    { get; set; }
+    public string?   CommunicationTitle { get; set; }
 }

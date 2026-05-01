@@ -10,4 +10,6 @@ public class UpdateAssemblyDto
     public string?   Location       { get; set; }
     public string?   Notes          { get; set; }
     public string?   MinutesPath    { get; set; }
+    public string?   BoardMembers   { get; set; }
+    public string?   Minutes        { get; set; }
 }

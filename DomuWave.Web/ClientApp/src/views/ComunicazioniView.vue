@@ -55,6 +55,13 @@
               Scade: {{ fmtDate(c.expirationDate) }}
             </span>
             <span v-if="c.sendEmail" class="badge badge-blue" style="font-size:0.7rem">📧 Email inviata</span>
+            <router-link
+              v-if="c.assemblyId"
+              class="comm-assembly-link"
+              :to="`/condomini/${store.selectedCondominioId}/assemblee/${c.assemblyId}`"
+            >
+              <i class="pi pi-microphone"></i> {{ c.assemblyTitle || 'Vai all\'assemblea' }}
+            </router-link>
           </div>
         </div>
         <div class="comm-actions">
@@ -347,6 +354,8 @@ window.addEventListener('app:refresh', loadData)
 .comm-badges { display: flex; gap: 0.35rem; flex-wrap: wrap; }
 .comm-preview { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.5; }
 .comm-meta { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+.comm-assembly-link { font-size: 0.75rem; color: var(--accent); text-decoration: none; display: flex; align-items: center; gap: .25rem; }
+.comm-assembly-link:hover { text-decoration: underline; }
 
 .comm-actions { display: flex; align-items: center; gap: 0.4rem; padding: 0.9rem 0.75rem; flex-shrink: 0; }
 .btn-active { color: var(--accent) !important; border-color: var(--accent) !important; }

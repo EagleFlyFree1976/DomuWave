@@ -27,6 +27,8 @@
     <property name="Description"   column="Description"   type="String"   length="500" />
     <property name="Notes"         column="Notes"         type="String" />
     <property name="MinutesPath"   column="MinutesPath"   type="String"   length="500" />
+    <property name="BoardMembers"  column="BoardMembers"  type="String" />
+    <property name="Minutes"       column="Minutes"       type="String" />
 
     <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
     <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />

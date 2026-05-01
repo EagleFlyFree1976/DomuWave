@@ -94,6 +94,15 @@ public class AssembliesController(
         return Ok(result);
     }
 
+    [HttpPut("{id:int}/minutes")]
+    [ProducesResponseType(typeof(AssemblyReadDto), 200)]
+    public async Task<IActionResult> SaveMinutes(int id, [FromBody] SaveAssemblyMinutesRequestDto dto, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new SaveAssemblyMinutesCommand(CurrentUser.Id, id, dto.BoardMembers, dto.Minutes), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     // ── Agenda Items ─────────────────────────────────────────────────────────
 
     [HttpGet("{assemblyId:int}/agenda-items")]
@@ -168,4 +177,10 @@ public class AssembliesController(
 public class CloseAssemblyRequestDto
 {
     public DateTime ActualDate { get; set; }
+}
+
+public class SaveAssemblyMinutesRequestDto
+{
+    public string? BoardMembers { get; set; }
+    public string? Minutes      { get; set; }
 }

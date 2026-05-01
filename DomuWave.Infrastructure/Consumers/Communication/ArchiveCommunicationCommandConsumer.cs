@@ -1,4 +1,5 @@
 using CPQ.Core.Consumers;
+using CPQ.Core.Exceptions;
 using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
@@ -28,6 +29,7 @@ public class ArchiveCommunicationCommandConsumer : InMemoryConsumerBase<ArchiveC
 
         var entity = await session.Query<Communication>()
             .Where(c => c.Id == command.CommunicationId && !c.IsDeleted)
+            .Fetch(c => c.Assembly)
             .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
         if (entity == null) return false;
@@ -35,6 +37,20 @@ public class ArchiveCommunicationCommandConsumer : InMemoryConsumerBase<ArchiveC
         entity.IsArchived = command.Archive;
         entity.Trace(currentUser);
         await session.UpdateAsync(entity, cancellationToken).ConfigureAwait(false);
+
+        // Quando si archivia una comunicazione di tipo Meeting, l'assemblea collegata passa in Convocata
+        if (command.Archive && entity.CommunicationType == "Meeting" && entity.Assembly != null)
+        {
+            var assembly = entity.Assembly;
+            if (assembly.Status?.Id == AssemblyStatusLookup.Pianificata)
+            {
+                var convocataStatus = await session.GetAsync<AssemblyStatusLookup>(AssemblyStatusLookup.Convocata, cancellationToken).ConfigureAwait(false)!;
+                assembly.Status = convocataStatus;
+                assembly.Trace(currentUser);
+                await session.UpdateAsync(assembly, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
         return true;
     }

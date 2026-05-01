@@ -390,6 +390,7 @@ export const assemblyApi = {
   plan:             (id)           => api.post(`/assemblies/${id}/plan`, {}),
   close:            (id, data)     => api.post(`/assemblies/${id}/close`, data),
   cancel:           (id)           => api.post(`/assemblies/${id}/cancel`, {}),
+  saveMinutes:      (id, data)     => api.put(`/assemblies/${id}/minutes`, data),
   // Agenda Items
   getAgendaItems:   (assemblyId)   => api.get(`/assemblies/${assemblyId}/agenda-items`),
   createAgendaItem: (data)         => api.post('/assemblies/agenda-items', data),
