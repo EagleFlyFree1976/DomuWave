@@ -60,7 +60,7 @@
             },
             "CPQ.Core": {
               "target": "Package",
-              "version": "[1.5.0, )"
+              "version": "[1.6.0, )"
             },
             "CPQ.Core.EventSource": {
               "target": "Package",
@@ -168,6 +168,10 @@
             "AutoFixture.AutoMoq": {
               "target": "Package",
               "version": "[4.18.1, )"
+            },
+            "CPQ.Core": {
+              "target": "Package",
+              "version": "[1.6.0, )"
             },
             "FluentAssertions": {
               "target": "Package",

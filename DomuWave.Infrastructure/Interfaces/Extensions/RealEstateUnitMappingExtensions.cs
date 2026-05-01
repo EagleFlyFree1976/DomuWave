@@ -1,5 +1,7 @@
 using CPQ.Core.Extensions;
 using DomuWave.Services.Dto.RealEstateUnit;
+using DomuWave.Services.Dto.UnitOwner;
+using DomuWave.Services.Dto.UnitTenant;
 using DomuWave.Services.Models;
 using System.Linq;
 
@@ -51,6 +53,38 @@ public static class RealEstateUnitMappingExtensions
             IsActive        = unit.IsActive,
         };
 
+        dto.SetTraceInfo(unit);
+        return dto;
+    }
+
+    public static RealEstateUnitPanoramaDto ToPanoramaDto(
+        this RealEstateUnit unit,
+        IList<UnitOwnerReadDto>  owners,
+        IList<UnitTenantReadDto> tenants)
+    {
+        if (unit == null) return null;
+        var dto = new RealEstateUnitPanoramaDto
+        {
+            TenantId        = unit.Tenant?.Id      ?? Guid.Empty,
+            CondominiumId   = unit.Condominium?.Id ?? 0,
+            CondominiumName = unit.Condominium?.Name,
+            Staircase       = unit.Staircase,
+            Floor           = unit.Floor,
+            InternalNumber  = unit.InternalNumber,
+            Subordinate     = unit.Subordinate,
+            Category        = unit.Category,
+            CadastralIncome = unit.CadastralIncome,
+            AreaSqm         = unit.AreaSqm,
+            Rooms           = unit.Rooms,
+            UnitType        = unit.UnitType,
+            OccupancyStatus = unit.OccupancyStatus,
+            Notes           = unit.Notes,
+            DisplayName     = unit.DisplayName,
+            NumeroAbitanti  = unit.NumeroAbitanti,
+            IsActive        = unit.IsActive,
+            Owners          = owners,
+            Tenants         = tenants,
+        };
         dto.SetTraceInfo(unit);
         return dto;
     }

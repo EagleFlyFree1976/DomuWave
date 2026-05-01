@@ -46,7 +46,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CPQ.Core" Version="1.5.0" />
+    <PackageReference Include="CPQ.Core" Version="1.6.0" />
     <PackageReference Include="CPQ.Core.EventSource" Version="1.0.0" />
     <PackageReference Include="FluentNHibernate" Version="3.4.1" />
     <PackageReference Include="Hellang.Middleware.ProblemDetails" Version="6.5.1" />

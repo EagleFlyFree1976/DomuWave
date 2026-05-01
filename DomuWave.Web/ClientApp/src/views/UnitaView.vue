@@ -279,7 +279,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi } from '@/services/api'
@@ -290,8 +290,8 @@ const route  = useRoute()
 const store  = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
 
-// condominiumId comes from the parent route param :id (via CondominioLayout)
-const condominiumId = Number(route.params.id)
+// condominiumId: from route param when inside CondominioLayout, otherwise from selected condominium in store
+const condominiumId = computed(() => Number(route.params.id) || store.selectedCondominioId)
 
 const loading         = ref(false)
 const saving          = ref(false)
@@ -329,7 +329,7 @@ const unitTypes = [
 const occupancyStatuses = ['Occupata proprietario', 'Occupata inquilino', 'Libera', 'Non abitabile']
 
 const defaultForm = () => ({
-  condominiumId,
+  condominiumId: condominiumId.value,
   internalNumber:  '',
   subordinate:     '',
   staircase:       '',
@@ -369,7 +369,7 @@ const filtered = computed(() => {
 async function loadData() {
   loading.value = true
   try {
-    const { data } = await unitApi.getByCondominium(condominiumId)
+    const { data } = await unitApi.getByCondominium(condominiumId.value)
     units.value = data ?? []
     // Carica conteggi proprietari/inquilini in background
     units.value.forEach(u => loadOccupantCounts(u.id))
@@ -403,7 +403,7 @@ function onOccupantiClose() {
 function openModal(item = null) {
   editing.value  = item?.id ?? null
   isCloning.value = false
-  form.value = item ? { ...item, condominiumId } : defaultForm()
+  form.value = item ? { ...item, condominiumId: condominiumId.value } : defaultForm()
   errors.value = {}
   showModal.value = true
 }
@@ -413,7 +413,7 @@ function cloneUnit(item) {
   isCloning.value = true
   form.value = {
     ...item,
-    condominiumId,
+    condominiumId: condominiumId.value,
     internalNumber: '',
     displayName:    '',
   }
@@ -475,7 +475,7 @@ async function openBalanceModal(unit) {
   showBalanceModal.value = true
 
   try {
-    const { data } = await fiscalYearApi.getByCondominium(condominiumId)
+    const { data } = await fiscalYearApi.getByCondominium(condominiumId.value)
     fiscalYears.value = (data ?? []).filter(f => !f.isDeleted)
     const active = fiscalYears.value.find(f => f.isActive) ?? fiscalYears.value[0]
     if (active) {
@@ -528,6 +528,7 @@ async function saveBalance() {
 onMounted(loadData)
 onUnmounted(() => window.removeEventListener('app:refresh', loadData))
 window.addEventListener('app:refresh', loadData)
+watch(condominiumId, loadData)
 </script>
 
 <style scoped>

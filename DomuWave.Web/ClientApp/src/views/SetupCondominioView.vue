@@ -59,12 +59,21 @@
 </template>
 
 <script setup>
-import { ref, computed, inject, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAppStore } from '@/stores/app'
 import { condominiumApi } from '@/services/api'
 import SectionCard from './setup/SectionCard.vue'
 
-// ── inject dal CondominioLayout ──────────────────────────────────────────────
-const condominiumId = inject('condominiumId')
+const route = useRoute()
+const store = useAppStore()
+
+const condominiumId = computed(() => Number(route.params.id) || store.selectedCondominioId)
+
+// Links to detail subpages: scoped if inside CondominioLayout, standalone otherwise
+const unitaLink     = computed(() => route.params.id ? `/condomini/${condominiumId.value}/unita`     : '/unita')
+const panoramaLink  = computed(() => route.params.id ? `/condomini/${condominiumId.value}/panoramica` : '/panoramica')
+const budgetLink    = computed(() => route.params.id ? `/condomini/${condominiumId.value}/budget`     : '/budget')
 
 // ── state ─────────────────────────────────────────────────────────────────────
 const loading = ref(false)
@@ -76,13 +85,13 @@ const sections = computed(() => [
     key: 'units',
     icon: '⊞', title: 'Unità Immobiliari',
     desc: 'Le unità devono essere censite per attivare la gestione millesimale e le quote.',
-    link: `/condomini/${condominiumId.value}/unita`, linkLabel: 'Vai alle Unità',
+    link: unitaLink.value, linkLabel: 'Vai alle Unità',
   },
   {
     key: 'occupants',
     icon: '👤', title: 'Proprietari & Inquilini',
     desc: 'Ogni unità attiva dovrebbe avere almeno un proprietario o inquilino registrato.',
-    link: `/condomini/${condominiumId.value}/panoramica`, linkLabel: 'Vai alla Panoramica',
+    link: panoramaLink.value, linkLabel: 'Vai alla Panoramica',
   },
   {
     key: 'chartOfAccounts',
@@ -106,7 +115,7 @@ const sections = computed(() => [
     key: 'budget',
     icon: '◈', title: 'Budget Preventivo',
     desc: 'Necessario per generare le rate di pagamento.',
-    link: `/condomini/${condominiumId.value}/budget`, linkLabel: 'Vai al Budget',
+    link: budgetLink.value, linkLabel: 'Vai al Budget',
   },
 ])
 
@@ -125,6 +134,7 @@ const progressClass = computed(() => {
 async function load() {
   loading.value = true
   try {
+    if (!condominiumId.value) return
     const { data } = await condominiumApi.getSetupStatus(condominiumId.value)
     status.value = data
   } catch {
@@ -134,7 +144,10 @@ async function load() {
   }
 }
 
-onMounted(() => load())
+onMounted(load)
+onUnmounted(() => window.removeEventListener('app:refresh', load))
+window.addEventListener('app:refresh', load)
+watch(condominiumId, load)
 </script>
 
 <style scoped>

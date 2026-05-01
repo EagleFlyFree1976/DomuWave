@@ -118,6 +118,7 @@ export const condominiumApi = {
 export const unitApi = {
   getById:            (id)            => api.get(`/real-estate-units/${id}`),
   getByCondominium:   (condId)        => api.get(`/real-estate-units/by-condominium/${condId}`),
+  getPanoramica:      (condId)        => api.get(`/real-estate-units/by-condominium/${condId}/panoramica`),
   getByType:          (condId, type)  => api.get(`/real-estate-units/by-condominium/${condId}/type/${type}`),
   create:             (data)          => api.post('/real-estate-units', data),
   update:             (id, data)      => api.put(`/real-estate-units/${id}`, data),
@@ -377,6 +378,27 @@ export const documentApi = {
   create:             (data)          => api.post('/documents', data),
   update:             (id, data)      => api.put(`/documents/${id}`, data),
   delete:             (id)            => api.delete(`/documents/${id}`),
+}
+
+// ─── Assemblee ────────────────────────────────────────────────
+export const assemblyApi = {
+  getByCondominium: (condId)       => api.get(`/assemblies/by-condominium/${condId}`),
+  getById:          (id)           => api.get(`/assemblies/${id}`),
+  create:           (data)         => api.post('/assemblies', data),
+  update:           (id, data)     => api.put(`/assemblies/${id}`, data),
+  delete:           (id)           => api.delete(`/assemblies/${id}`),
+  close:            (id, data)     => api.post(`/assemblies/${id}/close`, data),
+  cancel:           (id)           => api.post(`/assemblies/${id}/cancel`, {}),
+  // Agenda Items
+  getAgendaItems:   (assemblyId)   => api.get(`/assemblies/${assemblyId}/agenda-items`),
+  createAgendaItem: (data)         => api.post('/assemblies/agenda-items', data),
+  updateAgendaItem: (id, data)     => api.put(`/assemblies/agenda-items/${id}`, data),
+  deleteAgendaItem: (id)           => api.delete(`/assemblies/agenda-items/${id}`),
+  // Attendances
+  getAttendances:   (assemblyId)   => api.get(`/assemblies/${assemblyId}/attendances`),
+  createAttendance: (data)         => api.post('/assemblies/attendances', data),
+  updateAttendance: (id, data)     => api.put(`/assemblies/attendances/${id}`, data),
+  deleteAttendance: (id)           => api.delete(`/assemblies/attendances/${id}`),
 }
 
 // ─── Comunicazioni ────────────────────────────────────────────

@@ -159,14 +159,17 @@
 </template>
 
 <script setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { billingGroupApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import { useAppStore } from '@/stores/app'
 
 const { canEdit } = usePermissions()
 const store = useAppStore()
-const condominio = inject('condominium')
+const route = useRoute()
+
+const condominiumId = computed(() => Number(route.params.id) || store.selectedCondominioId)
 
 const billingGroups    = ref([])
 const condoUnits       = ref([])
@@ -185,10 +188,10 @@ const defaultGroupForm = () => ({ name: '', contactEmail: '', contactPhone: '', 
 const groupForm = ref(defaultGroupForm())
 
 async function loadBillingGroups() {
-  if (!condominio.value?.id) return
+  if (!condominiumId.value) return
   loadingGroups.value = true
   try {
-    const { data } = await billingGroupApi.getByCondominium(condominio.value.id)
+    const { data } = await billingGroupApi.getByCondominium(condominiumId.value)
     billingGroups.value = data ?? []
   } catch {
     // global error handler
@@ -198,9 +201,9 @@ async function loadBillingGroups() {
 }
 
 async function loadCondoUnits() {
-  if (!condominio.value?.id) return
+  if (!condominiumId.value) return
   try {
-    const { data } = await unitApi.getByCondominium(condominio.value.id)
+    const { data } = await unitApi.getByCondominium(condominiumId.value)
     condoUnits.value = (data ?? []).filter(u => u.isActive)
   } catch { /* ignore */ }
 }
@@ -225,7 +228,7 @@ async function saveGroup() {
       await billingGroupApi.update(editingGroup.value, groupForm.value)
       store.toast('Gruppo aggiornato', 'success')
     } else {
-      await billingGroupApi.create({ ...groupForm.value, condominiumId: condominio.value.id })
+      await billingGroupApi.create({ ...groupForm.value, condominiumId: condominiumId.value })
       store.toast('Gruppo creato', 'success')
     }
     showGroupModal.value = false
@@ -251,7 +254,7 @@ async function deleteGroup(id) {
 async function runSuggest() {
   suggesting.value = true
   try {
-    const { data } = await billingGroupApi.suggest(condominio.value.id)
+    const { data } = await billingGroupApi.suggest(condominiumId.value)
     suggestionResult.value    = { suggestions: data.suggestions ?? [], ambiguousUnits: data.ambiguousUnits ?? [] }
     selectedSuggestions.value = [...suggestionResult.value.suggestions]
     showSuggestModal.value    = true
@@ -270,7 +273,7 @@ async function applySelected() {
   if (!selectedSuggestions.value.length) return
   applyingGroups.value = true
   try {
-    await billingGroupApi.applySuggestions(condominio.value.id, selectedSuggestions.value)
+    await billingGroupApi.applySuggestions(condominiumId.value, selectedSuggestions.value)
     store.toast(`${selectedSuggestions.value.length} gruppo/i creati`, 'success')
     showSuggestModal.value = false
     await loadBillingGroups()
@@ -281,7 +284,12 @@ async function applySelected() {
   }
 }
 
-onMounted(() => Promise.all([loadBillingGroups(), loadCondoUnits()]))
+function loadAll() { Promise.all([loadBillingGroups(), loadCondoUnits()]) }
+
+onMounted(loadAll)
+onUnmounted(() => window.removeEventListener('app:refresh', loadAll))
+window.addEventListener('app:refresh', loadAll)
+watch(condominiumId, loadAll)
 </script>
 
 <style scoped>

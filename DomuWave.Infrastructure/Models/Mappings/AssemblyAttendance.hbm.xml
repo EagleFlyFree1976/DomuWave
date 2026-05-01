@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.AssemblyAttendance, DomuWave.Services" table="AssemblyAttendance" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='AssemblyAttendance'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant"         class="DomuWave.Services.Models.Tenant, DomuWave.Services"                   column="TenantId"        not-null="true" />
+    <many-to-one name="Assembly"       class="DomuWave.Services.Models.Assembly, DomuWave.Services"                 column="AssemblyId"      not-null="true" />
+    <many-to-one name="UnitOwner"      class="DomuWave.Services.Models.UnitOwner, DomuWave.Services"                column="UnitOwnerId"     not-null="true" />
+    <many-to-one name="AttendanceType" class="DomuWave.Services.Models.AttendanceTypeLookup, DomuWave.Services"     column="AttendanceTypeId" not-null="true" lazy="false" fetch="join" />
+
+    <property name="DelegateName"    column="DelegateName"    type="String"  length="200" />
+    <property name="MillesimalValue" column="MillesimalValue" type="Decimal" not-null="true" />
+    <property name="Description"     column="Notes"           type="String"  length="500" />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"  length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean" not-null="true" />
+    <property name="IsEnabled"             column="IsDeleted"             type="Boolean" insert="false" update="false" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+  </class>
+
+</hibernate-mapping>

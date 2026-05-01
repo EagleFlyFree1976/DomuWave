@@ -294,12 +294,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { budgetApi, fiscalYearApi, unitApi } from '@/services/api'
 
 const store = useAppStore()
-const condominio = inject('condominium')
 
 const fiscalYears          = computed(() => store.fiscalYears ?? [])
 const selectedFiscalYearId = ref(null)
@@ -446,6 +445,15 @@ watch(fiscalYears, (fys) => {
 // ── Formatters ──────────────────────────────────────────────────────────────
 const fmt     = (v) => v != null ? '€\u00a0' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
+
+async function refresh() {
+  selectedFiscalYearId.value = null
+  await store.loadFiscalYears()
+}
+
+onMounted(() => {})
+onUnmounted(() => window.removeEventListener('app:refresh', refresh))
+window.addEventListener('app:refresh', refresh)
 </script>
 
 <style scoped>

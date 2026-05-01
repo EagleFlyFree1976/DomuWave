@@ -62,6 +62,9 @@ public static class Startup
 
 
         
+        services.AddScoped<IAssemblyService, AssemblyService>();
+        services.AddScoped<IAssemblyAgendaItemService, AssemblyAgendaItemService>();
+        services.AddScoped<IAssemblyAttendanceService, AssemblyAttendanceService>();
         services.AddScoped<IBudgetItemService, BudgetItemService>();
         services.AddScoped<IBudgetService, BudgetService>();
         services.AddScoped<IChartOfAccountsCategoryTemplateService, ChartOfAccountsCategoryTemplateService>();

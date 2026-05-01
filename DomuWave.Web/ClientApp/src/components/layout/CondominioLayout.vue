@@ -13,13 +13,13 @@
 
     <!-- Tab bar (shared across all condominium sub-pages) -->
     <nav class="tab-bar">
-      <router-link :to="`/condomini/${condominiumId}`" class="tab-item">⊟ Informazioni</router-link>
+      <router-link :to="`/condomini/${condominiumId}`" class="tab-item"><i class="pi pi-info-circle"></i> Informazioni</router-link>
       <router-link
         v-for="q in quickNav"
         :key="q.path"
         :to="`/condomini/${condominiumId}${q.path}`"
         class="tab-item"
-      >{{ q.icon }} {{ q.label }}</router-link>
+      ><i class="pi" :class="q.icon"></i> {{ q.label }}</router-link>
     </nav>
 
     <!-- Tab content -->
@@ -43,18 +43,19 @@ const condominium = ref(null)
 const condominiumId = computed(() => Number(route.params.id))
 
 const quickNav = [
-  { path: '/unita',         icon: '⊞', label: 'Unità' },
-  { path: '/panoramica',           icon: '◫', label: 'Panoramica' },
-  { path: '/gruppi-fatturazione',  icon: '◈', label: 'Gruppi' },
-  { path: '/rendiconto',           icon: '◑', label: 'Rendiconto' },
-  { path: '/budget',               icon: '◎', label: 'Budget' },
-  { path: '/spese',         icon: '◑', label: 'Spese' },
-  { path: '/consumi',       icon: '◌', label: 'Consumi' },
-  { path: '/rate',          icon: '◷', label: 'Rate' },
-  { path: '/fornitori',     icon: '◈', label: 'Fornitori' },
-  { path: '/documenti',     icon: '▤', label: 'Documenti' },
-  { path: '/comunicazioni', icon: '◉', label: 'Comunicazioni' },
-  { path: '/setup',         icon: '✓', label: 'Setup' },
+  { path: '/unita', icon: 'pi-building',    label: 'Unità' },
+  { path: '/panoramica', icon: 'pi-sitemap',        label: 'Panoramica' },
+  { path: '/gruppi-fatturazione', icon: 'pi-objects-column',      label: 'Gruppi' },
+  { path: '/rendiconto', icon: 'pi-book',    label: 'Rendiconto' },
+  { path: '/budget', icon: 'pi-chart-bar',   label: 'Budget' },
+  { path: '/spese',              icon: 'pi-credit-card',  label: 'Spese' },
+  { path: '/consumi',            icon: 'pi-gauge',        label: 'Consumi' },
+  { path: '/rate',               icon: 'pi-calendar',     label: 'Rate' },
+  { path: '/fornitori',          icon: 'pi-truck',        label: 'Fornitori' },
+  { path: '/documenti',          icon: 'pi-folder-open',  label: 'Documenti' },
+  { path: '/comunicazioni',      icon: 'pi-megaphone',    label: 'Comunicazioni' },
+  { path: '/assemblee',          icon: 'pi-microphone',   label: 'Assemblee' },
+  { path: '/setup',              icon: 'pi-list-check',   label: 'Setup' },
 ]
 
 provide('condominium', condominium)

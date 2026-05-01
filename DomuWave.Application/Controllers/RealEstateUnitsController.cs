@@ -26,6 +26,11 @@ public class RealEstateUnitsController(
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
+    [HttpGet("by-condominium/{condominiumId:int}/panoramica")]
+    [ProducesResponseType(typeof(IList<RealEstateUnitPanoramaDto>), 200)]
+    public async Task<IActionResult> GetPanoramica(int condominiumId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetCondominiumPanoramaCommand(CurrentUser.Id, condominiumId), ct));
+
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(RealEstateUnitReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)

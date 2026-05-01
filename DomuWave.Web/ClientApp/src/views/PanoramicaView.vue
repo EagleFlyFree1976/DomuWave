@@ -110,11 +110,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, inject, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAppStore } from '@/stores/app'
 import { unitApi, unitOwnerApi, unitTenantApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 
-const condominiumId = inject('condominiumId')
+const route = useRoute()
+const store = useAppStore()
+
+const condominiumId = computed(() => Number(route.params.id) || store.selectedCondominioId)
 
 const units        = ref([])
 const unitData     = reactive({})   // { [unitId]: { owners, tenants, loadingOwners, loadingTenants } }
@@ -164,28 +169,29 @@ const filteredUnits = computed(() => {
 })
 
 // ─── Data loading ─────────────────────────────────────────────
-async function loadUnit(u) {
-  unitData[u.id] = { owners: [], tenants: [], loadingOwners: true, loadingTenants: true }
-
-  unitOwnerApi.getByUnit(u.id)
-    .then(r => { unitData[u.id].owners = r.data ?? [] })
-    .catch(() => {})
-    .finally(() => { unitData[u.id].loadingOwners = false })
-
-  unitTenantApi.getByUnit(u.id)
-    .then(r => { unitData[u.id].tenants = r.data ?? [] })
-    .catch(() => {})
-    .finally(() => { unitData[u.id].loadingTenants = false })
-}
-
 async function load(id) {
   loadingUnits.value = true
   try {
-    const { data } = await unitApi.getByCondominium(id)
-    units.value = data ?? []
-    units.value.forEach(loadUnit)
+    const { data } = await unitApi.getPanoramica(id)
+    const items = data ?? []
+    units.value = items
+    for (const u of items) {
+      unitData[u.id] = { owners: u.owners ?? [], tenants: u.tenants ?? [], loadingOwners: false, loadingTenants: false }
+    }
   } catch { /* handled by interceptor */ }
   finally { loadingUnits.value = false }
+}
+
+async function reloadUnit(u) {
+  unitData[u.id] = { ...unitData[u.id], loadingOwners: true, loadingTenants: true }
+  const [ownersRes, tenantsRes] = await Promise.allSettled([
+    unitOwnerApi.getByUnit(u.id),
+    unitTenantApi.getByUnit(u.id),
+  ])
+  unitData[u.id].owners        = ownersRes.status  === 'fulfilled' ? (ownersRes.value.data  ?? []) : unitData[u.id].owners
+  unitData[u.id].tenants       = tenantsRes.status === 'fulfilled' ? (tenantsRes.value.data ?? []) : unitData[u.id].tenants
+  unitData[u.id].loadingOwners  = false
+  unitData[u.id].loadingTenants = false
 }
 
 function openOccupanti(unit) {
@@ -195,11 +201,15 @@ function openOccupanti(unit) {
 function onOccupantiClose() {
   const unit = occupantiUnit.value
   occupantiUnit.value = null
-  if (unit) loadUnit(unit)
+  if (unit) reloadUnit(unit)
 }
 
-onMounted(() => load(condominiumId.value))
-watch(condominiumId, load)
+function loadData() { load(condominiumId.value) }
+
+onMounted(loadData)
+onUnmounted(() => window.removeEventListener('app:refresh', loadData))
+window.addEventListener('app:refresh', loadData)
+watch(condominiumId, loadData)
 </script>
 
 <style scoped>
