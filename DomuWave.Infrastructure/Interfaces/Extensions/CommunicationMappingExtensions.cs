@@ -13,6 +13,7 @@ public static class CommunicationMappingExtensions
         {
             CondominiumId     = entity.Condominium?.Id   ?? 0,
             CondominiumName   = entity.Condominium?.Name,
+            InstallmentId     = entity.Installment?.Id,
             Title             = entity.Title,
             Content           = entity.Content,
             CommunicationType = entity.CommunicationType,
@@ -29,13 +30,14 @@ public static class CommunicationMappingExtensions
         return dto;
     }
 
-    public static Communication ToEntity(this CreateCommunicationDto dto, Condominium condominium)
+    public static Communication ToEntity(this CreateCommunicationDto dto, Condominium condominium, CondominiumInstallment? installment = null)
     {
         if (dto == null) return null!;
         return new Communication
         {
             Condominium       = condominium,
             Tenant            = condominium.Tenant,
+            Installment       = installment,
             Name              = dto.Title,
             Description       = dto.Content,
             CommunicationType = dto.CommunicationType,

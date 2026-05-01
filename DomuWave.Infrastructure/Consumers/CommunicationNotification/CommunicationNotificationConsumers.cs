@@ -731,6 +731,19 @@ public class GenerateNotificationsFromFeesCommandConsumer
         }
         else
         {
+            // Verifica che non esista già una comunicazione FeeNotice attiva per lo stesso
+            // condominio, stesso metodo di consegna e almeno una delle stesse rate.
+            var existingComm = await session.Query<Communication>()
+                .Where(c => c.Condominium.Id == condominium.Id
+                         && c.CommunicationType == "FeeNotice"
+                         && !c.IsArchived
+                         && !c.IsDeleted)
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+            if (existingComm != null)
+                throw new ValidatorException(
+                    $"Esiste già una comunicazione attiva per queste rate (ID: {existingComm.Id}). " +
+                    $"Usala per aggiungere notifiche oppure archiviarla prima di crearne una nuova.");
+
             var installmentNumbers = fees.Select(f => f.Installment.InstallmentNumber).Distinct().OrderBy(x => x);
             var title = $"Avviso rate {string.Join(", ", installmentNumbers.Select(n => $"#{n}"))} — {condominium.Name}";
             communication = new Communication

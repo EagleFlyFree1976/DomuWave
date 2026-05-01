@@ -740,9 +740,20 @@
           </p>
 
         </div>
+        <div v-if="notifExistingCommId" class="existing-comm-warning">
+          <span>⚠ Esiste già una comunicazione attiva (ID: {{ notifExistingCommId }}) per questo condominio.</span>
+          <div style="margin-top:0.5rem;display:flex;gap:0.5rem;">
+            <button class="btn btn-sm btn-primary" @click="sendNotifiche">
+              Aggiungi a quella esistente
+            </button>
+            <button class="btn btn-sm btn-ghost" @click="notifExistingCommId = null">
+              Annulla
+            </button>
+          </div>
+        </div>
         <div class="modal-footer">
           <button class="btn btn-ghost" @click="showNotifModal=false">Annulla</button>
-          <button class="btn btn-primary" @click="sendNotifiche" :disabled="notifSaving">
+          <button v-if="!notifExistingCommId" class="btn btn-primary" @click="sendNotifiche" :disabled="notifSaving">
             <span v-if="notifSaving" class="spinner" style="width:14px;height:14px"></span>
             Genera notifiche
           </button>
@@ -1312,14 +1323,15 @@ async function downloadGroupInstNoticePdf(row, ir) {
 }
 
 // ── Notifiche rate ────────────────────────────────────────────
-const showNotifModal      = ref(false)
-const notifSaving         = ref(false)
-const notifTemplates      = ref([])
-const notifSelectedInst   = ref([])   // ids delle rate selezionate
-const notifSelectedUnits  = ref([])   // ids unità (vuoto = tutte)
-const notifDeliveryMethod = ref(0)
-const notifTemplateId     = ref(null)
-const notifAllUnits       = ref(true) // se true → tutte le unità
+const showNotifModal         = ref(false)
+const notifSaving            = ref(false)
+const notifTemplates         = ref([])
+const notifSelectedInst      = ref([])   // ids delle rate selezionate
+const notifSelectedUnits     = ref([])   // ids unità (vuoto = tutte)
+const notifDeliveryMethod    = ref(0)
+const notifTemplateId        = ref(null)
+const notifAllUnits          = ref(true) // se true → tutte le unità
+const notifExistingCommId    = ref(null) // ID comunicazione esistente (se errore duplicato)
 
 // Unità disponibili per le rate selezionate (calcolate dalle fees caricate)
 const notifAvailableUnits = computed(() => {
@@ -1371,18 +1383,27 @@ async function sendNotifiche() {
     store.toast('Seleziona almeno una rata', 'error'); return
   }
   notifSaving.value = true
+  const existingId = notifExistingCommId.value
+  notifExistingCommId.value = null
   try {
     const payload = {
-      installmentIds:        notifSelectedInst.value,
-      unitIds:               notifAllUnits.value ? null : notifSelectedUnits.value,
-      deliveryMethod:        notifDeliveryMethod.value,
+      communicationId:        existingId ?? undefined,
+      installmentIds:         notifSelectedInst.value,
+      unitIds:                notifAllUnits.value ? null : notifSelectedUnits.value,
+      deliveryMethod:         notifDeliveryMethod.value,
       notificationTemplateId: notifTemplateId.value ?? null,
     }
     const { data } = await communicationNotificationApi.generateFromFees(payload)
     store.toast(`${data.notifications?.length ?? 0} notifiche generate`, 'success')
     showNotifModal.value = false
   } catch (err) {
-    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+    if (!err?.response) { store.toast('Impossibile raggiungere il server', 'error'); return }
+    // Intercetta errore "comunicazione già esistente" — estrae l'ID dal messaggio
+    const msg = err.response?.data?.Errors?.[0] ?? err.response?.data?.message ?? ''
+    const match = msg.match(/\(ID:\s*(\d+)\)/)
+    if (match) {
+      notifExistingCommId.value = parseInt(match[1])
+    }
   } finally {
     notifSaving.value = false
   }
@@ -1408,6 +1429,16 @@ window.addEventListener('app:refresh', loadInstallments)
 </script>
 
 <style scoped>
+.existing-comm-warning {
+  margin: 0.75rem 1.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.4);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
 /* Box riconciliazione */
 .reconcile-box {
   background: var(--bg-surface);

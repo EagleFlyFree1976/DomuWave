@@ -37,7 +37,20 @@ public class CreateCommunicationCommandConsumer : InMemoryConsumerBase<CreateCom
         var condominium = await session.GetAsync<Models.Condominium>(command.Dto.CondominiumId, cancellationToken).ConfigureAwait(false)
                           ?? throw new NotFoundException("Condominio non trovato.");
 
-        var entity = command.Dto.ToEntity(condominium);
+        Models.CondominiumInstallment? installment = null;
+        if (command.Dto.InstallmentId.HasValue)
+        {
+            installment = await session.GetAsync<Models.CondominiumInstallment>(command.Dto.InstallmentId.Value, cancellationToken).ConfigureAwait(false)
+                          ?? throw new NotFoundException("Rata non trovata.");
+
+            var alreadyExists = await session.Query<Models.Communication>()
+                .AnyAsync(c => c.Installment != null && c.Installment.Id == command.Dto.InstallmentId.Value && !c.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (alreadyExists)
+                throw new ValidatorException("Esiste già una comunicazione associata a questa rata.");
+        }
+
+        var entity = command.Dto.ToEntity(condominium, installment);
         entity.Trace(currentUser);
         await session.SaveAsync(entity, cancellationToken).ConfigureAwait(false);
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);

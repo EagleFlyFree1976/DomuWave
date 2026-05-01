@@ -6,6 +6,7 @@ public class CommunicationReadDto : TraceEntityDTO<int>
 {
     public int     CondominiumId     { get; set; }
     public string? CondominiumName   { get; set; }
+    public int?    InstallmentId     { get; set; }
     public string  Title             { get; set; } = string.Empty;
     public string  Content           { get; set; } = string.Empty;
     public string  CommunicationType { get; set; } = string.Empty;
