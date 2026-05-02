@@ -43,8 +43,17 @@ public class ApproveBudgetCommandConsumer
         if (budget == null)
             throw new NotFoundException("Budget non trovato.");
 
-        if (budget.Status?.Id != BudgetStatus.Draft)
-            throw new ValidatorException("Solo i budget in stato Bozza possono essere approvati.");
+        var allowedStatus = budget.Type == BudgetType.Preventivo
+            ? BudgetStatus.PendingApproval
+            : BudgetStatus.Draft;
+
+        if (budget.Status?.Id != allowedStatus)
+        {
+            var msg = budget.Type == BudgetType.Preventivo
+                ? "Il budget preventivo deve essere in stato 'In approvazione' per essere approvato definitivamente."
+                : "Solo i budget in stato Bozza possono essere approvati.";
+            throw new ValidatorException(msg);
+        }
 
         var tipoLabel = budget.Type == BudgetType.Preventivo ? "preventivo" : "consuntivo";
         var conflicting = await session.Query<Budget>()

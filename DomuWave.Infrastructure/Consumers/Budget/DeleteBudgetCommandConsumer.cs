@@ -44,7 +44,7 @@ public class DeleteBudgetCommandConsumer
         if (budget.Status?.Id != BudgetStatus.Draft)
             throw new ValidatorException(
                 "È possibile eliminare solo i budget in stato Bozza. " +
-                "Per rimuovere un budget approvato, chiuderlo prima.");
+                "Riportare il budget in bozza prima di eliminarlo.");
 
         return await _budgetService
             .DeleteAsync(command.Id, currentUser, cancellationToken)

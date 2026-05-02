@@ -10,6 +10,7 @@ public class AssemblyStatusLookup
     public const int Convocata   = 3;
     public const int Svolta      = 4;
     public const int Annullata   = 5;
+    public const int InCorso     = 10;
 
     public override int GetHashCode() => Id.GetHashCode();
 }

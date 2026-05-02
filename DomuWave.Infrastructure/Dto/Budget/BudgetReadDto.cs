@@ -17,4 +17,6 @@ public class BudgetReadDto : TraceEntityDTO<int>
     public decimal TotalIncome { get; set; }
     public decimal TotalExpenses { get; set; }
     public string? Notes { get; set; }
+    public int?    AssemblyId    { get; set; }
+    public string? AssemblyTitle { get; set; }
 }

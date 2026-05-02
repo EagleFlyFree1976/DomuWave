@@ -12,12 +12,12 @@ using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers;
 
-public class CloseAssemblyCommandConsumer : InMemoryConsumerBase<CloseAssemblyCommand, AssemblyReadDto>
+public class OpenAssemblyCommandConsumer : InMemoryConsumerBase<OpenAssemblyCommand, AssemblyReadDto>
 {
     private readonly IAssemblyService _assemblyService;
     private readonly IUserService     _userService;
 
-    public CloseAssemblyCommandConsumer(
+    public OpenAssemblyCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IAssemblyService assemblyService,
         IUserService userService) : base(sessionFactoryProvider)
@@ -27,20 +27,23 @@ public class CloseAssemblyCommandConsumer : InMemoryConsumerBase<CloseAssemblyCo
     }
 
     protected override async Task<AssemblyReadDto> Consume(
-        CloseAssemblyCommand command,
-        IMediationContext     mediationContext,
-        CancellationToken    cancellationToken)
+        OpenAssemblyCommand command,
+        IMediationContext    mediationContext,
+        CancellationToken   cancellationToken)
     {
         var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
         var entity      = await _assemblyService.GetByIdAsync(command.AssemblyId, currentUser, cancellationToken).ConfigureAwait(false)
                           ?? throw new NotFoundException("Assemblea non trovata.");
 
-        if (entity.Status?.Id != AssemblyStatusLookup.InCorso)
-            throw new ValidatorException("Solo le assemblee in stato 'In corso' possono essere segnate come svolte.");
+        if (entity.Status?.Id != AssemblyStatusLookup.Convocata)
+            throw new ValidatorException("Solo le assemblee in stato 'Convocata' possono essere aperte.");
 
-        var status = await session.GetAsync<AssemblyStatusLookup>(AssemblyStatusLookup.Svolta, cancellationToken).ConfigureAwait(false)!;
-        entity.Status     = status;
-        entity.ActualDate = command.ActualDate;
+        var today = DateTime.UtcNow.Date;
+        if (entity.ScheduledDate.Date != today)
+            throw new ValidatorException("L'assemblea può essere aperta solo nel giorno programmato.");
+
+        var status = await session.GetAsync<AssemblyStatusLookup>(AssemblyStatusLookup.InCorso, cancellationToken).ConfigureAwait(false)!;
+        entity.Status = status;
         entity.Trace(currentUser);
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
         return entity.ToReadDto();

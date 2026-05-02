@@ -56,7 +56,27 @@
                     <button class="btn btn-sm btn-ghost" @click="openItemsModal(b)">Voci</button>
                     <button v-if="b.type === 1 && (b.statusId === 2 || b.statusId === 3)"
                             class="btn btn-sm btn-ghost" @click="goToRate(b)" title="Vai alle rate generate">Rate ↗</button>
-                    <button v-if="canEdit && b.statusId === 1 && !blockedTypes.has(b.type)"
+                    <!-- Preventivo Bozza: pre-approva -->
+                    <button v-if="canEdit && b.type === 1 && b.statusId === 1 && !blockedTypes.has(b.type)"
+                            class="btn btn-sm btn-ghost"
+                            @click="preApproveBudget(b)">Pre-approva</button>
+                    <!-- Preventivo In approvazione: approva definitivamente -->
+                    <button v-if="canEdit && b.type === 1 && b.statusId === 4"
+                            class="btn btn-sm btn-ghost btn-approve"
+                            @click="openApproveModal(b)">Approva definitivamente</button>
+                    <!-- Preventivo In approvazione: link assemblea o creazione -->
+                    <template v-if="b.type === 1 && b.statusId === 4">
+                      <button v-if="b.assemblyId"
+                              class="btn btn-sm btn-ghost"
+                              @click="goToAssembly(b)"
+                              title="Vai all'assemblea ordinaria collegata">Assemblea ↗</button>
+                      <button v-else-if="canCreate"
+                              class="btn btn-sm btn-ghost btn-assembly"
+                              @click="createAssembly(b)"
+                              title="Crea l'assemblea ordinaria per questo esercizio">+ Crea assemblea</button>
+                    </template>
+                    <!-- Consuntivo Bozza: approva direttamente -->
+                    <button v-if="canEdit && b.type === 2 && b.statusId === 1 && !blockedTypes.has(b.type)"
                             class="btn btn-sm btn-ghost"
                             @click="openApproveModal(b)">Approva</button>
                     <span v-if="canEdit && b.statusId === 1 && blockedTypes.has(b.type)"
@@ -65,6 +85,9 @@
                     </span>
                     <button v-if="canEdit && b.statusId === 2" class="btn btn-sm btn-ghost"
                             @click="closeBudget(b)">Chiudi</button>
+                    <!-- Riapri: PendingApproval = qualsiasi admin; Approved = solo SuperAdmin -->
+                    <button v-if="canEdit && b.statusId === 4" class="btn btn-sm btn-ghost btn-reopen"
+                            @click="reopenBudget(b)" title="Riapri in bozza">Riapri</button>
                     <button v-if="session.isSuperAdmin && b.statusId === 2" class="btn btn-sm btn-ghost btn-reopen"
                             @click="reopenBudget(b)" title="Riapri in bozza (SuperAdmin)">Riapri</button>
                     <button v-if="canEdit && b.statusId === 2 && b.type === 1"
@@ -80,10 +103,10 @@
                     <button v-if="canEdit && b.type === 2 && b.statusId !== 3"
                             class="btn btn-sm btn-ghost"
                             @click="regenerateAllocations(b)" title="Rigenera le ripartizioni millesimali per tutte le spese">Rigenera ripartizioni</button>
-                    <button v-if="canEdit && b.statusId === 1"
+                    <button v-if="canEdit && (b.statusId === 1 || b.statusId === 4)"
                             class="btn btn-sm btn-ghost"
                             @click="fixOrphanItems(b)" title="Aggiunge gli antenati mancanti alle voci orfane">Ripara gerarchia</button>
-                    <button v-if="canEdit && b.statusId === 1" class="btn-icon"
+                    <button v-if="canEdit && (b.statusId === 1 || b.statusId === 4)" class="btn-icon"
                             @click="openBudgetModal(b)" title="Modifica">✎</button>
                     <button v-if="canDelete && b.statusId === 1" class="btn-icon"
                             style="color:var(--accent-red)"
@@ -474,6 +497,19 @@ function goToRate(b) {
   router.push({ path: '/rate', query: { budgetId: b.id } })
 }
 
+function goToAssembly(b) {
+  const condId = store.selectedCondominioId
+  router.push({ path: `/condomini/${condId}/assemblee/${b.assemblyId}` })
+}
+
+function createAssembly(b) {
+  const condId = store.selectedCondominioId
+  router.push({
+    path: `/condomini/${condId}/assemblee`,
+    query: { createOrdinaria: '1', fiscalYearId: b.fiscalYearId },
+  })
+}
+
 // ─── Fiscal Years — dallo store globale ───────────────────────
 const fiscalYears          = computed(() => store.fiscalYears)
 const selectedFiscalYearId = computed({
@@ -535,11 +571,11 @@ async function saveBudget() {
   } catch { /* toast handled globally */ } finally { savingBudget.value = false }
 }
 
-// Tipi già approvati o chiusi (non approvabili di nuovo)
+// Tipi già in approvazione, approvati o chiusi (non approvabili/pre-approvabili di nuovo)
 const blockedTypes = computed(() => {
   const s = new Set()
   for (const b of budgets.value) {
-    if (b.statusId === 2 || b.statusId === 3) s.add(b.type)
+    if (b.statusId === 2 || b.statusId === 3 || b.statusId === 4) s.add(b.type)
   }
   return s
 })
@@ -632,6 +668,17 @@ async function confirmGenerate() {
 async function deleteBudget(id) {
   if (!confirm('Eliminare il budget?')) return
   try { await budgetApi.delete(id); await loadBudgets() } catch {}
+}
+
+async function preApproveBudget(b) {
+  if (!confirm('Pre-approvare il budget preventivo?\n\nIl budget verrà messo "In approvazione" e non sarà più possibile modificarlo.\nSarà possibile riportarlo in Bozza se necessario.')) return
+  try {
+    await budgetApi.preApprove(b.id)
+    store.toast('Budget inviato in approvazione', 'success')
+    await loadBudgets()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
 }
 
 async function reopenBudget(b) {
@@ -983,8 +1030,8 @@ async function confirmAddAccounts() {
 const fmt     = (v) => v != null ? '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 
-const statusBadge  = (id) => ({ 1: 'badge-muted', 2: 'badge-green', 3: 'badge-purple' }[id] ?? 'badge-muted')
-const statusLabel  = (id) => ({ 1: 'Bozza', 2: 'Approvato', 3: 'Chiuso' }[id] ?? String(id ?? ''))
+const statusBadge  = (id) => ({ 1: 'badge-muted', 2: 'badge-green', 3: 'badge-purple', 4: 'badge-yellow' }[id] ?? 'badge-muted')
+const statusLabel  = (id) => ({ 1: 'Bozza', 2: 'Approvato', 3: 'Chiuso', 4: 'In approvazione' }[id] ?? String(id ?? ''))
 
 const TYPE_CLASS = { Uscita: 'type-uscita', Entrata: 'type-entrata', Patrimoniale: 'type-patrimoniale' }
 const typeClass  = (typeId) => ['type-badge', TYPE_CLASS[typeId] ?? ''].join(' ')
@@ -1026,6 +1073,8 @@ window.addEventListener('app:refresh', loadBudgets)
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .btn-reopen  { color: var(--accent-amber, #f59e0b) !important; border-color: rgba(245,158,11,0.3) !important; }
+.btn-approve   { color: var(--accent-green, #22c55e) !important; border-color: rgba(34,197,94,0.4) !important; }
+.btn-assembly  { color: var(--accent, #6366f1) !important; border-color: rgba(99,102,241,0.4) !important; }
 .btn-active  { background: var(--accent-glow) !important; color: var(--accent) !important; border-color: var(--border-active) !important; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
 .text-right  { text-align: right; }

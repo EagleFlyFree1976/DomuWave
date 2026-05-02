@@ -6,6 +6,7 @@
         <option value="1">Bozza</option>
         <option value="2">Pianificata</option>
         <option value="3">Convocata</option>
+        <option value="10">In corso</option>
         <option value="4">Svolta</option>
         <option value="5">Annullata</option>
       </select>
@@ -53,7 +54,7 @@
           </div>
           <div class="assembly-card-actions" @click.stop>
             <button v-if="canEdit && a.statusId === 1" class="btn-icon" @click="planAssembly(a)" title="Sposta in Pianificata"><i class="pi pi-send"></i></button>
-            <button v-if="canEdit && a.statusId === 3" class="btn-icon" @click="openCloseModal(a)" title="Segna come svolta"><i class="pi pi-check"></i></button>
+            <button v-if="canEdit && a.statusId === 10" class="btn-icon" @click="openCloseModal(a)" title="Segna come svolta"><i class="pi pi-check"></i></button>
             <button v-if="canEdit && [1,2,3].includes(a.statusId)" class="btn-icon" style="color:var(--accent-red)" @click="cancelAssembly(a)" title="Annulla assemblea"><i class="pi pi-ban"></i></button>
             <button v-if="canEdit" class="btn-icon" @click="openModal(a)" title="Modifica">✎</button>
             <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)" @click="deleteItem(a.id)" title="Elimina">✕</button>
@@ -193,10 +194,11 @@ function fmtDate(d) {
 }
 
 function statusClass(statusId) {
-  if (statusId === 4) return 'badge-green'
-  if (statusId === 5) return 'badge-muted'
-  if (statusId === 3) return 'badge-blue'
-  if (statusId === 2) return 'badge-purple'
+  if (statusId === 4)  return 'badge-green'
+  if (statusId === 5)  return 'badge-muted'
+  if (statusId === 10) return 'badge-orange'
+  if (statusId === 3)  return 'badge-blue'
+  if (statusId === 2)  return 'badge-purple'
   return 'badge-gray'   // Bozza = 1
 }
 
@@ -332,18 +334,30 @@ function goToDetail(id) {
   }
 }
 
-onMounted(loadData)
+onMounted(async () => {
+  await loadData()
+  // Apertura modale precompilato da query string (?createOrdinaria=1&fiscalYearId=X)
+  if (route.query.createOrdinaria && canCreate.value) {
+    const fyId = Number(route.query.fiscalYearId) || null
+    form.value = { ...defaultForm(), assemblyTypeId: 1, fiscalYearId: fyId }
+    showModal.value = true
+    // Pulisci la query string senza ricaricare
+    router.replace({ query: {} })
+  }
+})
 onUnmounted(() => window.removeEventListener('app:refresh', loadData))
 window.addEventListener('app:refresh', loadData)
 watch(condominiumId, loadData)
 </script>
 
 <style scoped>
+.toolbar { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.25rem; }
 .filter-select { max-width: 160px; }
 
-.badge-blue   { background: rgba(99,102,241,.12); color: #6366f1; }
-.badge-purple { background: rgba(168,85,247,.12); color: #a855f7; }
+.badge-blue   { background: rgba(99,102,241,.12);  color: #6366f1; }
+.badge-purple { background: rgba(168,85,247,.12);  color: #a855f7; }
 .badge-gray   { background: rgba(107,114,128,.12); color: #6b7280; }
+.badge-orange { background: rgba(249,115,22,.15);  color: #ea580c; }
 
 .assembly-list { display: flex; flex-direction: column; gap: .75rem; }
 

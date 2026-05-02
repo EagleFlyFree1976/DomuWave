@@ -49,6 +49,26 @@ public class CreateAssemblyCommandConsumer : InMemoryConsumerBase<CreateAssembly
         if (command.Dto.FiscalYearId.HasValue)
             fiscalYear = await session.GetAsync<FiscalYear>(command.Dto.FiscalYearId.Value, cancellationToken).ConfigureAwait(false);
 
+        // Un'assemblea Ordinaria può essere creata solo se esiste un budget Preventivo "In approvazione"
+        if (assemblyType.Id == AssemblyTypeLookup.Ordinaria)
+        {
+            if (!command.Dto.FiscalYearId.HasValue)
+                throw new ValidatorException("Per creare un'assemblea ordinaria è necessario selezionare un esercizio fiscale.");
+
+            var hasPendingPreventivo = await session.Query<Budget>()
+                .AnyAsync(b => b.Condominium.Id == command.Dto.CondominiumId
+                            && b.FiscalYear.Id  == command.Dto.FiscalYearId.Value
+                            && b.Type           == BudgetType.Preventivo
+                            && b.Status.Id      == BudgetStatus.PendingApproval
+                            && !b.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!hasPendingPreventivo)
+                throw new ValidatorException(
+                    "Non è possibile creare un'assemblea ordinaria senza un budget preventivo in stato 'In approvazione'. " +
+                    "Pre-approva prima il budget preventivo dell'esercizio.");
+        }
+
         var entity = command.Dto.ToEntity(condominium, condominium.Tenant, assemblyType, status, fiscalYear);
         entity.Trace(currentUser);
         await session.SaveAsync(entity, cancellationToken).ConfigureAwait(false);

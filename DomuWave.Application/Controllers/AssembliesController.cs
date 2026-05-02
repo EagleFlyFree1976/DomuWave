@@ -85,6 +85,15 @@ public class AssembliesController(
         return Ok(result);
     }
 
+    [HttpPost("{id:int}/open")]
+    [ProducesResponseType(typeof(AssemblyReadDto), 200)]
+    public async Task<IActionResult> Open(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new OpenAssemblyCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpPost("{id:int}/cancel")]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)

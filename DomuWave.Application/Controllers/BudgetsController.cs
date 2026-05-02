@@ -74,6 +74,16 @@ public class BudgetsController(
         return Ok(result);
     }
 
+    [HttpPost("{id:int}/pre-approve")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
+    public async Task<IActionResult> PreApprove(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new PreApproveBudgetCommand(CurrentUser.Id, id), ct);
+        if (!result) return NotFound();
+        return NoContent();
+    }
+
     [HttpPost("{id:int}/approve")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     public async Task<IActionResult> Approve(int id, [FromBody] ApproveInstallmentOptionsDto options, CancellationToken ct)

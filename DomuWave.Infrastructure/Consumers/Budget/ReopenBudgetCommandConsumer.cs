@@ -35,9 +35,6 @@ public class ReopenBudgetCommandConsumer
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (!currentUser.IsSystemUser)
-            throw new ValidatorException("Solo il SuperAdmin può riaprire un budget approvato.");
-
         var budget = await session.Query<Budget>()
             .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
@@ -45,8 +42,11 @@ public class ReopenBudgetCommandConsumer
         if (budget == null)
             throw new NotFoundException("Budget non trovato.");
 
-        if (budget.Status?.Id != BudgetStatus.Approved)
-            throw new ValidatorException("Solo i budget in stato Approvato possono essere riaperti.");
+        if (budget.Status?.Id != BudgetStatus.Approved && budget.Status?.Id != BudgetStatus.PendingApproval)
+            throw new ValidatorException("Solo i budget in stato 'In approvazione' o 'Approvato' possono essere riaperti in bozza.");
+
+        if (budget.Status?.Id == BudgetStatus.Approved && !currentUser.IsSystemUser)
+            throw new ValidatorException("Solo il SuperAdmin può riaprire un budget già approvato.");
 
         budget.Status       = session.Load<BudgetStatus>(BudgetStatus.Draft);
         budget.ApprovalDate = null;

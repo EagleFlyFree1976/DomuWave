@@ -37,6 +37,29 @@ public class GetBudgetsByFiscalYearCommandConsumer
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return budgets.Select(b => b.ToReadDto()).ToList();
+        // Fetch Ordinaria assemblies for the same fiscal year to link to Preventivo budgets
+        var condominiumIds = budgets.Select(b => b.Condominium?.Id ?? 0).Distinct().ToList();
+        var assemblies = await session.Query<Assembly>()
+            .Where(a => a.FiscalYear != null
+                     && a.FiscalYear.Id == command.FiscalYearId
+                     && a.AssemblyType.Id == AssemblyTypeLookup.Ordinaria
+                     && condominiumIds.Contains(a.Condominium.Id)
+                     && !a.IsDeleted)
+            .Select(a => new { a.Id, Title = a.Name, CondominiumId = a.Condominium.Id })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var assemblyByCondominium = assemblies.ToDictionary(a => a.CondominiumId);
+
+        return budgets.Select(b =>
+        {
+            var dto = b.ToReadDto();
+            if (b.Type == BudgetType.Preventivo && assemblyByCondominium.TryGetValue(b.Condominium?.Id ?? 0, out var asm))
+            {
+                dto.AssemblyId    = asm.Id;
+                dto.AssemblyTitle = asm.Title;
+            }
+            return dto;
+        }).ToList();
     }
 }

@@ -16,7 +16,10 @@
           <button v-if="canEdit && assembly.statusId === 1" class="btn btn-primary btn-sm" @click="planAssembly">
             <i class="pi pi-send"></i> Pianifica
           </button>
-          <button v-if="canEdit && assembly.statusId === 3" class="btn btn-primary btn-sm" @click="openCloseModal">
+          <button v-if="canEdit && assembly.statusId === 3" class="btn btn-primary btn-sm" :disabled="!isToday(assembly.scheduledDate)" :title="!isToday(assembly.scheduledDate) ? 'Disponibile solo nel giorno programmato (' + fmtDateOnly(assembly.scheduledDate) + ')' : 'Apri assemblea'" @click="openAssembly">
+            <i class="pi pi-play"></i> Apri assemblea
+          </button>
+          <button v-if="canEdit && assembly.statusId === 10" class="btn btn-primary btn-sm" @click="openCloseModal">
             <i class="pi pi-check"></i> Segna come svolta
           </button>
           <button v-if="canEdit && [1,2].includes(assembly.statusId)" class="btn btn-ghost btn-sm" @click="openEditModal">
@@ -70,41 +73,90 @@
         <i class="pi pi-users"></i> Presenze
         <span class="tab-count">{{ attendances.length }}</span>
       </button>
-      <button v-if="assembly.statusId >= 3" class="tab-pill" :class="{ active: tab === 'verbale' }" @click="tab = 'verbale'">
+      <button v-if="assembly.statusId === 10 || assembly.statusId === 4" class="tab-pill" :class="{ active: tab === 'verbale' }" @click="tab = 'verbale'">
         <i class="pi pi-file-edit"></i> Verbale
       </button>
     </div>
 
     <!-- OdG Tab -->
     <div v-if="tab === 'odg'">
-      <div class="toolbar">
+      <div class="toolbar odg-toolbar">
         <span class="text-secondary" style="font-size:.875rem">Punti all'ordine del giorno</span>
-        <button v-if="canCreate && assembly.statusId !== 2" class="btn btn-primary btn-sm" style="margin-left:auto" @click="openAgendaModal()">
+        <button v-if="canCreate && [1,2].includes(assembly.statusId) && !inlineNewAgenda" class="btn btn-primary btn-sm" style="margin-left:auto" @click="openInlineNew">
           + Aggiungi punto
         </button>
       </div>
-      <div class="card">
+      <div class="card" style="margin-top:.75rem">
         <div v-if="loadingAgenda" class="loading-state"><div class="spinner"></div> Caricamento…</div>
-        <div v-else-if="!agendaItems.length" class="empty-state">
-          <div>Nessun punto OdG inserito</div>
-        </div>
-        <div v-else class="agenda-list">
-          <div v-for="item in agendaItems" :key="item.id" class="agenda-item">
-            <div class="agenda-number">{{ item.orderIndex }}</div>
-            <div class="agenda-content">
-              <div class="agenda-title">{{ item.title }}</div>
-              <div v-if="item.description" class="agenda-desc text-secondary">{{ item.description }}</div>
-              <div v-if="item.resolution" class="agenda-resolution">
-                <span class="resolution-label">Delibera:</span> {{ item.resolution }}
+        <div v-else>
+          <!-- Inline new form -->
+          <div v-if="inlineNewAgenda" class="agenda-item agenda-item--editing">
+            <div class="agenda-inline-edit">
+              <div class="agenda-inline-row">
+                <input class="form-input agenda-inline-order" type="number" min="1" v-model.number="inlineForm.orderIndex" title="Ordine" />
+                <input class="form-input agenda-inline-title" v-model="inlineForm.title" placeholder="Titolo *" @keydown.enter="saveInlineNew" @keydown.esc="inlineNewAgenda = false" autofocus />
+                <div class="agenda-inline-actions">
+                  <button class="btn btn-primary btn-sm" @click="saveInlineNew" :disabled="savingAgenda">
+                    <span v-if="savingAgenda" class="spinner" style="width:12px;height:12px"></span>
+                    <span v-else>✓</span>
+                  </button>
+                  <button class="btn btn-ghost btn-sm" @click="inlineNewAgenda = false">✕</button>
+                </div>
               </div>
+              <textarea class="form-textarea agenda-inline-desc" v-model="inlineForm.description" placeholder="Descrizione (opzionale)" rows="2"></textarea>
             </div>
-            <div class="agenda-vote">
-              <span class="badge" :class="voteClass(item.voteResultId)">{{ item.voteResultName }}</span>
-            </div>
-            <div class="row-actions" v-if="canEdit">
-              <button class="btn-icon" @click="openAgendaModal(item)" title="Modifica">✎</button>
-              <button class="btn-icon" style="color:var(--accent-red)" @click="deleteAgendaItem(item.id)" title="Elimina">✕</button>
-            </div>
+          </div>
+          <div v-if="!agendaItems.length && !inlineNewAgenda" class="empty-state">
+            <div>Nessun punto OdG inserito</div>
+          </div>
+          <div v-if="agendaItems.length" class="agenda-list">
+          <div v-for="item in agendaItems" :key="item.id" class="agenda-item" :class="{ 'agenda-item--editing': inlineEditId === item.id }">
+
+            <!-- View mode -->
+            <template v-if="inlineEditId !== item.id">
+              <div class="agenda-number">{{ item.orderIndex }}</div>
+              <div class="agenda-content">
+                <div class="agenda-title">{{ item.title }}</div>
+                <div v-if="item.description" class="agenda-desc text-secondary">{{ item.description }}</div>
+                <div v-if="item.resolution" class="agenda-resolution">
+                  <span class="resolution-label">Delibera:</span> {{ item.resolution }}
+                </div>
+              </div>
+              <div class="agenda-vote">
+                <span class="badge" :class="voteClass(item.voteResultId)">{{ item.voteResultName }}</span>
+              </div>
+              <div class="row-actions" v-if="canEdit && [1,2].includes(assembly.statusId)">
+                <button class="btn-icon" @click="startInlineEdit(item)" title="Modifica">✎</button>
+                <button class="btn-icon" style="color:var(--accent-red)" @click="deleteAgendaItem(item.id)" title="Elimina">✕</button>
+              </div>
+            </template>
+
+            <!-- Inline edit mode -->
+            <template v-else>
+              <div class="agenda-inline-edit">
+                <div class="agenda-inline-row">
+                  <input class="form-input agenda-inline-order" type="number" min="1" v-model.number="inlineForm.orderIndex" title="Ordine" />
+                  <input class="form-input agenda-inline-title" v-model="inlineForm.title" placeholder="Titolo *" />
+                  <select class="form-select agenda-inline-vote" v-model.number="inlineForm.voteResultId">
+                    <option :value="1">Non votato</option>
+                    <option :value="2">Approvato</option>
+                    <option :value="3">Respinto</option>
+                    <option :value="4">Rinviato</option>
+                  </select>
+                  <div class="agenda-inline-actions">
+                    <button class="btn btn-primary btn-sm" @click="saveInlineEdit(item.id)" :disabled="savingAgenda">
+                      <span v-if="savingAgenda" class="spinner" style="width:12px;height:12px"></span>
+                      <span v-else>✓</span>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" @click="inlineEditId = null">✕</button>
+                  </div>
+                </div>
+                <textarea class="form-textarea agenda-inline-desc" v-model="inlineForm.description" placeholder="Descrizione (opzionale)" rows="2"></textarea>
+                <textarea class="form-textarea agenda-inline-resolution" v-model="inlineForm.resolution" placeholder="Delibera / Esito (opzionale)" rows="2"></textarea>
+              </div>
+            </template>
+
+          </div>
           </div>
         </div>
       </div>
@@ -112,19 +164,21 @@
 
     <!-- Presenze Tab -->
     <div v-if="tab === 'presenze'">
-      <div class="toolbar">
+      <div class="toolbar presenze-toolbar">
         <div class="quorum-info">
           <span class="quorum-label">Millesimi presenti</span>
           <strong class="quorum-value">{{ totMillesimi.toFixed(4) }}</strong>
         </div>
-        <button v-if="canEdit && assembly.statusId !== 5" class="btn btn-ghost btn-sm" style="margin-left:auto" @click="prepopulateAttendances" title="Aggiunge automaticamente tutti i proprietari attivi del condominio non ancora presenti nell'elenco, impostando il tipo di presenza su 'Assente' e precompilando i millesimi dalla tabella millesimale di default.">
-          <i class="pi pi-refresh"></i> Rigenera partecipanti
-        </button>
-        <button v-if="canCreate && assembly.statusId !== 2" class="btn btn-primary btn-sm" @click="openAttendanceModal()">
-          + Aggiungi presenza
-        </button>
+        <div class="presenze-actions">
+          <button v-if="canEdit && assembly.statusId === 10" class="btn btn-ghost btn-sm" @click="prepopulateAttendances" title="Aggiunge automaticamente tutti i proprietari attivi del condominio non ancora presenti nell'elenco, impostando il tipo di presenza su 'Assente' e precompilando i millesimi dalla tabella millesimale di default.">
+            <i class="pi pi-refresh"></i> Rigenera partecipanti
+          </button>
+          <button v-if="canCreate && assembly.statusId === 10" class="btn btn-primary btn-sm" @click="openAttendanceModal()">
+            + Aggiungi presenza
+          </button>
+        </div>
       </div>
-      <div class="card">
+      <div class="card" style="margin-top:.75rem">
         <div v-if="loadingAttendances" class="loading-state"><div class="spinner"></div> Caricamento…</div>
         <div v-else-if="!attendances.length" class="empty-state">
           <div>Nessuna presenza registrata</div>
@@ -140,7 +194,7 @@
               <span class="attendance-badge"><span class="badge" :class="attendanceClass(a.attendanceTypeId)">{{ a.attendanceTypeName }}</span></span>
               <span class="attendance-delegate text-secondary">{{ a.delegateName || '—' }}</span>
               <span class="attendance-millesimi mono text-right">{{ a.millesimalValue?.toFixed(4) ?? '—' }}</span>
-              <span v-if="canEdit" class="attendance-actions">
+              <span v-if="canEdit && assembly.statusId === 10" class="attendance-actions">
                 <button class="btn-icon" @click="openAttendanceModal(a)" title="Modifica">✎</button>
                 <button class="btn-icon" style="color:var(--accent-red)" @click="deleteAttendance(a.id)" title="Elimina">✕</button>
               </span>
@@ -404,6 +458,11 @@ const agendaErrors     = ref({})
 const defaultAgendaForm = () => ({ title: '', description: '', orderIndex: agendaItems.value.length + 1, voteResultId: 1, resolution: '' })
 const agendaForm       = ref(defaultAgendaForm())
 
+// Agenda inline edit
+const inlineEditId  = ref(null)
+const inlineNewAgenda = ref(false)
+const inlineForm    = ref({})
+
 // Attendance modal
 const showAttendanceModal    = ref(false)
 const editingAttendance      = ref(null)
@@ -472,11 +531,26 @@ function toLocalDatetimeInput(d) {
   return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`
 }
 function statusClass(id) {
-  if (id === 4) return 'badge-green'
-  if (id === 5) return 'badge-muted'
-  if (id === 3) return 'badge-blue'
-  if (id === 2) return 'badge-purple'
+  if (id === 4)  return 'badge-green'
+  if (id === 5)  return 'badge-muted'
+  if (id === 10) return 'badge-orange'
+  if (id === 3)  return 'badge-blue'
+  if (id === 2)  return 'badge-purple'
   return 'badge-gray'  // Bozza = 1
+}
+
+function isToday(dateStr) {
+  if (!dateStr) return false
+  const d = new Date(dateStr)
+  const now = new Date()
+  return d.getFullYear() === now.getFullYear()
+      && d.getMonth()    === now.getMonth()
+      && d.getDate()     === now.getDate()
+}
+
+function fmtDateOnly(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 function voteClass(id) {
   if (id === 2) return 'badge-green'   // Approvato
@@ -552,6 +626,54 @@ async function loadOwners(condominiumId) {
       unitInternalNumber: o.unitInternalNumber ?? o.unit?.internalNumber,
     }))
   } catch { /* */ }
+}
+
+// ── Agenda inline edit ──────────────────────────────────────────────────────
+function openInlineNew() {
+  inlineEditId.value = null
+  inlineForm.value   = { title: '', description: '', orderIndex: agendaItems.value.length + 1, voteResultId: 1, resolution: '' }
+  inlineNewAgenda.value = true
+}
+
+async function saveInlineNew() {
+  if (!inlineForm.value.title?.trim()) return
+  savingAgenda.value = true
+  try {
+    await assemblyApi.createAgendaItem({ ...inlineForm.value, assemblyId: assemblyId.value })
+    store.toast('Punto aggiunto', 'success')
+    inlineNewAgenda.value = false
+    await loadAgendaItems()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    savingAgenda.value = false
+  }
+}
+
+function startInlineEdit(item) {
+  inlineEditId.value = item.id
+  inlineForm.value   = {
+    title:        item.title,
+    description:  item.description ?? '',
+    orderIndex:   item.orderIndex,
+    voteResultId: item.voteResultId,
+    resolution:   item.resolution ?? '',
+  }
+}
+
+async function saveInlineEdit(id) {
+  if (!inlineForm.value.title?.trim()) return
+  savingAgenda.value = true
+  try {
+    await assemblyApi.updateAgendaItem(id, inlineForm.value)
+    store.toast('Punto aggiornato', 'success')
+    inlineEditId.value = null
+    await loadAgendaItems()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    savingAgenda.value = false
+  }
 }
 
 // ── Agenda ─────────────────────────────────────────────────────────────────
@@ -646,6 +768,18 @@ async function deleteAttendance(id) {
     await assemblyApi.deleteAttendance(id)
     store.toast('Presenza rimossa', 'success')
     await loadAttendances()
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+// ── Open ───────────────────────────────────────────────────────────────────
+async function openAssembly() {
+  if (!confirm('Aprire l\'assemblea? Le presenze potranno essere registrate.')) return
+  try {
+    const { data } = await assemblyApi.open(assembly.value.id)
+    assembly.value = data
+    store.toast('Assemblea aperta', 'success')
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   }
@@ -808,6 +942,7 @@ onMounted(loadAssembly)
 .agenda-list { display: flex; flex-direction: column; }
 .agenda-item { display: flex; align-items: flex-start; gap: 1.25rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
 .agenda-item:last-child { border-bottom: none; }
+.agenda-item--editing { background: var(--bg-surface); padding: .875rem 1.25rem; }
 .agenda-number { min-width: 30px; height: 30px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 700; color: var(--text-secondary); flex-shrink: 0; margin-top: .1rem; }
 .agenda-content { flex: 1; }
 .agenda-title { font-weight: 600; font-size: .95rem; }
@@ -816,10 +951,23 @@ onMounted(loadAssembly)
 .resolution-label { font-weight: 600; color: var(--accent-green); }
 .agenda-vote { flex-shrink: 0; padding-top: .1rem; }
 
+.agenda-inline-edit { display: flex; flex-direction: column; gap: .6rem; width: 100%; }
+.agenda-inline-row { display: flex; align-items: center; gap: .6rem; }
+.agenda-inline-order { width: 64px; flex-shrink: 0; }
+.agenda-inline-title { flex: 1; }
+.agenda-inline-vote { width: 150px; flex-shrink: 0; }
+.agenda-inline-actions { display: flex; gap: .4rem; flex-shrink: 0; }
+.agenda-inline-desc { font-size: .875rem; }
+.agenda-inline-resolution { font-size: .875rem; }
+
 /* ── Presenze ────────────────────────────────────────────────────────────── */
+.toolbar { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+.odg-toolbar { justify-content: space-between; }
+.presenze-toolbar { justify-content: space-between; }
+.presenze-actions { display: flex; gap: .5rem; align-items: center; }
 .quorum-info { display: flex; align-items: baseline; gap: .5rem; }
-.quorum-label { font-size: .8rem; color: var(--text-secondary); }
-.quorum-value { font-size: 1rem; color: var(--text); }
+.quorum-label { font-size: .85rem; color: var(--text-secondary); }
+.quorum-value { font-size: 1rem; font-weight: 600; color: var(--text); }
 
 .attendance-groups { display: flex; flex-direction: column; }
 .attendance-group { border-bottom: 1px solid var(--border); }
@@ -853,6 +1001,7 @@ onMounted(loadAssembly)
 .badge-purple { background: rgba(168,85,247,.12);  color: #9333ea; }
 .badge-gray   { background: rgba(107,114,128,.12); color: #6b7280; }
 .badge-yellow { background: rgba(234,179,8,.12);   color: #b45309; }
+.badge-orange { background: rgba(249,115,22,.15);  color: #ea580c; }
 
 /* ── Verbale ─────────────────────────────────────────────────────────────── */
 .minutes-editor { font-family: var(--font-mono, monospace); font-size: .875rem; line-height: 1.6; resize: vertical; }

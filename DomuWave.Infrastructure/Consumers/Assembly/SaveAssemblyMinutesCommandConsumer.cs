@@ -35,8 +35,8 @@ public class SaveAssemblyMinutesCommandConsumer : InMemoryConsumerBase<SaveAssem
         var entity      = await _assemblyService.GetByIdAsync(command.AssemblyId, currentUser, cancellationToken).ConfigureAwait(false)
                           ?? throw new NotFoundException("Assemblea non trovata.");
 
-        if (entity.Status?.Id != AssemblyStatusLookup.Convocata && entity.Status?.Id != AssemblyStatusLookup.Svolta)
-            throw new ValidatorException("Il verbale può essere redatto solo per assemblee in stato 'Convocata' o 'Svolta'.");
+        if (entity.Status?.Id != AssemblyStatusLookup.InCorso && entity.Status?.Id != AssemblyStatusLookup.Svolta)
+            throw new ValidatorException("Il verbale può essere redatto solo per assemblee in stato 'In corso' o 'Svolta'.");
 
         entity.BoardMembers = command.BoardMembers;
         entity.Minutes      = command.Minutes;
