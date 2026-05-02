@@ -126,33 +126,18 @@
           <div v-for="group in attendancesByOwner" :key="group.ownerId" class="attendance-group">
             <div class="attendance-group-header">
               <span class="attendance-owner-name">{{ group.ownerLastName }} {{ group.ownerFirstName }}</span>
-              <span class="text-muted" style="font-size:.8rem; margin-left:.5rem">({{ group.items.length }} unità)</span>
+              <span v-if="group.items.length > 1" class="attendance-unit-count">{{ group.items.length }} unità</span>
             </div>
-            <table class="attendance-group-table">
-              <thead>
-                <tr>
-                  <th>Unità</th>
-                  <th>Presenza</th>
-                  <th>Delegato</th>
-                  <th class="text-right">Millesimi</th>
-                  <th v-if="canEdit"></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="a in group.items" :key="a.id">
-                  <td class="mono text-secondary">{{ a.unitInternalNumber || '—' }}</td>
-                  <td><span class="badge" :class="attendanceClass(a.attendanceTypeId)">{{ a.attendanceTypeName }}</span></td>
-                  <td class="text-secondary">{{ a.delegateName || '—' }}</td>
-                  <td class="text-right mono">{{ a.millesimalValue?.toFixed(4) ?? '—' }}</td>
-                  <td v-if="canEdit">
-                    <div class="row-actions">
-                      <button class="btn-icon" @click="openAttendanceModal(a)" title="Modifica">✎</button>
-                      <button class="btn-icon" style="color:var(--accent-red)" @click="deleteAttendance(a.id)" title="Elimina">✕</button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-for="a in group.items" :key="a.id" class="attendance-row">
+              <span class="attendance-unit mono">{{ a.unitInternalNumber || '—' }}</span>
+              <span class="attendance-badge"><span class="badge" :class="attendanceClass(a.attendanceTypeId)">{{ a.attendanceTypeName }}</span></span>
+              <span class="attendance-delegate text-secondary">{{ a.delegateName || '—' }}</span>
+              <span class="attendance-millesimi mono text-right">{{ a.millesimalValue?.toFixed(4) ?? '—' }}</span>
+              <span v-if="canEdit" class="attendance-actions">
+                <button class="btn-icon" @click="openAttendanceModal(a)" title="Modifica">✎</button>
+                <button class="btn-icon" style="color:var(--accent-red)" @click="deleteAttendance(a.id)" title="Elimina">✕</button>
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -810,13 +795,30 @@ onMounted(loadAssembly)
 
 .minutes-editor { font-family: var(--font-mono, monospace); font-size: .875rem; line-height: 1.6; resize: vertical; }
 
-.attendance-groups { display: flex; flex-direction: column; }
+.attendance-groups { display: flex; flex-direction: column; gap: 0; }
 .attendance-group { border-bottom: 1px solid var(--border); }
 .attendance-group:last-child { border-bottom: none; }
-.attendance-group-header { padding: .6rem 1rem; background: var(--bg-surface); display: flex; align-items: center; border-bottom: 1px solid var(--border); }
-.attendance-owner-name { font-weight: 600; font-size: .9rem; }
-.attendance-group-table { width: 100%; border-collapse: collapse; }
-.attendance-group-table th { padding: .4rem 1rem; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); background: transparent; }
-.attendance-group-table td { padding: .5rem 1rem; font-size: .875rem; border: none; }
-.attendance-group-table tbody tr:hover { background: var(--bg-surface); }
+
+.attendance-group-header {
+  padding: .85rem 1.25rem .5rem;
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+}
+.attendance-owner-name { font-weight: 600; font-size: .95rem; color: var(--text); }
+.attendance-unit-count { font-size: .75rem; color: var(--text-muted); }
+
+.attendance-row {
+  display: grid;
+  grid-template-columns: 80px 130px 1fr 110px 72px;
+  align-items: center;
+  padding: .5rem 1.25rem .5rem 2rem;
+  gap: 1rem;
+  font-size: .875rem;
+  border-top: 1px solid var(--border);
+}
+.attendance-row:hover { background: var(--bg-surface); }
+.attendance-unit { color: var(--text-secondary); }
+.attendance-millesimi { text-align: right; }
+.attendance-actions { display: flex; justify-content: flex-end; gap: .25rem; }
 </style>
