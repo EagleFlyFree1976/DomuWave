@@ -37,17 +37,20 @@ public class PrepopulateAttendancesCommandConsumer : InMemoryConsumerBase<Prepop
             .Where(o => o.Unit.Condominium.Id == assembly.Condominium.Id && o.IsActive && !o.IsDeleted)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        // Carica i proprietari già registrati (inclusi i soft-deleted: il vincolo UQ non filtra su IsDeleted)
-        var registeredOwnerIds = await session.Query<AssemblyAttendance>()
+        // Carica tutte le righe esistenti (incluse soft-deleted) indicizzate per proprietario
+        var existingByOwner = await session.Query<AssemblyAttendance>()
             .Where(a => a.Assembly.Id == command.AssemblyId)
-            .Select(a => a.UnitOwner.Id)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
 
-        var registeredSet = new HashSet<int>(registeredOwnerIds);
+        var existingMap = existingByOwner
+            .GroupBy(a => a.UnitOwner.Id)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        // Proprietari con riga attiva → skip; con riga soft-deleted → ripristina; assenti → inserisci
+        var activeOwnerIds = new HashSet<int>(existingByOwner.Where(a => !a.IsDeleted).Select(a => a.UnitOwner.Id));
 
         var assenteType = await session.GetAsync<AttendanceTypeLookup>(AttendanceTypeLookup.Assente, cancellationToken).ConfigureAwait(false)!;
 
-        // Carica i valori millesimali dalla tabella attiva (IsActive=true, IsDraft=false) del condominio
         var condominiumId = assembly.Condominium.Id;
         var millesimali = await session.Query<UnitMillesimal>()
             .Where(m => m.MillesimalTable.Condominium.Id == condominiumId
@@ -60,24 +63,37 @@ public class PrepopulateAttendancesCommandConsumer : InMemoryConsumerBase<Prepop
             .GroupBy(m => m.UnitId)
             .ToDictionary(g => g.Key, g => g.Sum(m => m.Millesimal));
 
-        var created = new List<AssemblyAttendance>();
-        foreach (var owner in owners.Where(o => !registeredSet.Contains(o.Id)))
+        var touched = false;
+        foreach (var owner in owners.Where(o => !activeOwnerIds.Contains(o.Id)))
         {
             millesimaliByUnit.TryGetValue(owner.Unit?.Id ?? 0, out var millesimalValue);
-            var entity = new AssemblyAttendance
+
+            if (existingMap.TryGetValue(owner.Id, out var deleted))
             {
-                Assembly        = assembly,
-                Tenant          = assembly.Tenant,
-                UnitOwner       = owner,
-                AttendanceType  = assenteType,
-                MillesimalValue = millesimalValue,
-            };
-            entity.Trace(currentUser);
-            await session.SaveAsync(entity, cancellationToken).ConfigureAwait(false);
-            created.Add(entity);
+                // Ripristina la riga soft-deleted
+                deleted.IsDeleted       = false;
+                deleted.AttendanceType  = assenteType;
+                deleted.MillesimalValue = millesimalValue;
+                deleted.Trace(currentUser);
+                await session.UpdateAsync(deleted, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                var entity = new AssemblyAttendance
+                {
+                    Assembly        = assembly,
+                    Tenant          = assembly.Tenant,
+                    UnitOwner       = owner,
+                    AttendanceType  = assenteType,
+                    MillesimalValue = millesimalValue,
+                };
+                entity.Trace(currentUser);
+                await session.SaveAsync(entity, cancellationToken).ConfigureAwait(false);
+            }
+            touched = true;
         }
 
-        if (created.Count > 0)
+        if (touched)
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         // Ricarica tutto l'elenco presenze aggiornato
