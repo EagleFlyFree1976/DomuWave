@@ -86,6 +86,7 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
             IsActive        = false,
             IsDraft         = true,
             IsEnabled       = true,
+            IsDefault       = true,
         };
         await _millesimalTableService
             .CreateAsync(defTable, currentUser, cancellationToken)

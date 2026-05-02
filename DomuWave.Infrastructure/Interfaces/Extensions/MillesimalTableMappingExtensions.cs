@@ -20,6 +20,7 @@ public static class MillesimalTableMappingExtensions
             IsActive             = entity.IsActive,
             IsDraft              = entity.IsDraft,
             IsEnabled            = entity.IsEnabled,
+            IsDefault            = entity.IsDefault,
             CalculatedMillesimal = calculatedMillesimal,
         };
         dto.SetTraceInfo(entity);
@@ -39,6 +40,7 @@ public static class MillesimalTableMappingExtensions
             IsActive        = false,
             IsDraft         = true,
             IsEnabled       = true,
+            IsDefault       = false,
         };
     }
 

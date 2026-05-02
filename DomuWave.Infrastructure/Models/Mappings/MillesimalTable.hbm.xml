@@ -21,9 +21,10 @@
     <property name="Description" column="Description" type="String" length="500" />
     <property name="Code" column="Code" type="String" length="50" not-null="true" />
     <property name="TotalMillesimal" column="TotalMillesimal" type="Decimal" not-null="true" />
-    <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
-    <property name="IsDraft" column="IsDraft" type="Boolean" not-null="true" />
+    <property name="IsActive"  column="IsActive"  type="Boolean" not-null="true" />
+    <property name="IsDraft"   column="IsDraft"   type="Boolean" not-null="true" />
     <property name="IsEnabled" column="IsEnabled" type="Boolean" not-null="true" />
+    <property name="IsDefault" column="IsDefault" type="Boolean" not-null="true" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />

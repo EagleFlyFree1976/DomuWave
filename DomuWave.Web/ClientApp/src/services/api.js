@@ -131,6 +131,7 @@ export const unitApi = {
 
 // ─── Proprietari unità ────────────────────────────────────────
 export const unitOwnerApi = {
+  getByCondominium: (condId) => api.get(`/unit-owners/by-condominium/${condId}`),
   search:     (q)           => api.get(`/unit-owners/search`, { params: { q } }),
   getByUnit:  (unitId)      => api.get(`/unit-owners/by-unit/${unitId}`),
   getByUser:  (userId)      => api.get(`/unit-owners/by-user/${userId}`),
@@ -397,7 +398,8 @@ export const assemblyApi = {
   updateAgendaItem: (id, data)     => api.put(`/assemblies/agenda-items/${id}`, data),
   deleteAgendaItem: (id)           => api.delete(`/assemblies/agenda-items/${id}`),
   // Attendances
-  getAttendances:   (assemblyId)   => api.get(`/assemblies/${assemblyId}/attendances`),
+  getAttendances:        (assemblyId) => api.get(`/assemblies/${assemblyId}/attendances`),
+  prepopulateAttendances:(assemblyId) => api.post(`/assemblies/${assemblyId}/attendances/prepopulate`, {}),
   createAttendance: (data)         => api.post('/assemblies/attendances', data),
   updateAttendance: (id, data)     => api.put(`/assemblies/attendances/${id}`, data),
   deleteAttendance: (id)           => api.delete(`/assemblies/attendances/${id}`),

@@ -145,6 +145,11 @@ public class AssembliesController(
     public async Task<IActionResult> GetAttendances(int assemblyId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetAttendancesByAssemblyCommand(CurrentUser.Id, assemblyId), ct));
 
+    [HttpPost("{assemblyId:int}/attendances/prepopulate")]
+    [ProducesResponseType(typeof(IList<AssemblyAttendanceReadDto>), 200)]
+    public async Task<IActionResult> PrepopulateAttendances(int assemblyId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new PrepopulateAttendancesCommand(CurrentUser.Id, assemblyId), ct));
+
     [HttpPost("attendances")]
     [ProducesResponseType(typeof(AssemblyAttendanceReadDto), 201)]
     public async Task<IActionResult> CreateAttendance([FromBody] CreateAssemblyAttendanceDto dto, CancellationToken ct)

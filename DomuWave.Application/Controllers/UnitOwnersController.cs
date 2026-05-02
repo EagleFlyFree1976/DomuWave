@@ -19,6 +19,11 @@ public class UnitOwnersController(
 {
     private readonly IMediator _mediator = mediator;
 
+    [HttpGet("by-condominium/{condominiumId:int}")]
+    [ProducesResponseType(typeof(IList<UnitOwnerReadDto>), 200)]
+    public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetUnitOwnersByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
+
     [HttpGet("search")]
     [ProducesResponseType(typeof(IList<UnitOwnerReadDto>), 200)]
     public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct)

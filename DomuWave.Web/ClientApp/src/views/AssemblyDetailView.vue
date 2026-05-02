@@ -12,12 +12,21 @@
             <span v-if="assembly.fiscalYearName" class="text-secondary">· {{ assembly.fiscalYearName }}</span>
           </div>
         </div>
-        <div class="detail-actions" v-if="canEdit">
-          <button v-if="assembly.statusId === 0" class="btn btn-primary btn-sm" @click="openCloseModal">
+        <div class="detail-actions">
+          <button v-if="canEdit && assembly.statusId === 1" class="btn btn-primary btn-sm" @click="planAssembly">
+            <i class="pi pi-send"></i> Pianifica
+          </button>
+          <button v-if="canEdit && assembly.statusId === 3" class="btn btn-primary btn-sm" @click="openCloseModal">
             <i class="pi pi-check"></i> Segna come svolta
           </button>
-          <button v-if="assembly.statusId === 0" class="btn btn-ghost btn-sm" style="color:var(--accent-red)" @click="cancelAssembly">
+          <button v-if="canEdit && [1,2,3].includes(assembly.statusId)" class="btn btn-ghost btn-sm" style="color:var(--accent-red)" @click="cancelAssembly">
             <i class="pi pi-ban"></i> Annulla
+          </button>
+          <button v-if="canEdit && [1,2].includes(assembly.statusId)" class="btn btn-ghost btn-sm" @click="openEditModal">
+            <i class="pi pi-pencil"></i> Modifica
+          </button>
+          <button v-if="canDelete && assembly.statusId === 1" class="btn btn-ghost btn-sm" style="color:var(--accent-red)" @click="deleteAssembly">
+            <i class="pi pi-trash"></i> Elimina
           </button>
         </div>
       </div>
@@ -101,7 +110,10 @@
         <div class="quorum-info text-secondary" style="font-size:.875rem">
           Millesimi presenti: <strong>{{ totMillesimi.toFixed(4) }}</strong>
         </div>
-        <button v-if="canCreate && assembly.statusId !== 2" class="btn btn-primary btn-sm" style="margin-left:auto" @click="openAttendanceModal()">
+        <button v-if="canEdit && assembly.statusId !== 5" class="btn btn-ghost btn-sm" style="margin-left:auto" @click="prepopulateAttendances">
+          <i class="pi pi-refresh"></i> Prepopola presenze
+        </button>
+        <button v-if="canCreate && assembly.statusId !== 2" class="btn btn-primary btn-sm" @click="openAttendanceModal()">
           + Aggiungi presenza
         </button>
       </div>
@@ -180,6 +192,59 @@
       </div>
     </div>
 
+    <!-- Modal modifica assemblea -->
+    <div class="modal-overlay" v-if="showEditModal" @click.self="showEditModal=false">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Modifica assemblea</h2>
+          <button class="btn-icon" @click="showEditModal=false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-grid">
+            <div class="form-group form-group--full" :class="{ 'has-error': editErrors.title }">
+              <label class="form-label">Titolo *</label>
+              <input class="form-input" v-model="editForm.title" @input="delete editErrors.title" />
+              <span v-if="editErrors.title" class="field-error">{{ editErrors.title }}</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tipo *</label>
+              <select class="form-select" v-model.number="editForm.assemblyTypeId">
+                <option :value="1">Ordinaria</option>
+                <option :value="2">Straordinaria</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Esercizio fiscale</label>
+              <select class="form-select" v-model.number="editForm.fiscalYearId">
+                <option :value="null">— Nessuno —</option>
+                <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">{{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}</option>
+              </select>
+            </div>
+            <div class="form-group" :class="{ 'has-error': editErrors.scheduledDate }">
+              <label class="form-label">Data convocata *</label>
+              <input class="form-input" type="datetime-local" v-model="editForm.scheduledDate" @input="delete editErrors.scheduledDate" />
+              <span v-if="editErrors.scheduledDate" class="field-error">{{ editErrors.scheduledDate }}</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Luogo</label>
+              <input class="form-input" v-model="editForm.location" placeholder="es. Sala riunioni condominio" />
+            </div>
+            <div class="form-group form-group--full">
+              <label class="form-label">Note</label>
+              <textarea class="form-textarea" v-model="editForm.notes" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="showEditModal=false">Annulla</button>
+          <button class="btn btn-primary" @click="saveEdit" :disabled="savingEdit">
+            <span v-if="savingEdit" class="spinner" style="width:14px;height:14px"></span>
+            Salva
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal OdG -->
     <div class="modal-overlay" v-if="showAgendaModal" @click.self="showAgendaModal=false">
       <div class="modal">
@@ -205,10 +270,10 @@
             <div v-if="editingAgenda" class="form-group">
               <label class="form-label">Esito votazione</label>
               <select class="form-select" v-model.number="agendaForm.voteResultId">
-                <option :value="0">Non Votato</option>
-                <option :value="1">Approvato</option>
-                <option :value="2">Respinto</option>
-                <option :value="3">Rinviato</option>
+                <option :value="1">Non Votato</option>
+                <option :value="2">Approvato</option>
+                <option :value="3">Respinto</option>
+                <option :value="4">Rinviato</option>
               </select>
             </div>
             <div v-if="editingAgenda" class="form-group form-group--full">
@@ -253,16 +318,16 @@
             <div class="form-group">
               <label class="form-label">Tipo presenza</label>
               <select class="form-select" v-model.number="attendanceForm.attendanceTypeId">
-                <option :value="0">Presente</option>
-                <option :value="1">Delegato</option>
-                <option :value="2">Assente</option>
+                <option :value="1">Presente</option>
+                <option :value="2">Delegato</option>
+                <option :value="3">Assente</option>
               </select>
             </div>
             <div class="form-group">
               <label class="form-label">Millesimi</label>
               <input class="form-input" type="number" step="0.0001" v-model.number="attendanceForm.millesimalValue" />
             </div>
-            <div v-if="attendanceForm.attendanceTypeId === 1" class="form-group form-group--full">
+            <div v-if="attendanceForm.attendanceTypeId === 2" class="form-group form-group--full">
               <label class="form-label">Nome delegato</label>
               <input class="form-input" v-model="attendanceForm.delegateName" />
             </div>
@@ -312,14 +377,15 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { usePermissions } from '@/composables/usePermissions'
-import { assemblyApi, unitOwnerApi } from '@/services/api'
+import { assemblyApi, unitOwnerApi, fiscalYearApi } from '@/services/api'
 
-const route = useRoute()
-const store = useAppStore()
-const { canCreate, canEdit } = usePermissions()
+const route  = useRoute()
+const router = useRouter()
+const store  = useAppStore()
+const { canCreate, canEdit, canDelete } = usePermissions()
 
 const assemblyId       = computed(() => Number(route.params.assemblyId || route.params.id))
 const communicationPath = computed(() => `/condomini/${route.params.id}/comunicazioni`)
@@ -339,7 +405,7 @@ const showAgendaModal  = ref(false)
 const editingAgenda    = ref(null)
 const savingAgenda     = ref(false)
 const agendaErrors     = ref({})
-const defaultAgendaForm = () => ({ title: '', description: '', orderIndex: agendaItems.value.length + 1, voteResultId: 0, resolution: '' })
+const defaultAgendaForm = () => ({ title: '', description: '', orderIndex: agendaItems.value.length + 1, voteResultId: 1, resolution: '' })
 const agendaForm       = ref(defaultAgendaForm())
 
 // Attendance modal
@@ -348,7 +414,7 @@ const editingAttendance      = ref(null)
 const editingAttendanceData  = ref(null)
 const savingAttendance       = ref(false)
 const attendanceErrors       = ref({})
-const defaultAttendanceForm  = () => ({ unitOwnerId: null, attendanceTypeId: 0, millesimalValue: 0, delegateName: '', notes: '' })
+const defaultAttendanceForm  = () => ({ unitOwnerId: null, attendanceTypeId: 1, millesimalValue: 0, delegateName: '', notes: '' })
 const attendanceForm         = ref(defaultAttendanceForm())
 
 // Close modal
@@ -360,9 +426,17 @@ const closeForm      = ref({ actualDate: '' })
 const savingMinutes = ref(false)
 const minutesForm   = ref({ boardMembers: '', minutes: '' })
 
+// Edit modal
+const showEditModal = ref(false)
+const savingEdit    = ref(false)
+const editErrors    = ref({})
+const fiscalYears   = ref([])
+const defaultEditForm = () => ({ title: '', assemblyTypeId: 1, fiscalYearId: null, scheduledDate: '', location: '', notes: '' })
+const editForm      = ref(defaultEditForm())
+
 // ── Computed ───────────────────────────────────────────────────────────────
 const totMillesimi = computed(() =>
-  attendances.value.filter(a => a.attendanceTypeId !== 2).reduce((s, a) => s + (a.millesimalValue ?? 0), 0)
+  attendances.value.filter(a => a.attendanceTypeId !== 3).reduce((s, a) => s + (a.millesimalValue ?? 0), 0)
 )
 
 const registeredOwnerIds = computed(() => new Set(attendances.value.map(a => a.unitOwnerId)))
@@ -383,20 +457,22 @@ function toLocalDatetimeInput(d) {
   return `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`
 }
 function statusClass(id) {
-  if (id === 1) return 'badge-green'
-  if (id === 2) return 'badge-muted'
-  return 'badge-blue'
+  if (id === 4) return 'badge-green'
+  if (id === 5) return 'badge-muted'
+  if (id === 3) return 'badge-blue'
+  if (id === 2) return 'badge-purple'
+  return 'badge-gray'  // Bozza = 1
 }
 function voteClass(id) {
-  if (id === 1) return 'badge-green'
-  if (id === 2) return 'badge-muted'
-  if (id === 3) return 'badge-yellow'
-  return 'badge-muted'
+  if (id === 2) return 'badge-green'   // Approvato
+  if (id === 3) return 'badge-muted'   // Respinto
+  if (id === 4) return 'badge-yellow'  // Rinviato
+  return 'badge-gray'                  // NonVotato = 1
 }
 function attendanceClass(id) {
-  if (id === 0) return 'badge-green'
-  if (id === 1) return 'badge-blue'
-  return 'badge-muted'
+  if (id === 1) return 'badge-green'  // Presente
+  if (id === 2) return 'badge-blue'   // Delegato
+  return 'badge-muted'                // Assente = 3
 }
 
 // ── Load ───────────────────────────────────────────────────────────────────
@@ -407,9 +483,19 @@ async function loadAssembly() {
     assembly.value = data
     minutesForm.value = { boardMembers: data.boardMembers ?? '', minutes: data.minutes ?? '' }
     await Promise.all([loadAgendaItems(), loadAttendances()])
-    if (assembly.value?.condominiumId) loadOwners(assembly.value.condominiumId)
+    if (assembly.value?.condominiumId) {
+      loadOwners(assembly.value.condominiumId)
+      loadFiscalYears(assembly.value.condominiumId)
+    }
   } catch { /* handled globally */ }
   finally { loading.value = false }
+}
+
+async function loadFiscalYears(condominiumId) {
+  try {
+    const { data } = await fiscalYearApi.getByCondominium(condominiumId)
+    fiscalYears.value = data ?? []
+  } catch { /* */ }
 }
 
 async function loadAgendaItems() {
@@ -430,10 +516,22 @@ async function loadAttendances() {
   finally { loadingAttendances.value = false }
 }
 
+async function prepopulateAttendances() {
+  loadingAttendances.value = true
+  try {
+    const { data } = await assemblyApi.prepopulateAttendances(assemblyId.value)
+    attendances.value = data ?? []
+    store.toast('Presenze aggiornate', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    loadingAttendances.value = false
+  }
+}
+
 async function loadOwners(condominiumId) {
   try {
-    const { data } = await unitOwnerApi.getByCondominium?.(condominiumId)
-      ?? await unitOwnerApi.search('')
+    const { data } = await unitOwnerApi.getByCondominium(condominiumId)
     allOwners.value = (data ?? []).map(o => ({
       ...o,
       unitInternalNumber: o.unitInternalNumber ?? o.unit?.internalNumber,
@@ -538,6 +636,65 @@ async function deleteAttendance(id) {
   }
 }
 
+// ── Plan ───────────────────────────────────────────────────────────────────
+async function planAssembly() {
+  if (!confirm(`Spostare l'assemblea in Pianificata? Verrà creata la comunicazione di convocazione e generate le notifiche.`)) return
+  try {
+    const { data } = await assemblyApi.plan(assemblyId.value)
+    assembly.value = data
+    store.toast('Assemblea spostata in Pianificata', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+// ── Edit ───────────────────────────────────────────────────────────────────
+function openEditModal() {
+  const a = assembly.value
+  editForm.value = {
+    title:          a.title,
+    assemblyTypeId: a.assemblyTypeId,
+    fiscalYearId:   a.fiscalYearId ?? null,
+    scheduledDate:  toLocalDatetimeInput(a.scheduledDate),
+    location:       a.location ?? '',
+    notes:          a.notes    ?? '',
+  }
+  editErrors.value = {}
+  showEditModal.value = true
+}
+
+async function saveEdit() {
+  const e = {}
+  if (!editForm.value.title?.trim()) e.title = 'Il titolo è obbligatorio'
+  if (!editForm.value.scheduledDate)  e.scheduledDate = 'La data è obbligatoria'
+  editErrors.value = e
+  if (Object.keys(e).length) return
+
+  savingEdit.value = true
+  try {
+    const { data } = await assemblyApi.update(assemblyId.value, editForm.value)
+    assembly.value = data
+    showEditModal.value = false
+    store.toast('Assemblea aggiornata', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    savingEdit.value = false
+  }
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+async function deleteAssembly() {
+  if (!confirm('Eliminare questa assemblea? L\'operazione è irreversibile.')) return
+  try {
+    await assemblyApi.delete(assemblyId.value)
+    store.toast('Assemblea eliminata', 'success')
+    router.push(`/condomini/${route.params.id}/assemblee`)
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
 // ── Close / Cancel ─────────────────────────────────────────────────────────
 function openCloseModal() {
   closeForm.value = { actualDate: toLocalDatetimeInput(assembly.value?.scheduledDate) }
@@ -550,8 +707,10 @@ async function confirmClose() {
   try {
     const { data } = await assemblyApi.close(assemblyId.value, { actualDate: closeForm.value.actualDate })
     assembly.value = data
+    minutesForm.value = { boardMembers: data.boardMembers ?? '', minutes: data.minutes ?? '' }
     store.toast('Assemblea segnata come svolta', 'success')
     showCloseModal.value = false
+    tab.value = 'verbale'
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally {
@@ -616,8 +775,10 @@ onMounted(loadAssembly)
 .resolution-label { font-weight: 600; color: var(--accent-green); }
 .agenda-vote { flex-shrink: 0; }
 
-.badge-blue   { background: rgba(99,102,241,.12); color: #6366f1; }
-.badge-yellow { background: rgba(234,179,8,.12);  color: #b45309; }
+.badge-blue   { background: rgba(99,102,241,.12);  color: #6366f1; }
+.badge-purple { background: rgba(168,85,247,.12);  color: #9333ea; }
+.badge-gray   { background: rgba(107,114,128,.12); color: #6b7280; }
+.badge-yellow { background: rgba(234,179,8,.12);   color: #b45309; }
 
 .quorum-info strong { color: var(--text); }
 

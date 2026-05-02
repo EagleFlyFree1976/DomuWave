@@ -14,4 +14,5 @@ public class MillesimalTableReadDto : TraceEntityDTO<int>
     public bool     IsActive            { get; set; }
     public bool     IsDraft             { get; set; }
     public bool     IsEnabled           { get; set; }
+    public bool     IsDefault           { get; set; }
 }
