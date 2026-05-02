@@ -3,13 +3,13 @@
 
     <!-- Header card -->
     <div class="card detail-header">
-      <div class="detail-header-main">
-        <div>
+      <div class="detail-header-top">
+        <div class="detail-header-title-block">
           <h2 class="detail-title">{{ assembly.title }}</h2>
           <div class="detail-meta">
             <span class="badge" :class="statusClass(assembly.statusId)">{{ assembly.statusName }}</span>
-            <span class="text-secondary">{{ assembly.assemblyTypeName }}</span>
-            <span v-if="assembly.fiscalYearName" class="text-secondary">· {{ assembly.fiscalYearName }}</span>
+            <span class="meta-chip">{{ assembly.assemblyTypeName }}</span>
+            <span v-if="assembly.fiscalYearName" class="meta-chip">{{ assembly.fiscalYearName }}</span>
           </div>
         </div>
         <div class="detail-actions">
@@ -19,34 +19,38 @@
           <button v-if="canEdit && assembly.statusId === 3" class="btn btn-primary btn-sm" @click="openCloseModal">
             <i class="pi pi-check"></i> Segna come svolta
           </button>
-          <button v-if="canEdit && [1,2,3].includes(assembly.statusId)" class="btn btn-ghost btn-sm" style="color:var(--accent-red)" @click="cancelAssembly">
-            <i class="pi pi-ban"></i> Annulla
-          </button>
           <button v-if="canEdit && [1,2].includes(assembly.statusId)" class="btn btn-ghost btn-sm" @click="openEditModal">
             <i class="pi pi-pencil"></i> Modifica
+          </button>
+          <button v-if="canEdit && [1,2,3].includes(assembly.statusId)" class="btn btn-ghost btn-sm" style="color:var(--accent-red)" @click="cancelAssembly">
+            <i class="pi pi-ban"></i> Annulla
           </button>
           <button v-if="canDelete && assembly.statusId === 1" class="btn btn-ghost btn-sm" style="color:var(--accent-red)" @click="deleteAssembly">
             <i class="pi pi-trash"></i> Elimina
           </button>
         </div>
       </div>
-      <div class="detail-info-grid">
+      <div class="detail-info-strip">
         <div class="info-item">
           <span class="info-label">Data convocata</span>
           <span class="info-value">{{ fmtDate(assembly.scheduledDate) }}</span>
         </div>
+        <div class="info-sep"></div>
         <div class="info-item" v-if="assembly.actualDate">
           <span class="info-label">Data effettiva</span>
           <span class="info-value">{{ fmtDate(assembly.actualDate) }}</span>
         </div>
+        <div v-if="assembly.actualDate" class="info-sep"></div>
         <div class="info-item" v-if="assembly.location">
           <span class="info-label">Luogo</span>
           <span class="info-value">{{ assembly.location }}</span>
         </div>
+        <div v-if="assembly.location" class="info-sep"></div>
         <div class="info-item" v-if="assembly.notes">
           <span class="info-label">Note</span>
           <span class="info-value">{{ assembly.notes }}</span>
         </div>
+        <div v-if="assembly.communicationId" class="info-sep"></div>
         <div class="info-item" v-if="assembly.communicationId">
           <span class="info-label">Comunicazione</span>
           <router-link class="info-link" :to="communicationPath">
@@ -59,10 +63,12 @@
     <!-- Tabs -->
     <div class="tab-pills">
       <button class="tab-pill" :class="{ active: tab === 'odg' }" @click="tab = 'odg'">
-        <i class="pi pi-list"></i> Ordine del Giorno ({{ agendaItems.length }})
+        <i class="pi pi-list"></i> Ordine del Giorno
+        <span class="tab-count">{{ agendaItems.length }}</span>
       </button>
       <button class="tab-pill" :class="{ active: tab === 'presenze' }" @click="tab = 'presenze'">
-        <i class="pi pi-users"></i> Presenze ({{ attendances.length }})
+        <i class="pi pi-users"></i> Presenze
+        <span class="tab-count">{{ attendances.length }}</span>
       </button>
       <button v-if="assembly.statusId >= 3" class="tab-pill" :class="{ active: tab === 'verbale' }" @click="tab = 'verbale'">
         <i class="pi pi-file-edit"></i> Verbale
@@ -107,8 +113,9 @@
     <!-- Presenze Tab -->
     <div v-if="tab === 'presenze'">
       <div class="toolbar">
-        <div class="quorum-info text-secondary" style="font-size:.875rem">
-          Millesimi presenti: <strong>{{ totMillesimi.toFixed(4) }}</strong>
+        <div class="quorum-info">
+          <span class="quorum-label">Millesimi presenti</span>
+          <strong class="quorum-value">{{ totMillesimi.toFixed(4) }}</strong>
         </div>
         <button v-if="canEdit && assembly.statusId !== 5" class="btn btn-ghost btn-sm" style="margin-left:auto" @click="prepopulateAttendances" title="Aggiunge automaticamente tutti i proprietari attivi del condominio non ancora presenti nell'elenco, impostando il tipo di presenza su 'Assente' e precompilando i millesimi dalla tabella millesimale di default.">
           <i class="pi pi-refresh"></i> Rigenera partecipanti
@@ -757,50 +764,69 @@ onMounted(loadAssembly)
 <style scoped>
 .assembly-detail { display: flex; flex-direction: column; gap: 1.25rem; }
 
-.detail-header { padding: 1.25rem 1.5rem; }
-.detail-header-main { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
-.detail-title { font-size: 1.25rem; font-weight: 600; margin: 0 0 .4rem; }
-.detail-meta { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-.detail-actions { display: flex; gap: .5rem; flex-shrink: 0; }
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.detail-header { padding: 1.5rem; }
 
-.detail-info-grid { display: flex; gap: 2rem; flex-wrap: wrap; }
-.info-item { display: flex; flex-direction: column; gap: .15rem; }
-.info-label { font-size: .75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
-.info-value { font-size: .9rem; }
+.detail-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.detail-header-title-block { flex: 1; min-width: 0; }
+.detail-title { font-size: 1.3rem; font-weight: 700; margin: 0 0 .5rem; }
+.detail-meta { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.meta-chip { font-size: .78rem; color: var(--text-secondary); background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 8px; }
 
-.tab-pills { display: flex; gap: 4px; }
-.tab-pill { padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; font-size: .875rem; display: flex; align-items: center; gap: .4rem; }
-.tab-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.detail-actions { display: flex; gap: .5rem; flex-wrap: wrap; flex-shrink: 0; align-items: flex-start; }
 
-.agenda-list { display: flex; flex-direction: column; }
-.agenda-item { display: flex; align-items: flex-start; gap: 1rem; padding: .875rem 1rem; border-bottom: 1px solid var(--border); }
-.agenda-item:last-child { border-bottom: none; }
-.agenda-number { min-width: 28px; height: 28px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 600; color: var(--text-secondary); flex-shrink: 0; }
-.agenda-content { flex: 1; }
-.agenda-title { font-weight: 500; }
-.agenda-desc { font-size: .875rem; margin-top: .2rem; }
-.agenda-resolution { margin-top: .4rem; font-size: .875rem; background: var(--bg-surface); border-left: 3px solid var(--accent-green); padding: .4rem .75rem; border-radius: 0 4px 4px 0; }
-.resolution-label { font-weight: 600; color: var(--accent-green); }
-.agenda-vote { flex-shrink: 0; }
-
-.badge-blue   { background: rgba(99,102,241,.12);  color: #6366f1; }
-.badge-purple { background: rgba(168,85,247,.12);  color: #9333ea; }
-.badge-gray   { background: rgba(107,114,128,.12); color: #6b7280; }
-.badge-yellow { background: rgba(234,179,8,.12);   color: #b45309; }
-
-.quorum-info strong { color: var(--text); }
-
+.detail-info-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  flex-wrap: wrap;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+.info-item { display: flex; flex-direction: column; gap: .2rem; padding: 0 1.5rem 0 0; }
+.info-item:first-child { padding-left: 0; }
+.info-sep { width: 1px; background: var(--border); align-self: stretch; margin: 0 1.5rem 0 0; flex-shrink: 0; }
+.info-label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+.info-value { font-size: .9rem; color: var(--text); }
 .info-link { color: var(--accent); text-decoration: none; font-size: .9rem; display: flex; align-items: center; gap: .3rem; }
 .info-link:hover { text-decoration: underline; }
 
-.minutes-editor { font-family: var(--font-mono, monospace); font-size: .875rem; line-height: 1.6; resize: vertical; }
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.tab-pills { display: flex; gap: 4px; }
+.tab-pill { padding: 7px 16px; border-radius: 7px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; font-size: .875rem; display: flex; align-items: center; gap: .5rem; }
+.tab-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tab-count { font-size: .75rem; background: rgba(255,255,255,.2); border-radius: 10px; padding: 0 6px; line-height: 1.6; }
+.tab-pill:not(.active) .tab-count { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
 
-.attendance-groups { display: flex; flex-direction: column; gap: 0; }
+/* ── OdG ─────────────────────────────────────────────────────────────────── */
+.agenda-list { display: flex; flex-direction: column; }
+.agenda-item { display: flex; align-items: flex-start; gap: 1.25rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+.agenda-item:last-child { border-bottom: none; }
+.agenda-number { min-width: 30px; height: 30px; border-radius: 50%; background: var(--bg-surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 700; color: var(--text-secondary); flex-shrink: 0; margin-top: .1rem; }
+.agenda-content { flex: 1; }
+.agenda-title { font-weight: 600; font-size: .95rem; }
+.agenda-desc { font-size: .875rem; margin-top: .3rem; color: var(--text-secondary); }
+.agenda-resolution { margin-top: .5rem; font-size: .875rem; background: var(--bg-surface); border-left: 3px solid var(--accent-green); padding: .5rem .875rem; border-radius: 0 4px 4px 0; }
+.resolution-label { font-weight: 600; color: var(--accent-green); }
+.agenda-vote { flex-shrink: 0; padding-top: .1rem; }
+
+/* ── Presenze ────────────────────────────────────────────────────────────── */
+.quorum-info { display: flex; align-items: baseline; gap: .5rem; }
+.quorum-label { font-size: .8rem; color: var(--text-secondary); }
+.quorum-value { font-size: 1rem; color: var(--text); }
+
+.attendance-groups { display: flex; flex-direction: column; }
 .attendance-group { border-bottom: 1px solid var(--border); }
 .attendance-group:last-child { border-bottom: none; }
 
 .attendance-group-header {
-  padding: .85rem 1.25rem .5rem;
+  padding: .9rem 1.25rem .45rem;
   display: flex;
   align-items: baseline;
   gap: .6rem;
@@ -810,9 +836,9 @@ onMounted(loadAssembly)
 
 .attendance-row {
   display: grid;
-  grid-template-columns: 80px 130px 1fr 110px 72px;
+  grid-template-columns: 90px 140px 1fr 120px 72px;
   align-items: center;
-  padding: .5rem 1.25rem .5rem 2rem;
+  padding: .55rem 1.25rem .55rem 2.25rem;
   gap: 1rem;
   font-size: .875rem;
   border-top: 1px solid var(--border);
@@ -821,4 +847,13 @@ onMounted(loadAssembly)
 .attendance-unit { color: var(--text-secondary); }
 .attendance-millesimi { text-align: right; }
 .attendance-actions { display: flex; justify-content: flex-end; gap: .25rem; }
+
+/* ── Badge variants ─────────────────────────────────────────────────────── */
+.badge-blue   { background: rgba(99,102,241,.12);  color: #6366f1; }
+.badge-purple { background: rgba(168,85,247,.12);  color: #9333ea; }
+.badge-gray   { background: rgba(107,114,128,.12); color: #6b7280; }
+.badge-yellow { background: rgba(234,179,8,.12);   color: #b45309; }
+
+/* ── Verbale ─────────────────────────────────────────────────────────────── */
+.minutes-editor { font-family: var(--font-mono, monospace); font-size: .875rem; line-height: 1.6; resize: vertical; }
 </style>

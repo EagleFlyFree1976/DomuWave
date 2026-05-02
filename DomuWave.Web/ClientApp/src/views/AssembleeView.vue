@@ -17,49 +17,48 @@
       <button v-if="canCreate" class="btn btn-primary" style="margin-left:auto" @click="openModal()">+ Nuova assemblea</button>
     </div>
 
-    <div class="card">
-      <div v-if="loading" class="loading-state"><div class="spinner"></div> Caricamento…</div>
-      <div v-else-if="!filtered.length" class="empty-state">
-        <div class="empty-icon"><i class="pi pi-microphone"></i></div>
-        <div>Nessuna assemblea trovata</div>
-      </div>
-      <div v-else class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Titolo</th>
-              <th>Tipo</th>
-              <th>Stato</th>
-              <th>Data convocata</th>
-              <th>Data effettiva</th>
-              <th>Luogo</th>
-              <th class="text-center">OdG</th>
-              <th class="text-center">Presenze</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="a in filtered" :key="a.id" class="clickable-row" @click="goToDetail(a.id)">
-              <td style="font-weight:500">{{ a.title }}</td>
-              <td class="text-secondary">{{ a.assemblyTypeName }}</td>
-              <td><span class="badge" :class="statusClass(a.statusId)">{{ a.statusName }}</span></td>
-              <td>{{ fmtDate(a.scheduledDate) }}</td>
-              <td>{{ a.actualDate ? fmtDate(a.actualDate) : '—' }}</td>
-              <td class="text-secondary">{{ a.location || '—' }}</td>
-              <td class="text-center text-secondary">{{ a.agendaItemCount }}</td>
-              <td class="text-center text-secondary">{{ a.attendanceCount }}</td>
-              <td @click.stop>
-                <div class="row-actions">
-                  <button v-if="canEdit && a.statusId === 1" class="btn-icon" @click="planAssembly(a)" title="Sposta in Pianificata"><i class="pi pi-send"></i></button>
-                  <button v-if="canEdit && a.statusId === 3" class="btn-icon" @click="openCloseModal(a)" title="Segna come svolta">✓</button>
-                  <button v-if="canEdit && [1,2,3].includes(a.statusId)" class="btn-icon" style="color:var(--accent-red)" @click="cancelAssembly(a)" title="Annulla assemblea"><i class="pi pi-ban"></i></button>
-                  <button v-if="canEdit" class="btn-icon" @click="openModal(a)" title="Modifica">✎</button>
-                  <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)" @click="deleteItem(a.id)" title="Elimina">✕</button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <div v-if="loading" class="loading-state"><div class="spinner"></div> Caricamento…</div>
+    <div v-else-if="!filtered.length" class="empty-state card">
+      <div class="empty-icon"><i class="pi pi-microphone"></i></div>
+      <div>Nessuna assemblea trovata</div>
+    </div>
+    <div v-else class="assembly-list">
+      <div v-for="a in filtered" :key="a.id" class="assembly-card card" @click="goToDetail(a.id)">
+        <div class="assembly-card-main">
+          <div class="assembly-card-info">
+            <div class="assembly-card-title">{{ a.title }}</div>
+            <div class="assembly-card-meta">
+              <span class="badge" :class="statusClass(a.statusId)">{{ a.statusName }}</span>
+              <span class="meta-chip">{{ a.assemblyTypeName }}</span>
+              <span v-if="a.fiscalYearName" class="meta-chip">{{ a.fiscalYearName }}</span>
+            </div>
+          </div>
+          <div class="assembly-card-dates">
+            <div class="date-item">
+              <span class="date-label">Convocata</span>
+              <span class="date-value">{{ fmtDate(a.scheduledDate) }}</span>
+            </div>
+            <div v-if="a.actualDate" class="date-item">
+              <span class="date-label">Svolta</span>
+              <span class="date-value">{{ fmtDate(a.actualDate) }}</span>
+            </div>
+            <div v-if="a.location" class="date-item">
+              <span class="date-label">Luogo</span>
+              <span class="date-value">{{ a.location }}</span>
+            </div>
+          </div>
+          <div class="assembly-card-counts">
+            <div class="count-chip"><i class="pi pi-list"></i> {{ a.agendaItemCount }} punti OdG</div>
+            <div class="count-chip"><i class="pi pi-users"></i> {{ a.attendanceCount }} presenze</div>
+          </div>
+          <div class="assembly-card-actions" @click.stop>
+            <button v-if="canEdit && a.statusId === 1" class="btn-icon" @click="planAssembly(a)" title="Sposta in Pianificata"><i class="pi pi-send"></i></button>
+            <button v-if="canEdit && a.statusId === 3" class="btn-icon" @click="openCloseModal(a)" title="Segna come svolta"><i class="pi pi-check"></i></button>
+            <button v-if="canEdit && [1,2,3].includes(a.statusId)" class="btn-icon" style="color:var(--accent-red)" @click="cancelAssembly(a)" title="Annulla assemblea"><i class="pi pi-ban"></i></button>
+            <button v-if="canEdit" class="btn-icon" @click="openModal(a)" title="Modifica">✎</button>
+            <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)" @click="deleteItem(a.id)" title="Elimina">✕</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -340,12 +339,39 @@ watch(condominiumId, loadData)
 </script>
 
 <style scoped>
-.clickable-row { cursor: pointer; }
-.clickable-row:hover td { background: var(--bg-surface); }
+.filter-select { max-width: 160px; }
 
 .badge-blue   { background: rgba(99,102,241,.12); color: #6366f1; }
 .badge-purple { background: rgba(168,85,247,.12); color: #a855f7; }
 .badge-gray   { background: rgba(107,114,128,.12); color: #6b7280; }
 
-.filter-select { max-width: 160px; }
+.assembly-list { display: flex; flex-direction: column; gap: .75rem; }
+
+.assembly-card {
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.assembly-card:hover { border-color: var(--border-active); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+
+.assembly-card-main {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.assembly-card-info { flex: 1; min-width: 0; }
+.assembly-card-title { font-size: 1rem; font-weight: 600; margin-bottom: .35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assembly-card-meta { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+.meta-chip { font-size: .78rem; color: var(--text-secondary); background: var(--bg-surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; }
+
+.assembly-card-dates { display: flex; gap: 1.5rem; flex-shrink: 0; }
+.date-item { display: flex; flex-direction: column; gap: .1rem; }
+.date-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+.date-value { font-size: .85rem; color: var(--text); white-space: nowrap; }
+
+.assembly-card-counts { display: flex; flex-direction: column; gap: .3rem; flex-shrink: 0; }
+.count-chip { font-size: .78rem; color: var(--text-secondary); display: flex; align-items: center; gap: .35rem; }
+
+.assembly-card-actions { display: flex; align-items: center; gap: .15rem; flex-shrink: 0; }
 </style>
