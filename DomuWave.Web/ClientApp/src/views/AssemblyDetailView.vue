@@ -110,8 +110,8 @@
         <div class="quorum-info text-secondary" style="font-size:.875rem">
           Millesimi presenti: <strong>{{ totMillesimi.toFixed(4) }}</strong>
         </div>
-        <button v-if="canEdit && assembly.statusId !== 5" class="btn btn-ghost btn-sm" style="margin-left:auto" @click="prepopulateAttendances">
-          <i class="pi pi-refresh"></i> Prepopola presenze
+        <button v-if="canEdit && assembly.statusId !== 5" class="btn btn-ghost btn-sm" style="margin-left:auto" @click="prepopulateAttendances" title="Aggiunge automaticamente tutti i proprietari attivi del condominio non ancora presenti nell'elenco, impostando il tipo di presenza su 'Assente' e precompilando i millesimi dalla tabella millesimale di default.">
+          <i class="pi pi-refresh"></i> Rigenera partecipanti
         </button>
         <button v-if="canCreate && assembly.statusId !== 2" class="btn btn-primary btn-sm" @click="openAttendanceModal()">
           + Aggiungi presenza
