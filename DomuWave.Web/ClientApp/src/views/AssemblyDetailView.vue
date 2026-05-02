@@ -122,34 +122,38 @@
         <div v-else-if="!attendances.length" class="empty-state">
           <div>Nessuna presenza registrata</div>
         </div>
-        <div v-else class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Proprietario</th>
-                <th>Unità</th>
-                <th>Presenza</th>
-                <th>Delegato</th>
-                <th class="text-right">Millesimi</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="a in attendances" :key="a.id">
-                <td>{{ a.ownerFirstName }} {{ a.ownerLastName }}</td>
-                <td class="mono text-secondary">{{ a.unitInternalNumber || '—' }}</td>
-                <td><span class="badge" :class="attendanceClass(a.attendanceTypeId)">{{ a.attendanceTypeName }}</span></td>
-                <td class="text-secondary">{{ a.delegateName || '—' }}</td>
-                <td class="text-right mono">{{ a.millesimalValue?.toFixed(4) ?? '—' }}</td>
-                <td v-if="canEdit">
-                  <div class="row-actions">
-                    <button class="btn-icon" @click="openAttendanceModal(a)" title="Modifica">✎</button>
-                    <button class="btn-icon" style="color:var(--accent-red)" @click="deleteAttendance(a.id)" title="Elimina">✕</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-else class="attendance-groups">
+          <div v-for="group in attendancesByOwner" :key="group.ownerId" class="attendance-group">
+            <div class="attendance-group-header">
+              <span class="attendance-owner-name">{{ group.ownerLastName }} {{ group.ownerFirstName }}</span>
+              <span class="text-muted" style="font-size:.8rem; margin-left:.5rem">({{ group.items.length }} unità)</span>
+            </div>
+            <table class="attendance-group-table">
+              <thead>
+                <tr>
+                  <th>Unità</th>
+                  <th>Presenza</th>
+                  <th>Delegato</th>
+                  <th class="text-right">Millesimi</th>
+                  <th v-if="canEdit"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="a in group.items" :key="a.id">
+                  <td class="mono text-secondary">{{ a.unitInternalNumber || '—' }}</td>
+                  <td><span class="badge" :class="attendanceClass(a.attendanceTypeId)">{{ a.attendanceTypeName }}</span></td>
+                  <td class="text-secondary">{{ a.delegateName || '—' }}</td>
+                  <td class="text-right mono">{{ a.millesimalValue?.toFixed(4) ?? '—' }}</td>
+                  <td v-if="canEdit">
+                    <div class="row-actions">
+                      <button class="btn-icon" @click="openAttendanceModal(a)" title="Modifica">✎</button>
+                      <button class="btn-icon" style="color:var(--accent-red)" @click="deleteAttendance(a.id)" title="Elimina">✕</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -440,6 +444,25 @@ const totMillesimi = computed(() =>
 )
 
 const registeredOwnerIds = computed(() => new Set(attendances.value.map(a => a.unitOwnerId)))
+
+const attendancesByOwner = computed(() => {
+  const map = new Map()
+  for (const a of attendances.value) {
+    if (!map.has(a.unitOwnerId)) {
+      map.set(a.unitOwnerId, {
+        ownerId:       a.unitOwnerId,
+        ownerFirstName: a.ownerFirstName,
+        ownerLastName:  a.ownerLastName,
+        items:         [],
+      })
+    }
+    map.get(a.unitOwnerId).items.push(a)
+  }
+  return [...map.values()].sort((a, b) =>
+    (a.ownerLastName ?? '').localeCompare(b.ownerLastName ?? '', 'it') ||
+    (a.ownerFirstName ?? '').localeCompare(b.ownerFirstName ?? '', 'it')
+  )
+})
 
 const availableOwners = computed(() =>
   allOwners.value.filter(o => !registeredOwnerIds.value.has(o.id))
@@ -786,4 +809,14 @@ onMounted(loadAssembly)
 .info-link:hover { text-decoration: underline; }
 
 .minutes-editor { font-family: var(--font-mono, monospace); font-size: .875rem; line-height: 1.6; resize: vertical; }
+
+.attendance-groups { display: flex; flex-direction: column; }
+.attendance-group { border-bottom: 1px solid var(--border); }
+.attendance-group:last-child { border-bottom: none; }
+.attendance-group-header { padding: .6rem 1rem; background: var(--bg-surface); display: flex; align-items: center; border-bottom: 1px solid var(--border); }
+.attendance-owner-name { font-weight: 600; font-size: .9rem; }
+.attendance-group-table { width: 100%; border-collapse: collapse; }
+.attendance-group-table th { padding: .4rem 1rem; font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border); background: transparent; }
+.attendance-group-table td { padding: .5rem 1rem; font-size: .875rem; border: none; }
+.attendance-group-table tbody tr:hover { background: var(--bg-surface); }
 </style>
