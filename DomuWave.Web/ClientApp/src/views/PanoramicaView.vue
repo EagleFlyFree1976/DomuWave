@@ -170,6 +170,10 @@ const filteredUnits = computed(() => {
 
 // ─── Data loading ─────────────────────────────────────────────
 async function load(id) {
+  if (!id) {
+    units.value = []
+    return
+  }
   loadingUnits.value = true
   try {
     const { data } = await unitApi.getPanoramica(id)

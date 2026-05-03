@@ -35,7 +35,7 @@
                     title="Mostra/nascondi tipi cancellati">
               {{ showDeletedTypes ? 'Nascondi cancellati' : 'Mostra cancellati' }}
             </button>
-            <button v-if="canCreate" class="btn btn-primary btn-sm" @click="openTypeModal()">+ Nuovo tipo</button>
+            <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary btn-sm" @click="openTypeModal()">+ Nuovo tipo</button>
           </div>
         </div>
         <div v-if="loadingTypes" class="loading-state"><div class="spinner"></div></div>
@@ -89,7 +89,7 @@
                     title="Mostra/nascondi contatori e tipi cancellati">
               {{ showDeletedMeters ? 'Nascondi cancellati' : 'Mostra cancellati' }}
             </button>
-            <button v-if="canCreate" class="btn btn-primary btn-sm" @click="openMeterModal()">+ Nuovo contatore</button>
+            <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary btn-sm" @click="openMeterModal()">+ Nuovo contatore</button>
           </div>
         </div>
         <div v-if="loadingMeters" class="loading-state"><div class="spinner"></div></div>
@@ -277,7 +277,7 @@
                     title="Mostra/nascondi ripartizioni con tipo cancellato">
               {{ showDeletedCharges ? 'Nascondi cancellati' : 'Mostra cancellati' }}
             </button>
-            <button v-if="canCreate && chargesFiscalYearId" class="btn btn-primary btn-sm" @click="openChargeModal()">+ Nuova ripartizione</button>
+            <button v-if="canCreate && store.selectedCondominioId && chargesFiscalYearId" class="btn btn-primary btn-sm" @click="openChargeModal()">+ Nuova ripartizione</button>
           </div>
         </div>
 

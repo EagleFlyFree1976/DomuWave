@@ -3,11 +3,11 @@
     <div class="page-header">
       <h1>Template Notifiche</h1>
       <div style="display:flex;gap:8px">
-        <button v-if="canCreate" class="btn btn-ghost" @click="seedDefaults" :disabled="seeding" title="Crea i template standard mancanti">
+        <button v-if="canCreate && store.selectedCondominioId" class="btn btn-ghost" @click="seedDefaults" :disabled="seeding" title="Crea i template standard mancanti">
           <span v-if="seeding" class="spinner" style="width:13px;height:13px"></span>
           <span v-else>⚙ Ripristina default</span>
         </button>
-        <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuovo template</button>
+        <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary" @click="openModal()">+ Nuovo template</button>
       </div>
     </div>
 

@@ -367,6 +367,10 @@ const filtered = computed(() => {
 })
 
 async function loadData() {
+  if (!condominiumId.value) {
+    units.value = []
+    return
+  }
   loading.value = true
   try {
     const { data } = await unitApi.getByCondominium(condominiumId.value)

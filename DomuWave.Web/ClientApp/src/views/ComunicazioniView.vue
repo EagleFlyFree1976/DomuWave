@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h1>Comunicazioni</h1>
-      <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuova comunicazione</button>
+      <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary" @click="openModal()">+ Nuova comunicazione</button>
     </div>
 
     <div class="toolbar">

@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h1>Manutenzioni</h1>
-      <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuova manutenzione</button>
+      <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary" @click="openModal()">+ Nuova manutenzione</button>
     </div>
 
     <div class="toolbar">

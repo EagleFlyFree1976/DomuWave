@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h1>Lavori Straordinari</h1>
-      <button v-if="canCreate" class="btn btn-primary" @click="openWorkModal()">+ Nuovo lavoro</button>
+      <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary" @click="openWorkModal()">+ Nuovo lavoro</button>
     </div>
 
     <div class="toolbar">

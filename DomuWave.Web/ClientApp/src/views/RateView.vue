@@ -2,7 +2,7 @@
   <div>
     <div class="page-header">
       <h1>Rate</h1>
-      <button v-if="canCreate" class="btn btn-primary" @click="openInstModal()">+ Nuova rata</button>
+      <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary" @click="openInstModal()">+ Nuova rata</button>
       <button v-if="installments.length" class="btn btn-ghost" @click="openNotifModal()">📧 Notifica condomini</button>
     </div>
 
