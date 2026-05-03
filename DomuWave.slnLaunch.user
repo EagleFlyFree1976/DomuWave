@@ -1,6 +1,6 @@
 [
   {
-    "Name": "New Profile",
+    "Name": "Web + Api",
     "Projects": [
       {
         "Path": "DomuWave.Web\\DomuWave.Web.csproj",
@@ -9,6 +9,16 @@
       {
         "Path": "DomuWave.Application\\DomuWave.Application.csproj",
         "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "All",
+    "Projects": [
+      {
+        "Path": "DomuWave.Unified\\DomuWave.Unified.csproj",
+        "Action": "Start",
+        "DebugTarget": "http"
       }
     ]
   }

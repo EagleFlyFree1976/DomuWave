@@ -1,19 +1,10 @@
 {
   "profiles": {
-    "DomuWave.Unified": {
-      "commandName": "Executable",
-      "executablePath": "$(TargetPath)",
-      "commandLineArgs": "--service --env Development --port 40200",
-      "applicationUrl": "http://localhost:40200",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
-    },
     "http": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
-      "applicationUrl": "http://localhost:40200",
+      "applicationUrl": "http://localhost:40300",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

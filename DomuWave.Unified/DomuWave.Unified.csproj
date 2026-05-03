@@ -37,66 +37,63 @@
 
   <!-- ── File C# condivisi con DomuWave.Application (link, non copie) ── -->
   <ItemGroup>
-    <Compile Include="..\DomuWave.Application\BusExtentions.cs"                                            Link="BusExtentions.cs" />
-    <Compile Include="..\DomuWave.Application\Clients\LocalAuthorizationClient.cs"                         Link="Clients\LocalAuthorizationClient.cs" />
-    <Compile Include="..\DomuWave.Application\Code\PrivateAdminControllerBase.cs"                          Link="Code\PrivateAdminControllerBase.cs" />
-    <Compile Include="..\DomuWave.Application\Code\PrivateControllerBase.cs"                               Link="Code\PrivateControllerBase.cs" />
-    <Compile Include="..\DomuWave.Application\Code\TenantContextController.cs"                             Link="Code\TenantContextController.cs" />
-    <Compile Include="..\DomuWave.Application\Filters\SystemBookHeaderFilter.cs"                           Link="Filters\SystemBookHeaderFilter.cs" />
-    <Compile Include="..\DomuWave.Application\Filters\TenantHeaderFilter.cs"                               Link="Filters\TenantHeaderFilter.cs" />
-    <Compile Include="..\DomuWave.Application\Models\TenantPagedQuery.cs"                                  Link="Models\TenantPagedQuery.cs" />
-    <Compile Include="..\DomuWave.Application\Models\UserDto.cs"                                           Link="Models\UserDto.cs" />
-    <Compile Include="..\DomuWave.Application\Models\Auth\ConfirmResetPasswordRequest.cs"                  Link="Models\Auth\ConfirmResetPasswordRequest.cs" />
-    <Compile Include="..\DomuWave.Application\Models\Auth\RegisterUser.cs"                                 Link="Models\Auth\RegisterUser.cs" />
-    <Compile Include="..\DomuWave.Application\Models\Auth\TokenRequest.cs"                                 Link="Models\Auth\TokenRequest.cs" />
-    <Compile Include="..\DomuWave.Application\Models\Auth\UserLogin.cs"                                    Link="Models\Auth\UserLogin.cs" />
+    <Compile Include="..\DomuWave.Application\BusExtentions.cs" Link="BusExtentions.cs" />
+    <Compile Include="..\DomuWave.Application\Clients\LocalAuthorizationClient.cs" Link="Clients\LocalAuthorizationClient.cs" />
+    <Compile Include="..\DomuWave.Application\Code\PrivateAdminControllerBase.cs" Link="Code\PrivateAdminControllerBase.cs" />
+    <Compile Include="..\DomuWave.Application\Code\PrivateControllerBase.cs" Link="Code\PrivateControllerBase.cs" />
+    <Compile Include="..\DomuWave.Application\Code\TenantContextController.cs" Link="Code\TenantContextController.cs" />
+    <Compile Include="..\DomuWave.Application\Filters\SystemBookHeaderFilter.cs" Link="Filters\SystemBookHeaderFilter.cs" />
+    <Compile Include="..\DomuWave.Application\Filters\TenantHeaderFilter.cs" Link="Filters\TenantHeaderFilter.cs" />
+    <Compile Include="..\DomuWave.Application\Models\TenantPagedQuery.cs" Link="Models\TenantPagedQuery.cs" />
+    <Compile Include="..\DomuWave.Application\Models\UserDto.cs" Link="Models\UserDto.cs" />
+    <Compile Include="..\DomuWave.Application\Models\Auth\ConfirmResetPasswordRequest.cs" Link="Models\Auth\ConfirmResetPasswordRequest.cs" />
+    <Compile Include="..\DomuWave.Application\Models\Auth\RegisterUser.cs" Link="Models\Auth\RegisterUser.cs" />
+    <Compile Include="..\DomuWave.Application\Models\Auth\TokenRequest.cs" Link="Models\Auth\TokenRequest.cs" />
+    <Compile Include="..\DomuWave.Application\Models\Auth\UserLogin.cs" Link="Models\Auth\UserLogin.cs" />
     <!-- Controllers API -->
-    <Compile Include="..\DomuWave.Application\Controllers\AccountBalancesController.cs"                    Link="Controllers\AccountBalancesController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\AdminController.cs"                              Link="Controllers\AdminController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\AssembliesController.cs"                         Link="Controllers\AssembliesController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\BillingGroupsController.cs"                      Link="Controllers\BillingGroupsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\BudgetItemsController.cs"                        Link="Controllers\BudgetItemsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\BudgetsController.cs"                            Link="Controllers\BudgetsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsCategoryController.cs"            Link="Controllers\ChartOfAccountsCategoryController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsCategoryTemplateController.cs"    Link="Controllers\ChartOfAccountsCategoryTemplateController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsController.cs"                    Link="Controllers\ChartOfAccountsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsTemplatesController.cs"           Link="Controllers\ChartOfAccountsTemplatesController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\CommunicationsAndMessagesController.cs"          Link="Controllers\CommunicationsAndMessagesController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\CondominiumsController.cs"                       Link="Controllers\CondominiumsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\ConsumptionController.cs"                        Link="Controllers\ConsumptionController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\DashboardController.cs"                          Link="Controllers\DashboardController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\DynamicFilesController.cs"                       Link="Controllers\DynamicFilesController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\ExpensesController.cs"                           Link="Controllers\ExpensesController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\ExtraordinaryWorksController.cs"                 Link="Controllers\ExtraordinaryWorksController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\FeesAndInstallmentsController.cs"                Link="Controllers\FeesAndInstallmentsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\FileAttachmentsController.cs"                    Link="Controllers\FileAttachmentsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\FiscalYearsController.cs"                        Link="Controllers\FiscalYearsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\MaintenanceController.cs"                        Link="Controllers\MaintenanceController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\MenuesController.cs"                             Link="Controllers\MenuesController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\NotificationSystemController.cs"                 Link="Controllers\NotificationSystemController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\PublicUserController.cs"                         Link="Controllers\PublicUserController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\RealEstateUnitsController.cs"                    Link="Controllers\RealEstateUnitsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\SupplierContractsController.cs"                  Link="Controllers\SupplierContractsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\SuppliersAndMillesimalController.cs"             Link="Controllers\SuppliersAndMillesimalController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\TenantsController.cs"                            Link="Controllers\TenantsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\UnitOwnersController.cs"                         Link="Controllers\UnitOwnersController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\UnitTenantsController.cs"                        Link="Controllers\UnitTenantsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\UsersController.cs"                              Link="Controllers\UsersController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\UserTenantsController.cs"                        Link="Controllers\UserTenantsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationBaseController.cs"             Link="Controllers\Auth\AuthorizationBaseController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationGroupsController.cs"           Link="Controllers\Auth\AuthorizationGroupsController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationRolesController.cs"            Link="Controllers\Auth\AuthorizationRolesController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationUsersController.cs"            Link="Controllers\Auth\AuthorizationUsersController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthUsersController.cs"                     Link="Controllers\Auth\AuthUsersController.cs" />
-    <Compile Include="..\DomuWave.Application\Controllers\Auth\PublicUserController.cs"                    Link="Controllers\Auth\Auth.PublicUserController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\AccountBalancesController.cs" Link="Controllers\AccountBalancesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\AdminController.cs" Link="Controllers\AdminController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\AssembliesController.cs" Link="Controllers\AssembliesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\BillingGroupsController.cs" Link="Controllers\BillingGroupsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\BudgetItemsController.cs" Link="Controllers\BudgetItemsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\BudgetsController.cs" Link="Controllers\BudgetsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsCategoryController.cs" Link="Controllers\ChartOfAccountsCategoryController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsCategoryTemplateController.cs" Link="Controllers\ChartOfAccountsCategoryTemplateController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsController.cs" Link="Controllers\ChartOfAccountsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsTemplatesController.cs" Link="Controllers\ChartOfAccountsTemplatesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\CommunicationsAndMessagesController.cs" Link="Controllers\CommunicationsAndMessagesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\CondominiumsController.cs" Link="Controllers\CondominiumsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\ConsumptionController.cs" Link="Controllers\ConsumptionController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\DashboardController.cs" Link="Controllers\DashboardController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\DynamicFilesController.cs" Link="Controllers\DynamicFilesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\ExpensesController.cs" Link="Controllers\ExpensesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\ExtraordinaryWorksController.cs" Link="Controllers\ExtraordinaryWorksController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\FeesAndInstallmentsController.cs" Link="Controllers\FeesAndInstallmentsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\FileAttachmentsController.cs" Link="Controllers\FileAttachmentsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\FiscalYearsController.cs" Link="Controllers\FiscalYearsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\MaintenanceController.cs" Link="Controllers\MaintenanceController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\MenuesController.cs" Link="Controllers\MenuesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\NotificationSystemController.cs" Link="Controllers\NotificationSystemController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\PublicUserController.cs" Link="Controllers\PublicUserController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\RealEstateUnitsController.cs" Link="Controllers\RealEstateUnitsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\SupplierContractsController.cs" Link="Controllers\SupplierContractsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\SuppliersAndMillesimalController.cs" Link="Controllers\SuppliersAndMillesimalController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\TenantsController.cs" Link="Controllers\TenantsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\UnitOwnersController.cs" Link="Controllers\UnitOwnersController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\UnitTenantsController.cs" Link="Controllers\UnitTenantsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\UsersController.cs" Link="Controllers\UsersController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\UserTenantsController.cs" Link="Controllers\UserTenantsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationBaseController.cs" Link="Controllers\Auth\AuthorizationBaseController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationGroupsController.cs" Link="Controllers\Auth\AuthorizationGroupsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationRolesController.cs" Link="Controllers\Auth\AuthorizationRolesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationUsersController.cs" Link="Controllers\Auth\AuthorizationUsersController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthUsersController.cs" Link="Controllers\Auth\AuthUsersController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\Auth\PublicUserController.cs" Link="Controllers\Auth\Auth.PublicUserController.cs" />
   </ItemGroup>
 
-  <!-- Config NHibernate copiati dall'Application -->
+  <!-- Config NHibernate (file fisici nella directory config/ del progetto) -->
   <ItemGroup>
-    <Content Include="..\DomuWave.Application\config\sessionfactory-AUTH.cfg.xml" Link="config\sessionfactory-AUTH.cfg.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\DomuWave.Application\config\sessionfactory-CONFIG.cfg.xml" Link="config\sessionfactory-CONFIG.cfg.xml">
+    <Content Include="config\*.cfg.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -110,7 +107,7 @@
 
   <!-- Package identici a DomuWave.Application -->
   <ItemGroup>
-    <PackageReference Include="CPQ.Core" Version="1.6.0" />
+    <PackageReference Include="CPQ.Core" Version="1.7.3" />
     <PackageReference Include="CPQ.Core.EventSource" Version="1.0.0" />
     <PackageReference Include="FluentNHibernate" Version="3.4.1" />
     <PackageReference Include="Hellang.Middleware.ProblemDetails" Version="6.5.1" />

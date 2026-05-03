@@ -105,6 +105,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(STORAGE_TENANT_NAME_KEY)
     localStorage.removeItem('domuwave_user')
     localStorage.removeItem('domuwave_userprofile')
+    localStorage.removeItem('domuwave_selected_condo_id')
   }
 
   return { token, user, loading, error, isAuthenticated, currentUser, login, logout, requestReset }

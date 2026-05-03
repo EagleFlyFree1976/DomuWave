@@ -46,7 +46,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="CPQ.Core" Version="1.6.0" />
+    <PackageReference Include="CPQ.Core" Version="1.7.3" />
     <PackageReference Include="CPQ.Core.EventSource" Version="1.0.0" />
     <PackageReference Include="FluentNHibernate" Version="3.4.1" />
     <PackageReference Include="Hellang.Middleware.ProblemDetails" Version="6.5.1" />
@@ -104,9 +104,6 @@
     <Folder Include="Controllers\Admin\" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="config\sessionfactory-AUTH-dbo.cfg.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Update="config\sessionfactory-DomuWave.cfg.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

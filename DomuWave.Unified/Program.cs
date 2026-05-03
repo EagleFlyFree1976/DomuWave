@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.Extensions.FileProviders;
 using Auth.Microservice;
 using Auth.Services;
 using QuestPDF.Infrastructure;
@@ -22,6 +23,7 @@ var NETCoreEnv = OxCore.ChangeEnvironments(args);
 QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 builder.Services.AddWindowsService();
 
@@ -140,6 +142,22 @@ try
 
     app.UseHeaderPropagation();
 
+    // Static files first — before OxCore intercepts requests
+    if (app.Environment.IsDevelopment())
+    {
+        var webWwwroot = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "DomuWave.Web", "wwwroot"));
+        if (Directory.Exists(webWwwroot))
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(webWwwroot),
+                RequestPath  = ""
+            });
+    }
+    else
+    {
+        app.UseStaticFiles();
+    }
+
     app.UseCors("CorsPolicy");
 
     app.Use((context, next) =>
@@ -157,9 +175,6 @@ try
 
     app.UseOxCore(_oxCoreSettings);
     app.UseOxHangfireDashboard(_jobSettings);
-
-    // Static files (Vue build output in wwwroot)
-    app.UseStaticFiles();
 
     app.UseRouting();
 

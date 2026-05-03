@@ -77,7 +77,7 @@ public class PublicUserController(
                 IsActive = authUser.IsActive,
             };
 
-            var _user = await _userService.GetByIdAsync(authUser.Id, cancellationToken).ConfigureAwait(false);
+            CPQ.Core.Memberships.User? _user = await _userService.GetByIdAsync(authUser.Id, cancellationToken).ConfigureAwait(false);
             if (_user.IsSystemUser)
             {
                 returnDto.Profile = UserProfile.SuperAdmin;
