@@ -77,11 +77,11 @@ public class RealEstateUnitServiceTests : TestBase
             new() { Id = 2 },
             new() { Id = 3 }
         };
-        _serviceMock.Setup(s => s.GetByCondominiumIdAsync(CondominiumId, _currentUser, _ct))
+        _serviceMock.Setup(s => s.GetByCondominiumIdAsync(CondominiumId, It.IsAny<Guid>(), _currentUser, _ct))
                     .ReturnsAsync(units);
 
         // Act
-        var result = await _serviceMock.Object.GetByCondominiumIdAsync(CondominiumId, _currentUser, _ct);
+        var result = await _serviceMock.Object.GetByCondominiumIdAsync(CondominiumId, Guid.Empty, _currentUser, _ct);
 
         // Assert
         result.Should().HaveCount(3);

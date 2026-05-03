@@ -98,10 +98,10 @@ public class CondominiumFeeServiceTests : TestBase
     {
         // Arrange
         var fees = new List<CondominiumFee> { new() { Id = 1L } };
-        _serviceMock.Setup(s => s.GetByUnitIdAsync(5, _currentUser, _ct)).ReturnsAsync(fees);
+        _serviceMock.Setup(s => s.GetByUnitIdAsync(5, It.IsAny<Guid>(), _currentUser, _ct)).ReturnsAsync(fees);
 
         // Act
-        var result = await _serviceMock.Object.GetByUnitIdAsync(5, _currentUser, _ct);
+        var result = await _serviceMock.Object.GetByUnitIdAsync(5, Guid.Empty, _currentUser, _ct);
 
         // Assert
         result.Should().HaveCount(1);
@@ -226,11 +226,11 @@ public class CondominiumInstallmentServiceTests : TestBase
             new() { Id = 1 },
             new() { Id = 2 }
         };
-        _serviceMock.Setup(s => s.GetByCondominiumIdAsync(CondominiumId, _currentUser, _ct))
+        _serviceMock.Setup(s => s.GetByCondominiumIdAsync(CondominiumId, It.IsAny<Guid>(), _currentUser, _ct))
                     .ReturnsAsync(installments);
 
         // Act
-        var result = await _serviceMock.Object.GetByCondominiumIdAsync(CondominiumId, _currentUser, _ct);
+        var result = await _serviceMock.Object.GetByCondominiumIdAsync(CondominiumId, Guid.Empty, _currentUser, _ct);
 
         // Assert
         result.Should().HaveCount(2);

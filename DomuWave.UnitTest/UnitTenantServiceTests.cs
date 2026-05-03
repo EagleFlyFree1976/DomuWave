@@ -75,10 +75,10 @@ public class UnitTenantServiceTests : TestBase
             new() { Id = 1, IsActive = false, LeaseStartDate = new DateTime(2020, 1, 1) }, // ex-inquilino
             new() { Id = 2, IsActive = true,  LeaseStartDate = new DateTime(2024, 1, 1) }, // attuale
         };
-        _serviceMock.Setup(s => s.GetByUnitIdAsync(UnitId, _currentUser, _ct))
+        _serviceMock.Setup(s => s.GetByUnitIdAsync(UnitId, It.IsAny<Guid>(), _currentUser, _ct))
                     .ReturnsAsync(tenants);
 
-        var result = await _serviceMock.Object.GetByUnitIdAsync(UnitId, _currentUser, _ct);
+        var result = await _serviceMock.Object.GetByUnitIdAsync(UnitId, Guid.Empty, _currentUser, _ct);
 
         result.Should().HaveCount(2, "GetByUnit deve restituire anche gli inquilini storici");
     }

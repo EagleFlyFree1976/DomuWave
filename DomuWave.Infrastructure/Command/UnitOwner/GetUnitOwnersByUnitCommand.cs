@@ -5,13 +5,14 @@ namespace DomuWave.Services.Command.UnitOwner;
 
 public class GetUnitOwnersByUnitCommand : BaseCommand, IQuery<IList<UnitOwnerReadDto>>
 {
-    public int UnitId { get; set; }
+    public int  UnitId   { get; set; }
+    public Guid TenantId { get; set; }
 
     public GetUnitOwnersByUnitCommand() { }
 
-    public GetUnitOwnersByUnitCommand(int currentUserId) : base(currentUserId) { }
-    public GetUnitOwnersByUnitCommand(int currentUserId, int unitId) : base(currentUserId)
+    public GetUnitOwnersByUnitCommand(int currentUserId, int unitId, Guid tenantId) : base(currentUserId)
     {
-        UnitId = unitId;
+        UnitId   = unitId;
+        TenantId = tenantId;
     }
 }

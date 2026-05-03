@@ -68,11 +68,12 @@ namespace DomuWave.Services.Implementations
         /// <inheritdoc />
         public async Task<IList<FiscalYear>> GetByCondominiumAsync(
             int condominiumId,
+            Guid tenantId,
             IUser currentUser,
             CancellationToken ct = default)
         {
             return await session.Query<FiscalYear>()
-                .Where(x => x.Condominium.Id == condominiumId && !x.IsDeleted)
+                .Where(x => x.Condominium.Id == condominiumId && x.Tenant.Id == tenantId && !x.IsDeleted)
                 .OrderByDescending(x => x.StartDate)
                 .ToListAsync(ct);
         }

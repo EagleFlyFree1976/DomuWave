@@ -94,10 +94,11 @@ public class MillesimalTablesController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
+    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
 
     [HttpGet("by-condominium/{condominiumId:int}")]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetMillesimalTablesByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
+        => Ok(await _mediator.GetResponse(new GetMillesimalTablesByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct));
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)

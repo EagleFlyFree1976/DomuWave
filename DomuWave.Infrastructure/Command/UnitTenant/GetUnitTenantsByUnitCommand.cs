@@ -5,13 +5,14 @@ namespace DomuWave.Services.Command.UnitTenant;
 
 public class GetUnitTenantsByUnitCommand : BaseCommand, IQuery<IList<UnitTenantReadDto>>
 {
-    public int UnitId { get; set; }
+    public int  UnitId   { get; set; }
+    public Guid TenantId { get; set; }
 
     public GetUnitTenantsByUnitCommand() { }
 
-    public GetUnitTenantsByUnitCommand(int currentUserId) : base(currentUserId) { }
-    public GetUnitTenantsByUnitCommand(int currentUserId, int unitId) : base(currentUserId)
+    public GetUnitTenantsByUnitCommand(int currentUserId, int unitId, Guid tenantId) : base(currentUserId)
     {
-        UnitId = unitId;
+        UnitId   = unitId;
+        TenantId = tenantId;
     }
 }

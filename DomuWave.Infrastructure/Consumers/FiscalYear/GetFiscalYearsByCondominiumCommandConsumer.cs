@@ -34,7 +34,7 @@ public class GetFiscalYearsByCondominiumCommandConsumer : InMemoryConsumerBase<G
             .ConfigureAwait(false);
 
         var list = await _fiscalYearService
-            .GetByCondominiumAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByCondominiumAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
         return list.Select(fy => fy.ToListItemDto()).ToList();
     }

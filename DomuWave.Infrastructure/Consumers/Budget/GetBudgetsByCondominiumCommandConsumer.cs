@@ -34,7 +34,7 @@ public class GetBudgetsByCondominiumCommandConsumer
             .ConfigureAwait(false);
 
         var budgets = await _budgetService
-            .GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return budgets.Select(b => b.ToReadDto()).ToList();

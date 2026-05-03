@@ -29,7 +29,7 @@ public class GetAssembliesByCondominiumCommandConsumer : InMemoryConsumerBase<Ge
         CancellationToken                 cancellationToken)
     {
         var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
-        var assemblies  = await _assemblyService.GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken).ConfigureAwait(false);
+        var assemblies  = await _assemblyService.GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken).ConfigureAwait(false);
         return assemblies.Select(a => a.ToReadDto()).ToList();
     }
 }

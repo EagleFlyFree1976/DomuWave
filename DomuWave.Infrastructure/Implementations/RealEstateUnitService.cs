@@ -136,10 +136,10 @@ namespace DomuWave.Services.Implementations
             return (items, totalCount);
         }
 
-        public async Task<IList<RealEstateUnit>> GetByCondominiumIdAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken)
+        public async Task<IList<RealEstateUnit>> GetByCondominiumIdAsync(int condominiumId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<RealEstateUnit>()
-                .Where(x => x.Condominium.Id == condominiumId && !x.IsDeleted)
+                .Where(x => x.Condominium.Id == condominiumId && x.Tenant.Id == tenantId && !x.IsDeleted)
                 .OrderBy(x => x.Staircase)
                 .ThenBy(x => x.Floor)
                 .ThenBy(x => x.InternalNumber)

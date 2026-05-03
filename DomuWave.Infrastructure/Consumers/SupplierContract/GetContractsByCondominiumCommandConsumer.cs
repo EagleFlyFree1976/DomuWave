@@ -30,7 +30,7 @@ public class GetContractsByCondominiumCommandConsumer
         CancellationToken cancellationToken)
     {
         var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
-        var contracts   = await _contractService.GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken).ConfigureAwait(false);
+        var contracts   = await _contractService.GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken).ConfigureAwait(false);
         return contracts.Select(c => c.ToReadDto()).ToList();
     }
 }

@@ -33,7 +33,7 @@ public class GetRealEstateUnitsByCondominiumCommandConsumer : InMemoryConsumerBa
             .ConfigureAwait(false);
 
         var units = await _realEstateUnitService
-            .GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return units.Select(u => u.ToReadDto()).ToList();

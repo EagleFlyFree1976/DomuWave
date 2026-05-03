@@ -32,9 +32,9 @@ public class AssemblyService : BaseService, IAssemblyService
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-    public async Task<IList<Assembly>> GetByCondominiumIdAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken)
+    public async Task<IList<Assembly>> GetByCondominiumIdAsync(int condominiumId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         => await session.Query<Assembly>()
-            .Where(x => x.Condominium.Id == condominiumId && !x.IsDeleted)
+            .Where(x => x.Condominium.Id == condominiumId && x.Tenant.Id == tenantId && !x.IsDeleted)
             .OrderByDescending(x => x.ScheduledDate)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

@@ -11,7 +11,7 @@ namespace DomuWave.Services.Interfaces
     public interface ICondominiumFeeService : IBaseService<CondominiumFee, long>
     {
             Task<IList<CondominiumFee>> GetByInstallmentIdAsync(int installmentId, IUser currentUser, CancellationToken cancellationToken);
-        Task<IList<CondominiumFee>> GetByUnitIdAsync(int unitId, IUser currentUser, CancellationToken cancellationToken);
+        Task<IList<CondominiumFee>> GetByUnitIdAsync(int unitId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<CondominiumFee>> GetByUserIdAsync(long userId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<CondominiumFee>> GetUnpaidFeesAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<CondominiumFee>> GetOverdueFeesAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);

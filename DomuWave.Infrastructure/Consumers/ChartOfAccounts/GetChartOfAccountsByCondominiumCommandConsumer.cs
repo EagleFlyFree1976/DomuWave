@@ -34,7 +34,7 @@ public class GetChartOfAccountsByCondominiumCommandConsumer
             .ConfigureAwait(false);
 
         var accounts = await _accountService
-            .GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return accounts

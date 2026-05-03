@@ -33,7 +33,7 @@ public class GetInstallmentsByCondominiumCommandConsumer : InMemoryConsumerBase<
             .ConfigureAwait(false);
 
         var entities = await _condominiumInstallmentService
-            .GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         var dtos = entities.Select(e => e.ToReadDto()).ToList();

@@ -35,7 +35,7 @@ public class GetMillesimalTablesByCondominiumCommandConsumer : InMemoryConsumerB
             .ConfigureAwait(false);
 
         var entities = await _millesimalTableService
-            .GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         if (!entities.Any())

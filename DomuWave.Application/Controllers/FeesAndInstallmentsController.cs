@@ -21,6 +21,7 @@ public class CondominiumFeesController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
+    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
 
     [HttpGet("by-installment/{installmentId:int}")]
     public async Task<IActionResult> GetByInstallment(int installmentId, CancellationToken ct)
@@ -28,7 +29,7 @@ public class CondominiumFeesController(
 
     [HttpGet("by-unit/{unitId:int}")]
     public async Task<IActionResult> GetByUnit(int unitId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetFeesByUnitCommand(CurrentUser.Id, unitId), ct));
+        => Ok(await _mediator.GetResponse(new GetFeesByUnitCommand(CurrentUser.Id, unitId, TenantGuid), ct));
 
     [HttpGet("by-user/{userId:long}")]
     public async Task<IActionResult> GetByUser(long userId, CancellationToken ct)
@@ -142,10 +143,11 @@ public class CondominiumInstallmentsController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
+    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
 
     [HttpGet("by-condominium/{condominiumId:int}")]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetInstallmentsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
+        => Ok(await _mediator.GetResponse(new GetInstallmentsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct));
 
     [HttpGet("by-fiscal-year/{fiscalYearId:int}")]
     public async Task<IActionResult> GetByFiscalYear(int fiscalYearId, [FromQuery] int condominiumId, CancellationToken ct)

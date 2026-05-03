@@ -8,7 +8,7 @@ namespace DomuWave.Services.Interfaces
 {
     public interface IChartOfAccountsService : IBaseService<ChartOfAccounts, int>
     {
-        Task<IList<ChartOfAccounts>> GetByCondominiumIdAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);
+        Task<IList<ChartOfAccounts>> GetByCondominiumIdAsync(int condominiumId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<ChartOfAccounts> GetByCodeAsync(int condominiumId, string code, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<ChartOfAccounts>> GetByTypeAsync(int condominiumId, ChartOfAccountsType type, IUser currentUser,
             CancellationToken cancellationToken);

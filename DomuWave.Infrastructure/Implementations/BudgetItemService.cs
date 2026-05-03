@@ -137,10 +137,10 @@ namespace DomuWave.Services.Implementations
             return (items, totalCount);
         }
 
-        public async Task<IList<BudgetItem>> GetByBudgetIdAsync(int budgetId, IUser currentUser, CancellationToken cancellationToken)
+        public async Task<IList<BudgetItem>> GetByBudgetIdAsync(int budgetId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<BudgetItem>()
-                .Where(x => x.Budget.Id == budgetId && !x.IsDeleted)
+                .Where(x => x.Budget.Id == budgetId && x.Tenant.Id == tenantId && !x.IsDeleted)
                 .ToListAsync(cancellationToken);
         }
 

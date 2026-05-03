@@ -58,7 +58,7 @@ public class UpdateBudgetItemCommandConsumer
         // Ricalcola totali del budget in base al tipo conto
         var budget = existing.Budget;
         var allItems = await _budgetItemService
-            .GetByBudgetIdAsync(budget.Id, currentUser, cancellationToken)
+            .GetByBudgetIdAsync(budget.Id, budget.Tenant.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
         var parentAccountIds = allItems.Where(i => i.Account?.ParentAccount != null)
             .Select(i => i.Account.ParentAccount.Id).ToHashSet();

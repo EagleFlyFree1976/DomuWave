@@ -33,7 +33,7 @@ public class GetFeesByUnitCommandConsumer : InMemoryConsumerBase<GetFeesByUnitCo
             .ConfigureAwait(false);
 
         var entities = await _condominiumFeeService
-            .GetByUnitIdAsync(command.UnitId, currentUser, cancellationToken)
+            .GetByUnitIdAsync(command.UnitId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return entities.Select(e => e.ToReadDto()).ToList();

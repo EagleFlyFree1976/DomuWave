@@ -26,7 +26,7 @@ public class FiscalYearsController(
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetFiscalYearsByCondominiumCommand(CurrentUser.Id, condominiumId), ct);
+            new GetFiscalYearsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct);
         return Ok(result ?? []);
     }
 

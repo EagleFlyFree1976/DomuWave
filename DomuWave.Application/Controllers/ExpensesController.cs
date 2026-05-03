@@ -17,13 +17,14 @@ public class ExpensesController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
+    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
 
     [HttpGet("by-condominium/{condominiumId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetExpensesByCondominiumCommand(CurrentUser.Id, condominiumId), ct);
+            new GetExpensesByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct);
         return Ok(result);
     }
 

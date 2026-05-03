@@ -5,13 +5,14 @@ namespace DomuWave.Services.Command.CondominiumFee;
 
 public class GetFeesByUnitCommand : BaseCommand, IQuery<IList<CondominiumFeeReadDto>>
 {
-    public int UnitId { get; set; }
+    public int  UnitId   { get; set; }
+    public Guid TenantId { get; set; }
 
     public GetFeesByUnitCommand() { }
 
-    public GetFeesByUnitCommand(int currentUserId) : base(currentUserId) { }
-    public GetFeesByUnitCommand(int currentUserId, int unitId) : base(currentUserId)
+    public GetFeesByUnitCommand(int currentUserId, int unitId, Guid tenantId) : base(currentUserId)
     {
-        UnitId = unitId;
+        UnitId   = unitId;
+        TenantId = tenantId;
     }
 }

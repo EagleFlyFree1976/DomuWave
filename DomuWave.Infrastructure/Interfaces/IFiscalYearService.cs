@@ -26,7 +26,7 @@ namespace DomuWave.Services.Interfaces
         /// <summary>
         /// Restituisce tutti gli esercizi di un condominio, ordinati per StartDate discendente.
         /// </summary>
-        Task<IList<FiscalYear>> GetByCondominiumAsync(int condominiumId, IUser currentUser, CancellationToken ct = default);
+        Task<IList<FiscalYear>> GetByCondominiumAsync(int condominiumId, Guid tenantId, IUser currentUser, CancellationToken ct = default);
 
         /// <summary>
         /// Crea un nuovo esercizio in stato Draft per il condominio specificato.

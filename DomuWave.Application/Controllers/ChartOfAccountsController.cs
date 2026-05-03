@@ -21,6 +21,8 @@ public class ChartOfAccountsController(
 {
     private readonly IMediator _mediator = mediator;
 
+    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
+
     [HttpGet("{id:int}/check-delete")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(CheckDeleteChartOfAccountsResult), StatusCodes.Status200OK)]
@@ -46,7 +48,7 @@ public class ChartOfAccountsController(
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetChartOfAccountsByCondominiumCommand(CurrentUser.Id, condominiumId), ct);
+            new GetChartOfAccountsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct);
         return Ok(result ?? new List<ChartOfAccountsReadDto>());
     }
 

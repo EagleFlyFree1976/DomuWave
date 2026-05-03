@@ -73,7 +73,7 @@ public class CreateBudgetItemCommandConsumer
             await _budgetItemService.UpdateAsync(existing, currentUser, cancellationToken).ConfigureAwait(false);
 
             var allItemsUpd = await _budgetItemService
-                .GetByBudgetIdAsync(budget.Id, currentUser, cancellationToken).ConfigureAwait(false);
+                .GetByBudgetIdAsync(budget.Id, budget.Tenant.Id, currentUser, cancellationToken).ConfigureAwait(false);
             var parentIdsUpd = allItemsUpd.Where(i => i.Account?.ParentAccount != null)
                 .Select(i => i.Account.ParentAccount.Id).ToHashSet();
             var leafItemsUpd = allItemsUpd.Where(i => i.Account != null && !parentIdsUpd.Contains(i.Account.Id)).ToList();
@@ -150,7 +150,7 @@ public class CreateBudgetItemCommandConsumer
 
         // Ricalcola totali del budget in base al tipo conto
         var allItems = await _budgetItemService
-            .GetByBudgetIdAsync(budget.Id, currentUser, cancellationToken)
+            .GetByBudgetIdAsync(budget.Id, budget.Tenant.Id, currentUser, cancellationToken)
             .ConfigureAwait(false);
         var parentAccountIds = allItems.Where(i => i.Account?.ParentAccount != null)
             .Select(i => i.Account.ParentAccount.Id).ToHashSet();

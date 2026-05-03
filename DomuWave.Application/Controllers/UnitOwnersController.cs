@@ -32,7 +32,7 @@ public class UnitOwnersController(
     [HttpGet("by-unit/{unitId:int}")]
     [ProducesResponseType(typeof(IList<UnitOwnerReadDto>), 200)]
     public async Task<IActionResult> GetByUnit(int unitId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetUnitOwnersByUnitCommand(CurrentUser.Id, unitId), ct));
+        => Ok(await _mediator.GetResponse(new GetUnitOwnersByUnitCommand(CurrentUser.Id, unitId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-user/{userId:long}")]
     [ProducesResponseType(typeof(IList<UserUnitOwnerDto>), 200)]

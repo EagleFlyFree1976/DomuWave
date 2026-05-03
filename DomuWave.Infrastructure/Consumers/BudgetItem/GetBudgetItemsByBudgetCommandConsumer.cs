@@ -34,7 +34,7 @@ public class GetBudgetItemsByBudgetCommandConsumer
             .ConfigureAwait(false);
 
         var items = await _budgetItemService
-            .GetByBudgetIdAsync(command.BudgetId, currentUser, cancellationToken)
+            .GetByBudgetIdAsync(command.BudgetId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return items.Select(i => i.ToReadDto()).ToList();

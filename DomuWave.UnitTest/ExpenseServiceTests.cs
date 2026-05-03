@@ -75,11 +75,11 @@ public class ExpenseServiceTests : TestBase
             new() { Id = 1L },
             new() { Id = 2L }
         };
-        _serviceMock.Setup(s => s.GetByCondominiumIdAsync(_condominiumId, _currentUser, _ct))
+        _serviceMock.Setup(s => s.GetByCondominiumIdAsync(_condominiumId, It.IsAny<Guid>(), _currentUser, _ct))
                     .ReturnsAsync(expenses);
 
         // Act
-        var result = await _serviceMock.Object.GetByCondominiumIdAsync(_condominiumId, _currentUser, _ct);
+        var result = await _serviceMock.Object.GetByCondominiumIdAsync(_condominiumId, Guid.Empty, _currentUser, _ct);
 
         // Assert
         result.Should().HaveCount(2);

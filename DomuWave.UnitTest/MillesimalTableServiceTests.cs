@@ -75,10 +75,10 @@ public class MillesimalTableServiceTests : TestBase
             new() { Id = 2, Code = "SCALE", IsActive = true  },
             new() { Id = 3, Code = "OLD",   IsActive = false },
         };
-        _serviceMock.Setup(s => s.GetByCondominiumIdAsync(CondominiumId, _currentUser, _ct))
+        _serviceMock.Setup(s => s.GetByCondominiumIdAsync(CondominiumId, It.IsAny<Guid>(), _currentUser, _ct))
                     .ReturnsAsync(tables);
 
-        var result = await _serviceMock.Object.GetByCondominiumIdAsync(CondominiumId, _currentUser, _ct);
+        var result = await _serviceMock.Object.GetByCondominiumIdAsync(CondominiumId, Guid.Empty, _currentUser, _ct);
 
         result.Should().HaveCount(3, "GetByCondominium deve includere anche le tabelle disattivate");
     }

@@ -16,11 +16,12 @@ public class SupplierContractsController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
+    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
 
     [HttpGet("condominium/{condominiumId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<SupplierContractReadDto>))]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetContractsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
+        => Ok(await _mediator.GetResponse(new GetContractsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct));
 
     [HttpGet("supplier/{supplierId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<SupplierContractReadDto>))]

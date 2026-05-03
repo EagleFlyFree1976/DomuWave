@@ -99,9 +99,9 @@ public class MaintenanceService : BaseService, IMaintenanceService
         return (items, totalCount);
     }
 
-    public async Task<IList<Maintenance>> GetByCondominiumIdAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken)
+    public async Task<IList<Maintenance>> GetByCondominiumIdAsync(int condominiumId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         => await session.Query<Maintenance>()
-            .Where(x => x.Condominium.Id == condominiumId && !x.IsDeleted)
+            .Where(x => x.Condominium.Id == condominiumId && x.Tenant.Id == tenantId && !x.IsDeleted)
             .OrderByDescending(x => x.ReportedDate)
             .ToListAsync(cancellationToken);
 

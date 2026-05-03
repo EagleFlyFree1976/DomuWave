@@ -33,7 +33,7 @@ public class GetBudgetsByFiscalYearCommandConsumer
             .ConfigureAwait(false);
 
         var budgets = await session.Query<Budget>()
-            .Where(b => b.FiscalYear.Id == command.FiscalYearId && !b.IsDeleted)
+            .Where(b => b.FiscalYear.Id == command.FiscalYearId && b.Tenant.Id == command.TenantId && !b.IsDeleted)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

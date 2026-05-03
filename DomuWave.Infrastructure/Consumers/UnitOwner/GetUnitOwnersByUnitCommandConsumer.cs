@@ -33,7 +33,7 @@ public class GetUnitOwnersByUnitCommandConsumer : InMemoryConsumerBase<GetUnitOw
             .ConfigureAwait(false);
 
         var owners = await _unitOwnerService
-            .GetByUnitIdAsync(command.UnitId, currentUser, cancellationToken)
+            .GetByUnitIdAsync(command.UnitId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return owners.Select(o => o.ToReadDto()).ToList();

@@ -74,10 +74,10 @@ public class UnitOwnerServiceTests : TestBase
             new() { Id = 1, IsActive = true,  OwnershipQuota = 50m },
             new() { Id = 2, IsActive = false, OwnershipQuota = 50m }, // ex-proprietario
         };
-        _serviceMock.Setup(s => s.GetByUnitIdAsync(UnitId, _currentUser, _ct))
+        _serviceMock.Setup(s => s.GetByUnitIdAsync(UnitId, It.IsAny<Guid>(), _currentUser, _ct))
                     .ReturnsAsync(owners);
 
-        var result = await _serviceMock.Object.GetByUnitIdAsync(UnitId, _currentUser, _ct);
+        var result = await _serviceMock.Object.GetByUnitIdAsync(UnitId, Guid.Empty, _currentUser, _ct);
 
         result.Should().HaveCount(2, "GetByUnit deve restituire anche i proprietari storici");
     }

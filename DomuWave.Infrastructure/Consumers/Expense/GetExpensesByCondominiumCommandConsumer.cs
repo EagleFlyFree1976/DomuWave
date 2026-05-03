@@ -33,7 +33,7 @@ public class GetExpensesByCondominiumCommandConsumer : InMemoryConsumerBase<GetE
             .ConfigureAwait(false);
 
         var entities = await _expenseService
-            .GetByCondominiumIdAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return entities.Select(e => e.ToReadDto()).ToList();
