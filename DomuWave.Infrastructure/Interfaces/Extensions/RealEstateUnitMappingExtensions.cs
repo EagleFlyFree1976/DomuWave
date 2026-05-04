@@ -37,6 +37,8 @@ public static class RealEstateUnitMappingExtensions
             TenantId        = unit.Tenant?.Id      ?? Guid.Empty,
             CondominiumId   = unit.Condominium?.Id ?? 0,
             CondominiumName = unit.Condominium?.Name,
+            BuildingId      = unit.Building?.Id,
+            BuildingName    = unit.Building?.Name,
             Staircase       = unit.Staircase,
             Floor           = unit.Floor,
             InternalNumber  = unit.InternalNumber,
@@ -68,6 +70,8 @@ public static class RealEstateUnitMappingExtensions
             TenantId        = unit.Tenant?.Id      ?? Guid.Empty,
             CondominiumId   = unit.Condominium?.Id ?? 0,
             CondominiumName = unit.Condominium?.Name,
+            BuildingId      = unit.Building?.Id,
+            BuildingName    = unit.Building?.Name,
             Staircase       = unit.Staircase,
             Floor           = unit.Floor,
             InternalNumber  = unit.InternalNumber,
@@ -92,7 +96,7 @@ public static class RealEstateUnitMappingExtensions
     /// <summary>
     /// Crea una nuova entità <see cref="RealEstateUnit"/> a partire dal DTO di creazione.
     /// </summary>
-    public static RealEstateUnit ToEntity(this CreateRealEstateUnitDto dto, Condominium condominium, Tenant tenant)
+    public static RealEstateUnit ToEntity(this CreateRealEstateUnitDto dto, Condominium condominium, Tenant tenant, Building building = null)
     {
         if (dto == null) return null;
 
@@ -100,6 +104,7 @@ public static class RealEstateUnitMappingExtensions
         {
             Condominium     = condominium,
             Tenant          = tenant,
+            Building        = building,
             Staircase       = dto.Staircase,
             Floor           = dto.Floor,
             InternalNumber  = dto.InternalNumber,
@@ -145,8 +150,9 @@ public static class RealEstateUnitMappingExtensions
     /// <summary>
     /// Applica i campi del DTO di aggiornamento all'entità <see cref="RealEstateUnit"/> esistente.
     /// </summary>
-    public static void ApplyUpdate(this RealEstateUnit entity, UpdateRealEstateUnitDto dto)
+    public static void ApplyUpdate(this RealEstateUnit entity, UpdateRealEstateUnitDto dto, Building building = null)
     {
+        entity.Building        = building;
         entity.Staircase       = dto.Staircase;
         entity.Floor           = dto.Floor;
         entity.InternalNumber  = dto.InternalNumber;

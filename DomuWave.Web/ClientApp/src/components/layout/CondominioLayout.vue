@@ -43,6 +43,7 @@ const condominium = ref(null)
 const condominiumId = computed(() => Number(route.params.id))
 
 const quickNav = [
+  { path: '/edifici', icon: 'pi-home',       label: 'Edifici' },
   { path: '/unita', icon: 'pi-building',    label: 'Unità' },
   { path: '/panoramica', icon: 'pi-sitemap',        label: 'Panoramica' },
   { path: '/gruppi-fatturazione', icon: 'pi-objects-column',      label: 'Gruppi' },

@@ -35,6 +35,7 @@ const routes = [
         meta: { requiresTenant: true },
         children: [
           { path: '', component: () => import('@/views/CondominioDetailView.vue'), meta: { title: 'Dettaglio Condominio' } },
+          { path: 'edifici', component: () => import('@/views/EdificiView.vue'), meta: { title: 'Edifici' } },
           { path: 'unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari' } },
           { path: 'panoramica', component: () => import('@/views/PanoramicaView.vue'), meta: { title: 'Panoramica Occupanti' } },
           { path: 'gruppi-fatturazione', component: () => import('@/views/BillingGroupsView.vue'), meta: { title: 'Gruppi di Fatturazione' } },
@@ -57,6 +58,7 @@ const routes = [
       { path: 'categorie-piano-dei-conti', component: () => import('@/views/CategoriePianoDeiContiView.vue'), meta: { title: 'Categorie Piano dei Conti', requiresTenant: true } },
       { path: 'template-categorie-piano-dei-conti', component: () => import('@/views/TemplateCategoriePianoDeiContiView.vue'), meta: { title: 'Template Categorie Piano dei Conti', requiresAuth: true, requiredRole: 'SuperAdmin' } },
       { path: 'template-piano-dei-conti', component: () => import('@/views/TemplateContiView.vue'), meta: { title: 'Template Piano dei Conti', requiresTenant: true } },
+      { path: 'edifici', component: () => import('@/views/EdificiView.vue'), meta: { title: 'Edifici', requiresTenant: true } },
       { path: 'unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari', requiresTenant: true } },
       { path: 'panoramica', component: () => import('@/views/PanoramicaView.vue'), meta: { title: 'Panoramica Occupanti', requiresTenant: true } },
       { path: 'gruppi-fatturazione', component: () => import('@/views/BillingGroupsView.vue'), meta: { title: 'Gruppi di Fatturazione', requiresTenant: true } },

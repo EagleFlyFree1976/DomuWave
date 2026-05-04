@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.5.11723.231 stable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DomuWave.Web", "DomuWave.Web\DomuWave.Web.csproj", "{CB75DC3A-666D-4CF7-8EFA-452D2C1BE375}"
 EndProject
@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		docs\migrations\add_account_balance_totalbalance_rounding.sql = docs\migrations\add_account_balance_totalbalance_rounding.sql
 		docs\migrations\add_budgetitem_account_snapshot.sql = docs\migrations\add_budgetitem_account_snapshot.sql
 		docs\migrations\add_budgetitem_amount_paid.sql = docs\migrations\add_budgetitem_amount_paid.sql
+		docs\migrations\add_building.sql = docs\migrations\add_building.sql
 		docs\migrations\add_chargeability_type.sql = docs\migrations\add_chargeability_type.sql
 		docs\migrations\add_chart_of_accounts_category.sql = docs\migrations\add_chart_of_accounts_category.sql
 		docs\migrations\add_chart_of_accounts_category_template.sql = docs\migrations\add_chart_of_accounts_category_template.sql

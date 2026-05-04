@@ -4,7 +4,8 @@
     "Projects": [
       {
         "Path": "DomuWave.Web\\DomuWave.Web.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": "http"
       },
       {
         "Path": "DomuWave.Application\\DomuWave.Application.csproj",
@@ -18,7 +19,7 @@
       {
         "Path": "DomuWave.Unified\\DomuWave.Unified.csproj",
         "Action": "Start",
-        "DebugTarget": "http"
+        "DebugTarget": "IIS Express"
       }
     ]
   }

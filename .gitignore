@@ -1,6 +1,17 @@
 ﻿################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
+/TestProd/
+/PIP/
+/Deploy/
+
+# Build output
+**/bin/
+**/obj/
+*.dll
+*.exe
+*.pdb
+*.cache
 /Bizlio.Domain/bin/Debug/net8.0
 /Bizlio.Domain/bin/Debug/net9.0
 /Bizlio.Application/obj

@@ -25,10 +25,6 @@ QuestPDF.Settings.License = LicenseType.Community;
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddWindowsService();
-
-var isService = args?.Contains("--service") ?? false;
-
 var hostEnvironment = builder.Environment;
 if (hostEnvironment.IsDevelopment())
 {

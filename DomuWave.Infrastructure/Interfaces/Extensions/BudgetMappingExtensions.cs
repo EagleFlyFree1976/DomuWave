@@ -12,6 +12,7 @@ public static class BudgetMappingExtensions
 
         var dto = new BudgetReadDto
         {
+            
             TenantId       = budget.Tenant?.Id     ?? Guid.Empty,
             CondominiumId  = budget.Condominium?.Id ?? 0,
             CondominiumName = budget.Condominium?.Name,
@@ -25,7 +26,7 @@ public static class BudgetMappingExtensions
             TotalExpenses  = budget.TotalExpenses,
             Notes          = budget.Notes,
         };
-
+        
         dto.SetTraceInfo(budget);
         return dto;
     }

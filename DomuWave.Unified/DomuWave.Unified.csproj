@@ -26,6 +26,8 @@
     <NoWarn>1701;1702;1572;1573;1591</NoWarn>
     <!-- Serve i file statici dalla wwwroot del progetto Web -->
     <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
+    <!-- Hosting IIS in-process -->
+    <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
   </PropertyGroup>
 
   <ItemGroup>
