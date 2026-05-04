@@ -4,13 +4,10 @@
     <!-- ── Header ── -->
     <div class="sidebar-header">
       <div class="sidebar-logo">
-        <div class="logo-icon">
+        <div class="logo-icon" v-show="collapsed">
           <i class="pi pi-building"></i>
         </div>
-        <div class="logo-text" v-show="!collapsed">
-          <span class="logo-name">DomuWave</span>
-          <span class="logo-sub">Gestione Condomini</span>
-        </div>
+        <img v-show="!collapsed" src="@/assets/logostudiogalli.png" alt="Studio Amministrativo Galli" class="sidebar-logo-img" />
       </div>
       <button class="icon-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Espandi' : 'Comprimi'">
         <i class="pi" :class="collapsed ? 'pi-angle-right' : 'pi-angle-left'"></i>
@@ -230,10 +227,21 @@
   .sidebar-logo {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.65rem;
     flex: 1;
     min-width: 0;
     overflow: hidden;
+  }
+
+  .sidebar-logo-img {
+    max-width: 180px;
+    height: auto;
+    display: block;
+    border-radius: 6px;
+    background: #fff;
+    padding: 4px 8px;
+    margin: 0 auto;
   }
 
   .logo-icon {
@@ -428,6 +436,14 @@
     padding: 0.75rem;
     border-top: 1px solid #1e293b;
     min-height: 60px;
+  }
+
+  .sidebar-powered {
+    text-align: center;
+    font-size: 0.65rem;
+    color: #475569;
+    padding: 0.4rem 0.75rem 0.5rem;
+    letter-spacing: 0.3px;
   }
 
   .user-chip {

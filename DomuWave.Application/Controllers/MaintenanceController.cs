@@ -16,12 +16,10 @@ public class MaintenanceController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     [HttpGet("condominium/{condominiumId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<MaintenanceReadDto>))]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetMaintenanceByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct));
+        => Ok(await _mediator.GetResponse(new GetMaintenanceByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("condominium/{condominiumId:int}/open")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<MaintenanceReadDto>))]

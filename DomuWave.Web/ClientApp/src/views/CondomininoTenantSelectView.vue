@@ -43,7 +43,7 @@
       </div>
 
       <p class="login-footer">
-        © {{ new Date().getFullYear() }} DomuWave — Tutti i diritti riservati
+        © {{ new Date().getFullYear() }} VizaSoft S.r.l. — Tutti i diritti riservati
       </p>
     </div>
   </div>

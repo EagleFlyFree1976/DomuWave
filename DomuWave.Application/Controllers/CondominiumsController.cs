@@ -18,14 +18,12 @@ public class CondominiumsController(
     : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumReadDto>))]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetAllCondominiumsCommand(CurrentUser.Id, TenantGuid), ct);
+            new GetAllCondominiumsCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
         return Ok(result);
     }
 
@@ -45,7 +43,7 @@ public class CondominiumsController(
     public async Task<IActionResult> GetActive(CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetActiveCondominiumsCommand(CurrentUser.Id, TenantGuid), ct);
+            new GetActiveCondominiumsCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
         return Ok(result);
     }
 
@@ -55,7 +53,7 @@ public class CondominiumsController(
     public async Task<IActionResult> GetByCode(string code, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetCondominiumByCodeCommand(CurrentUser.Id, TenantGuid, code), ct);
+            new GetCondominiumByCodeCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), code), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -66,7 +64,7 @@ public class CondominiumsController(
         [FromQuery] int daysAhead = 30, CancellationToken ct = default)
     {
         var result = await _mediator.GetResponse(
-            new GetCondominiumsWithUpcomingAssemblyCommand(CurrentUser.Id, TenantGuid, daysAhead), ct);
+            new GetCondominiumsWithUpcomingAssemblyCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), daysAhead), ct);
         return Ok(result);
     }
 
@@ -88,7 +86,7 @@ public class CondominiumsController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new CreateCondominiumCommand(CurrentUser.Id, TenantGuid, dto), ct);
+            new CreateCondominiumCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 

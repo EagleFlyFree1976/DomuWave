@@ -22,14 +22,14 @@ public class AssembliesController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
+    //private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
 
     // ── Assembly ─────────────────────────────────────────────────────────────
 
     [HttpGet("by-condominium/{condominiumId:int}")]
     [ProducesResponseType(typeof(IList<AssemblyReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetAssembliesByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct));
+        => Ok(await _mediator.GetResponse(new GetAssembliesByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]

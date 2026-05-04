@@ -18,8 +18,6 @@ public class DynamicFilesController(
     : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     /// <summary>
     /// Restituisce la lista dei file collegati a un'entita'.
     /// Usa entityName per ricerca semplice o entityFullName per ricerca esatta sul tipo completo.
@@ -60,7 +58,7 @@ public class DynamicFilesController(
     public async Task<IActionResult> Upload([FromBody] UploadDynamicFileDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new UploadDynamicFileCommand(CurrentUser.Id, TenantGuid, dto), ct);
+        var result = await _mediator.GetResponse(new UploadDynamicFileCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 

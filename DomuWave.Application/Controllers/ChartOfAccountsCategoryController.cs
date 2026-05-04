@@ -18,19 +18,17 @@ public class ChartOfAccountsCategoryController(
     : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     [HttpGet]
     [ProducesResponseType(typeof(IList<ChartOfAccountsCategoryReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetChartOfAccountsCategoriesCommand(CurrentUser.Id, TenantGuid), ct));
+        => Ok(await _mediator.GetResponse(new GetChartOfAccountsCategoriesCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct));
 
     [HttpPost]
     [ProducesResponseType(typeof(ChartOfAccountsCategoryReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateChartOfAccountsCategoryDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new CreateChartOfAccountsCategoryCommand(CurrentUser.Id, TenantGuid, dto), ct);
+        var result = await _mediator.GetResponse(new CreateChartOfAccountsCategoryCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
         return CreatedAtAction(nameof(GetAll), result);
     }
 
@@ -57,7 +55,7 @@ public class ChartOfAccountsCategoryController(
     public async Task<IActionResult> ImportFromTemplate([FromBody] IList<int> templateIds, CancellationToken ct)
     {
         var imported = await _mediator.GetResponse(
-            new ImportCategoriesFromTemplateCommand(CurrentUser.Id, TenantGuid, templateIds), ct);
+            new ImportCategoriesFromTemplateCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), templateIds), ct);
         return Ok(imported);
     }
 }

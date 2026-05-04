@@ -16,12 +16,10 @@ public class ExtraordinaryWorksController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     [HttpGet("condominium/{condominiumId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExtraordinaryWorkReadDto>))]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetWorksByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct));
+        => Ok(await _mediator.GetResponse(new GetWorksByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("condominium/{condominiumId:int}/status/{status}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExtraordinaryWorkReadDto>))]

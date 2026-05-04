@@ -18,8 +18,6 @@ public class FileAttachmentsController(
     : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     /// <summary>Restituisce la lista dei metadati allegati a una specifica entita' (senza base64)</summary>
     [HttpGet("by-entity/{entityKey}/{entityId:int}")]
     public async Task<IActionResult> GetByEntity(string entityKey, int entityId, CancellationToken ct)
@@ -42,7 +40,7 @@ public class FileAttachmentsController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new UploadFileAttachmentCommand(CurrentUser.Id, TenantGuid, dto), ct);
+            new UploadFileAttachmentCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 

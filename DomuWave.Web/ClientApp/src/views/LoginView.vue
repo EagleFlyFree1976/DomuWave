@@ -10,7 +10,7 @@
 
     <div class="login-container">
       <!-- Logo / Brand -->
-      <div class="login-brand">
+      <!--<div class="login-brand">
         <div class="brand-icon">
           <i class="pi pi-building"></i>
         </div>
@@ -18,10 +18,14 @@
           <h1>DomuWave</h1>
           <span>Gestione Condomini</span>
         </div>
-      </div>
+      </div>-->
 
       <!-- Card -->
       <div class="login-card">
+        <div class="card-logo">
+          <img src="../assets/logostudiogalli.png" alt="Studio Amministrativo Galli" />
+        </div>
+        <div class="card-divider"></div>
         <div class="card-header">
           <h2>Accedi</h2>
           <p>Inserisci le tue credenziali per accedere alla piattaforma</p>
@@ -88,7 +92,7 @@
       </div>
 
       <p class="login-footer">
-        © {{ new Date().getFullYear() }} DomuWave — Tutti i diritti riservati
+        © {{ new Date().getFullYear() }} VizaSoft S.r.l. — Tutti i diritti riservati
       </p>
     </div>
   </div>
@@ -154,7 +158,7 @@
     position: relative;
     overflow: hidden;
     font-family: 'DM Sans', sans-serif;
-    background-image: url(../assets/sfondodomuweb.png);
+    background-image: url(../assets/sfondodomuweb_viza.png);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -269,6 +273,7 @@
     height: 52px;
     border-radius: 14px;
     background: linear-gradient(135deg, var(--p-primary-400), var(--p-primary-600));
+    
     display: flex;
     align-items: center;
     justify-content: center;
@@ -311,6 +316,26 @@
     .login-card:hover {
       box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 25px 70px -10px rgba(0, 0, 0, 0.4);
     }
+
+  /* ── Card logo ───────────────────────────────────────────────────────────── */
+  .card-logo {
+    display: flex;
+    justify-content: center;
+    padding: 0.25rem 0 1.25rem;
+  }
+
+  .card-logo img {
+    max-width: 220px;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  .card-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, #cbd5e1, transparent);
+    margin-bottom: 1.5rem;
+  }
 
   /* ── Card header ─────────────────────────────────────────────────────────── */
   .card-header {

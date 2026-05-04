@@ -18,14 +18,12 @@ public class DashboardController(
     : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     [HttpGet("summary")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DashboardSummaryDto))]
     public async Task<IActionResult> GetSummary(CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetDashboardSummaryCommand(CurrentUser.Id, TenantGuid), ct);
+            new GetDashboardSummaryCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
         return Ok(result);
     }
 }

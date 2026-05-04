@@ -18,21 +18,19 @@ public class ChartOfAccountsTemplatesController(
     : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     // ── Templates ─────────────────────────────────────────────────────────────
 
     [HttpGet]
     [ProducesResponseType(typeof(IList<ChartOfAccountsTemplateReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetChartOfAccountsTemplatesCommand(CurrentUser.Id, TenantGuid), ct));
+        => Ok(await _mediator.GetResponse(new GetChartOfAccountsTemplatesCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct));
 
     [HttpPost]
     [ProducesResponseType(typeof(ChartOfAccountsTemplateReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateChartOfAccountsTemplateDto dto, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new CreateChartOfAccountsTemplateCommand(CurrentUser.Id, TenantGuid, dto), ct);
+            new CreateChartOfAccountsTemplateCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
         return CreatedAtAction(nameof(GetAll), result);
     }
 

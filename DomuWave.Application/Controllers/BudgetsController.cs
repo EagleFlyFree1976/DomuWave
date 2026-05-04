@@ -20,15 +20,13 @@ public class BudgetsController(
 {
     private readonly IMediator _mediator = mediator;
 
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     [HttpGet("by-condominium/{condominiumId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<BudgetReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetBudgetsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct);
+            new GetBudgetsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct);
         return Ok(result ?? new List<BudgetReadDto>());
     }
 
@@ -38,7 +36,7 @@ public class BudgetsController(
     public async Task<IActionResult> GetByFiscalYear(int fiscalYearId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetBudgetsByFiscalYearCommand(CurrentUser.Id, fiscalYearId, TenantGuid), ct);
+            new GetBudgetsByFiscalYearCommand(CurrentUser.Id, fiscalYearId, TenantId.GetValueOrDefault()), ct);
         return Ok(result ?? new List<BudgetReadDto>());
     }
 

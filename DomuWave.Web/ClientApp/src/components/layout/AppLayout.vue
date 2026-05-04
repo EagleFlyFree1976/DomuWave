@@ -6,6 +6,7 @@
         <CondominiBreadcrumb />
         <RouterView :key="session.activeTenant?.id" />
       </div>
+      <footer class="app-footer">Powered by VizaSoft S.r.l — 2026</footer>
     </div>
   </div>
 </template>
@@ -48,5 +49,17 @@
     flex: 1;
     padding: 1.75rem 2rem;
     max-width: 1400px;
+    width: 100%;
+  }
+
+  .app-footer {
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding: 0.6rem 1rem;
+    border-top: 1px solid var(--border);
+    letter-spacing: 0.3px;
+    margin-top: auto;
   }
 </style>

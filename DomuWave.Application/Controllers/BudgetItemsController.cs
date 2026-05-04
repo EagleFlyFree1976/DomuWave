@@ -20,15 +20,13 @@ public class BudgetItemsController(
 {
     private readonly IMediator _mediator = mediator;
 
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
-
     [HttpGet("by-budget/{budgetId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Budget, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<BudgetItemReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByBudget(int budgetId, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetBudgetItemsByBudgetCommand(CurrentUser.Id, budgetId, TenantGuid), ct);
+            new GetBudgetItemsByBudgetCommand(CurrentUser.Id, budgetId, TenantId.GetValueOrDefault()), ct);
         return Ok(result ?? new List<BudgetItemReadDto>());
     }
 

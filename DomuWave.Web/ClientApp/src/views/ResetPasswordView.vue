@@ -10,7 +10,7 @@
 
     <div class="login-container">
       <!-- Logo / Brand -->
-      <div class="login-brand">
+      <!--<div class="login-brand">
         <div class="brand-icon">
           <i class="pi pi-building"></i>
         </div>
@@ -18,11 +18,13 @@
           <h1>DomuWave</h1>
           <span>Gestione Condomini</span>
         </div>
-      </div>
+      </div>-->
 
       <!-- Card -->
       <div class="login-card">
-
+        <div class="card-logo">
+          <img src="../assets/logostudiogalli.png" alt="Studio Amministrativo Galli" />
+        </div>
         <!-- Richiesta reset (senza token) -->
         <template v-if="!token">
           <div class="card-header">
@@ -149,7 +151,7 @@
       </div>
 
       <p class="login-footer">
-        © {{ new Date().getFullYear() }} DomuWave — Tutti i diritti riservati
+        © {{ new Date().getFullYear() }} VizaSoft S.r.l. — Tutti i diritti riservati
       </p>
     </div>
   </div>
@@ -278,7 +280,7 @@ async function handleRequestReset() {
   position: relative;
   overflow: hidden;
   font-family: 'DM Sans', sans-serif;
-  background-image: url(../assets/sfondodomuweb.png);
+  background-image: url(../assets/sfondodomuweb_viza.png);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -333,7 +335,11 @@ async function handleRequestReset() {
 .login-card:hover {
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.3), 0 25px 70px -10px rgba(0, 0, 0, 0.4);
 }
-
+  .card-logo {
+    display: flex;
+    justify-content: center;
+    padding: 0.25rem 0 1.25rem;
+  }
 /* ── Card header ──────────────────────────────────────────────────────────── */
 .card-header {
   margin-bottom: 2rem;

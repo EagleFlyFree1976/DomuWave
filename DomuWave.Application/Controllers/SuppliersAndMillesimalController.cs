@@ -23,10 +23,10 @@ public class SuppliersController(
     : TenantContextController(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
+    
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetAllSuppliersCommand(CurrentUser.Id, TenantGuid), ct));
+        => Ok(await _mediator.GetResponse(new GetAllSuppliersCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
@@ -39,20 +39,20 @@ public class SuppliersController(
     [HttpGet("by-vat/{vatNumber}")]
     public async Task<IActionResult> GetByVat(string vatNumber, CancellationToken ct)
     {
-        var result = await _mediator.GetResponse(new GetSupplierByVatCommand(CurrentUser.Id, TenantGuid, vatNumber), ct);
+        var result = await _mediator.GetResponse(new GetSupplierByVatCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), vatNumber), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
 
     [HttpGet("by-type/{supplierType}")]
     public async Task<IActionResult> GetByType(string supplierType, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetSuppliersByTypeCommand(CurrentUser.Id, TenantGuid, supplierType), ct));
+        => Ok(await _mediator.GetResponse(new GetSuppliersByTypeCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), supplierType), ct));
 
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(q)) return BadRequest(new { error = "Il parametro 'q' è obbligatorio." });
-        return Ok(await _mediator.GetResponse(new SearchSuppliersCommand(CurrentUser.Id, TenantGuid, q), ct));
+        return Ok(await _mediator.GetResponse(new SearchSuppliersCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), q), ct));
     }
 
     [HttpPost]
@@ -60,7 +60,7 @@ public class SuppliersController(
     public async Task<IActionResult> Create([FromBody] CreateSupplierDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new CreateSupplierCommand(CurrentUser.Id, TenantGuid, dto), ct);
+        var result = await _mediator.GetResponse(new CreateSupplierCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
         return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
     }
 
@@ -94,11 +94,11 @@ public class MillesimalTablesController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
-    private Guid TenantGuid => Guid.Parse(HttpContext.Items["TenantId"]?.ToString() ?? Guid.Empty.ToString());
+    
 
     [HttpGet("by-condominium/{condominiumId:int}")]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetMillesimalTablesByCondominiumCommand(CurrentUser.Id, condominiumId, TenantGuid), ct));
+        => Ok(await _mediator.GetResponse(new GetMillesimalTablesByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
