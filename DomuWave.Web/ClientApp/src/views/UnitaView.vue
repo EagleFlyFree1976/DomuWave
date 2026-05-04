@@ -3,6 +3,10 @@
     <!-- Search / filter toolbar -->
     <div class="toolbar">
       <input class="form-input search-input" v-model="search" placeholder="Cerca per numero interno…" />
+      <select v-if="buildings.length" class="form-select filter-select" v-model="filterBuilding">
+        <option value="">Tutti gli edifici</option>
+        <option v-for="b in buildings" :key="b.id" :value="String(b.id)">{{ b.name }}</option>
+      </select>
       <select class="form-select filter-select" v-model="filterStaircase">
         <option value="">Tutte le scale</option>
         <option v-for="s in staircaseOptions" :key="s" :value="s">Scala {{ s }}</option>
@@ -35,6 +39,7 @@
             <tr>
               <th>N° Interno</th>
               <th>Denominazione</th>
+              <th v-if="buildings.length">Edificio</th>
               <th>Scala</th>
               <th>Piano</th>
               <th>Tipo</th>
@@ -50,6 +55,7 @@
             <tr v-for="u in filtered" :key="u.id">
               <td class="mono" style="font-weight:500">{{ u.internalNumber || '—' }}</td>
               <td class="display-name-cell">{{ u.displayName || '—' }}</td>
+              <td v-if="buildings.length" class="text-secondary">{{ u.buildingName || '—' }}</td>
               <td>{{ u.staircase || '—' }}</td>
               <td>{{ u.floor }}</td>
               <td class="text-secondary">{{ u.unitType || '—' }}</td>
@@ -101,6 +107,13 @@
               <div class="form-group">
                 <label class="form-label">Subordinato</label>
                 <input class="form-input" v-model="form.subordinate" placeholder="Es. A" />
+              </div>
+              <div v-if="buildings.length" class="form-group">
+                <label class="form-label">Edificio</label>
+                <select class="form-select" v-model.number="form.buildingId">
+                  <option :value="null">— Nessuno —</option>
+                  <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+                </select>
               </div>
               <div class="form-group">
                 <label class="form-label">Scala</label>
@@ -282,7 +295,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi } from '@/services/api'
+import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi, buildingApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 import { usePermissions } from '@/composables/usePermissions'
 
@@ -304,8 +317,10 @@ const filterStaircase = ref('')
 const filterFloor     = ref(null)
 const filterType      = ref('')
 const filterActive    = ref('')
+const filterBuilding  = ref('')
 const errors          = ref({})
 const units           = ref([])
+const buildings       = ref([])
 const occupantCounts  = reactive({}) // { [unitId]: { owners: number, tenants: number } }
 
 // ── Bilancio esercizio ─────────────────────────────────────────────────────
@@ -329,7 +344,8 @@ const unitTypes = [
 const occupancyStatuses = ['Occupata proprietario', 'Occupata inquilino', 'Libera', 'Non abitabile']
 
 const defaultForm = () => ({
-  condominiumId: condominiumId.value,
+  condominiumId:   condominiumId.value,
+  buildingId:      null,
   internalNumber:  '',
   subordinate:     '',
   staircase:       '',
@@ -359,6 +375,7 @@ const filtered = computed(() => {
     const q = search.value.toLowerCase()
     list = list.filter(u => u.internalNumber?.toLowerCase().includes(q))
   }
+  if (filterBuilding.value) list = list.filter(u => String(u.buildingId) === filterBuilding.value)
   if (filterStaircase.value) list = list.filter(u => u.staircase === filterStaircase.value)
   if (filterFloor.value != null) list = list.filter(u => u.floor === filterFloor.value)
   if (filterType.value)   list = list.filter(u => u.unitType === filterType.value)
@@ -369,13 +386,17 @@ const filtered = computed(() => {
 async function loadData() {
   if (!condominiumId.value) {
     units.value = []
+    buildings.value = []
     return
   }
   loading.value = true
   try {
-    const { data } = await unitApi.getByCondominium(condominiumId.value)
-    units.value = data ?? []
-    // Carica conteggi proprietari/inquilini in background
+    const [unitsRes, buildingsRes] = await Promise.all([
+      unitApi.getByCondominium(condominiumId.value),
+      buildingApi.getByCondominium(condominiumId.value),
+    ])
+    units.value     = unitsRes.data ?? []
+    buildings.value = buildingsRes.data ?? []
     units.value.forEach(u => loadOccupantCounts(u.id))
   } catch {
     // error handled by interceptor

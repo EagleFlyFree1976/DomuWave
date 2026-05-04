@@ -114,6 +114,15 @@ export const condominiumApi = {
   getSetupStatus: (id)       => api.get(`/condominiums/${id}/setup-status`),
 }
 
+// ─── Edifici ──────────────────────────────────────────────────
+export const buildingApi = {
+  getByCondominium: (condId) => api.get(`/buildings/by-condominium/${condId}`),
+  getById:          (id)     => api.get(`/buildings/${id}`),
+  create:           (data)   => api.post('/buildings', data),
+  update:           (id, data) => api.put(`/buildings/${id}`, data),
+  delete:           (id)     => api.delete(`/buildings/${id}`),
+}
+
 // ─── Unità immobiliari ────────────────────────────────────────
 export const unitApi = {
   getById:            (id)            => api.get(`/real-estate-units/${id}`),

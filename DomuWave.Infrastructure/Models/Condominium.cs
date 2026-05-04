@@ -44,6 +44,7 @@ namespace DomuWave.Services.Models
 
         public virtual CondominiumAddress Address { get; set; }
         public virtual CondominiumCadastralData CadastralData { get; set; }
+        public virtual IList<Building> Buildings { get; set; } = new List<Building>();
         public virtual IList<RealEstateUnit> Units { get; set; } = new List<RealEstateUnit>();
         public virtual IList<MillesimalTable> MillesimalTables { get; set; } = new List<MillesimalTable>();
         public virtual IList<ChartOfAccounts> Accounts { get; set; } = new List<ChartOfAccounts>();

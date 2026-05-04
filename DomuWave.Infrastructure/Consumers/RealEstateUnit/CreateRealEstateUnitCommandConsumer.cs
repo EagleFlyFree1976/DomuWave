@@ -16,16 +16,19 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
 {
     private readonly IRealEstateUnitService _realEstateUnitService;
     private readonly ICondominiumService    _condominiumService;
+    private readonly IBuildingService       _buildingService;
     private readonly IUserService           _userService;
 
     public CreateRealEstateUnitCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IRealEstateUnitService realEstateUnitService,
         ICondominiumService condominiumService,
+        IBuildingService buildingService,
         IUserService userService) : base(sessionFactoryProvider)
     {
         _realEstateUnitService = realEstateUnitService;
         _condominiumService    = condominiumService;
+        _buildingService       = buildingService;
         _userService           = userService;
     }
 
@@ -58,7 +61,13 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
         if (existsNumber)
             throw new ValidatorException($"Esiste già un'unità con il numero interno {command.Dto.InternalNumber} in questo condominio");
 
-        var entity = command.Dto.ToEntity(condominium, condominium.Tenant);
+        DomuWave.Services.Models.Building building = null;
+        if (command.Dto.BuildingId.HasValue)
+            building = await _buildingService
+                .GetByIdAsync(command.Dto.BuildingId.Value, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+
+        var entity = command.Dto.ToEntity(condominium, condominium.Tenant, building);
 
         var created = await _realEstateUnitService
             .CreateAsync(entity, currentUser, cancellationToken)

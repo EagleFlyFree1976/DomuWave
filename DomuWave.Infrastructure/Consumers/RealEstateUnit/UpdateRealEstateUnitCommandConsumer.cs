@@ -12,14 +12,17 @@ namespace DomuWave.Services.Consumers;
 public class UpdateRealEstateUnitCommandConsumer : InMemoryConsumerBase<UpdateRealEstateUnitCommand, RealEstateUnitReadDto>
 {
     private readonly IRealEstateUnitService _realEstateUnitService;
+    private readonly IBuildingService       _buildingService;
     private readonly IUserService           _userService;
 
     public UpdateRealEstateUnitCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IRealEstateUnitService realEstateUnitService,
+        IBuildingService buildingService,
         IUserService userService) : base(sessionFactoryProvider)
     {
         _realEstateUnitService = realEstateUnitService;
+        _buildingService       = buildingService;
         _userService           = userService;
     }
 
@@ -37,7 +40,13 @@ public class UpdateRealEstateUnitCommandConsumer : InMemoryConsumerBase<UpdateRe
             .ConfigureAwait(false);
         if (existing == null) return null;
 
-        existing.ApplyUpdate(command.Dto);
+        DomuWave.Services.Models.Building building = null;
+        if (command.Dto.BuildingId.HasValue)
+            building = await _buildingService
+                .GetByIdAsync(command.Dto.BuildingId.Value, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+
+        existing.ApplyUpdate(command.Dto, building);
 
         var updated = await _realEstateUnitService
             .UpdateAsync(existing, currentUser, cancellationToken)

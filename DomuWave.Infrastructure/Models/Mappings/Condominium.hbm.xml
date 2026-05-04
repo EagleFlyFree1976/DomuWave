@@ -61,6 +61,11 @@
     <one-to-one name="Address" class="DomuWave.Services.Models.CondominiumAddress, DomuWave.Services" property-ref="Condominium" cascade="all-delete-orphan" />
     <one-to-one name="CadastralData" class="DomuWave.Services.Models.CondominiumCadastralData, DomuWave.Services" property-ref="Condominium" cascade="all-delete-orphan" />
 
+    <bag name="Buildings" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="CondominiumId" />
+      <one-to-many class="DomuWave.Services.Models.Building, DomuWave.Services" />
+    </bag>
+
     <bag name="Units" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="CondominiumId" />
       <one-to-many class="DomuWave.Services.Models.RealEstateUnit, DomuWave.Services" />

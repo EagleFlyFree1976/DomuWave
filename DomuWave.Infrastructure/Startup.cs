@@ -85,6 +85,7 @@ public static class Startup
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IFiscalYearService, FiscalYearService>();
         services.AddScoped<IMaintenanceService, MaintenanceService>();
+        services.AddScoped<IBuildingService, BuildingService>();
         services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<IMessageService, MessageService>();
         services.AddScoped<IMillesimalTableService, MillesimalTableService>();

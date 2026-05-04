@@ -54,6 +54,7 @@
     <Compile Include="..\DomuWave.Application\Controllers\AccountBalancesController.cs" Link="Controllers\AccountBalancesController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\AdminController.cs" Link="Controllers\AdminController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\AssembliesController.cs" Link="Controllers\AssembliesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\BuildingsController.cs" Link="Controllers\BuildingsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\BillingGroupsController.cs" Link="Controllers\BillingGroupsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\BudgetItemsController.cs" Link="Controllers\BudgetItemsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\BudgetsController.cs" Link="Controllers\BudgetsController.cs" />

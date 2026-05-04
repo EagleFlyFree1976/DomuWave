@@ -2,6 +2,7 @@ namespace DomuWave.Services.Dto.RealEstateUnit;
 
 public class UpdateRealEstateUnitDto
 {
+    public int?    BuildingId { get; set; }
     public string? Staircase { get; set; }
     public int Floor { get; set; }
     public string? InternalNumber { get; set; }

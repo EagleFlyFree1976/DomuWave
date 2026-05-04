@@ -7,6 +7,7 @@ namespace DomuWave.Services.Models
     public class RealEstateUnit : TenantEntity<int>
     {
         public virtual Condominium Condominium { get; set; }
+        public virtual Building? Building { get; set; }
         public virtual string Staircase { get; set; }
         public virtual int Floor { get; set; }
         public virtual string InternalNumber { get; set; }
