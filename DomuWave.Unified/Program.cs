@@ -138,21 +138,19 @@ try
 
     app.UseHeaderPropagation();
 
-    // Static files first — before OxCore intercepts requests
-    if (app.Environment.IsDevelopment())
-    {
-        var webWwwroot = Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "DomuWave.Web", "wwwroot"));
-        if (Directory.Exists(webWwwroot))
-            app.UseStaticFiles(new StaticFileOptions
-            {
-                FileProvider = new PhysicalFileProvider(webWwwroot),
-                RequestPath  = ""
-            });
-    }
-    else
-    {
-        app.UseStaticFiles();
-    }
+    // Static files — usa sempre il percorso fisico esplicito basato sull'exe
+    var wwwrootPath = app.Environment.IsDevelopment()
+        ? Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "DomuWave.Web", "wwwroot"))
+        : Path.Combine(AppContext.BaseDirectory, "wwwroot");
+
+    if (Directory.Exists(wwwrootPath))
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new PhysicalFileProvider(wwwrootPath),
+            RequestPath  = ""
+        });
+
+    logger.Information("WebRoot: {wwwroot} (exists: {exists})", wwwrootPath, Directory.Exists(wwwrootPath));
 
     app.UseCors("CorsPolicy");
 
@@ -194,18 +192,20 @@ try
         name: "default",
         pattern: "{controller=Home}/{action=Index}/{id?}");
 
-    // SPA fallback: tutte le route non-API e non-file tornano all'index Vue
-    
+    // SPA fallback: tutte le route non-API tornano all'index.html di Vue (senza redirect)
     app.MapFallback(async context =>
     {
         if (context.Request.Path.StartsWithSegments("/api"))
         {
             context.Response.StatusCode = 404;
-            await context.Response.WriteAsync("API endpoint not found");
             return;
         }
-        // Per tutto il resto (Angular routes) → HomeController.Index
-        context.Response.Redirect("/");
+        var wwwroot = app.Environment.IsDevelopment()
+            ? Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "DomuWave.Web", "wwwroot"))
+            : Path.Combine(AppContext.BaseDirectory, "wwwroot");
+        var indexPath = Path.Combine(wwwroot, "index.html");
+        context.Response.ContentType = "text/html";
+        await context.Response.SendFileAsync(indexPath);
     });
     app.Run();
 }
