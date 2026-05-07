@@ -56,7 +56,7 @@
           "dependencies": {
             "CPQ.Core": {
               "target": "Package",
-              "version": "[1.7.3, )"
+              "version": "[1.7.5, )"
             },
             "Microsoft.Extensions.Logging.Abstractions": {
               "target": "Package",

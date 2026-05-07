@@ -19,7 +19,7 @@
       {
         "Path": "DomuWave.Unified\\DomuWave.Unified.csproj",
         "Action": "Start",
-        "DebugTarget": "IIS Express"
+        "DebugTarget": "http"
       }
     ]
   }

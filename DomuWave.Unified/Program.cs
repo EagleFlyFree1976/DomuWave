@@ -195,8 +195,18 @@ try
         pattern: "{controller=Home}/{action=Index}/{id?}");
 
     // SPA fallback: tutte le route non-API e non-file tornano all'index Vue
-    app.MapFallbackToController("Index", "Home");
-
+    
+    app.MapFallback(async context =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            context.Response.StatusCode = 404;
+            await context.Response.WriteAsync("API endpoint not found");
+            return;
+        }
+        // Per tutto il resto (Angular routes) → HomeController.Index
+        context.Response.Redirect("/");
+    });
     app.Run();
 }
 catch (Exception exception)
@@ -222,4 +232,4 @@ void _initSettings(
     configuration.Bind("JobSettings", jobSettings);
 }
 
-public partial class Program { }
+//public partial class Program { }

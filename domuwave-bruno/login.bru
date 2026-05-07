@@ -1,0 +1,32 @@
+meta {
+  name: login
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/PublicUser/login
+  body: json
+  auth: inherit
+}
+
+headers {
+  sec-ch-ua-platform: "Windows"
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36
+  Accept: application/json, text/plain, */*
+  sec-ch-ua: "Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"
+  Content-Type: application/json
+  sec-ch-ua-mobile: ?0
+}
+
+body:json {
+  {
+    "Email": "oraziogr@gmail.com",
+    "Password": "Pokemon456"
+  }
+}
+
+settings {
+  encodeUrl: false
+  timeout: 0
+}
