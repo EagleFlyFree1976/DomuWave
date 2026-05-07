@@ -83,12 +83,12 @@
             <div class="form-grid">
               <div class="form-group" :class="{ 'has-error': errors.name }">
                 <label class="form-label">Nome *</label>
-                <input class="form-input" v-model="form.name" placeholder="Es. Condominio Roma" @input="clearError('name')" />
+                <input class="form-input" v-model="form.name" placeholder="Es. Condominio Roma" @input="onNameInput" />
                 <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
               </div>
               <div class="form-group">
                 <label class="form-label">Codice</label>
-                <input class="form-input" v-model="form.code" placeholder="COD-001" />
+                <input class="form-input" v-model="form.code" placeholder="Generato automaticamente" />
               </div>
               <div class="form-group">
                 <label class="form-label">Codice fiscale</label>
@@ -97,26 +97,6 @@
               <div class="form-group">
                 <label class="form-label">Partita IVA</label>
                 <input class="form-input" v-model="form.vatNumber" maxlength="11" />
-              </div>
-            </div>
-          </fieldset>
-
-          <!-- Contatti -->
-          <fieldset class="form-fieldset">
-            <legend class="form-fieldset-legend">Contatti</legend>
-            <div class="form-grid">
-              <div class="form-group" :class="{ 'has-error': errors.email }">
-                <label class="form-label">Email</label>
-                <input class="form-input" type="email" v-model="form.email" @input="clearError('email')" />
-                <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Telefono</label>
-                <input class="form-input" v-model="form.phone" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">PEC</label>
-                <input class="form-input" type="email" v-model="form.pec" />
               </div>
             </div>
           </fieldset>
@@ -148,10 +128,6 @@
                 <label class="form-label">Millesimi totali</label>
                 <input class="form-input" type="number" min="0" step="0.001" v-model.number="form.totalMillesimal" @input="clearError('totalMillesimal')" />
                 <span v-if="errors.totalMillesimal" class="field-error">{{ errors.totalMillesimal }}</span>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Mq aree comuni</label>
-                <input class="form-input" type="number" min="0" step="0.01" v-model.number="form.commonAreasSqm" />
               </div>
               <div class="form-group" style="grid-column:span 2">
                 <div class="check-row">
@@ -348,6 +324,25 @@ function openModal(item = null) {
 function toDateInput(val) {
   if (!val) return null
   return new Date(val).toISOString().substring(0, 10)
+}
+
+function onNameInput() {
+  clearError('name')
+  // Genera il codice automaticamente solo se non è stato modificato manualmente
+  if (!editing.value) {
+    const prefix = form.value.name
+      .trim()
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 3)
+      .map(w => w.substring(0, 3).toUpperCase())
+      .join('')
+      .substring(0, 6) || 'CON'
+    const year = new Date().getFullYear()
+    const count = (store.condomini?.length ?? 0) + 1
+    form.value.code = `${prefix}-${year}-${String(count).padStart(3, '0')}`
+  }
 }
 
 function clearError(field) {

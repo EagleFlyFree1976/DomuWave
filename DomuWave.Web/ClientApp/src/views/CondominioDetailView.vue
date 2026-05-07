@@ -17,9 +17,6 @@
             <div class="info-row"><dt>Codice</dt><dd class="mono">{{ condominio.code || '—' }}</dd></div>
             <div class="info-row"><dt>Cod. fiscale</dt><dd class="mono">{{ condominio.taxCode || '—' }}</dd></div>
             <div class="info-row"><dt>P.IVA</dt><dd class="mono">{{ condominio.vatNumber || '—' }}</dd></div>
-            <div class="info-row"><dt>Email</dt><dd>{{ condominio.email || '—' }}</dd></div>
-            <div class="info-row"><dt>Telefono</dt><dd>{{ condominio.phone || '—' }}</dd></div>
-            <div class="info-row"><dt>PEC</dt><dd>{{ condominio.pec || '—' }}</dd></div>
           </dl>
         </div>
 
@@ -161,31 +158,14 @@
                 <label class="form-label">Codice fiscale</label>
                 <input class="form-input" v-model="form.taxCode" maxlength="16" />
               </div>
-              <div class="form-group">
+              <div class="form-group" :class="{ 'has-error': errors.vatNumber }">
                 <label class="form-label">Partita IVA</label>
-                <input class="form-input" v-model="form.vatNumber" maxlength="11" />
+                <input class="form-input" v-model="form.vatNumber" maxlength="11" @input="clearError('vatNumber')" />
+                <span v-if="errors.vatNumber" class="field-error">{{ errors.vatNumber }}</span>
               </div>
             </div>
           </fieldset>
 
-          <fieldset class="form-fieldset">
-            <legend class="form-fieldset-legend">Contatti</legend>
-            <div class="form-grid">
-              <div class="form-group" :class="{ 'has-error': errors.email }">
-                <label class="form-label">Email</label>
-                <input class="form-input" type="email" v-model="form.email" @input="clearError('email')" />
-                <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Telefono</label>
-                <input class="form-input" v-model="form.phone" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">PEC</label>
-                <input class="form-input" type="email" v-model="form.pec" />
-              </div>
-            </div>
-          </fieldset>
 
           <fieldset class="form-fieldset">
             <legend class="form-fieldset-legend">Dati tecnici</legend>
@@ -408,14 +388,30 @@ function openEdit() {
   showEdit.value = true
 }
 
+function validateVatNumber(vat) {
+  if (!vat) return null
+  const v = vat.trim()
+  if (!/^\d{11}$/.test(v)) return 'La P.IVA deve essere composta da 11 cifre numeriche'
+  let s = 0
+  for (let i = 0; i < 10; i++) {
+    const n = parseInt(v[i])
+    s += i % 2 === 0 ? n : (n * 2 > 9 ? n * 2 - 9 : n * 2)
+  }
+  const check = (10 - (s % 10)) % 10
+  if (check !== parseInt(v[10])) return 'Codice di controllo P.IVA non valido'
+  return null
+}
+
 function validate() {
   const e = {}
   const f = form.value
   if (!f.name?.trim())
     e.name = 'Il nome è obbligatorio'
-  if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email))
-    e.email = 'Indirizzo email non valido'
-  if (!f.numberOfUnits || f.numberOfUnits < 1)
+  if (f.vatNumber?.trim()) {
+    const vatErr = validateVatNumber(f.vatNumber)
+    if (vatErr) e.vatNumber = vatErr
+  }
+if (!f.numberOfUnits || f.numberOfUnits < 1)
     e.numberOfUnits = 'Deve essere almeno 1'
   if (!f.numberOfStaircases || f.numberOfStaircases < 1)
     e.numberOfStaircases = 'Deve essere almeno 1'

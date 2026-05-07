@@ -127,13 +127,15 @@
               <label class="form-label">Ragione sociale *</label>
               <input class="form-input" v-model="form.companyName" />
             </div>
-            <div class="form-group">
-              <label class="form-label">P.IVA</label>
-              <input class="form-input" v-model="form.vatNumber" maxlength="11" />
+            <div class="form-group" :class="{ 'has-error': formErrors.vatOrTax || formErrors.vatNumber }">
+              <label class="form-label">P.IVA <span class="field-hint">(almeno uno tra P.IVA e C.F. è obbligatorio)</span></label>
+              <input class="form-input" v-model="form.vatNumber" maxlength="11" @input="formErrors.vatOrTax = null; formErrors.vatNumber = null" />
+              <span v-if="formErrors.vatNumber" class="field-error">{{ formErrors.vatNumber }}</span>
             </div>
-            <div class="form-group">
+            <div class="form-group" :class="{ 'has-error': formErrors.vatOrTax }">
               <label class="form-label">Cod. fiscale</label>
-              <input class="form-input" v-model="form.taxCode" maxlength="16" />
+              <input class="form-input" v-model="form.taxCode" maxlength="16" @input="formErrors.vatOrTax = null" />
+              <span v-if="formErrors.vatOrTax" class="field-error">{{ formErrors.vatOrTax }}</span>
             </div>
             <div class="form-group">
               <label class="form-label">Email</label>
@@ -299,6 +301,7 @@ const contractBadge = (s) => ({ Active: 'badge-green', Expired: 'badge-red', Can
 
 const defaultForm = () => ({ companyName: '', vatNumber: '', taxCode: '', email: '', phone: '', pec: '', supplierType: '', ibanAccount: '', address: '', city: '', province: '', postalCode: '', notes: '', isActive: true })
 const form = ref(defaultForm())
+const formErrors = ref({})
 const contractForm = ref({ subject: '', contractNumber: '', supplierId: '', startDate: '', endDate: '', annualAmount: null, status: 'Active', autoRenewal: false })
 
 const filtered = computed(() => {
@@ -343,11 +346,36 @@ function onSearch() { /* debounce optionally */ }
 function openModal(s = null) {
   editing.value = s?.id ?? null
   form.value = s ? { ...s } : defaultForm()
+  formErrors.value = {}
   showModal.value = true
 }
 
+function validateVatNumber(vat) {
+  if (!vat) return null
+  const v = vat.trim()
+  if (!/^\d{11}$/.test(v)) return 'La P.IVA deve essere composta da 11 cifre numeriche'
+  // Algoritmo di controllo P.IVA italiana
+  let s = 0
+  for (let i = 0; i < 10; i++) {
+    const n = parseInt(v[i])
+    s += i % 2 === 0 ? n : (n * 2 > 9 ? n * 2 - 9 : n * 2)
+  }
+  const check = (10 - (s % 10)) % 10
+  if (check !== parseInt(v[10])) return 'Codice di controllo P.IVA non valido'
+  return null
+}
+
 async function save() {
+  formErrors.value = {}
   if (!form.value.companyName) return store.toast('La ragione sociale è obbligatoria', 'error')
+  if (!form.value.vatNumber?.trim() && !form.value.taxCode?.trim()) {
+    formErrors.value.vatOrTax = 'Inserire almeno la P.IVA o il Codice Fiscale'
+    return
+  }
+  if (form.value.vatNumber?.trim()) {
+    const vatErr = validateVatNumber(form.value.vatNumber)
+    if (vatErr) { formErrors.value.vatNumber = vatErr; return }
+  }
   saving.value = true
   try {
     if (editing.value) await supplierApi.update(editing.value, form.value)
@@ -416,6 +444,9 @@ window.addEventListener('app:refresh', loadAll)
 </script>
 
 <style scoped>
+.field-hint { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
+.field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; display: block; }
+.has-error .form-input { border-color: var(--accent-red, #e53e3e); }
 .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
 .search-input { flex: 1; min-width: 200px; max-width: 320px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
