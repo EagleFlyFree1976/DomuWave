@@ -56,6 +56,11 @@ public class ApplyChartOfAccountsTemplateCommandConsumer
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
+        var defaultChargeability = await session.Query<ChargeabilityType>()
+            .OrderBy(x => x.Id)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
         // code → created entity (per risolvere le relazioni padre-figlio)
         var codeMap = new Dictionary<string, ChartOfAccounts>(StringComparer.OrdinalIgnoreCase);
         int created = 0;
@@ -71,15 +76,16 @@ public class ApplyChartOfAccountsTemplateCommandConsumer
 
             var entity = new ChartOfAccounts
             {
-                Condominium   = condominium,
-                Tenant        = condominium.Tenant,
-                ParentAccount = parent,
-                Code          = code,
-                Name          = name,
-                Type          = type,
-                Level         = parent != null ? parent.Level + 1 : 1,
-                IsActive      = true,
-                IsDeleted     = false,
+                Condominium       = condominium,
+                Tenant            = condominium.Tenant,
+                ParentAccount     = parent,
+                Code              = code,
+                Name              = name,
+                Type              = type,
+                ChargeabilityType = defaultChargeability,
+                Level             = parent != null ? parent.Level + 1 : 1,
+                IsActive          = true,
+                IsDeleted         = false,
             };
             entity.Trace(currentUser);
 

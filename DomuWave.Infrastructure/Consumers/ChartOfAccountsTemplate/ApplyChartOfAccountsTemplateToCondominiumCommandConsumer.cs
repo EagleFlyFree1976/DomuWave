@@ -63,7 +63,7 @@ public class ApplyChartOfAccountsTemplateToCondominiumCommandConsumer
         // templateItemId → created ChartOfAccounts (to resolve parent references)
         var idMap  = new Dictionary<int, ChartOfAccounts>();
         int created = 0;
-
+        ChargeabilityType def = new ChargeabilityType() { Id = ChargeabilityType.Owner };
         foreach (var item in items)
         {
             if (existingCodes.Contains(item.Code, StringComparer.OrdinalIgnoreCase))
@@ -84,6 +84,7 @@ public class ApplyChartOfAccountsTemplateToCondominiumCommandConsumer
                 Level         = parent != null ? parent.Level + 1 : 1,
                 IsActive      = true,
                 IsDeleted     = false,
+                ChargeabilityType = def
             };
             entity.Trace(currentUser);
 

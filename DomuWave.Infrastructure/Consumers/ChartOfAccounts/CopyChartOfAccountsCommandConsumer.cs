@@ -80,17 +80,18 @@ public class CopyChartOfAccountsCommandConsumer
 
             var newAccount = new ChartOfAccounts
             {
-                Condominium   = target,
-                Tenant        = target.Tenant,
-                ParentAccount = parentInTarget,
-                Code          = src.Code,
-                Name          = src.Name,
-                Description   = src.Description,
-                Type          = src.Type,
-                Category      = null,   // le categorie appartengono al tenant: non copiate
-                Level         = parentInTarget != null ? parentInTarget.Level + 1 : 1,
-                IsActive      = src.IsActive,
-                IsDeleted     = false,
+                Condominium       = target,
+                Tenant            = target.Tenant,
+                ParentAccount     = parentInTarget,
+                Code              = src.Code,
+                Name              = src.Name,
+                Description       = src.Description,
+                Type              = src.Type,
+                ChargeabilityType = src.ChargeabilityType,
+                Category          = null,
+                Level             = parentInTarget != null ? parentInTarget.Level + 1 : 1,
+                IsActive          = src.IsActive,
+                IsDeleted         = false,
             };
 
             newAccount.Trace(currentUser);
