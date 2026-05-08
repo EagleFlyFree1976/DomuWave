@@ -106,6 +106,11 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
+            var defaultChargeability = await session.Query<ChargeabilityType>()
+                .OrderBy(x => x.Id)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             var idMap = new Dictionary<int, ChartOfAccounts>();
             foreach (var item in templateItems)
             {
@@ -115,15 +120,16 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
 
                 var account = new ChartOfAccounts
                 {
-                    Condominium   = created,
-                    Tenant        = tenant,
-                    ParentAccount = parent,
-                    Code          = item.Code,
-                    Name          = item.Name,
-                    Type          = item.Type,
-                    Level         = parent != null ? parent.Level + 1 : 1,
-                    IsActive      = true,
-                    IsDeleted     = false,
+                    Condominium       = created,
+                    Tenant            = tenant,
+                    ParentAccount     = parent,
+                    Code              = item.Code,
+                    Name              = item.Name,
+                    Type              = item.Type,
+                    ChargeabilityType = defaultChargeability,
+                    Level             = parent != null ? parent.Level + 1 : 1,
+                    IsActive          = true,
+                    IsDeleted         = false,
                 };
                 account.Trace(currentUser);
 
