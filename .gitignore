@@ -94,3 +94,4 @@ DomuWave.IntegrationTests/Logs/
 /DomuWave.Web/obj/DomuWave.Web.csproj.nuget.dgspec.json
 /DomuWave.Web/obj/project.assets.json
 /DomuWave.Web/obj/project.nuget.cache
+migrations/.claude/
