@@ -204,6 +204,8 @@ try
             ? Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "DomuWave.Web", "wwwroot"))
             : Path.Combine(AppContext.BaseDirectory, "wwwroot");
         var indexPath = Path.Combine(wwwroot, "index.html");
+        context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        context.Response.Headers["Pragma"] = "no-cache";
         context.Response.ContentType = "text/html";
         await context.Response.SendFileAsync(indexPath);
     });
