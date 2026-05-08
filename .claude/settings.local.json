@@ -42,7 +42,10 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(dotnet publish *)"
+      "Bash(dotnet publish *)",
+      "Bash(git rm *)",
+      "Bash(git restore *)",
+      "Bash(git commit *)"
     ]
   }
 }
