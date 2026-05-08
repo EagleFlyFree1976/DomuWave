@@ -1,6 +1,8 @@
 <template>
-  <Toast position="top-right" :pt="{ root: { style: 'z-index: 9999' } }" />
-  <RouterView />
+  <div>
+    <Toast position="top-right" :pt="{ root: { style: 'z-index: 9999' } }" />
+    <RouterView />
+  </div>
 </template>
 
 <script setup>

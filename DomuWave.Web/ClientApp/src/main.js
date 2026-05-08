@@ -149,7 +149,7 @@ app.component('FloatLabel', FloatLabel)
 app.component('InputGroup', InputGroup)
 app.component('InputGroupAddon', InputGroupAddon)
 
+app.mount('#app')
+
 // Applica dark theme di default
 document.documentElement.classList.add('p-dark')
-
-app.mount('#app')

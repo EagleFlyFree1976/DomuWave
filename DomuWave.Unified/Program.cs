@@ -187,12 +187,20 @@ try
     // API controllers
     app.MapControllers();
 
-    // Razor MVC per la shell HTML (serve index.cshtml che monta Vue)
-    app.MapControllerRoute(
-        name: "default",
-        pattern: "{controller=Home}/{action=Index}/{id?}");
+    string GetWwwroot() => app.Environment.IsDevelopment()
+        ? Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "DomuWave.Web", "wwwroot"))
+        : Path.Combine(AppContext.BaseDirectory, "wwwroot");
 
-    // SPA fallback: tutte le route non-API tornano all'index.html di Vue (senza redirect)
+    async Task ServeSpaIndex(HttpContext ctx)
+    {
+        ctx.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
+        ctx.Response.Headers["Pragma"] = "no-cache";
+        ctx.Response.ContentType = "text/html";
+        await ctx.Response.SendFileAsync(Path.Combine(GetWwwroot(), "index.html"));
+    }
+
+    // SPA: serve index.html per tutte le route non-API (inclusa /)
+    app.MapGet("/", ServeSpaIndex);
     app.MapFallback(async context =>
     {
         if (context.Request.Path.StartsWithSegments("/api"))
@@ -200,14 +208,7 @@ try
             context.Response.StatusCode = 404;
             return;
         }
-        var wwwroot = app.Environment.IsDevelopment()
-            ? Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "DomuWave.Web", "wwwroot"))
-            : Path.Combine(AppContext.BaseDirectory, "wwwroot");
-        var indexPath = Path.Combine(wwwroot, "index.html");
-        context.Response.Headers["Cache-Control"] = "no-store, no-cache, must-revalidate";
-        context.Response.Headers["Pragma"] = "no-cache";
-        context.Response.ContentType = "text/html";
-        await context.Response.SendFileAsync(indexPath);
+        await ServeSpaIndex(context);
     });
     app.Run();
 }
