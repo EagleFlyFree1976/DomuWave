@@ -1,0 +1,40 @@
+meta {
+  name: reset pwd
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:40300/api/publicuser/confirm-reset-password
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json, text/plain, */*
+  Accept-Language: it,en-US;q=0.9,en;q=0.8
+  Authorization: Bearer JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+  Connection: keep-alive
+  Content-Type: application/json
+  Origin: http://localhost:40300
+  Referer: http://localhost:40300/reset-password?token=bc7711cdedb74d28aa1324219533437e
+  Sec-Fetch-Dest: empty
+  Sec-Fetch-Mode: cors
+  Sec-Fetch-Site: same-origin
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36
+  X-Auth-Token: JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+  sec-ch-ua: "Google Chrome";v="147", "Not.A/Brand";v="8", "Chromium";v="147"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-platform: "Windows"
+}
+
+body:json {
+  {
+    "token": "bc7711cdedb74d28aa1324219533437e",
+    "newPassword": "Gattuso@456"
+  }
+}
+
+settings {
+  encodeUrl: false
+}

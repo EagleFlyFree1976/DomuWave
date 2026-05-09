@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using CPQ.Core.Exceptions;
 using DomuWave.Services.Interfaces;
 
 namespace DomuWave.Services.Implementations;
@@ -8,6 +9,24 @@ public class SmtpEmailService : IEmailService
 {
     public async Task SendAsync(EmailMessage message, SmtpConfig config, CancellationToken ct = default)
     {
+        if (message == null)
+            throw new ValidatorException("Messaggio email non valido.");
+
+        if (config == null)
+            throw new ValidatorException("Configurazione SMTP non trovata. Configura il server email nelle impostazioni.");
+
+        if (string.IsNullOrWhiteSpace(config.Host)
+            || config.Port <= 0
+            || string.IsNullOrWhiteSpace(config.FromEmail)
+            || string.IsNullOrWhiteSpace(config.Username)
+            || string.IsNullOrWhiteSpace(config.Password))
+        {
+            throw new ValidatorException("Configurazione SMTP incompleta. Verifica host, porta, credenziali e mittente.");
+        }
+
+        if (string.IsNullOrWhiteSpace(message.To))
+            throw new ValidatorException("Indirizzo email destinatario non valido.");
+
         using var client = new SmtpClient(config.Host, config.Port)
         {
             EnableSsl   = config.UseSsl,
@@ -32,6 +51,13 @@ public class SmtpEmailService : IEmailService
             }
         }
 
-        await client.SendMailAsync(mail, ct).ConfigureAwait(false);
+        try
+        {
+            await client.SendMailAsync(mail, ct).ConfigureAwait(false);
+        }
+        catch (SmtpException ex)
+        {
+            throw new ValidatorException($"Invio email fallito: {ex.Message}");
+        }
     }
 }

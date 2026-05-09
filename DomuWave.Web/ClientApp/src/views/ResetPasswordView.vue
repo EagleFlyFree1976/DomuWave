@@ -247,15 +247,15 @@ async function handleRequestReset() {
 
   loading.value = true
     try {
-      console.log("handleSubmit call  publicuser/confirm-reset-password:", {
+      console.log("handleSubmit call  auth/confirm-reset-password:", {
         token: token.value,
         newPassword: form.newPassword,
       });
-    await authApiClient.post('/publicuser/confirm-reset-password', {
+    await authApiClient.post('/auth/confirm-reset-password', {
       token:       token.value,
       newPassword: form.newPassword,
     })
-      console.log("handleSubmit CALLED  publicuser/confirm-reset-password:", {
+      console.log("handleSubmit CALLED  auth/confirm-reset-password:", {
         token: token.value,
         newPassword: form.newPassword,
       });
