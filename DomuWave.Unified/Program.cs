@@ -1,3 +1,4 @@
+using System.Configuration;
 using System.Reflection;
 using Microsoft.Extensions.FileProviders;
 using Auth.Microservice;
@@ -16,6 +17,7 @@ using Serilog;
 using Serilog.Exceptions;
 using Serilog.Exceptions.Core;
 using Serilog.Exceptions.Refit.Destructurers;
+using Serilog.Sinks.MSSqlServer;
 
 IConfigurationRoot configuration;
 var NETCoreEnv = OxCore.ChangeEnvironments(args);
@@ -48,14 +50,31 @@ else
 
 _initSettings(out var _jobSettings, out var _oxCoreSettings);
 
-var logger = new LoggerConfiguration()
-             .ReadFrom.Configuration(configuration)
-             .Enrich.WithThreadId()
-             .Enrich
-             .WithExceptionDetails(new DestructuringOptionsBuilder()
-                                   .WithDefaultDestructurers()
-                                   .WithDestructurers([new ApiExceptionDestructurer(destructureHttpContent: true)]))
-             .CreateLogger();
+var logPath = Path.Combine(AppContext.BaseDirectory, "Logs", "domuwave-unified_.log");
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(configuration)
+    .Enrich.WithThreadId()
+    .Enrich.WithExceptionDetails(new DestructuringOptionsBuilder()
+        .WithDefaultDestructurers()
+        .WithDestructurers([new ApiExceptionDestructurer(destructureHttpContent: true)]))
+    .WriteTo.File(
+        path: logPath,
+        outputTemplate: "[{Timestamp:o}] |{Level:u4}| #{ThreadId} [{Application} - {MachineName}] {SourceContext} {Message}{NewLine}{Exception}",
+        rollingInterval: RollingInterval.Day,
+        fileSizeLimitBytes: 52428800,
+        retainedFileCountLimit: 7,
+        rollOnFileSizeLimit: true,
+        shared: false).WriteTo.MSSqlServer(
+        connectionString: configuration.GetConnectionString("Logs"),
+        sinkOptions: new MSSqlServerSinkOptions
+        {
+            TableName = "AppLogs",
+            AutoCreateSqlTable = true
+        })
+    .CreateLogger();
+
+var logger = Log.Logger;
 
 logger.Information("Check env");
 logger.Information("current ASPNETCORE_ENVIRONMENT: {env}", Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"));
