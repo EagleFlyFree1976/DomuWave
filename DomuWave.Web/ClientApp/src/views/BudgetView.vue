@@ -6,21 +6,22 @@
     </div>
 
     <div>
-      <div class="tab-toolbar">
-        <!-- FiscalYear selector -->
-        <select class="form-select" v-model="selectedFiscalYearId" style="min-width:180px"
-                :disabled="!fiscalYears.length">
-          <option :value="null" disabled>Seleziona esercizio…</option>
-          <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">
-            {{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}
-          </option>
-        </select>
-
-        <button v-if="canCreate && canCreateBudget" class="btn btn-primary" style="margin-left:auto"
-                @click="openBudgetModal()">
-          + Nuovo budget
-        </button>
-      </div>
+      <ToolbarRow>
+        <template #left>
+          <select class="form-select" v-model="selectedFiscalYearId" style="min-width:180px"
+                  :disabled="!fiscalYears.length">
+            <option :value="null" disabled>Seleziona esercizio…</option>
+            <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">
+              {{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}
+            </option>
+          </select>
+        </template>
+        <template #right>
+          <button v-if="canCreate && canCreateBudget" class="btn btn-primary" @click="openBudgetModal()">
+            <i class="pi pi-plus" style="font-size:0.8rem;margin-right:0.35rem"></i>Nuovo budget
+          </button>
+        </template>
+      </ToolbarRow>
 
       <div class="card">
         <div v-if="loadingBudget" class="loading-state"><div class="spinner"></div></div>
@@ -485,6 +486,7 @@ import { budgetApi, budgetItemApi, chartOfAccountsApi, installmentApi } from '@/
 import { usePermissions } from '@/composables/usePermissions'
 import { useDeepLink }   from '@/composables/useDeepLink'
 import BaseModal from '@/components/BaseModal.vue'
+import ToolbarRow from '@/components/ToolbarRow.vue'
 
 const router  = useRouter()
 const route   = useRoute()
@@ -1071,7 +1073,6 @@ window.addEventListener('app:refresh', loadBudgets)
 </script>
 
 <style scoped>
-.tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .btn-reopen  { color: var(--accent-amber, #f59e0b) !important; border-color: rgba(245,158,11,0.3) !important; }
 .btn-approve   { color: var(--accent-green, #22c55e) !important; border-color: rgba(34,197,94,0.4) !important; }
 .btn-assembly  { color: var(--accent, #6366f1) !important; border-color: rgba(99,102,241,0.4) !important; }

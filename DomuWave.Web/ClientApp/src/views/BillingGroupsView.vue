@@ -1,12 +1,18 @@
 <template>
   <div>
-    <div class="toolbar">
-      <button v-if="canEdit" class="btn btn-ghost btn-sm" @click="runSuggest" :disabled="suggesting">
-        <span v-if="suggesting" class="spinner" style="width:12px;height:12px"></span>
-        <span v-else>✦ Suggerisci automaticamente</span>
-      </button>
-      <button v-if="canEdit" class="btn btn-primary btn-sm" @click="openGroupModal()">+ Nuovo gruppo</button>
-    </div>
+    <ToolbarRow>
+      <template #left>
+        <button v-if="canEdit" class="btn btn-ghost btn-sm" @click="runSuggest" :disabled="suggesting">
+          <span v-if="suggesting" class="spinner" style="width:12px;height:12px"></span>
+          <span v-else>✦ Suggerisci automaticamente</span>
+        </button>
+      </template>
+      <template #right>
+        <button v-if="canEdit" class="btn btn-primary" @click="openGroupModal()">
+          <i class="pi pi-plus" style="font-size:0.8rem;margin-right:0.35rem"></i>Nuovo gruppo
+        </button>
+      </template>
+    </ToolbarRow>
 
     <div class="card">
       <div v-if="loadingGroups" class="loading-state"><div class="spinner"></div></div>
@@ -164,6 +170,7 @@ import { useRoute } from 'vue-router'
 import { billingGroupApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import { useAppStore } from '@/stores/app'
+import ToolbarRow from '@/components/ToolbarRow.vue'
 
 const { canEdit } = usePermissions()
 const store = useAppStore()
@@ -293,13 +300,6 @@ watch(condominiumId, loadAll)
 </script>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
 .unit-chip {
   display: inline-block;
   background: var(--accent-glow, #eef2ff);

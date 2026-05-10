@@ -1,12 +1,22 @@
 <template>
   <div>
-    <div class="toolbar">
-      <input class="form-input search-input" v-model="search" placeholder="Cerca edificio…" />
-      <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary" style="margin-left:auto" @click="openModal()">+ Nuovo edificio</button>
-    </div>
+    <ToolbarRow>
+      <template #left>
+        <input class="form-input search-input" v-model="search" placeholder="Cerca edificio…" style="max-width:280px" />
+      </template>
+      <template #right>
+        <button v-if="canCreate && condominiumId" class="btn btn-primary" @click="openModal()">
+          <i class="pi pi-plus" style="font-size:0.8rem;margin-right:0.35rem"></i>Nuovo edificio
+        </button>
+      </template>
+    </ToolbarRow>
 
     <div class="card">
-      <div v-if="loading" class="loading-state"><div class="spinner"></div> Caricamento…</div>
+      <div v-if="!condominiumId" class="empty-state">
+        <div class="empty-icon">🏢</div>
+        <div>Seleziona un condominio per vedere gli edifici</div>
+      </div>
+      <div v-else-if="loading" class="loading-state"><div class="spinner"></div> Caricamento…</div>
       <div v-else-if="!filtered.length" class="empty-state">
         <div class="empty-icon">🏢</div>
         <div>Nessun edificio trovato</div>
@@ -65,45 +75,44 @@
         </div>
         <div class="modal-body">
 
-          <fieldset class="form-fieldset">
-            <legend class="form-fieldset-legend">Dati generali</legend>
-            <div class="form-grid">
-              <div class="form-group form-group--full" :class="{ 'has-error': errors.name }">
-                <label class="form-label">Nome *</label>
-                <input class="form-input" v-model="form.name" placeholder="Es. Corpo A" @input="clearError('name')" />
-                <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Codice</label>
-                <input class="form-input" v-model="form.code" placeholder="Es. A" maxlength="50" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Anno costruzione</label>
-                <input class="form-input" type="number" min="1800" max="2100" v-model.number="form.yearOfConstruction" />
-              </div>
-              <div class="form-group form-group--full">
-                <label class="form-label">Indirizzo</label>
-                <input class="form-input" v-model="form.address" placeholder="Via, numero civico…" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Numero piani</label>
-                <input class="form-input" type="number" min="1" v-model.number="form.numberOfFloors" />
-              </div>
-            </div>
-          </fieldset>
+          <div class="form-group form-group--full" :class="{ 'has-error': errors.name }">
+            <label class="form-label">Nome *</label>
+            <input class="form-input" v-model="form.name" placeholder="Es. Corpo A" @input="clearError('name')" />
+            <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
+          </div>
 
-          <div style="display:flex;gap:1.5rem;margin-top:0.5rem">
-            <div class="form-group" style="flex-direction:row;align-items:center;gap:0.5rem">
-              <input type="checkbox" id="buildingHasElevator" v-model="form.hasElevator" />
-              <label for="buildingHasElevator" style="font-size:0.875rem;cursor:pointer">Ascensore</label>
+          <div class="form-group" style="margin-top:0.75rem">
+            <label class="form-label">Indirizzo</label>
+            <input class="form-input" v-model="form.address" placeholder="Via, numero civico…" />
+          </div>
+
+          <div class="form-grid" style="margin-top:0.75rem">
+            <div class="form-group">
+              <label class="form-label">Codice</label>
+              <input class="form-input" v-model="form.code" placeholder="Es. A" maxlength="50" />
             </div>
-            <div class="form-group" style="flex-direction:row;align-items:center;gap:0.5rem">
-              <input type="checkbox" id="buildingIsActive" v-model="form.isActive" />
-              <label for="buildingIsActive" style="font-size:0.875rem;cursor:pointer">Attivo</label>
+            <div class="form-group">
+              <label class="form-label">Anno costruzione</label>
+              <input class="form-input" type="number" min="1800" max="2100" v-model.number="form.yearOfConstruction" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Numero piani</label>
+              <input class="form-input" type="number" min="1" v-model.number="form.numberOfFloors" />
             </div>
           </div>
 
-          <div class="form-group" style="margin-top:0.5rem">
+          <div class="building-flags">
+            <label class="flag-item">
+              <input type="checkbox" id="buildingHasElevator" v-model="form.hasElevator" />
+              <span>Ascensore</span>
+            </label>
+            <label class="flag-item">
+              <input type="checkbox" id="buildingIsActive" v-model="form.isActive" />
+              <span>Attivo</span>
+            </label>
+          </div>
+
+          <div class="form-group" style="margin-top:0.75rem">
             <label class="form-label">Note</label>
             <textarea class="form-textarea" v-model="form.description" rows="2"></textarea>
           </div>
@@ -127,6 +136,7 @@ import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { buildingApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import ToolbarRow from '@/components/ToolbarRow.vue'
 
 const route  = useRoute()
 const store  = useAppStore()
@@ -228,3 +238,29 @@ async function deleteItem(id) {
 onMounted(loadData)
 watch(condominiumId, loadData)
 </script>
+
+<style scoped>
+.building-flags {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.flag-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.flag-item input[type="checkbox"] { cursor: pointer; }
+
+.has-error .form-input { border-color: var(--accent-red, #e53e3e); }
+.field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; }
+</style>

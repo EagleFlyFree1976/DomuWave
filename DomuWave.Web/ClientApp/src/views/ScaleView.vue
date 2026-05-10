@@ -29,10 +29,16 @@
     </div>
 
     <!-- Toolbar -->
-    <div class="toolbar">
-      <input class="form-input search-input" v-model="search" placeholder="Cerca scala…" style="max-width:280px" />
-      <button v-if="canCreate && condominiumId" class="btn btn-primary" style="margin-left:auto" @click="openModal()">+ Nuova scala</button>
-    </div>
+    <ToolbarRow>
+      <template #left>
+        <input class="form-input search-input" v-model="search" placeholder="Cerca scala…" style="max-width:280px" />
+      </template>
+      <template #right>
+        <button v-if="canCreate && condominiumId" class="btn btn-primary" @click="openModal()">
+          <i class="pi pi-plus" style="font-size:0.8rem;margin-right:0.35rem"></i>Nuova scala
+        </button>
+      </template>
+    </ToolbarRow>
 
     <!-- Lista -->
     <div class="card">
@@ -121,6 +127,7 @@ import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { usePermissions } from '@/composables/usePermissions'
 import { staircaseApi } from '@/services/api'
+import ToolbarRow from '@/components/ToolbarRow.vue'
 
 const route = useRoute()
 const store = useAppStore()

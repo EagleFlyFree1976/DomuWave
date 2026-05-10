@@ -1,27 +1,33 @@
 <template>
   <div>
     <!-- Search / filter toolbar -->
-    <div class="toolbar">
-      <input class="form-input search-input" v-model="search" placeholder="Cerca per numero interno…" />
-      <select v-if="buildings.length" class="form-select filter-select" v-model="filterBuilding">
-        <option value="">Tutti gli edifici</option>
-        <option v-for="b in buildings" :key="b.id" :value="String(b.id)">{{ b.name }}</option>
-      </select>
-      <select v-if="staircases.length" class="form-select filter-select" v-model="filterStaircase">
-        <option value="">Tutte le scale</option>
-        <option v-for="s in toolbarStaircaseOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
-      </select>
-<select class="form-select filter-select" v-model="filterType">
-        <option value="">Tutti i tipi</option>
-        <option v-for="t in unitTypes" :key="t" :value="t">{{ t }}</option>
-      </select>
-      <select class="form-select filter-select" v-model="filterActive">
-        <option value="">Tutte</option>
-        <option value="true">Attive</option>
-        <option value="false">Inattive</option>
-      </select>
-      <button v-if="canCreate" class="btn btn-primary" style="margin-left:auto" @click="openModal()">+ Nuova unità</button>
-    </div>
+    <ToolbarRow>
+      <template #left>
+        <input class="form-input search-input" v-model="search" placeholder="Cerca per numero interno…" />
+        <select v-if="buildings.length" class="form-select filter-select" v-model="filterBuilding">
+          <option value="">Tutti gli edifici</option>
+          <option v-for="b in buildings" :key="b.id" :value="String(b.id)">{{ b.name }}</option>
+        </select>
+        <select v-if="staircases.length" class="form-select filter-select" v-model="filterStaircase">
+          <option value="">Tutte le scale</option>
+          <option v-for="s in toolbarStaircaseOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+        </select>
+        <select class="form-select filter-select" v-model="filterType">
+          <option value="">Tutti i tipi</option>
+          <option v-for="t in unitTypes" :key="t" :value="t">{{ t }}</option>
+        </select>
+        <select class="form-select filter-select" v-model="filterActive">
+          <option value="">Tutte</option>
+          <option value="true">Attive</option>
+          <option value="false">Inattive</option>
+        </select>
+      </template>
+      <template #right>
+        <button v-if="canCreate" class="btn btn-primary" @click="openModal()">
+          <i class="pi pi-plus" style="font-size:0.8rem;margin-right:0.35rem"></i>Nuova unità
+        </button>
+      </template>
+    </ToolbarRow>
 
     <div class="card">
       <div v-if="loading" class="loading-state"><div class="spinner"></div> Caricamento…</div>
@@ -304,6 +310,7 @@ import { useAppStore } from '@/stores/app'
 import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi, buildingApi, staircaseApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 import { usePermissions } from '@/composables/usePermissions'
+import ToolbarRow from '@/components/ToolbarRow.vue'
 
 const route  = useRoute()
 const store  = useAppStore()
@@ -578,7 +585,6 @@ watch(filterBuilding, () => { filterStaircase.value = '' })
 </script>
 
 <style scoped>
-.toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
 .search-input { flex: 1; min-width: 160px; max-width: 280px; }
 .filter-select { width: 140px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }

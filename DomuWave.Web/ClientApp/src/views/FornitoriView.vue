@@ -10,18 +10,24 @@
 
     <!-- ── Fornitori ──────────────────────────────── -->
     <div v-if="activeTab === 'fornitori'">
-      <div class="toolbar">
-        <input class="form-input search-input" v-model="search" placeholder="Cerca per nome, P.IVA…" @input="onSearch" />
-        <select class="form-select" v-model="filterType" style="width:160px">
-          <option value="">Tutti i tipi</option>
-          <option value="Maintenance">Manutenzione</option>
-          <option value="Cleaning">Pulizie</option>
-          <option value="Security">Sicurezza</option>
-          <option value="Utilities">Utenze</option>
-          <option value="Professional">Professionale</option>
-        </select>
-        <button v-if="canCreate" class="btn btn-primary" @click="openModal()">+ Nuovo fornitore</button>
-      </div>
+      <ToolbarRow>
+        <template #left>
+          <input class="form-input search-input" v-model="search" placeholder="Cerca per nome, P.IVA…" @input="onSearch" />
+          <select class="form-select" v-model="filterType" style="width:160px">
+            <option value="">Tutti i tipi</option>
+            <option value="Maintenance">Manutenzione</option>
+            <option value="Cleaning">Pulizie</option>
+            <option value="Security">Sicurezza</option>
+            <option value="Utilities">Utenze</option>
+            <option value="Professional">Professionale</option>
+          </select>
+        </template>
+        <template #right>
+          <button v-if="canCreate" class="btn btn-primary" @click="openModal()">
+            <i class="pi pi-plus" style="font-size:0.8rem;margin-right:0.35rem"></i>Nuovo fornitore
+          </button>
+        </template>
+      </ToolbarRow>
 
       <div class="card">
         <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
@@ -64,14 +70,20 @@
 
     <!-- ── Contratti ──────────────────────────────── -->
     <div v-if="activeTab === 'contratti'">
-      <div class="toolbar">
-        <select class="form-select" v-model="contractFilter" style="width:160px">
-          <option value="all">Tutti</option>
-          <option value="active">Attivi</option>
-          <option value="expiring">In scadenza (30gg)</option>
-        </select>
-        <button v-if="canCreate" class="btn btn-primary" @click="openContractModal()" style="margin-left:auto">+ Nuovo contratto</button>
-      </div>
+      <ToolbarRow>
+        <template #left>
+          <select class="form-select" v-model="contractFilter" style="width:160px">
+            <option value="all">Tutti</option>
+            <option value="active">Attivi</option>
+            <option value="expiring">In scadenza (30gg)</option>
+          </select>
+        </template>
+        <template #right>
+          <button v-if="canCreate" class="btn btn-primary" @click="openContractModal()">
+            <i class="pi pi-plus" style="font-size:0.8rem;margin-right:0.35rem"></i>Nuovo contratto
+          </button>
+        </template>
+      </ToolbarRow>
 
       <div class="card">
         <div v-if="loadingContracts" class="loading-state"><div class="spinner"></div></div>
@@ -275,6 +287,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { supplierApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import ToolbarRow from '@/components/ToolbarRow.vue'
 
 const store = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
@@ -447,7 +460,6 @@ window.addEventListener('app:refresh', loadAll)
 .field-hint { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); }
 .field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; display: block; }
 .has-error .form-input { border-color: var(--accent-red, #e53e3e); }
-.toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
 .search-input { flex: 1; min-width: 200px; max-width: 320px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
 .btn-active { background: var(--accent-glow) !important; color: var(--accent) !important; border-color: var(--border-active) !important; }
