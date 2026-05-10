@@ -21,7 +21,6 @@ public static class UnitTenantMappingExtensions
             Phone          = tenant.Phone,
             LeaseStartDate = tenant.LeaseStartDate,
             LeaseEndDate   = tenant.LeaseEndDate,
-            ExpensePayer   = tenant.ExpensePayer,
             IsActive       = tenant.IsActive,
             Notes          = tenant.Notes,
         };
@@ -46,7 +45,6 @@ public static class UnitTenantMappingExtensions
             Phone          = dto.Phone,
             LeaseStartDate = dto.LeaseStartDate,
             LeaseEndDate   = dto.LeaseEndDate,
-            ExpensePayer   = dto.ExpensePayer ?? string.Empty,
             IsActive       = dto.IsActive,
             Description    = dto.Notes,
         };
@@ -61,7 +59,6 @@ public static class UnitTenantMappingExtensions
         entity.LeaseStartDate = dto.LeaseStartDate;
         entity.LeaseEndDate   = dto.LeaseEndDate;
         entity.TaxCode        = dto.TaxCode;
-        entity.ExpensePayer   = dto.ExpensePayer ?? string.Empty;
         entity.IsActive       = dto.IsActive;
         entity.Description    = dto.Notes;
     }

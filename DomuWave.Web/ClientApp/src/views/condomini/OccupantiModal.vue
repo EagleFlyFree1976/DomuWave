@@ -358,14 +358,6 @@
               <input class="form-input" type="date" v-model="tenantModal.form.leaseEndDate" />
             </div>
             <div class="form-group">
-              <label class="form-label">Pagatore spese</label>
-              <select class="form-select" v-model="tenantModal.form.expensePayer">
-                <option value="">— Seleziona —</option>
-                <option value="Proprietario">Proprietario</option>
-                <option value="Inquilino">Inquilino</option>
-              </select>
-            </div>
-            <div class="form-group">
               <label class="form-label">Codice fiscale</label>
               <input class="form-input" v-model="tenantModal.form.taxCode" maxlength="16" style="text-transform:uppercase" />
             </div>
@@ -508,7 +500,6 @@ const tenantModal = reactive({
     leaseStartDate: '',
     leaseEndDate:   '',
     taxCode:        '',
-    expensePayer:   '',
     isActive:       true,
     notes:          '',
   },
@@ -716,7 +707,6 @@ function openAddTenant() {
   tenantModal.form.leaseStartDate = todayIso()
   tenantModal.form.leaseEndDate   = ''
   tenantModal.form.taxCode        = ''
-  tenantModal.form.expensePayer   = ''
   tenantModal.form.isActive       = true
   tenantModal.form.notes          = ''
   tenantModal.show = true
@@ -731,7 +721,6 @@ function openEditTenant(t) {
   tenantModal.form.leaseStartDate = t.leaseStartDate?.split('T')[0] ?? ''
   tenantModal.form.leaseEndDate   = t.leaseEndDate?.split('T')[0] ?? ''
   tenantModal.form.taxCode        = t.taxCode ?? ''
-  tenantModal.form.expensePayer   = t.expensePayer ?? ''
   tenantModal.form.isActive       = t.isActive
   tenantModal.form.notes          = t.notes ?? ''
   tenantModal.show = true
@@ -751,7 +740,6 @@ async function saveTenant() {
       leaseStartDate: tenantModal.form.leaseStartDate,
       leaseEndDate:   tenantModal.form.leaseEndDate || null,
       taxCode:        tenantModal.form.taxCode || null,
-      expensePayer:   tenantModal.form.expensePayer || null,
       isActive:       tenantModal.form.isActive,
       notes:          tenantModal.form.notes || null,
     }

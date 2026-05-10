@@ -17,13 +17,13 @@
     <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
     <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
     <many-to-one name="Building"   class="DomuWave.Services.Models.Building,   DomuWave.Services" column="BuildingId"   lazy="false" fetch="join" />
-
-    
-    <property name="Staircase" column="Staircase" type="String" length="10" />
+    <many-to-one name="Staircase"  class="DomuWave.Services.Models.Staircase,  DomuWave.Services" column="StaircaseId"  lazy="false" fetch="join" />
     <property name="Floor" column="Floor" type="Int32" not-null="true" />
-    <property name="InternalNumber" column="InternalNumber" type="String" length="20" not-null="true"  />
-    <property name="Subordinate" column="Subordinate" type="String" length="10" />
-    <property name="Category" column="Category" type="String" length="10" />
+    <property name="InternalNumber" column="InternalNumber" type="String" length="40" />
+    <property name="Sheet"          column="Sheet"          type="String" length="20" />
+    <property name="Parcel"         column="Parcel"         type="String" length="20" />
+    <property name="Subordinate"    column="Subordinate"    type="String" length="20" />
+    <property name="Category"       column="Category"       type="String" length="10" />
     <property name="CadastralIncome" column="CadastralIncome" type="Decimal" />
     <property name="AreaSqm" column="AreaSqm" type="Decimal" />
     <property name="Rooms" column="Rooms" type="Decimal" />

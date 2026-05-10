@@ -106,6 +106,20 @@
       :subtitle="store.selectedCondominio?.name"
       size="lg"
     >
+      <!-- ── Blocco: nessun esercizio fiscale disponibile ─────────── -->
+      <div v-if="noFiscalYearAvailable && !editingExp" class="no-fiscal-year-banner">
+        <div class="no-fiscal-year-icon">📅</div>
+        <div>
+          <strong>Nessun esercizio fiscale disponibile</strong>
+          <div class="no-fiscal-year-desc">
+            Per inserire una spesa è necessario avere almeno un esercizio fiscale in stato
+            <strong>Aperto</strong> o <strong>In chiusura</strong>.<br/>
+            Vai alla sezione <em>Esercizi fiscali</em> e apri un esercizio prima di procedere.
+          </div>
+        </div>
+      </div>
+
+      <template v-if="!noFiscalYearAvailable || editingExp">
       <!-- ── Esercizio fiscale ──────────────────────────────────── -->
       <div class="form-group form-group--full" :class="{ 'has-error': expErrors.fiscalYearId }">
         <label class="form-label">Esercizio fiscale *</label>
@@ -159,14 +173,64 @@
           <input class="form-input" type="date" v-model="expForm.registrationDate" @input="clearExpError('registrationDate')" />
           <span v-if="expErrors.registrationDate" class="field-error">{{ expErrors.registrationDate }}</span>
         </div>
-        <div class="form-group" :class="{ 'has-error': expErrors.grossAmount }">
-          <label class="form-label">Importo lordo (€) *</label>
-          <input class="form-input" type="number" step="0.01" v-model.number="expForm.grossAmount" @input="clearExpError('grossAmount')" />
-          <span v-if="expErrors.grossAmount" class="field-error">{{ expErrors.grossAmount }}</span>
+        <!-- Errore base imponibile -->
+        <div v-if="expErrors.taxableBase" class="field-error" style="grid-column:span 2;margin-bottom:0.25rem">
+          ⚠ {{ expErrors.taxableBase }}
+        </div>
+        <!-- Imponibile / Imponibile esente IVA — almeno uno obbligatorio -->
+        <div class="form-group" :class="{ 'has-error': expErrors.taxableAmount }">
+          <label class="form-label">
+            Imponibile (€)
+            <span class="label-hint">obbligatorio se non esente IVA</span>
+          </label>
+          <input class="form-input" type="number" step="0.01" min="0"
+                 v-model.number="expForm.taxableAmount"
+                 @input="clearExpError('taxableAmount'); clearExpError('taxableBase'); autoCalcGross()" />
+          <span v-if="expErrors.taxableAmount" class="field-error">{{ expErrors.taxableAmount }}</span>
+        </div>
+        <div class="form-group" :class="{ 'has-error': expErrors.taxableAmountVatExempt }">
+          <label class="form-label">
+            Imponibile esente IVA (€)
+            <span class="label-hint">obbligatorio se non imponibile</span>
+          </label>
+          <input class="form-input" type="number" step="0.01" min="0"
+                 v-model.number="expForm.taxableAmountVatExempt"
+                 @input="clearExpError('taxableAmountVatExempt'); clearExpError('taxableBase'); autoCalcGross()" />
+          <span v-if="expErrors.taxableAmountVatExempt" class="field-error">{{ expErrors.taxableAmountVatExempt }}</span>
+        </div>
+        <div class="form-group" :class="{ 'has-error': expErrors.vatAmount }">
+          <label class="form-label">
+            IVA / Imposta (€)
+            <span v-if="expForm.taxableAmount > 0" class="label-required">*</span>
+          </label>
+          <input class="form-input" type="number" step="0.01" min="0"
+                 v-model.number="expForm.vatAmount"
+                 @input="clearExpError('vatAmount'); autoCalcGross()" />
+          <span v-if="expErrors.vatAmount" class="field-error">{{ expErrors.vatAmount }}</span>
         </div>
         <div class="form-group">
-          <label class="form-label">IVA (€)</label>
-          <input class="form-input" type="number" step="0.01" v-model.number="expForm.vatAmount" />
+          <label class="form-label">Cassa previdenziale (€)</label>
+          <input class="form-input" type="number" step="0.01" min="0"
+                 v-model.number="expForm.pensionFund"
+                 @input="autoCalcGross()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ritenuta d'acconto (€)</label>
+          <input class="form-input" type="number" step="0.01" min="0"
+                 v-model.number="expForm.withholdingTax"
+                 @input="autoCalcGross()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bollo (€)</label>
+          <input class="form-input" type="number" step="0.01" min="0"
+                 v-model.number="expForm.stampDuty"
+                 @input="autoCalcGross()" />
+        </div>
+        <div class="form-group" style="grid-column: span 2">
+          <label class="form-label">Importo lordo (€) <span class="label-hint">calcolato automaticamente</span></label>
+          <input class="form-input" type="number" step="0.01"
+                 v-model.number="expForm.grossAmount" readonly
+                 style="background:var(--bg-base);cursor:default" />
         </div>
         <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.accountId }">
           <label class="form-label">Conto *</label>
@@ -228,9 +292,12 @@
           </label>
         </div>
       </div>
+      </template><!-- fine v-if !noFiscalYearAvailable -->
+
       <template #footer>
         <button class="btn btn-ghost" @click="showExpenseModal = false">Annulla</button>
-        <button class="btn btn-primary" @click="saveExpense" :disabled="savingExp">
+        <button class="btn btn-primary" @click="saveExpense"
+                :disabled="savingExp || (noFiscalYearAvailable && !editingExp)">
           <span v-if="savingExp" class="spinner" style="width:14px;height:14px"></span>
           {{ editingExp ? 'Salva' : 'Crea' }}
         </button>
@@ -253,12 +320,13 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 const fiscalYears          = computed(() => store.fiscalYears)
 const selectedFiscalYearId = ref(store.selectedFiscalYearId ?? null)
 
-// Esercizi selezionabili nella form: solo Open (2) e Closing (3)
+// Esercizi selezionabili nella form: solo Open (2) e Closing (3) — la Bozza non è utilizzabile
 const FY_OPEN    = 2
 const FY_CLOSING = 3
 const selectableFiscalYears = computed(() =>
   fiscalYears.value.filter(f => f.statusId === FY_OPEN || f.statusId === FY_CLOSING)
 )
+const noFiscalYearAvailable = computed(() => selectableFiscalYears.value.length === 0)
 
 // Warning non bloccante: data registrazione fuori dal periodo, solo se esercizio in Closing
 const registrationDateWarning = ref('')
@@ -333,7 +401,12 @@ function validateExpForm() {
   if (!f.expenseTypeId)         e.expenseTypeId    = 'Selezionare un tipo spesa'
   if (!f.documentDate)          e.documentDate     = 'Campo obbligatorio'
   if (!f.registrationDate)      e.registrationDate = 'Campo obbligatorio'
-  if (!f.grossAmount || f.grossAmount <= 0) e.grossAmount = 'Inserire un importo maggiore di zero'
+  const hasTaxable    = f.taxableAmount          > 0
+  const hasTaxExempt  = f.taxableAmountVatExempt > 0
+  if (!hasTaxable && !hasTaxExempt)
+    e.taxableBase = 'Inserire almeno un importo tra Imponibile e Imponibile esente IVA'
+  if (hasTaxable && !(f.vatAmount > 0))
+    e.vatAmount = "L'IVA è obbligatoria quando è presente l'imponibile"
   if (!f.accountId)             e.accountId        = 'Selezionare un conto'
   if (!f.millesimalTableId)     e.millesimalTableId = 'Selezionare una tabella millesimale'
 
@@ -368,10 +441,25 @@ const enabledMillesimalTables = computed(() => {
 const emptyExpForm = () => ({
   fiscalYearId: null,
   name: '', documentNumber: '', documentDate: today, registrationDate: today,
-  grossAmount: 0, vatAmount: 0, expenseTypeId: 0, paymentStatusId: 1,
+  taxableAmount: 0, taxableAmountVatExempt: 0,
+  grossAmount: 0, vatAmount: 0, netAmount: 0,
+  pensionFund: 0, withholdingTax: 0, stampDuty: 0,
+  expenseTypeId: 0, paymentStatusId: 1,
   paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: '',
   chargeabilityTypeId: 0,
 })
+
+function autoCalcGross() {
+  const f = expForm.value
+  const taxable    = Number(f.taxableAmount)          || 0
+  const taxExempt  = Number(f.taxableAmountVatExempt) || 0
+  const vat        = Number(f.vatAmount)              || 0
+  const pension    = Number(f.pensionFund)            || 0
+  const withholding= Number(f.withholdingTax)         || 0
+  const stamp      = Number(f.stampDuty)              || 0
+  // Lordo = imponibile + esente + IVA + cassa + bollo - ritenuta
+  f.grossAmount = Math.round((taxable + taxExempt + vat + pension + stamp - withholding) * 100) / 100
+}
 const expForm = ref(emptyExpForm())
 
 // ChartOfAccounts
@@ -411,9 +499,15 @@ async function openExpenseModal(e = null) {
     documentNumber:     e.documentNumber ?? '',
     documentDate:       e.documentDate?.slice(0, 10) ?? today,
     registrationDate:   e.registrationDate?.slice(0, 10) ?? today,
-    grossAmount:        e.grossAmount ?? 0,
-    vatAmount:          e.vatAmount ?? 0,
-    expenseTypeId:      e.expenseTypeId ?? 0,
+    taxableAmount:          e.taxableAmount          ?? 0,
+    taxableAmountVatExempt: e.taxableAmountVatExempt ?? 0,
+    grossAmount:            e.grossAmount            ?? 0,
+    vatAmount:              e.vatAmount              ?? 0,
+    netAmount:              e.netAmount              ?? 0,
+    pensionFund:            e.pensionFund            ?? 0,
+    withholdingTax:         e.withholdingTax         ?? 0,
+    stampDuty:              e.stampDuty              ?? 0,
+    expenseTypeId:          e.expenseTypeId          ?? 0,
     paymentStatusId:    e.paymentStatusId ?? 1,
     paymentMethod:      e.paymentMethod ?? '',
     supplierId:         e.supplierId ?? null,
@@ -482,9 +576,14 @@ async function saveExpense() {
       documentNumber:     expForm.value.documentNumber || null,
       documentDate:       expForm.value.documentDate,
       registrationDate:   expForm.value.registrationDate,
-      grossAmount:        expForm.value.grossAmount,
-      vatAmount:          expForm.value.vatAmount,
-      netAmount:          expForm.value.grossAmount - expForm.value.vatAmount,
+      taxableAmount:          expForm.value.taxableAmount          || 0,
+      taxableAmountVatExempt: expForm.value.taxableAmountVatExempt || 0,
+      grossAmount:            expForm.value.grossAmount            || 0,
+      vatAmount:              expForm.value.vatAmount              || 0,
+      netAmount:              expForm.value.grossAmount - (expForm.value.withholdingTax || 0),
+      pensionFund:            expForm.value.pensionFund            || 0,
+      withholdingTax:         expForm.value.withholdingTax         || 0,
+      stampDuty:              expForm.value.stampDuty              || 0,
       expenseTypeId:      expForm.value.expenseTypeId,
       paymentStatusId:    expForm.value.paymentStatusId || 1,
       paymentMethod:      expForm.value.paymentMethod || null,
@@ -558,6 +657,31 @@ window.addEventListener('app:refresh', loadExpenses)
 
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+.no-fiscal-year-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid #f59e0b;
+  background: color-mix(in srgb, #f59e0b 8%, transparent);
+  margin-bottom: 0.5rem;
+}
+.no-fiscal-year-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+.no-fiscal-year-desc { font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.35rem; line-height: 1.5; }
+
+.label-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 0.35rem;
+}
+.label-required {
+  color: var(--accent-red);
+  margin-left: 0.2rem;
+  font-weight: 600;
+}
 
 .warning-banner {
   margin-bottom: 1rem;

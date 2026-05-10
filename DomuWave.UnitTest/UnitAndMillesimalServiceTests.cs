@@ -96,7 +96,8 @@ public class RealEstateUnitServiceTests : TestBase
     public async Task GetByStaircaseAsync_ReturnsUnitsForStaircase()
     {
         // Arrange: solo unità della scala "A"
-        var units = new List<RealEstateUnit> { new() { Id = 1, Staircase = "A" } };
+        var staircase = new DomuWave.Services.Models.Staircase { Id = 1, Name = "A" };
+        var units = new List<RealEstateUnit> { new() { Id = 1, Staircase = staircase } };
         _serviceMock.Setup(s => s.GetByStaircaseAsync(CondominiumId, "A", _currentUser, _ct))
                     .ReturnsAsync(units);
 
@@ -104,7 +105,7 @@ public class RealEstateUnitServiceTests : TestBase
         var result = await _serviceMock.Object.GetByStaircaseAsync(CondominiumId, "A", _currentUser, _ct);
 
         // Assert
-        result.Should().OnlyContain(u => u.Staircase == "A");
+        result.Should().OnlyContain(u => u.Staircase.Name == "A");
     }
 
     /// <summary>

@@ -139,7 +139,6 @@ public class SeedCondominioViaGaribaldiTest(
             var dto = new CreateRealEstateUnitDto
             {
                 CondominiumId   = condId,
-                Staircase       = scala,
                 Floor           = piano,
                 InternalNumber  = numero,
                 UnitType        = tipo,
@@ -161,7 +160,6 @@ public class SeedCondominioViaGaribaldiTest(
             var dto = new CreateRealEstateUnitDto
             {
                 CondominiumId   = condId,
-                Staircase       = scala,
                 Floor           = -1,   // piano interrato
                 InternalNumber  = numero,
                 UnitType        = "Box",
@@ -414,7 +412,6 @@ public class SeedCondominioViaGaribaldiTest(
             Phone          = "339 4512 8877",
             LeaseStartDate = new DateTime(2023, 3, 1),
             LeaseEndDate   = new DateTime(2025, 2, 28),
-            ExpensePayer   = "Owner",   // spese condominiali a carico del proprietario
             IsActive       = true,
             Notes          = "Contratto 4+4, locazione abitativa.",
         };

@@ -25,9 +25,14 @@
     <property name="DocumentNumber" column="DocumentNumber" type="String" length="50" />
     <property name="DocumentDate" column="DocumentDate" type="DateTime" not-null="true" />
     <property name="RegistrationDate" column="RegistrationDate" type="DateTime" not-null="true" />
-    <property name="GrossAmount" column="GrossAmount" type="Decimal" not-null="true" />
-    <property name="VatAmount" column="VatAmount" type="Decimal" not-null="true" />
-    <property name="NetAmount" column="NetAmount" type="Decimal" not-null="true" />
+    <property name="TaxableAmount"          column="TaxableAmount"          type="Decimal" not-null="true" />
+    <property name="TaxableAmountVatExempt" column="TaxableAmountVatExempt" type="Decimal" not-null="true" />
+    <property name="GrossAmount"            column="GrossAmount"            type="Decimal" not-null="true" />
+    <property name="VatAmount"              column="VatAmount"              type="Decimal" not-null="true" />
+    <property name="NetAmount"              column="NetAmount"              type="Decimal" not-null="true" />
+    <property name="PensionFund"            column="PensionFund"            type="Decimal" not-null="true" />
+    <property name="WithholdingTax"         column="WithholdingTax"         type="Decimal" not-null="true" />
+    <property name="StampDuty"              column="StampDuty"              type="Decimal" not-null="true" />
     <many-to-one name="ExpenseType" class="DomuWave.Services.Models.ExpenseType, DomuWave.Services" column="ExpenseTypeId" not-null="true" lazy="false" fetch="join" />
     <many-to-one name="PaymentStatus" class="DomuWave.Services.Models.ExpensePaymentStatus, DomuWave.Services" column="PaymentStatusId" not-null="true" lazy="false" fetch="join" />
     <property name="PaymentDate" column="PaymentDate" type="DateTime" />

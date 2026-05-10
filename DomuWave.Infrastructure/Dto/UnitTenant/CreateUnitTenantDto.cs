@@ -11,7 +11,6 @@ public class CreateUnitTenantDto
     public string? Phone { get; set; }
     public DateTime LeaseStartDate { get; set; }
     public DateTime? LeaseEndDate { get; set; }
-    public string? ExpensePayer { get; set; }
     public bool IsActive { get; set; }
     public string? Notes { get; set; }
 }

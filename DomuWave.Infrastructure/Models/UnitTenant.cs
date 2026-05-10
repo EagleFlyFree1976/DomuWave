@@ -15,7 +15,6 @@ namespace DomuWave.Services.Models
         public virtual DateTime LeaseStartDate { get; set; }
         public virtual DateTime? LeaseEndDate { get; set; }
         public virtual string ContractPath { get; set; }
-        public virtual string ExpensePayer { get; set; }
         public virtual bool IsActive { get; set; }
         public virtual string Notes { get; set; }
 

@@ -1,6 +1,9 @@
 <template>
   <div>
-    <Toast position="top-right" :pt="{ root: { style: 'z-index: 9999' } }" />
+    <Toast position="top-right" :pt="{
+      root:    { style: 'z-index: 9999' },
+      summary: { style: 'white-space: pre-line; word-break: break-word' }
+    }" />
     <RouterView />
   </div>
 </template>
@@ -14,34 +17,25 @@ const toast = useToast()
 /**
  * Mappa lo status HTTP a severity e titolo del toast.
  */
-function resolveToastConfig(status) {
-  if (status === 401 || status === 403) {
-    return { severity: 'warn', summary: 'Accesso negato' }
-  }
-  if (status === 400 || status === 422) {
-    return { severity: 'warn', summary: 'Dati non validi' }
-  }
-  if (status === 404) {
-    return { severity: 'info', summary: 'Non trovato' }
-  }
-  if (status >= 500) {
-    return { severity: 'error', summary: 'Errore del server' }
-  }
-  if (status === null) {
-    return { severity: 'error', summary: 'Connessione assente' }
-  }
-  return { severity: 'error', summary: 'Errore' }
+function resolveToastSeverity(status) {
+  if (status === 401 || status === 403) return 'warn'
+  if (status === 400 || status === 422) return 'warn'
+  if (status === 404)                   return 'info'
+  if (status >= 500)                    return 'error'
+  if (status === null)                  return 'error'
+  return 'error'
 }
 
 function onApiError(event) {
   const { status, message } = event.detail
-  const { severity, summary } = resolveToastConfig(status)
+  console.log('[api:error]', status, message)
+  const severity = resolveToastSeverity(status)
+  const text = Array.isArray(message) ? message.join('\n') : (message ?? 'Si è verificato un errore imprevisto')
 
   toast.add({
     severity,
-    summary,
-    detail: message,
-    life: 6000,
+    summary: text,
+    life: 8000,
   })
 }
 

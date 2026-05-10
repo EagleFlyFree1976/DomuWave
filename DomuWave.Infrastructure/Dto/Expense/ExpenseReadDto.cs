@@ -18,9 +18,14 @@ public class ExpenseReadDto : TraceEntityDTO<long>
     public string?  DocumentNumber     { get; set; }
     public DateTime DocumentDate       { get; set; }
     public DateTime RegistrationDate   { get; set; }
-    public decimal  GrossAmount        { get; set; }
-    public decimal  VatAmount          { get; set; }
-    public decimal  NetAmount          { get; set; }
+    public decimal  TaxableAmount          { get; set; }
+    public decimal  TaxableAmountVatExempt { get; set; }
+    public decimal  GrossAmount            { get; set; }
+    public decimal  VatAmount              { get; set; }
+    public decimal  NetAmount              { get; set; }
+    public decimal  PensionFund            { get; set; }
+    public decimal  WithholdingTax         { get; set; }
+    public decimal  StampDuty              { get; set; }
     public int      ExpenseTypeId      { get; set; }
     public string   ExpenseTypeName    { get; set; } = string.Empty;
     public int      PaymentStatusId    { get; set; }

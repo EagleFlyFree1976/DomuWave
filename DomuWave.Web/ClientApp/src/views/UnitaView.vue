@@ -7,15 +7,11 @@
         <option value="">Tutti gli edifici</option>
         <option v-for="b in buildings" :key="b.id" :value="String(b.id)">{{ b.name }}</option>
       </select>
-      <select class="form-select filter-select" v-model="filterStaircase">
+      <select v-if="staircases.length" class="form-select filter-select" v-model="filterStaircase">
         <option value="">Tutte le scale</option>
-        <option v-for="s in staircaseOptions" :key="s" :value="s">Scala {{ s }}</option>
+        <option v-for="s in toolbarStaircaseOptions" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
       </select>
-      <select class="form-select filter-select" v-model.number="filterFloor">
-        <option :value="null">Tutti i piani</option>
-        <option v-for="f in floorOptions" :key="f" :value="f">Piano {{ f }}</option>
-      </select>
-      <select class="form-select filter-select" v-model="filterType">
+<select class="form-select filter-select" v-model="filterType">
         <option value="">Tutti i tipi</option>
         <option v-for="t in unitTypes" :key="t" :value="t">{{ t }}</option>
       </select>
@@ -56,7 +52,7 @@
               <td class="mono" style="font-weight:500">{{ u.internalNumber || '—' }}</td>
               <td class="display-name-cell">{{ u.displayName || '—' }}</td>
               <td v-if="buildings.length" class="text-secondary">{{ u.buildingName || '—' }}</td>
-              <td>{{ u.staircase || '—' }}</td>
+              <td>{{ u.staircaseName || '—' }}</td>
               <td>{{ u.floor }}</td>
               <td class="text-secondary">{{ u.unitType || '—' }}</td>
               <td class="text-secondary">{{ u.occupancyStatus || '—' }}</td>
@@ -99,14 +95,9 @@
                 <label class="form-label">Denominazione</label>
                 <input class="form-input" :value="form.displayName || '—'" readonly />
               </div>
-              <div class="form-group" :class="{ 'has-error': errors.internalNumber }">
-                <label class="form-label">N° interno *</label>
-                <input class="form-input" v-model="form.internalNumber" placeholder="Es. 1" @input="clearError('internalNumber')" />
-                <span v-if="errors.internalNumber" class="field-error">{{ errors.internalNumber }}</span>
-              </div>
               <div class="form-group">
-                <label class="form-label">Subordinato</label>
-                <input class="form-input" v-model="form.subordinate" placeholder="Es. A" />
+                <label class="form-label">N° interno</label>
+                <input class="form-input" v-model="form.internalNumber" placeholder="Es. 1" />
               </div>
               <div v-if="buildings.length" class="form-group">
                 <label class="form-label">Edificio</label>
@@ -117,7 +108,10 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Scala</label>
-                <input class="form-input" v-model="form.staircase" placeholder="Es. A" maxlength="10" />
+                <select class="form-select" v-model.number="form.staircaseId">
+                  <option :value="null">— Nessuna —</option>
+                  <option v-for="s in staircases" :key="s.id" :value="s.id">{{ s.name }}</option>
+                </select>
               </div>
               <div class="form-group" :class="{ 'has-error': errors.floor }">
                 <label class="form-label">Piano *</label>
@@ -154,6 +148,18 @@
           <fieldset class="form-fieldset">
             <legend class="form-fieldset-legend">Dati catastali e superfici</legend>
             <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Foglio</label>
+                <input class="form-input" v-model="form.sheet" placeholder="Es. 12" maxlength="20" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Particella</label>
+                <input class="form-input" v-model="form.parcel" placeholder="Es. 345" maxlength="20" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Subalterno</label>
+                <input class="form-input" v-model="form.subordinate" placeholder="Es. A" maxlength="20" />
+              </div>
               <div class="form-group">
                 <label class="form-label">Superficie (mq)</label>
                 <input class="form-input" type="number" min="0" step="0.01" v-model.number="form.areaSqm" />
@@ -295,7 +301,7 @@
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi, buildingApi } from '@/services/api'
+import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi, buildingApi, staircaseApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 import { usePermissions } from '@/composables/usePermissions'
 
@@ -346,9 +352,11 @@ const occupancyStatuses = ['Occupata proprietario', 'Occupata inquilino', 'Liber
 const defaultForm = () => ({
   condominiumId:   condominiumId.value,
   buildingId:      null,
+  staircaseId:     null,
   internalNumber:  '',
+  sheet:           '',
+  parcel:          '',
   subordinate:     '',
-  staircase:       '',
   floor:           0,
   unitType:        '',
   category:        '',
@@ -362,9 +370,22 @@ const defaultForm = () => ({
 })
 const form = ref(defaultForm())
 
-const staircaseOptions = computed(() =>
-  [...new Set(units.value.map(u => u.staircase).filter(Boolean))].sort()
+const staircases = ref([])
+
+async function loadStaircases() {
+  if (!condominiumId.value) { staircases.value = []; return }
+  try {
+    const { data } = await staircaseApi.getByCondominium(condominiumId.value)
+    staircases.value = (data ?? []).filter(s => s.isActive)
+  } catch {
+    staircases.value = []
+  }
+}
+
+const toolbarStaircaseOptions = computed(() =>
+  staircases.value
 )
+
 const floorOptions = computed(() =>
   [...new Set(units.value.map(u => u.floor).filter(v => v != null))].sort((a, b) => a - b)
 )
@@ -376,7 +397,7 @@ const filtered = computed(() => {
     list = list.filter(u => u.internalNumber?.toLowerCase().includes(q))
   }
   if (filterBuilding.value) list = list.filter(u => String(u.buildingId) === filterBuilding.value)
-  if (filterStaircase.value) list = list.filter(u => u.staircase === filterStaircase.value)
+  if (filterStaircase.value) list = list.filter(u => String(u.staircaseId) === filterStaircase.value)
   if (filterFloor.value != null) list = list.filter(u => u.floor === filterFloor.value)
   if (filterType.value)   list = list.filter(u => u.unitType === filterType.value)
   if (filterActive.value !== '') list = list.filter(u => String(u.isActive) === filterActive.value)
@@ -394,6 +415,7 @@ async function loadData() {
     const [unitsRes, buildingsRes] = await Promise.all([
       unitApi.getByCondominium(condominiumId.value),
       buildingApi.getByCondominium(condominiumId.value),
+      loadStaircases(),
     ])
     units.value     = unitsRes.data ?? []
     buildings.value = buildingsRes.data ?? []
@@ -453,9 +475,7 @@ function clearError(field) {
 function validate() {
   const e = {}
   const f = form.value
-  if (!f.internalNumber?.trim())
-    e.internalNumber = 'Il numero interno è obbligatorio'
-  if (f.floor == null || f.floor === '')
+if (f.floor == null || f.floor === '')
     e.floor = 'Il piano è obbligatorio'
   errors.value = e
   return Object.keys(e).length === 0
@@ -554,6 +574,7 @@ onMounted(loadData)
 onUnmounted(() => window.removeEventListener('app:refresh', loadData))
 window.addEventListener('app:refresh', loadData)
 watch(condominiumId, loadData)
+watch(filterBuilding, () => { filterStaircase.value = '' })
 </script>
 
 <style scoped>
@@ -576,6 +597,7 @@ watch(condominiumId, loadData)
 .field-hint  { font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem; }
 
 .modal--wide { min-width: 520px; }
+
 
 .balance-summary { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
 .balance-row { display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.9rem; }

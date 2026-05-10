@@ -43,7 +43,7 @@ export const groupsAuthApi = {
    * Filtrare lato client con !item.isRole per avere solo i gruppi.
    */
   getAll: (q) =>
-    authApiClient.get('/authorization/groups', q ? { params: { q } } : {}),
+    authApiClient.get('/authorization/groups', { params: { q: q ?? '' } }),
 
   /**
    * Recupera le autorizzazioni assegnate a un gruppo o ruolo (GroupBase).

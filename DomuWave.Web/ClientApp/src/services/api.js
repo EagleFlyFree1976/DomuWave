@@ -24,9 +24,8 @@ api.interceptors.request.use(config => {
 function extractErrorMessage(err) {
   const data = err.response?.data
   if (typeof data === 'string' && data.length > 0) return data
-  // formato { Errors: ["..."] } — ValidatorException, NotFoundException, ecc.
   const errs = data?.Errors ?? data?.errors
-  if (Array.isArray(errs) && errs.length > 0) return errs.join('\n')
+  if (Array.isArray(errs) && errs.length > 0) return errs
   if (data?.message) return data.message
   if (data?.title) return data.title
   if (data?.detail) return data.detail
@@ -34,9 +33,24 @@ function extractErrorMessage(err) {
   return 'Si è verificato un errore imprevisto'
 }
 
+async function parseErrorData(err) {
+  const status = err.response?.status
+  if (!status || status === 200) return
+  const data = err.response?.data
+  if (data instanceof Blob) {
+    try {
+      const text = await data.text()
+      err.response.data = JSON.parse(text)
+    } catch {
+      // non è JSON, lascia perdere
+    }
+  }
+}
+
 api.interceptors.response.use(
   res => res,
-  err => {
+  async err => {
+    await parseErrorData(err)
     const status  = err.response?.status
     const message = extractErrorMessage(err)
 
@@ -121,6 +135,15 @@ export const buildingApi = {
   create:           (data)   => api.post('/buildings', data),
   update:           (id, data) => api.put(`/buildings/${id}`, data),
   delete:           (id)     => api.delete(`/buildings/${id}`),
+}
+
+// ─── Scale ───────────────────────────────────────────────────
+export const staircaseApi = {
+  getByCondominium: (condId) => api.get(`/staircases/by-condominium/${condId}`),
+  getById:          (id)     => api.get(`/staircases/${id}`),
+  create:           (data)   => api.post('/staircases', data),
+  update:           (id, data) => api.put(`/staircases/${id}`, data),
+  delete:           (id)     => api.delete(`/staircases/${id}`),
 }
 
 // ─── Unità immobiliari ────────────────────────────────────────

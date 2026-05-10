@@ -12,15 +12,33 @@
     </div>
 
     <!-- Tab bar (shared across all condominium sub-pages) -->
-    <nav class="tab-bar">
-      <router-link :to="`/condomini/${condominiumId}`" class="tab-item"><i class="pi pi-info-circle"></i> Informazioni</router-link>
-      <router-link
-        v-for="q in quickNav"
-        :key="q.path"
-        :to="`/condomini/${condominiumId}${q.path}`"
-        class="tab-item"
-      ><i class="pi" :class="q.icon"></i> {{ q.label }}</router-link>
-    </nav>
+    <div class="tab-bar-wrap" ref="navWrap">
+      <nav class="tab-bar" ref="navBar">
+        <router-link :to="`/condomini/${condominiumId}`" class="tab-item" ref="infoTab">
+          <i class="pi pi-info-circle"></i> Informazioni
+        </router-link>
+        <router-link
+          v-for="q in visibleNav"
+          :key="q.path"
+          :to="`/condomini/${condominiumId}${q.path}`"
+          class="tab-item"
+        ><i class="pi" :class="q.icon"></i> {{ q.label }}</router-link>
+
+        <!-- Dropdown "Altro" per le voci che non entrano -->
+        <div v-if="overflowNav.length" class="tab-item tab-more" :class="{ active: overflowActive }" @click.stop="toggleMore">
+          Altro <i class="pi pi-chevron-down" style="font-size:0.7rem; margin-left:2px"></i>
+          <div v-if="showMore" class="more-dropdown" @click.stop>
+            <router-link
+              v-for="q in overflowNav"
+              :key="q.path"
+              :to="`/condomini/${condominiumId}${q.path}`"
+              class="more-item"
+              @click="showMore = false"
+            ><i class="pi" :class="q.icon"></i> {{ q.label }}</router-link>
+          </div>
+        </div>
+      </nav>
+    </div>
 
     <!-- Tab content -->
     <RouterView />
@@ -32,7 +50,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, provide } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, provide, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { condominiumApi } from '@/services/api'
 import { useAppStore } from '@/stores/app'
@@ -42,22 +60,54 @@ const store = useAppStore()
 const condominium = ref(null)
 const condominiumId = computed(() => Number(route.params.id))
 
-const quickNav = [
-  { path: '/edifici', icon: 'pi-home',       label: 'Edifici' },
-  { path: '/unita', icon: 'pi-building',    label: 'Unità' },
-  { path: '/panoramica', icon: 'pi-sitemap',        label: 'Panoramica' },
-  { path: '/gruppi-fatturazione', icon: 'pi-objects-column',      label: 'Gruppi' },
-  { path: '/rendiconto', icon: 'pi-book',    label: 'Rendiconto' },
-  { path: '/budget', icon: 'pi-chart-bar',   label: 'Budget' },
-  { path: '/spese',              icon: 'pi-credit-card',  label: 'Spese' },
-  { path: '/consumi',            icon: 'pi-gauge',        label: 'Consumi' },
-  { path: '/rate',               icon: 'pi-calendar',     label: 'Rate' },
-  { path: '/fornitori',          icon: 'pi-truck',        label: 'Fornitori' },
-  { path: '/documenti',          icon: 'pi-folder-open',  label: 'Documenti' },
-  { path: '/comunicazioni',      icon: 'pi-megaphone',    label: 'Comunicazioni' },
-  { path: '/assemblee',          icon: 'pi-microphone',   label: 'Assemblee' },
-  { path: '/setup',              icon: 'pi-list-check',   label: 'Setup' },
+const allNav = [
+  { path: '/edifici',              icon: 'pi-home',            label: 'Edifici' },
+  { path: '/scale',                icon: 'pi-sort-alt',        label: 'Scale' },
+  { path: '/unita',                icon: 'pi-building',        label: 'Unità' },
+  { path: '/panoramica',           icon: 'pi-sitemap',         label: 'Panoramica' },
+  { path: '/gruppi-fatturazione',  icon: 'pi-objects-column',  label: 'Gruppi' },
+  { path: '/rendiconto',           icon: 'pi-book',            label: 'Rendiconto' },
+  { path: '/budget',               icon: 'pi-chart-bar',       label: 'Budget' },
+  { path: '/spese',                icon: 'pi-credit-card',     label: 'Spese' },
+  { path: '/consumi',              icon: 'pi-gauge',           label: 'Consumi' },
+  { path: '/rate',                 icon: 'pi-calendar',        label: 'Rate' },
+  { path: '/fornitori',            icon: 'pi-truck',           label: 'Fornitori' },
+  { path: '/documenti',            icon: 'pi-folder-open',     label: 'Documenti' },
+  { path: '/comunicazioni',        icon: 'pi-megaphone',       label: 'Comunicazioni' },
+  { path: '/assemblee',            icon: 'pi-microphone',      label: 'Assemblee' },
+  { path: '/setup',                icon: 'pi-list-check',      label: 'Setup' },
 ]
+
+const navWrap     = ref(null)
+const navBar      = ref(null)
+const showMore    = ref(false)
+const visibleCount = ref(allNav.length)
+
+const visibleNav  = computed(() => allNav.slice(0, visibleCount.value))
+const overflowNav = computed(() => allNav.slice(visibleCount.value))
+const overflowActive = computed(() =>
+  overflowNav.value.some(q => route.path === `/condomini/${condominiumId.value}${q.path}`)
+)
+
+function toggleMore() { showMore.value = !showMore.value }
+
+function closeMore(e) {
+  if (navBar.value && !navBar.value.contains(e.target)) showMore.value = false
+}
+
+// Measure how many tabs fit — approximate via average tab width
+function recalc() {
+  if (!navWrap.value) return
+  const available = navWrap.value.offsetWidth
+  // "Altro" button ~ 90px, "Informazioni" tab ~ 120px, each other tab avg ~110px
+  const infoWidth = 120
+  const moreWidth = 90
+  const avgTab    = 110
+  const space = available - infoWidth - moreWidth
+  visibleCount.value = Math.max(0, Math.floor(space / avgTab))
+  // If all fit without needing "Altro", show all
+  if (visibleCount.value >= allNav.length) visibleCount.value = allNav.length
+}
 
 provide('condominium', condominium)
 provide('condominiumId', condominiumId)
@@ -66,30 +116,42 @@ async function fetchCondominium(id) {
   condominium.value = null
   const { data } = await condominiumApi.getById(id)
   condominium.value = data
-  // Sincronizza il condominio selezionato nello store globale
   store.selectCondominio(Number(id))
+  await nextTick()
+  recalc()
 }
 
-onMounted(() => fetchCondominium(route.params.id))
+const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(recalc) : null
 
-watch(() => route.params.id, (newId) => {
-  if (newId) fetchCondominium(newId)
+onMounted(() => {
+  fetchCondominium(route.params.id)
+  document.addEventListener('click', closeMore)
+  if (ro && navWrap.value) ro.observe(navWrap.value)
 })
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeMore)
+  ro?.disconnect()
+})
+
+watch(() => route.params.id, (newId) => { if (newId) fetchCondominium(newId) })
 </script>
 
 <style scoped>
 .header-left { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
 
 /* ── Tab bar ────────────────────────────────────────────────────────────────── */
+.tab-bar-wrap {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
 .tab-bar {
   display: flex;
   gap: 0;
   border-bottom: 2px solid var(--border);
-  margin-bottom: 1.5rem;
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: visible;
 }
-.tab-bar::-webkit-scrollbar { display: none; }
 
 .tab-item {
   display: inline-flex;
@@ -107,13 +169,49 @@ watch(() => route.params.id, (newId) => {
   transition: color 0.15s, border-color 0.15s;
 }
 
-.tab-item:hover {
-  color: var(--text-primary);
-  text-decoration: none;
-}
+.tab-item:hover { color: var(--text); text-decoration: none; }
 
 .tab-item.router-link-exact-active {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* ── "Altro" dropdown trigger ───────────────────────────────────────────────── */
+.tab-more {
+  position: relative;
+  user-select: none;
+}
+
+.tab-more.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.more-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.more-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.12s;
+}
+
+.more-item:hover { background: var(--accent-glow); color: var(--accent); text-decoration: none; }
+
+.more-item.router-link-exact-active { color: var(--accent); font-weight: 600; }
 </style>

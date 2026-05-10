@@ -133,7 +133,6 @@ public static class TestDataBuilder
         string? internalNumber = null) => new()
     {
         CondominiumId    = condominiumId,
-        Staircase        = "A",
         Floor            = 1,
         InternalNumber   = internalNumber ?? $"INT-{ShortId()}",
         UnitType         = "Appartamento",
@@ -322,7 +321,6 @@ public static class TestDataBuilder
         LeaseStartDate = new DateTime(DateTime.UtcNow.Year, 1, 1),
         LeaseEndDate   = new DateTime(DateTime.UtcNow.Year, 12, 31),
         IsActive       = true,
-        ExpensePayer   = "Owner",
     };
 
     // ── Helpers ───────────────────────────────────────────────────────────────

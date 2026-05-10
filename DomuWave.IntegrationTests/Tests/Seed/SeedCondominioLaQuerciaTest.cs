@@ -132,7 +132,6 @@ public class SeedCondominioLaQuerciaTest(
             var dto = new CreateRealEstateUnitDto
             {
                 CondominiumId   = condId,
-                Staircase       = scala,
                 Floor           = piano,
                 InternalNumber  = numero,
                 UnitType        = "Appartamento",
@@ -154,7 +153,6 @@ public class SeedCondominioLaQuerciaTest(
             var dto = new CreateRealEstateUnitDto
             {
                 CondominiumId   = condId,
-                Staircase       = scala,
                 Floor           = -1,
                 InternalNumber  = numero,
                 UnitType        = "Box",

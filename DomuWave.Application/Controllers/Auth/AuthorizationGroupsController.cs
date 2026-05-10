@@ -98,7 +98,7 @@ public class AuthorizationGroupsController : AuthorizationBaseController
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
     [HttpGet("groups")]
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(List<BaseDto>))]
-    public async Task<IActionResult> GetAll(string q, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll(string? q = null, CancellationToken cancellationToken = default)
     {
         IQueryable<GroupBase> groupBases = AuthorizationManager.Groups().Where(k => k.IsActive);
         if (!string.IsNullOrEmpty(q))

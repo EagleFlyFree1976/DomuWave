@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.Staircase, DomuWave.Services" table="Staircase" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='Staircase'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant"      class="DomuWave.Services.Models.Tenant,      DomuWave.Services" column="TenantId"      not-null="true" />
+    <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium,  DomuWave.Services" column="CondominiumId" not-null="true" />
+
+    <property name="Name"     column="Name"     type="String"  length="50"  not-null="true" />
+    <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"     not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"    length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"    length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean"   not-null="true" />
+    <property name="IsEnabled"             column="IsActive"              type="Boolean"   insert="false" update="false" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+  </class>
+
+</hibernate-mapping>

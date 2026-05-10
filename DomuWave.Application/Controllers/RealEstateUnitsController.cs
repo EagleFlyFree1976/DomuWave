@@ -55,7 +55,7 @@ public class RealEstateUnitsController(
     public async Task<IActionResult> GetByType(int condominiumId, string unitType, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByTypeCommand(CurrentUser.Id, condominiumId, unitType), ct));
 
-    [HttpGet("by-condominium/{condominiumId:int}/count")]
+[HttpGet("by-condominium/{condominiumId:int}/count")]
     public async Task<IActionResult> GetCount(int condominiumId, CancellationToken ct)
     {
         var count = await _mediator.GetResponse(new GetRealEstateUnitsCountCommand(CurrentUser.Id, condominiumId), ct);

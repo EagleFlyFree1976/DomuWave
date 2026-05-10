@@ -159,7 +159,6 @@ public class UnitTenantTests(IntegrationTestFactory factory)
             LeaseStartDate = tenant.LeaseStartDate,
             LeaseEndDate   = tenant.LeaseEndDate,
             IsActive       = tenant.IsActive,
-            ExpensePayer   = tenant.ExpensePayer,
         };
 
         var (response, updated) = await PutAsync<UnitTenantReadDto>(

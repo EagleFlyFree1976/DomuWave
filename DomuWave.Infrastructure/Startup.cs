@@ -92,6 +92,7 @@ public static class Startup
         services.AddScoped<IRealEstateUnitService, RealEstateUnitService>();
         services.AddScoped<IReceiptService, ReceiptService>();
         services.AddScoped<ISupplierContractService, SupplierContractService>();
+        services.AddScoped<IStaircaseService, StaircaseService>();
         services.AddScoped<ISupplierService, SupplierService>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IUnitMillesimalService, UnitMillesimalService>();

@@ -4,9 +4,11 @@ public class CreateRealEstateUnitDto
 {
     public int  CondominiumId { get; set; }
     public int? BuildingId   { get; set; }
-    public string? Staircase { get; set; }
+    public int? StaircaseId  { get; set; }
     public int Floor { get; set; }
     public string? InternalNumber { get; set; }
+    public string? Sheet { get; set; }
+    public string? Parcel { get; set; }
     public string? Subordinate { get; set; }
     public string? Category { get; set; }
     public decimal? CadastralIncome { get; set; }

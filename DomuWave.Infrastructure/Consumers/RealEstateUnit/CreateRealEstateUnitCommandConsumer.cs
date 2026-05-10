@@ -17,6 +17,7 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
     private readonly IRealEstateUnitService _realEstateUnitService;
     private readonly ICondominiumService    _condominiumService;
     private readonly IBuildingService       _buildingService;
+    private readonly IStaircaseService      _staircaseService;
     private readonly IUserService           _userService;
 
     public CreateRealEstateUnitCommandConsumer(
@@ -24,11 +25,13 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
         IRealEstateUnitService realEstateUnitService,
         ICondominiumService condominiumService,
         IBuildingService buildingService,
+        IStaircaseService staircaseService,
         IUserService userService) : base(sessionFactoryProvider)
     {
         _realEstateUnitService = realEstateUnitService;
         _condominiumService    = condominiumService;
         _buildingService       = buildingService;
+        _staircaseService      = staircaseService;
         _userService           = userService;
     }
 
@@ -48,18 +51,18 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
             throw new NotFoundException("Condominio non trovato");
 
         /* validazioni */
-        if (string.IsNullOrWhiteSpace(command.Dto.InternalNumber))
-            throw new ValidatorException("Specificare il numero interno dell'unità");
+        if (!string.IsNullOrWhiteSpace(command.Dto.InternalNumber))
+        {
+            var existsNumber = await session.Query<RealEstateUnit>()
+                .Where(u => u.InternalNumber == command.Dto.InternalNumber.Trim()
+                         && u.Condominium.Id == command.Dto.CondominiumId
+                         && !u.IsDeleted)
+                .AnyAsync(cancellationToken)
+                .ConfigureAwait(false);
 
-        var existsNumber = await session.Query<RealEstateUnit>()
-            .Where(u => u.InternalNumber == command.Dto.InternalNumber.Trim()
-                     && u.Condominium.Id == command.Dto.CondominiumId
-                     && !u.IsDeleted)
-            .AnyAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        if (existsNumber)
-            throw new ValidatorException($"Esiste già un'unità con il numero interno {command.Dto.InternalNumber} in questo condominio");
+            if (existsNumber)
+                throw new ValidatorException($"Esiste già un'unità con il numero interno {command.Dto.InternalNumber} in questo condominio");
+        }
 
         DomuWave.Services.Models.Building building = null;
         if (command.Dto.BuildingId.HasValue)
@@ -67,7 +70,13 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
                 .GetByIdAsync(command.Dto.BuildingId.Value, currentUser, cancellationToken)
                 .ConfigureAwait(false);
 
-        var entity = command.Dto.ToEntity(condominium, condominium.Tenant, building);
+        DomuWave.Services.Models.Staircase staircase = null;
+        if (command.Dto.StaircaseId.HasValue)
+            staircase = await _staircaseService
+                .GetByIdAsync(command.Dto.StaircaseId.Value, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+
+        var entity = command.Dto.ToEntity(condominium, condominium.Tenant, building, staircase);
 
         var created = await _realEstateUnitService
             .CreateAsync(entity, currentUser, cancellationToken)

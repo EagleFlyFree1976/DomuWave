@@ -113,7 +113,7 @@ public class GetBillingGroupPaymentNoticeCommandConsumer
                     FiscalYearCode     = fiscalYear.Name ?? fiscalYear.Id.ToString(),
                     UnitInternalNumber = unit.InternalNumber ?? string.Empty,
                     UnitDisplayName    = unit.DisplayName    ?? string.Empty,
-                    UnitStaircase      = unit.Staircase      ?? string.Empty,
+                    UnitStaircase      = unit.Staircase?.Name ?? string.Empty,
                     UnitFloor          = unit.Floor,
                     OwnerFullName      = owner != null ? $"{owner.FirstName} {owner.LastName}".Trim() : string.Empty,
                     OwnerEmail         = owner?.Email ?? string.Empty,

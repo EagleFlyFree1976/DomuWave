@@ -28,7 +28,6 @@
     <property name="LeaseStartDate" column="LeaseStartDate" type="DateTime" not-null="true" />
     <property name="LeaseEndDate" column="LeaseEndDate" type="DateTime" />
     <property name="ContractPath" column="ContractPath" type="String" length="500" />
-    <property name="ExpensePayer" column="ExpensePayer" type="String" length="50" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
     <property name="Notes" column="Notes" type="String" length="500" insert="false" update="false" />
 

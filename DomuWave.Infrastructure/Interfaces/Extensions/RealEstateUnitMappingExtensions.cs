@@ -39,9 +39,12 @@ public static class RealEstateUnitMappingExtensions
             CondominiumName = unit.Condominium?.Name,
             BuildingId      = unit.Building?.Id,
             BuildingName    = unit.Building?.Name,
-            Staircase       = unit.Staircase,
+            StaircaseId     = unit.Staircase?.Id,
+            StaircaseName   = unit.Staircase?.Name,
             Floor           = unit.Floor,
             InternalNumber  = unit.InternalNumber,
+            Sheet           = unit.Sheet,
+            Parcel          = unit.Parcel,
             Subordinate     = unit.Subordinate,
             Category        = unit.Category,
             CadastralIncome = unit.CadastralIncome,
@@ -72,9 +75,12 @@ public static class RealEstateUnitMappingExtensions
             CondominiumName = unit.Condominium?.Name,
             BuildingId      = unit.Building?.Id,
             BuildingName    = unit.Building?.Name,
-            Staircase       = unit.Staircase,
+            StaircaseId     = unit.Staircase?.Id,
+            StaircaseName   = unit.Staircase?.Name,
             Floor           = unit.Floor,
             InternalNumber  = unit.InternalNumber,
+            Sheet           = unit.Sheet,
+            Parcel          = unit.Parcel,
             Subordinate     = unit.Subordinate,
             Category        = unit.Category,
             CadastralIncome = unit.CadastralIncome,
@@ -86,8 +92,8 @@ public static class RealEstateUnitMappingExtensions
             DisplayName     = unit.DisplayName,
             NumeroAbitanti  = unit.NumeroAbitanti,
             IsActive        = unit.IsActive,
-            Owners          = owners,
-            Tenants         = tenants,
+            Owners          = owners ?? new List<UnitOwnerReadDto>(),
+            Tenants         = tenants ?? new List<UnitTenantReadDto>(),
         };
         dto.SetTraceInfo(unit);
         return dto;
@@ -96,7 +102,7 @@ public static class RealEstateUnitMappingExtensions
     /// <summary>
     /// Crea una nuova entità <see cref="RealEstateUnit"/> a partire dal DTO di creazione.
     /// </summary>
-    public static RealEstateUnit ToEntity(this CreateRealEstateUnitDto dto, Condominium condominium, Tenant tenant, Building building = null)
+    public static RealEstateUnit ToEntity(this CreateRealEstateUnitDto dto, Condominium condominium, Tenant tenant, Building building = null, Staircase staircase = null)
     {
         if (dto == null) return null;
 
@@ -105,9 +111,11 @@ public static class RealEstateUnitMappingExtensions
             Condominium     = condominium,
             Tenant          = tenant,
             Building        = building,
-            Staircase       = dto.Staircase,
+            Staircase       = staircase,
             Floor           = dto.Floor,
             InternalNumber  = dto.InternalNumber,
+            Sheet           = dto.Sheet,
+            Parcel          = dto.Parcel,
             Subordinate     = dto.Subordinate,
             Category        = dto.Category,
             CadastralIncome = dto.CadastralIncome,
@@ -150,12 +158,14 @@ public static class RealEstateUnitMappingExtensions
     /// <summary>
     /// Applica i campi del DTO di aggiornamento all'entità <see cref="RealEstateUnit"/> esistente.
     /// </summary>
-    public static void ApplyUpdate(this RealEstateUnit entity, UpdateRealEstateUnitDto dto, Building building = null)
+    public static void ApplyUpdate(this RealEstateUnit entity, UpdateRealEstateUnitDto dto, Building building = null, Staircase staircase = null)
     {
         entity.Building        = building;
-        entity.Staircase       = dto.Staircase;
+        entity.Staircase       = staircase;
         entity.Floor           = dto.Floor;
         entity.InternalNumber  = dto.InternalNumber;
+        entity.Sheet           = dto.Sheet;
+        entity.Parcel          = dto.Parcel;
         entity.Subordinate     = dto.Subordinate;
         entity.Category        = dto.Category;
         entity.CadastralIncome = dto.CadastralIncome;

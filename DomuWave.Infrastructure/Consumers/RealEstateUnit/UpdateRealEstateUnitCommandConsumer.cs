@@ -13,16 +13,19 @@ public class UpdateRealEstateUnitCommandConsumer : InMemoryConsumerBase<UpdateRe
 {
     private readonly IRealEstateUnitService _realEstateUnitService;
     private readonly IBuildingService       _buildingService;
+    private readonly IStaircaseService      _staircaseService;
     private readonly IUserService           _userService;
 
     public UpdateRealEstateUnitCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IRealEstateUnitService realEstateUnitService,
         IBuildingService buildingService,
+        IStaircaseService staircaseService,
         IUserService userService) : base(sessionFactoryProvider)
     {
         _realEstateUnitService = realEstateUnitService;
         _buildingService       = buildingService;
+        _staircaseService      = staircaseService;
         _userService           = userService;
     }
 
@@ -46,7 +49,13 @@ public class UpdateRealEstateUnitCommandConsumer : InMemoryConsumerBase<UpdateRe
                 .GetByIdAsync(command.Dto.BuildingId.Value, currentUser, cancellationToken)
                 .ConfigureAwait(false);
 
-        existing.ApplyUpdate(command.Dto, building);
+        DomuWave.Services.Models.Staircase staircase = null;
+        if (command.Dto.StaircaseId.HasValue)
+            staircase = await _staircaseService
+                .GetByIdAsync(command.Dto.StaircaseId.Value, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+
+        existing.ApplyUpdate(command.Dto, building, staircase);
 
         var updated = await _realEstateUnitService
             .UpdateAsync(existing, currentUser, cancellationToken)

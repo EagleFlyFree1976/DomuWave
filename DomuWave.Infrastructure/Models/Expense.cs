@@ -12,9 +12,14 @@ namespace DomuWave.Services.Models
         public virtual string DocumentNumber { get; set; }
         public virtual DateTime DocumentDate { get; set; }
         public virtual DateTime RegistrationDate { get; set; }
-        public virtual decimal GrossAmount { get; set; }
-        public virtual decimal VatAmount { get; set; }
-        public virtual decimal NetAmount { get; set; }
+        public virtual decimal  TaxableAmount        { get; set; }
+        public virtual decimal  TaxableAmountVatExempt { get; set; }
+        public virtual decimal  GrossAmount          { get; set; }
+        public virtual decimal  VatAmount            { get; set; }
+        public virtual decimal  NetAmount            { get; set; }
+        public virtual decimal  PensionFund          { get; set; }
+        public virtual decimal  WithholdingTax       { get; set; }
+        public virtual decimal  StampDuty            { get; set; }
         public virtual ExpenseType ExpenseType { get; set; }
 
         public virtual FiscalYear FiscalYear { get; set; }

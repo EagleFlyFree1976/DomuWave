@@ -16,7 +16,7 @@ public static class UnitMillesimalMappingExtensions
             UnitNumber        = entity.Unit?.InternalNumber ?? string.Empty,
             UnitDisplayName   = entity.Unit?.DisplayName,
             UnitFloor         = entity.Unit?.Floor ?? 0,
-            UnitStaircase     = entity.Unit?.Staircase,
+            UnitStaircase     = entity.Unit?.Staircase?.Name,
             Millesimal        = entity.Millesimal,
             Notes             = entity.Notes,
         };

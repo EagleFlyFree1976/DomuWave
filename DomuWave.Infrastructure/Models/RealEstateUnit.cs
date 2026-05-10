@@ -8,9 +8,11 @@ namespace DomuWave.Services.Models
     {
         public virtual Condominium Condominium { get; set; }
         public virtual Building? Building { get; set; }
-        public virtual string Staircase { get; set; }
+        public virtual Staircase? Staircase { get; set; }
         public virtual int Floor { get; set; }
         public virtual string InternalNumber { get; set; }
+        public virtual string Sheet { get; set; }
+        public virtual string Parcel { get; set; }
         public virtual string Subordinate { get; set; }
         public virtual string Category { get; set; }
         public virtual decimal? CadastralIncome { get; set; }

@@ -25,9 +25,14 @@ public static class ExpenseMappingExtensions
             DocumentNumber          = entity.DocumentNumber,
             DocumentDate            = entity.DocumentDate,
             RegistrationDate        = entity.RegistrationDate,
+            TaxableAmount           = entity.TaxableAmount,
+            TaxableAmountVatExempt  = entity.TaxableAmountVatExempt,
             GrossAmount             = entity.GrossAmount,
             VatAmount               = entity.VatAmount,
             NetAmount               = entity.NetAmount,
+            PensionFund             = entity.PensionFund,
+            WithholdingTax          = entity.WithholdingTax,
+            StampDuty               = entity.StampDuty,
             ExpenseTypeId           = entity.ExpenseType?.Id ?? 0,
             ExpenseTypeName         = entity.ExpenseType?.Name ?? string.Empty,
             PaymentStatusId         = entity.PaymentStatus?.Id ?? 0,
@@ -60,14 +65,19 @@ public static class ExpenseMappingExtensions
             DocumentNumber     = dto.DocumentNumber,
             DocumentDate       = dto.DocumentDate,
             RegistrationDate   = dto.RegistrationDate,
-            GrossAmount        = dto.GrossAmount,
-            VatAmount          = dto.VatAmount,
-            NetAmount          = dto.NetAmount,
-            ExpenseType        = expenseType,
-            PaymentStatus      = paymentStatus,
-            PaymentMethod      = dto.PaymentMethod,
-            Description        = dto.Description,
-            ChargeabilityType  = chargeabilityType,
+            TaxableAmount          = dto.TaxableAmount,
+            TaxableAmountVatExempt = dto.TaxableAmountVatExempt,
+            GrossAmount            = dto.GrossAmount,
+            VatAmount              = dto.VatAmount,
+            NetAmount              = dto.NetAmount,
+            PensionFund            = dto.PensionFund,
+            WithholdingTax         = dto.WithholdingTax,
+            StampDuty              = dto.StampDuty,
+            ExpenseType            = expenseType,
+            PaymentStatus          = paymentStatus,
+            PaymentMethod          = dto.PaymentMethod,
+            Description            = dto.Description,
+            ChargeabilityType      = chargeabilityType,
         };
     }
 
@@ -83,10 +93,15 @@ public static class ExpenseMappingExtensions
         entity.DocumentNumber     = dto.DocumentNumber;
         entity.DocumentDate       = dto.DocumentDate;
         entity.RegistrationDate   = dto.RegistrationDate;
-        entity.GrossAmount        = dto.GrossAmount;
-        entity.VatAmount          = dto.VatAmount;
-        entity.NetAmount          = dto.NetAmount;
-        entity.ExpenseType        = expenseType;
+        entity.TaxableAmount          = dto.TaxableAmount;
+        entity.TaxableAmountVatExempt = dto.TaxableAmountVatExempt;
+        entity.GrossAmount            = dto.GrossAmount;
+        entity.VatAmount              = dto.VatAmount;
+        entity.NetAmount              = dto.NetAmount;
+        entity.PensionFund            = dto.PensionFund;
+        entity.WithholdingTax         = dto.WithholdingTax;
+        entity.StampDuty              = dto.StampDuty;
+        entity.ExpenseType            = expenseType;
         entity.PaymentStatus      = paymentStatus;
         entity.PaymentMethod      = dto.PaymentMethod;
         entity.Description        = dto.Description;

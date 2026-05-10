@@ -149,8 +149,8 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<RealEstateUnit>> GetByStaircaseAsync(int condominiumId, string staircase, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<RealEstateUnit>()
-                .Where(x => x.Condominium.Id == condominiumId 
-                    && x.Staircase == staircase 
+                .Where(x => x.Condominium.Id == condominiumId
+                    && x.Staircase.Name == staircase
                     && !x.IsDeleted)
                 .OrderBy(x => x.Floor)
                 .ThenBy(x => x.InternalNumber)

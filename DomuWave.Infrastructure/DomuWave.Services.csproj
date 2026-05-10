@@ -44,6 +44,7 @@
     <None Remove="Models\Mappings\Payment.hbm.xml" />
     <None Remove="Models\Mappings\RealEstateUnit.hbm.xml" />
     <None Remove="Models\Mappings\Receipt.hbm.xml" />
+    <None Remove="Models\Mappings\Staircase.hbm.xml" />
     <None Remove="Models\Mappings\Supplier.hbm.xml" />
     <None Remove="Models\Mappings\ExtraordinaryWork.hbm.xml" />
     <None Remove="Models\Mappings\Maintenance.hbm.xml" />
@@ -108,6 +109,7 @@
     <EmbeddedResource Include="Models\Mappings\Payment.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\RealEstateUnit.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Receipt.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Staircase.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Supplier.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ExtraordinaryWork.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Maintenance.hbm.xml" />
