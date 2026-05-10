@@ -60,7 +60,7 @@
             },
             "CPQ.Core": {
               "target": "Package",
-              "version": "[1.7.5, )"
+              "version": "[1.7.8, )"
             },
             "CPQ.Core.EventSource": {
               "target": "Package",
@@ -171,7 +171,7 @@
             },
             "CPQ.Core": {
               "target": "Package",
-              "version": "[1.7.5, )"
+              "version": "[1.7.8, )"
             },
             "FluentAssertions": {
               "target": "Package",

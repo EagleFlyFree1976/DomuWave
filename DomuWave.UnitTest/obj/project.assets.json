@@ -165,7 +165,7 @@
           "build/netstandard2.0/coverlet.collector.targets": {}
         }
       },
-      "CPQ.Core/1.7.5": {
+      "CPQ.Core/1.7.8": {
         "type": "package",
         "dependencies": {
           "AspNetCore.HealthChecks.Rabbitmq": "8.0.2",
@@ -4072,7 +4072,7 @@
         "framework": ".NETCoreApp,Version=v8.0",
         "dependencies": {
           "Bogus": "35.6.3",
-          "CPQ.Core": "1.7.5",
+          "CPQ.Core": "1.7.8",
           "CPQ.Core.EventSource": "1.0.0",
           "CsvHelper": "33.1.0",
           "Hangfire.Core": "1.8.18",
@@ -4341,13 +4341,13 @@
         "coverlet.collector.nuspec"
       ]
     },
-    "CPQ.Core/1.7.5": {
-      "sha512": "gVULst8+AdtU562uUUFAqbrvZ4KMGAwKsYtF1LHjFI4iPYjcGep8iMqbeC2W9mJPVAL1wD8AGdFNVp+/gBTLpw==",
+    "CPQ.Core/1.7.8": {
+      "sha512": "Q2c/aB1PlkbEHUa6bW5JCI8rvoucbjX+9pu9RDa+gsLloa3AFaVjY2KobBW5S8Wl26gzvBikcNER8QnzqlnQIw==",
       "type": "package",
-      "path": "cpq.core/1.7.5",
+      "path": "cpq.core/1.7.8",
       "files": [
         ".nupkg.metadata",
-        "cpq.core.1.7.5.nupkg.sha512",
+        "cpq.core.1.7.8.nupkg.sha512",
         "cpq.core.nuspec",
         "lib/net8.0/CPQ.Core.dll"
       ]
@@ -11472,7 +11472,7 @@
     "net8.0": [
       "AutoFixture >= 4.18.1",
       "AutoFixture.AutoMoq >= 4.18.1",
-      "CPQ.Core >= 1.7.5",
+      "CPQ.Core >= 1.7.8",
       "DomuWave.Services >= 1.0.0",
       "FluentAssertions >= 6.12.0",
       "Microsoft.NET.Test.Sdk >= 17.10.0",
@@ -11550,7 +11550,7 @@
           },
           "CPQ.Core": {
             "target": "Package",
-            "version": "[1.7.5, )"
+            "version": "[1.7.8, )"
           },
           "FluentAssertions": {
             "target": "Package",
