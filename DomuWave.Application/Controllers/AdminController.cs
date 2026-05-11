@@ -7,7 +7,10 @@ using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Security;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
+using DomuWave.Services.Jobs;
+using Hangfire;
 using MassTransit;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -30,15 +33,22 @@ namespace DomuWave.Microservice.Controllers
 
 
      
-
-        protected readonly IBusControl _busControl;
+         
         protected readonly ICoreAuthorizationManager _authorizationManager;
+        protected readonly IBackgroundJobClient _backgroundJobClient;
 
-        public AdminController(ILogger<AdminController> logger, IOptionsMonitor<OxCoreSettings> configuration, IBusControl busControl, ISessionFactoryProvider sessionFactory, ICoreAuthorizationManager authorizationManager) : base(logger, configuration)
+        public AdminController(
+            ILogger<AdminController> logger,
+            IOptionsMonitor<OxCoreSettings> configuration,
+       
+            ISessionFactoryProvider sessionFactory,
+            ICoreAuthorizationManager authorizationManager,
+            IBackgroundJobClient backgroundJobClient) : base(logger, configuration)
         {
-            _busControl = busControl;
-            _sessionFactory = sessionFactory;
-            _authorizationManager = authorizationManager;
+    
+            _sessionFactory        = sessionFactory;
+            _authorizationManager  = authorizationManager;
+            _backgroundJobClient   = backgroundJobClient;
         }
 
 
@@ -78,11 +88,17 @@ namespace DomuWave.Microservice.Controllers
         [HttpGet("throw")]
         public Task<IActionResult> GetThrowException(CancellationToken cancellationToken)
         {
-
-
             throw new Exception("TEST");
+        }
 
-        
+        [HttpPost("jobs/truncate-old-log")]
+        [ProducesResponseType(StatusCodes.Status202Accepted)]
+        public IActionResult EnqueueTruncateOldLog()
+        {
+
+            var jobId = _backgroundJobClient.Enqueue<TruncateOldLogJob>(j => j.RunAsync(CancellationToken.None));
+            _logger.LogInformation("[Admin] TruncateOldLogJob accodato con id {JobId}", jobId);
+            return Accepted(new { jobId, message = "Job sp_domus_truncateoldlog accodato" });
         }
     }
 }

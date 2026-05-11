@@ -147,4 +147,75 @@ public class UsersController(
         return Ok(new { message = "Email di reset password inviata" });
     }
 
+    // ─── POST /api/users/{id}/impersonate ─────────────────────────────────────
+
+    [HttpPost("{id:int}/impersonate")]
+    [ProducesResponseType(typeof(DomuWave.Application.Models.UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Impersonate(int id, CancellationToken ct)
+    {
+        var caller = await userService.GetByIdAsync(CurrentUser.Id, ct).ConfigureAwait(false);
+        if (!caller.IsSystemUser)
+            return Forbid();
+
+        var authUser = await authorizationClient.GetUserByIdAsync(CommonKeys.SystemUserToken, id, ct)
+            .ConfigureAwait(false);
+        if (authUser == null)
+            return NotFound();
+
+        var systemUser = await userService.GetByTokenAsync(CommonKeys.SystemUserToken, ct)
+            .ConfigureAwait(false);
+
+        var returnDto = new DomuWave.Application.Models.UserDto
+        {
+            FullName = authUser.FullName ?? $"{authUser.Name} {authUser.LastName}".Trim(),
+            Id       = authUser.Id,
+            LastName = authUser.LastName,
+            Name     = authUser.Email ?? authUser.Name,
+            Token    = authUser.Token,
+            Role     = authUser.RoleCode,
+            IsActive = authUser.IsActive,
+        };
+
+        var domainUser = await userService.GetByIdAsync(id, ct).ConfigureAwait(false);
+        if (domainUser != null)
+        {
+            returnDto.Profile = domainUser.IsSystemUser
+                ? DomuWave.Application.Models.UserProfile.SuperAdmin
+                : domainUser.Role?.Code?.ToLower() == "condomino"
+                    ? DomuWave.Application.Models.UserProfile.User
+                    : DomuWave.Application.Models.UserProfile.TenantAdministrator;
+        }
+
+        IList<UserTenant> tenants = await _mediator
+            .GetResponse(new GetUserTenantsByUserCommand(CurrentUser.Id, id), ct)
+            .ConfigureAwait(false);
+
+        var tenantsDto    = tenants.Where(k => k.Tenant.IsActive && k.IsActive).Select(j => j.ToDto()).ToList();
+        var defaultTenant = tenantsDto.FirstOrDefault(j => j.IsDefault) ?? tenantsDto.FirstOrDefault();
+
+        if (defaultTenant != null)
+        {
+            returnDto.AvailableTenants = tenantsDto
+                .Select(k => new DomuWave.Services.Dto.Tenant.TenantReadDto
+                {
+                    Code      = k.TenantCode,
+                    Name      = k.TenantName,
+                    Id        = k.TenantId,
+                    IsPrimary = k.IsDefault,
+                })
+                .ToList();
+            returnDto.Tenant = new DomuWave.Services.Dto.Tenant.TenantReadDto
+            {
+                Code      = defaultTenant.TenantCode,
+                Name      = defaultTenant.TenantName,
+                Id        = defaultTenant.TenantId,
+                IsPrimary = defaultTenant.IsDefault,
+            };
+        }
+
+        return Ok(returnDto);
+    }
+
 }

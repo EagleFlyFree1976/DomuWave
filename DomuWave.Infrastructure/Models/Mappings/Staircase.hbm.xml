@@ -16,6 +16,7 @@
 
     <many-to-one name="Tenant"      class="DomuWave.Services.Models.Tenant,      DomuWave.Services" column="TenantId"      not-null="true" />
     <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium,  DomuWave.Services" column="CondominiumId" not-null="true" />
+    <many-to-one name="Building"    class="DomuWave.Services.Models.Building,     DomuWave.Services" column="BuildingId"    not-null="false" />
 
     <property name="Name"     column="Name"     type="String"  length="50"  not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />

@@ -7,10 +7,14 @@
       <div class="generate-panel__body">
         <div class="generate-panel__title">Genera scale automaticamente</div>
         <div class="generate-panel__desc text-secondary">
-          Inserisci il numero di scale da creare — verranno aggiunte solo quelle non ancora esistenti.
+          Inserisci il numero di scale da creare per l'edificio selezionato — verranno aggiunte solo quelle non ancora esistenti.
         </div>
       </div>
       <div class="generate-panel__action">
+        <select v-if="buildings.length" class="form-select" v-model.number="generateBuildingId" style="width:160px">
+          <option :value="null">Nessun edificio</option>
+          <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+        </select>
         <input
           type="number"
           class="form-input"
@@ -31,7 +35,11 @@
     <!-- Toolbar -->
     <ToolbarRow>
       <template #left>
-        <input class="form-input search-input" v-model="search" placeholder="Cerca scala…" style="max-width:280px" />
+        <input class="form-input search-input" v-model="search" placeholder="Cerca scala…" style="max-width:240px" />
+        <select v-if="buildings.length" class="form-select" v-model.number="filterBuildingId" style="width:160px">
+          <option :value="null">Tutti gli edifici</option>
+          <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+        </select>
       </template>
       <template #right>
         <button v-if="canCreate && condominiumId" class="btn btn-primary" @click="openModal()">
@@ -56,6 +64,7 @@
             <tr>
               <th style="width:3rem">#</th>
               <th>Nome scala</th>
+              <th v-if="buildings.length">Edificio</th>
               <th>Stato</th>
               <th style="width:6rem"></th>
             </tr>
@@ -66,6 +75,7 @@
               <td>
                 <span class="scala-badge">{{ s.name }}</span>
               </td>
+              <td v-if="buildings.length" class="text-secondary">{{ s.buildingName || '—' }}</td>
               <td>
                 <span class="badge" :class="s.isActive ? 'badge-green' : 'badge-muted'">
                   {{ s.isActive ? 'Attiva' : 'Inattiva' }}
@@ -103,6 +113,13 @@
             />
             <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
           </div>
+          <div v-if="buildings.length" class="form-group" style="margin-top:0.75rem">
+            <label class="form-label">Edificio</label>
+            <select class="form-select" v-model.number="form.buildingId">
+              <option :value="null">— Nessun edificio —</option>
+              <option v-for="b in buildings" :key="b.id" :value="b.id">{{ b.name }}</option>
+            </select>
+          </div>
           <div class="form-group" style="flex-direction:row;align-items:center;gap:0.5rem;margin-top:0.75rem">
             <input type="checkbox" id="scalaIsActive" v-model="form.isActive" />
             <label for="scalaIsActive" style="font-size:0.875rem;cursor:pointer;margin:0">Scala attiva</label>
@@ -126,7 +143,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { usePermissions } from '@/composables/usePermissions'
-import { staircaseApi } from '@/services/api'
+import { staircaseApi, buildingApi } from '@/services/api'
 import ToolbarRow from '@/components/ToolbarRow.vue'
 
 const route = useRoute()
@@ -135,23 +152,32 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 
 const condominiumId = computed(() => Number(route.params.id) || store.selectedCondominioId)
 
-const loading       = ref(false)
-const saving        = ref(false)
-const generating    = ref(false)
-const showModal     = ref(false)
-const editing       = ref(null)
-const search        = ref('')
-const errors        = ref({})
-const items         = ref([])
-const generateCount = ref(null)
+const loading          = ref(false)
+const saving           = ref(false)
+const generating       = ref(false)
+const showModal        = ref(false)
+const editing          = ref(null)
+const search           = ref('')
+const filterBuildingId = ref(null)
+const errors           = ref({})
+const items            = ref([])
+const buildings        = ref([])
+const generateCount    = ref(null)
+const generateBuildingId = ref(null)
 
-const defaultForm = () => ({ name: '', isActive: true })
+const defaultForm = () => ({ name: '', buildingId: null, isActive: true })
 const form = ref(defaultForm())
 
 const filtered = computed(() => {
-  if (!search.value) return items.value
-  const q = search.value.toLowerCase()
-  return items.value.filter(s => s.name?.toLowerCase().includes(q))
+  let list = items.value
+  if (search.value) {
+    const q = search.value.toLowerCase()
+    list = list.filter(s => s.name?.toLowerCase().includes(q))
+  }
+  if (filterBuildingId.value) {
+    list = list.filter(s => s.buildingId === filterBuildingId.value)
+  }
+  return list
 })
 
 const existingNames = computed(() => new Set(items.value.map(s => s.name?.toUpperCase())))
@@ -174,11 +200,15 @@ function buildNames(count) {
 }
 
 async function loadData() {
-  if (!condominiumId.value) { items.value = []; return }
+  if (!condominiumId.value) { items.value = []; buildings.value = []; return }
   loading.value = true
   try {
-    const { data } = await staircaseApi.getByCondominium(condominiumId.value)
-    items.value = data ?? []
+    const [staircasesRes, buildingsRes] = await Promise.all([
+      staircaseApi.getByCondominium(condominiumId.value),
+      buildingApi.getByCondominium(condominiumId.value),
+    ])
+    items.value     = staircasesRes.data ?? []
+    buildings.value = (buildingsRes.data ?? []).filter(b => b.isActive)
   } catch {
   } finally {
     loading.value = false
@@ -188,15 +218,27 @@ async function loadData() {
 async function generateScales() {
   const count = generateCount.value
   if (!count || count < 1) return
-  if (!confirm(`Verranno create fino a ${count} scale (quelle già esistenti saranno saltate). Continuare?`)) return
+  const buildingLabel = generateBuildingId.value
+    ? buildings.value.find(b => b.id === generateBuildingId.value)?.name ?? ''
+    : ''
+  const msg = buildingLabel
+    ? `Verranno create fino a ${count} scale per l'edificio "${buildingLabel}". Continuare?`
+    : `Verranno create fino a ${count} scale (senza edificio associato). Continuare?`
+  if (!confirm(msg)) return
   generating.value = true
   try {
     const names = buildNames(count)
     for (const name of names) {
-      await staircaseApi.create({ name, isActive: true, condominiumId: condominiumId.value })
+      await staircaseApi.create({
+        name,
+        isActive:      true,
+        condominiumId: condominiumId.value,
+        buildingId:    generateBuildingId.value ?? null,
+      })
     }
     store.toast(`${names.length} scale create con successo`, 'success')
-    generateCount.value = null
+    generateCount.value    = null
+    generateBuildingId.value = null
     await loadData()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
@@ -207,7 +249,9 @@ async function generateScales() {
 
 function openModal(item = null) {
   editing.value   = item?.id ?? null
-  form.value      = item ? { name: item.name, isActive: item.isActive } : defaultForm()
+  form.value      = item
+    ? { name: item.name, buildingId: item.buildingId ?? null, isActive: item.isActive }
+    : defaultForm()
   errors.value    = {}
   showModal.value = true
 }
@@ -302,6 +346,7 @@ watch(condominiumId, loadData)
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 /* ── Badge scala ── */
@@ -320,4 +365,7 @@ watch(condominiumId, loadData)
   color: var(--text);
   letter-spacing: 0.02em;
 }
+
+.has-error .form-input { border-color: var(--accent-red, #e53e3e); }
+.field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; }
 </style>

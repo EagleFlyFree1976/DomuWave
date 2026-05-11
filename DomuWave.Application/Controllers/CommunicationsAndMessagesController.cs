@@ -1,5 +1,6 @@
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
+using CPQ.Core.Services;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Command.Communication;
@@ -8,7 +9,7 @@ using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
- 
+
 
 namespace DomuWave.Microservice.Controllers;
 
@@ -17,10 +18,21 @@ namespace DomuWave.Microservice.Controllers;
 public class CommunicationsController(
     ILogger<CommunicationsController> logger,
     IOptionsMonitor<OxCoreSettings>   configuration,
-    IMediator                         mediator)
+    IMediator                         mediator,
+    ICoreAuthorizationManager         authorizationManager)
     : PrivateControllerBase(logger, configuration)
 {
-    private readonly IMediator _mediator = mediator;
+    private readonly IMediator                 _mediator             = mediator;
+    private readonly ICoreAuthorizationManager _authorizationManager = authorizationManager;
+
+    [HttpGet("permissions")]
+    [ProducesResponseType(typeof(CanAuthorization), 200)]
+    public async Task<IActionResult> GetPermissions(CancellationToken ct)
+    {
+        var perms = await _authorizationManager.UserIsAuthorizedFor(
+            CurrentUser, AuthorizationKeys.Communications, Modules.DomuWaveModule, ct);
+        return Ok(perms);
+    }
 
     [HttpGet("")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, Modules.AuthModule)]

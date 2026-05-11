@@ -116,7 +116,7 @@
                 <label class="form-label">Scala</label>
                 <select class="form-select" v-model.number="form.staircaseId">
                   <option :value="null">— Nessuna —</option>
-                  <option v-for="s in staircases" :key="s.id" :value="s.id">{{ s.name }}</option>
+                  <option v-for="s in modalStaircases" :key="s.id" :value="s.id">{{ s.name }}</option>
                 </select>
               </div>
               <div class="form-group" :class="{ 'has-error': errors.floor }">
@@ -393,6 +393,12 @@ const toolbarStaircaseOptions = computed(() =>
   staircases.value
 )
 
+// Scale filtrate per l'edificio selezionato nella modale
+const modalStaircases = computed(() => {
+  if (!form.value.buildingId) return staircases.value
+  return staircases.value.filter(s => s.buildingId === form.value.buildingId)
+})
+
 const floorOptions = computed(() =>
   [...new Set(units.value.map(u => u.floor).filter(v => v != null))].sort((a, b) => a - b)
 )
@@ -582,6 +588,15 @@ onUnmounted(() => window.removeEventListener('app:refresh', loadData))
 window.addEventListener('app:refresh', loadData)
 watch(condominiumId, loadData)
 watch(filterBuilding, () => { filterStaircase.value = '' })
+
+// Quando si cambia edificio nella modale, resetta la scala se non appartiene al nuovo edificio
+watch(() => form.value.buildingId, (newBuildingId) => {
+  if (!form.value.staircaseId) return
+  const currentStaircase = staircases.value.find(s => s.id === form.value.staircaseId)
+  if (currentStaircase && currentStaircase.buildingId !== newBuildingId) {
+    form.value.staircaseId = null
+  }
+})
 </script>
 
 <style scoped>

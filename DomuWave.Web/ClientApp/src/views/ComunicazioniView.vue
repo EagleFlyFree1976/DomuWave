@@ -8,7 +8,7 @@
     <div class="toolbar">
       <div class="tab-toggle">
         <button class="tab-btn" :class="{ active: !showArchived }" @click="switchTab(false)">Attive</button>
-        <button class="tab-btn" :class="{ active: showArchived }"  @click="switchTab(true)">Archiviate</button>
+        <button v-if="canEdit" class="tab-btn" :class="{ active: showArchived }" @click="switchTab(true)">Archiviate</button>
       </div>
       <input class="form-input search-input" v-model="search" placeholder="Cerca per titolo…" />
       <select class="form-select" v-model="filterType" style="width:160px">
@@ -67,7 +67,7 @@
         <div class="comm-actions">
           <template v-if="!c.isArchived">
             <button v-if="canEdit && !c.isVisible" class="btn btn-sm btn-ghost" @click="publishComm(c.id)">Pubblica</button>
-            <button class="btn btn-sm btn-ghost" @click="toggleNotifPanel(c.id)" :class="{ 'btn-active': notifPanelId === c.id }">
+            <button v-if="canEdit" class="btn btn-sm btn-ghost" @click="toggleNotifPanel(c.id)" :class="{ 'btn-active': notifPanelId === c.id }">
               🔔 Notifiche
             </button>
             <button v-if="canEdit" class="btn btn-sm btn-ghost btn-send-email" @click="sendEmail(c.id)" :disabled="sendingEmail === c.id" title="Invia email">
@@ -80,7 +80,7 @@
             <button v-if="canDelete && !c.hasSentNotifications" class="btn-icon" @click="deleteItem(c.id)" style="color:var(--accent-red)">✕</button>
           </template>
           <template v-else>
-            <button class="btn btn-sm btn-ghost" @click="toggleNotifPanel(c.id)" :class="{ 'btn-active': notifPanelId === c.id }">
+            <button v-if="canEdit" class="btn btn-sm btn-ghost" @click="toggleNotifPanel(c.id)" :class="{ 'btn-active': notifPanelId === c.id }">
               🔔 Notifiche
             </button>
             <button v-if="canEdit" class="btn btn-sm btn-ghost" @click="unarchiveItem(c.id)">↩ Ripristina</button>
@@ -174,11 +174,21 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { communicationApi, communicationNotificationApi, assemblyApi } from '@/services/api'
-import { usePermissions } from '@/composables/usePermissions'
 import NotifPanel from '@/components/NotifPanel.vue'
 
 const store = useAppStore()
-const { canCreate, canEdit, canDelete } = usePermissions()
+
+const perms = ref({ canView: false, canCreate: false, canModify: false, canDelete: false, canAction: false })
+const canCreate = computed(() => perms.value.canCreate)
+const canEdit   = computed(() => perms.value.canModify)
+const canDelete = computed(() => perms.value.canDelete)
+
+async function loadPermissions() {
+  try {
+    const { data } = await communicationApi.getPermissions()
+    perms.value = data
+  } catch { /* permessi negati — tutto disabilitato */ }
+}
 const notifPanelId  = ref(null)
 const sendingEmail  = ref(null)
 const showArchived  = ref(false)
@@ -316,7 +326,7 @@ async function deleteItem(id) {
 }
 
 watch(() => store.selectedCondominioId, loadData)
-onMounted(loadData)
+onMounted(() => { loadPermissions(); loadData() })
 onUnmounted(() => window.removeEventListener('app:refresh', loadData))
 window.addEventListener('app:refresh', loadData)
 </script>

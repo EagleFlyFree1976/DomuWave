@@ -67,6 +67,21 @@
     <TenantSelectorWidget />
     <CondominioSelectorWidget />
 
+    <!-- ── Banner impersonificazione ── -->
+    <div v-if="authStore.isImpersonating" class="impersonate-banner" :class="{ collapsed }">
+      <div class="impersonate-banner__body" v-show="!collapsed">
+        <i class="pi pi-user-edit impersonate-banner__icon"></i>
+        <div class="impersonate-banner__text">
+          <span class="impersonate-banner__label">Stai impersonando</span>
+          <span class="impersonate-banner__name">{{ authStore.currentUser?.displayName }}</span>
+        </div>
+      </div>
+      <button class="impersonate-banner__exit" @click="handleExitImpersonation" :title="collapsed ? 'Esci impersonificazione' : ''">
+        <i class="pi pi-times"></i>
+        <span v-show="!collapsed">Esci</span>
+      </button>
+    </div>
+
     <!-- ── Footer ── -->
     <div class="sidebar-footer">
       <div class="user-chip">
@@ -184,6 +199,12 @@
     menuStore.clearMenu()
     session.reset()
     router.push('/login')
+  }
+
+  function handleExitImpersonation() {
+    authStore.exitImpersonation()
+    menuStore.clearMenu()
+    router.push('/users').then(() => window.location.reload())
   }
 
   const userInitials = computed(() => {
@@ -425,6 +446,79 @@
     font-size: 12px;
     flex-shrink: 0;
     color: #475569;
+  }
+
+  /* Banner impersonificazione */
+  .impersonate-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin: 0 0.5rem 0.5rem;
+    padding: 0.6rem 0.75rem;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 8px;
+  }
+
+  .impersonate-banner.collapsed {
+    justify-content: center;
+    padding: 0.6rem 0.25rem;
+  }
+
+  .impersonate-banner__body {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .impersonate-banner__icon {
+    color: #818cf8;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .impersonate-banner__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .impersonate-banner__label {
+    font-size: 0.7rem;
+    color: #818cf8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .impersonate-banner__name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #c7d2fe;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .impersonate-banner__exit {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(99, 102, 241, 0.25);
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    border-radius: 5px;
+    color: #c7d2fe;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+
+  .impersonate-banner__exit:hover {
+    background: rgba(99, 102, 241, 0.45);
   }
 
   /* Footer */

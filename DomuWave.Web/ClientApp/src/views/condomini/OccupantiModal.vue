@@ -433,8 +433,24 @@ function searchAnagr(api) {
   anagrSearchTimer = setTimeout(async () => {
     loadingAnagr.value = true
     try {
-      const { data } = await api(anagrSearch.value)
-      anagrResults.value = Array.isArray(data) ? data : []
+      const [anagrRes, userRes] = await Promise.allSettled([
+        api(anagrSearch.value),
+        userApi.search({ roles: 'Condomino', search: anagrSearch.value }),
+      ])
+      const anagrList = anagrRes.status === 'fulfilled' && Array.isArray(anagrRes.value.data) ? anagrRes.value.data : []
+      const userList  = userRes.status  === 'fulfilled'
+        ? (Array.isArray(userRes.value.data) ? userRes.value.data : (userRes.value.data?.items ?? []))
+            .map(u => ({
+              id:        u.id,
+              firstName: u.firstName || u.name || '',
+              lastName:  u.lastName  || '',
+              email:     u.email     || '',
+              _userId:   u.id,
+            }))
+        : []
+      const seen = new Set(anagrList.map(p => p.email).filter(Boolean))
+      const merged = [...anagrList, ...userList.filter(u => u.email && !seen.has(u.email))]
+      anagrResults.value = merged
     } catch { anagrResults.value = [] }
     finally { loadingAnagr.value = false }
   }, 300)
@@ -445,6 +461,7 @@ function selectAnagr(person, target) {
     ownerModal.form.firstName = person.firstName ?? ''
     ownerModal.form.lastName  = person.lastName ?? ''
     ownerModal.form.email     = person.email ?? ''
+    if (person._userId) ownerModal.form.userId = person._userId
   } else {
     tenantModal.form.firstName = person.firstName ?? ''
     tenantModal.form.lastName  = person.lastName ?? ''

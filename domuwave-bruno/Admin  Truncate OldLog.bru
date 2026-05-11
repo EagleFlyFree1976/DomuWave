@@ -1,0 +1,23 @@
+meta {
+  name: Admin  Truncate OldLog
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}api/Admin/jobs/truncate-old-log
+  body: none
+  auth: bearer
+}
+
+headers {
+  X-Auth-Token: JowGcWLLayCG5nCn6SYNqNnRYeYzRbrjmBDCR7hnsCg=
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+vars:pre-request {
+  ~baseUrl: http://localhost:60101/
+}

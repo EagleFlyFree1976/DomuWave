@@ -25,14 +25,21 @@ public class GetCommunicationsByCondominiumCommandConsumer : InMemoryConsumerBas
         IMediationContext                      mediationContext,
         CancellationToken                     cancellationToken)
     {
-        await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
+        var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
 
         var query = session.Query<Communication>()
             .Where(c => c.Condominium.Id == command.CondominiumId && !c.IsDeleted);
 
-        query = command.IncludeArchived
-            ? query.Where(c => c.IsArchived)
-            : query.Where(c => !c.IsArchived);
+        if (string.Equals(currentUser.Role?.Code, "condomino", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(c => c.IsVisible && !c.IsArchived);
+        }
+        else
+        {
+            query = command.IncludeArchived
+                ? query.Where(c => c.IsArchived)
+                : query.Where(c => !c.IsArchived);
+        }
 
         var list = await query
             .OrderByDescending(c => c.PublicationDate)

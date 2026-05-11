@@ -441,6 +441,7 @@ export const assemblyApi = {
 
 // ─── Comunicazioni ────────────────────────────────────────────
 export const communicationApi = {
+  getPermissions:     ()              => api.get('/communications/permissions'),
   getAll:             ()              => api.get('/communications'),
   getById:            (id)            => api.get(`/communications/${id}`),
   getByCondominium:   (condId)        => api.get(`/communications/condominium/${condId}`),

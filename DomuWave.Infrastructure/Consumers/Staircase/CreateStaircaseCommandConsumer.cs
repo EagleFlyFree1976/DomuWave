@@ -17,16 +17,19 @@ public class CreateStaircaseCommandConsumer : InMemoryConsumerBase<CreateStairca
 {
     private readonly IStaircaseService    _staircaseService;
     private readonly ICondominiumService  _condominiumService;
+    private readonly IBuildingService     _buildingService;
     private readonly IUserService         _userService;
 
     public CreateStaircaseCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IStaircaseService staircaseService,
         ICondominiumService condominiumService,
+        IBuildingService buildingService,
         IUserService userService) : base(sessionFactoryProvider)
     {
         _staircaseService   = staircaseService;
         _condominiumService = condominiumService;
+        _buildingService    = buildingService;
         _userService        = userService;
     }
 
@@ -48,6 +51,16 @@ public class CreateStaircaseCommandConsumer : InMemoryConsumerBase<CreateStairca
         if (condominium == null)
             throw new NotFoundException("Condominio non trovato.");
 
+        Building? building = null;
+        if (command.Dto.BuildingId.HasValue)
+        {
+            building = await _buildingService
+                .GetByIdAsync(command.Dto.BuildingId.Value, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+            if (building == null)
+                throw new NotFoundException("Edificio non trovato.");
+        }
+
         var duplicate = await session.Query<Staircase>()
             .AnyAsync(x => x.Condominium.Id == command.Dto.CondominiumId
                         && x.Name == command.Dto.Name.Trim()
@@ -56,7 +69,7 @@ public class CreateStaircaseCommandConsumer : InMemoryConsumerBase<CreateStairca
         if (duplicate)
             throw new ValidatorException($"Esiste già una scala '{command.Dto.Name}' in questo condominio.");
 
-        var entity = command.Dto.ToEntity(condominium, condominium.Tenant);
+        var entity = command.Dto.ToEntity(condominium, building, condominium.Tenant);
         entity.Trace(currentUser);
 
         var created = await _staircaseService

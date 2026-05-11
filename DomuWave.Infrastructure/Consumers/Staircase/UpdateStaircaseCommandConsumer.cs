@@ -16,14 +16,17 @@ namespace DomuWave.Services.Consumers;
 public class UpdateStaircaseCommandConsumer : InMemoryConsumerBase<UpdateStaircaseCommand, StaircaseReadDto>
 {
     private readonly IStaircaseService _staircaseService;
+    private readonly IBuildingService  _buildingService;
     private readonly IUserService      _userService;
 
     public UpdateStaircaseCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IStaircaseService staircaseService,
+        IBuildingService buildingService,
         IUserService userService) : base(sessionFactoryProvider)
     {
         _staircaseService = staircaseService;
+        _buildingService  = buildingService;
         _userService      = userService;
     }
 
@@ -44,6 +47,16 @@ public class UpdateStaircaseCommandConsumer : InMemoryConsumerBase<UpdateStairca
             .ConfigureAwait(false);
         if (entity == null) return null;
 
+        Building? building = null;
+        if (command.Dto.BuildingId.HasValue)
+        {
+            building = await _buildingService
+                .GetByIdAsync(command.Dto.BuildingId.Value, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+            if (building == null)
+                throw new NotFoundException("Edificio non trovato.");
+        }
+
         var duplicate = await session.Query<Staircase>()
             .AnyAsync(x => x.Condominium.Id == entity.Condominium.Id
                         && x.Name == command.Dto.Name.Trim()
@@ -53,7 +66,7 @@ public class UpdateStaircaseCommandConsumer : InMemoryConsumerBase<UpdateStairca
         if (duplicate)
             throw new ValidatorException($"Esiste già una scala '{command.Dto.Name}' in questo condominio.");
 
-        entity.ApplyUpdate(command.Dto);
+        entity.ApplyUpdate(command.Dto, building);
         entity.Trace(currentUser);
 
         var updated = await _staircaseService

@@ -184,6 +184,12 @@
                       :disabled="!canManage(data)"
                       @click="confirmResetPassword(data)" />
 
+              <Button v-if="session.isSuperAdmin && !isCurrentUser(data)"
+                      icon="pi pi-user-edit"
+                      class="btn-row-action btn-row-action--impersonate"
+                      v-tooltip="'Impersona'"
+                      @click="doImpersonate(data)" />
+
               <Button v-if="!isCurrentUser(data) && canManage(data)"
                       icon="pi pi-trash"
                       class="btn-row-action btn-row-action--danger"
@@ -559,6 +565,27 @@ async function doResetPassword(user) {
   } catch (_) { /* gestito dall'interceptor */ }
 }
 
+async function doImpersonate(userData) {
+  confirm.require({
+    message: `Vuoi impersonare "${fullName(userData)}"? Vedrai l'app come la vede questo utente.`,
+    header: 'Impersonificazione',
+    icon: 'pi pi-user-edit',
+    acceptLabel: 'Impersona',
+    rejectLabel: 'Annulla',
+    accept: async () => {
+      const result = await auth.impersonate(userData.id)
+      if (result.success) {
+        toast.add({ severity: 'warn', summary: 'Impersonificazione attiva',
+          detail: `Stai navigando come ${fullName(userData)}`, life: 5000 })
+        await router.push('/dashboard')
+        window.location.reload()
+      } else {
+        toast.add({ severity: 'error', summary: 'Errore', detail: result.message, life: 4000 })
+      }
+    },
+  })
+}
+
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
 function fullName(user) {
@@ -670,6 +697,9 @@ function roleSeverity(roleCode) {
 }
 .btn-row-action--danger:hover {
   background: rgba(255,80,80,.1) !important; color: #ff5555 !important;
+}
+.btn-row-action--impersonate:hover {
+  background: rgba(99,102,241,.15) !important; color: #6366f1 !important;
 }
 
 /* ── TABLE ───────────────────────────────────────────────────────────────── */

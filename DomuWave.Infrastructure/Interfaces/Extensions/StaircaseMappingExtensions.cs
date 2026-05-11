@@ -13,6 +13,8 @@ public static class StaircaseMappingExtensions
         {
             CondominiumId   = entity.Condominium?.Id   ?? 0,
             CondominiumName = entity.Condominium?.Name,
+            BuildingId      = entity.Building?.Id,
+            BuildingName    = entity.Building?.Name,
             Name            = entity.Name,
             IsActive        = entity.IsActive,
         };
@@ -20,20 +22,22 @@ public static class StaircaseMappingExtensions
         return dto;
     }
 
-    public static Staircase ToEntity(this CreateStaircaseDto dto, Condominium condominium, Tenant tenant)
+    public static Staircase ToEntity(this CreateStaircaseDto dto, Condominium condominium, Building? building, Tenant tenant)
     {
         if (dto == null) return null;
         return new Staircase
         {
             Condominium = condominium,
+            Building    = building,
             Tenant      = tenant,
             Name        = dto.Name,
             IsActive    = dto.IsActive,
         };
     }
 
-    public static void ApplyUpdate(this Staircase entity, UpdateStaircaseDto dto)
+    public static void ApplyUpdate(this Staircase entity, UpdateStaircaseDto dto, Building? building)
     {
+        entity.Building = building;
         entity.Name     = dto.Name;
         entity.IsActive = dto.IsActive;
     }

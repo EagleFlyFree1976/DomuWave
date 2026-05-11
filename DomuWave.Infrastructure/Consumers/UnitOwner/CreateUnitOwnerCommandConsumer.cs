@@ -58,13 +58,20 @@ public class CreateUnitOwnerCommandConsumer : InMemoryConsumerBase<CreateUnitOwn
     {
         var unit = await _realEstateUnitService.GetByIdAsync(unitId, currentUser, ct).ConfigureAwait(false);
         if (unit == null) return;
-        // Carica i proprietari attivi freschi dalla sessione
+
         var owners = await session.Query<DomuWave.Services.Models.UnitOwner>()
             .Where(o => o.Unit.Id == unitId && o.IsActive && !o.IsDeleted)
+            .OrderBy(o => o.LastName)
             .ToListAsync(ct).ConfigureAwait(false);
-        unit.Owners.Clear();
-        foreach (var o in owners) unit.Owners.Add(o);
-        unit.RefreshDisplayName();
+
+        if (owners.Any())
+        {
+            var displayName = string.Join(" / ", owners
+                .Select(o => string.IsNullOrWhiteSpace(o.LastName) ? o.FirstName : o.LastName)
+                .Where(n => !string.IsNullOrWhiteSpace(n)));
+            unit.RefreshDisplayName(displayName);
+        }
+
         await _realEstateUnitService.UpdateAsync(unit, currentUser, ct).ConfigureAwait(false);
     }
 }
