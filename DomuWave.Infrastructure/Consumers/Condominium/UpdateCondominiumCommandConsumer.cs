@@ -41,7 +41,7 @@ public class UpdateCondominiumCommandConsumer : InMemoryConsumerBase<UpdateCondo
         if (!exists) return null;
 
         var existing = await _condominiumService
-            .GetByIdAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
 

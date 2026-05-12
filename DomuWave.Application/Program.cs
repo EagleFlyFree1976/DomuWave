@@ -89,6 +89,11 @@ try
     builder.Services.AddMemoryCache();
     builder.Services.AddSingleton<ICacheManager, CacheManager>();
 
+    builder.Services.AddHttpClient("healthcheck", c =>
+    {
+        c.DefaultRequestHeaders.UserAgent.ParseAdd("DomuWave-HealthCheck/1.0");
+    });
+
     // Unica registrazione di AddControllers con tutti i filtri globali
     builder.Services.AddControllers(options =>
     {

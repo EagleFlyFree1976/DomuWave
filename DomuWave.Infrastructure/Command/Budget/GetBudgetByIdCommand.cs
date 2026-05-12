@@ -3,11 +3,11 @@ using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Budget;
 
-public class GetBudgetByIdCommand : BaseCommand, IQuery<BudgetReadDto>
+public class GetBudgetByIdCommand : BaseTenantRelatedCommand, IQuery<BudgetReadDto>
 {
     public int Id { get; set; }
 
     public GetBudgetByIdCommand() { }
-    public GetBudgetByIdCommand(int currentUserId, int id) : base(currentUserId)
+    public GetBudgetByIdCommand(int currentUserId, Guid tenantId, int id) : base(currentUserId, tenantId)
         => Id = id;
 }

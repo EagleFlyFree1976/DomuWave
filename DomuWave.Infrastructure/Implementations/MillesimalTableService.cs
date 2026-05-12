@@ -29,6 +29,12 @@ namespace DomuWave.Services.Implementations
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
         }
 
+        public async Task<MillesimalTable> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
+        {
+            return await session.Query<MillesimalTable>()
+                .FirstOrDefaultAsync(x => x.Id == id && x.Tenant.Id == tenantId && !x.IsDeleted, cancellationToken);
+        }
+
         public async Task<IList<MillesimalTable>> GetAllAsync(IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<MillesimalTable>()

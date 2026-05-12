@@ -20,6 +20,11 @@ public class StaircaseService : BaseService, IStaircaseService
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<Staircase> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
+        => await session.Query<Staircase>()
+            .FirstOrDefaultAsync(x => x.Id == id && x.Tenant.Id == tenantId && !x.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
     public async Task<IList<Staircase>> GetAllAsync(IUser currentUser, CancellationToken cancellationToken)
         => await session.Query<Staircase>()
             .Where(x => !x.IsDeleted)

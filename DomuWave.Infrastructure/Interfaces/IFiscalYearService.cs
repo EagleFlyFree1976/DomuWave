@@ -21,6 +21,7 @@ namespace DomuWave.Services.Interfaces
         /// Restituisce l'esercizio attualmente attivo (IsActive = true) per il condominio specificato.
         /// Ritorna null se nessun esercizio è attivo.
         /// </summary>
+        Task<FiscalYear> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken ct);
         Task<FiscalYear?> GetActiveAsync(int condominiumId, IUser currentUser, CancellationToken ct = default);
 
         /// <summary>

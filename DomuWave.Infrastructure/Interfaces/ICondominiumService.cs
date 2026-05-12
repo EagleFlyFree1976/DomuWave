@@ -9,6 +9,7 @@ namespace DomuWave.Services.Interfaces
 {
     public interface ICondominiumService : IBaseService<Condominium, int>
     {
+        Task<Condominium> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<Condominium> GetByCodeAsync(Guid tenantId, string code, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<Condominium>> GetActiveCondominiumsAsync(Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<Condominium>> GetCondominiumsWithUpcomingAssemblyAsync(Guid tenantId, int daysAhead, IUser currentUser, CancellationToken cancellationToken);

@@ -47,7 +47,7 @@ public class FiscalYearsController(
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetFiscalYearByIdCommand(CurrentUser.Id, id), ct);
+            new GetFiscalYearByIdCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -82,7 +82,7 @@ public class FiscalYearsController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new UpdateFiscalYearCommand(CurrentUser.Id, id, dto), ct);
+            new UpdateFiscalYearCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -142,7 +142,7 @@ public class FiscalYearsController(
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new DeleteFiscalYearCommand(CurrentUser.Id, id), ct);
+            new DeleteFiscalYearCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (!result) return NotFound();
         return NoContent();
     }

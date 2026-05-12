@@ -56,6 +56,12 @@ namespace DomuWave.Services.Implementations
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, ct);
         }
 
+        public async Task<FiscalYear> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken ct)
+        {
+            return await session.Query<FiscalYear>()
+                .FirstOrDefaultAsync(x => x.Id == id && x.Tenant.Id == tenantId && !x.IsDeleted, ct);
+        }
+
         /// <inheritdoc />
         public async Task<IList<FiscalYear>> GetAllAsync(IUser currentUser, CancellationToken ct)
         {

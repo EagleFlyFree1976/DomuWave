@@ -3,7 +3,7 @@ using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Condominium;
 
-public class UpdateCondominiumCommand : BaseCommand, IQuery<CondominiumReadDto>
+public class UpdateCondominiumCommand : BaseTenantRelatedCommand, IQuery<CondominiumReadDto>
 {
     public int CondominiumId { get; set; }
     public UpdateCondominiumDto Dto { get; set; }
@@ -11,7 +11,7 @@ public class UpdateCondominiumCommand : BaseCommand, IQuery<CondominiumReadDto>
     public UpdateCondominiumCommand() { }
 
     public UpdateCondominiumCommand(int currentUserId) : base(currentUserId) { }
-    public UpdateCondominiumCommand(int currentUserId, int condominiumId, UpdateCondominiumDto dto) : base(currentUserId)
+    public UpdateCondominiumCommand(int currentUserId, Guid tenantId, int condominiumId, UpdateCondominiumDto dto) : base(currentUserId, tenantId)
     {
         CondominiumId = condominiumId;
         Dto = dto;

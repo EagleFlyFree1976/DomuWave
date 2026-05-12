@@ -8,6 +8,7 @@ namespace DomuWave.Services.Interfaces
 {
     public interface IDocumentService : IBaseService<Document, int>
     {
+        Task<Document> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<Document>> GetByCondominiumIdAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<Document>> GetByCategoryAsync(int condominiumId, string category, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<Document>> GetVisibleToOwnersAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);

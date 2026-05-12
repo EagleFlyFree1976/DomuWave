@@ -35,7 +35,7 @@ public class RealEstateUnitsController(
     [ProducesResponseType(typeof(RealEstateUnitReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var result = await _mediator.GetResponse(new GetRealEstateUnitByIdCommand(CurrentUser.Id, id), ct);
+        var result = await _mediator.GetResponse(new GetRealEstateUnitByIdCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -76,7 +76,7 @@ public class RealEstateUnitsController(
     public async Task<IActionResult> Update(int id, [FromBody] UpdateRealEstateUnitDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
-        var result = await _mediator.GetResponse(new UpdateRealEstateUnitCommand(CurrentUser.Id, id, dto), ct);
+        var result = await _mediator.GetResponse(new UpdateRealEstateUnitCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -84,7 +84,7 @@ public class RealEstateUnitsController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var deleted = await _mediator.GetResponse(new DeleteRealEstateUnitCommand(CurrentUser.Id, id), ct);
+        var deleted = await _mediator.GetResponse(new DeleteRealEstateUnitCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (!deleted) return NotFound();
         return NoContent();
     }

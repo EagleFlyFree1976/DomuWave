@@ -33,7 +33,7 @@ public class GetRealEstateUnitByIdCommandConsumer : InMemoryConsumerBase<GetReal
             .ConfigureAwait(false);
 
         var unit = await _realEstateUnitService
-            .GetByIdAsync(command.UnitId, currentUser, cancellationToken)
+            .GetByIdAsync(command.UnitId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return unit?.ToReadDto();

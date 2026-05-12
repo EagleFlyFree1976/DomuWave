@@ -27,6 +27,12 @@ namespace DomuWave.Services.Implementations
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
         }
 
+        public async Task<Expense> GetByIdAsync(long id, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
+        {
+            return await session.Query<Expense>()
+                .FirstOrDefaultAsync(x => x.Id == id && x.Tenant.Id == tenantId && !x.IsDeleted, cancellationToken);
+        }
+
         public async Task<IList<Expense>> GetAllAsync(IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<Expense>()

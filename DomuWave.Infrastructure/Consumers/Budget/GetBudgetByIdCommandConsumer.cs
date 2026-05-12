@@ -34,7 +34,7 @@ public class GetBudgetByIdCommandConsumer
             .ConfigureAwait(false);
 
         var budget = await _budgetService
-            .GetByIdAsync(command.Id, currentUser, cancellationToken)
+            .GetByIdAsync(command.Id, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return budget?.ToReadDto();

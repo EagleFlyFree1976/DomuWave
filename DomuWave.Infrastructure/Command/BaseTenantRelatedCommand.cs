@@ -11,6 +11,9 @@ public abstract class BaseTenantRelatedCommand : BaseCommand
     {
     }
 
+    protected BaseTenantRelatedCommand(int currentUserId) : base(currentUserId)
+    {
+    }
 
     protected BaseTenantRelatedCommand(int currentUserId, Guid tenantId) : base(currentUserId)
     {

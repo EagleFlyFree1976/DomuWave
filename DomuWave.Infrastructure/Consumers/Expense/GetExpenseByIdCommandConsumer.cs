@@ -33,7 +33,7 @@ public class GetExpenseByIdCommandConsumer : InMemoryConsumerBase<GetExpenseById
             .ConfigureAwait(false);
 
         var entity = await _expenseService
-            .GetByIdAsync(command.ExpenseId, currentUser, cancellationToken)
+            .GetByIdAsync(command.ExpenseId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return entity?.ToReadDto();

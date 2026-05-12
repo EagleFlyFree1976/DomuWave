@@ -37,7 +37,7 @@ public class GetFiscalYearByIdCommandConsumer : InMemoryConsumerBase<GetFiscalYe
             .ConfigureAwait(false);
 
         var fy = await _fiscalYearService
-            .GetByIdAsync(command.FiscalYearId, currentUser, cancellationToken)
+            .GetByIdAsync(command.FiscalYearId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         if (fy == null) return null;

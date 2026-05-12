@@ -34,7 +34,7 @@ public class UpdateBudgetCommandConsumer
             .ConfigureAwait(false);
 
         var existing = await _budgetService
-            .GetByIdAsync(command.Id, currentUser, cancellationToken)
+            .GetByIdAsync(command.Id, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
         if (existing == null) return null;
 

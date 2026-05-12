@@ -20,6 +20,11 @@ public class BuildingService : BaseService, IBuildingService
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken)
             .ConfigureAwait(false);
 
+    public async Task<Building> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
+        => await session.Query<Building>()
+            .FirstOrDefaultAsync(x => x.Id == id && x.Tenant.Id == tenantId && !x.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
     public async Task<IList<Building>> GetAllAsync(IUser currentUser, CancellationToken cancellationToken)
         => await session.Query<Building>()
             .Where(x => !x.IsDeleted)

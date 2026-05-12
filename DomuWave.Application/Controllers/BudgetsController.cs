@@ -46,7 +46,7 @@ public class BudgetsController(
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetBudgetByIdCommand(CurrentUser.Id, id), ct);
+            new GetBudgetByIdCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -69,7 +69,7 @@ public class BudgetsController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new UpdateBudgetCommand(CurrentUser.Id, id, dto), ct);
+            new UpdateBudgetCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -179,7 +179,7 @@ public class BudgetsController(
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new DeleteBudgetCommand(CurrentUser.Id, id), ct);
+            new DeleteBudgetCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (!result) return NotFound();
         return NoContent();
     }

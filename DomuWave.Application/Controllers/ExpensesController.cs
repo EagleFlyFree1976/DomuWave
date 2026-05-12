@@ -32,7 +32,7 @@ public class ExpensesController(
     public async Task<IActionResult> GetById(long id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetExpenseByIdCommand(CurrentUser.Id, id), ct);
+            new GetExpenseByIdCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -101,7 +101,7 @@ public class ExpensesController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new UpdateExpenseCommand(CurrentUser.Id, id, dto), ct);
+            new UpdateExpenseCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -124,7 +124,7 @@ public class ExpensesController(
     public async Task<IActionResult> Delete(long id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(
-            new DeleteExpenseCommand(CurrentUser.Id, id), ct);
+            new DeleteExpenseCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (!deleted) return NotFound();
         return NoContent();
     }

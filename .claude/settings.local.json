@@ -45,7 +45,9 @@
       "Bash(dotnet publish *)",
       "Bash(git rm *)",
       "Bash(git restore *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\DomuWave.Infrastructure\\\\Jobs\" -Force)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

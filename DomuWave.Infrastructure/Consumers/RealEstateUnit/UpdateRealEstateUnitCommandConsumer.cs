@@ -39,7 +39,7 @@ public class UpdateRealEstateUnitCommandConsumer : InMemoryConsumerBase<UpdateRe
             .ConfigureAwait(false);
 
         var existing = await _realEstateUnitService
-            .GetByIdAsync(command.UnitId, currentUser, cancellationToken)
+            .GetByIdAsync(command.UnitId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
         if (existing == null) return null;
 

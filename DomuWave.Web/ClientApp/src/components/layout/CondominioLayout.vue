@@ -51,12 +51,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, provide, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { condominiumApi } from '@/services/api'
 import { useAppStore } from '@/stores/app'
+import { useSessionStore } from '@/stores/sessionStore'
 
 const route = useRoute()
+const router = useRouter()
 const store = useAppStore()
+const session = useSessionStore()
 const condominium = ref(null)
 const condominiumId = computed(() => Number(route.params.id))
 
@@ -114,7 +117,31 @@ provide('condominiumId', condominiumId)
 
 async function fetchCondominium(id) {
   condominium.value = null
+
   const { data } = await condominiumApi.getById(id)
+  if (!data) { router.push('/condomini'); return }
+
+  // Per SuperAdmin: il backend non filtra getById per tenant, quindi la chiamata
+  // funziona anche senza X-Tenant-Id. Dalla risposta si estrae il tenantId del
+  // condominium e si imposta il tenant corretto se diverso da quello attivo.
+  if (session.isSuperAdmin) {
+    const condominiumTenantId = String(data.tenantId ?? '').toLowerCase()
+    const currentTenantId     = String(session.activeTenant?.id ?? '').toLowerCase()
+
+    if (condominiumTenantId && condominiumTenantId !== currentTenantId) {
+      if (!session.availableTenants.length) {
+        await session.loadTenants()
+      }
+      const matchingTenant = session.availableTenants.find(
+        t => String(t.id).toLowerCase() === condominiumTenantId
+      )
+      if (matchingTenant) {
+        session.selectTenant(matchingTenant)
+        await store.loadCondomini()
+      }
+    }
+  }
+
   condominium.value = data
   store.selectCondominio(Number(id))
   await nextTick()

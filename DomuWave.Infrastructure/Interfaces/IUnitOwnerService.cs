@@ -8,6 +8,7 @@ namespace DomuWave.Services.Interfaces
 {
     public interface IUnitOwnerService : IBaseService<UnitOwner, int>
     {
+        Task<UnitOwner> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<UnitOwner>> GetByUnitIdAsync(int unitId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<UnitOwner>> GetByUserIdAsync(long userId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<UnitOwner>> GetActiveOwnersAsync(int unitId, IUser currentUser, CancellationToken cancellationToken);

@@ -41,7 +41,7 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
             .ConfigureAwait(false);
 
         var entity = await _expenseService
-            .GetByIdAsync(command.ExpenseId, currentUser, cancellationToken)
+            .GetByIdAsync(command.ExpenseId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
         if (entity == null)
             throw new NotFoundException("Spesa non trovata.");

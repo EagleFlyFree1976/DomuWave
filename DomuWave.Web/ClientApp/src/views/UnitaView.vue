@@ -64,8 +64,8 @@
               <td class="text-secondary">{{ u.occupancyStatus || '—' }}</td>
               <td class="text-secondary">{{ u.areaSqm != null ? `${u.areaSqm} m²` : '—' }}</td>
               <td><span class="badge" :class="u.isActive ? 'badge-green' : 'badge-muted'">{{ u.isActive ? 'Attiva' : 'Inattiva' }}</span></td>
-              <td class="text-center text-secondary count-cell">{{ occupantCounts[u.id]?.owners ?? '…' }}</td>
-              <td class="text-center text-secondary count-cell">{{ occupantCounts[u.id]?.tenants ?? '…' }}</td>
+              <td class="text-center text-secondary count-cell">{{ u.ownersCount }}</td>
+              <td class="text-center text-secondary count-cell">{{ u.tenantsCount }}</td>
               <td>
                 <div class="row-actions">
                   <button class="btn-icon" @click="openOccupanti(u)" title="Occupanti">👤</button>
@@ -304,10 +304,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { unitApi, unitOwnerApi, unitTenantApi, fiscalYearApi, buildingApi, staircaseApi } from '@/services/api'
+import { unitApi, fiscalYearApi, buildingApi, staircaseApi } from '@/services/api'
 import OccupantiModal from '@/views/condomini/OccupantiModal.vue'
 import { usePermissions } from '@/composables/usePermissions'
 import ToolbarRow from '@/components/ToolbarRow.vue'
@@ -334,7 +334,6 @@ const filterBuilding  = ref('')
 const errors          = ref({})
 const units           = ref([])
 const buildings       = ref([])
-const occupantCounts  = reactive({}) // { [unitId]: { owners: number, tenants: number } }
 
 // ── Bilancio esercizio ─────────────────────────────────────────────────────
 const showBalanceModal  = ref(false)
@@ -432,7 +431,6 @@ async function loadData() {
     ])
     units.value     = unitsRes.data ?? []
     buildings.value = buildingsRes.data ?? []
-    units.value.forEach(u => loadOccupantCounts(u.id))
   } catch {
     // error handled by interceptor
   } finally {
@@ -440,24 +438,13 @@ async function loadData() {
   }
 }
 
-function loadOccupantCounts(unitId) {
-  occupantCounts[unitId] = { owners: null, tenants: null }
-  unitOwnerApi.getByUnit(unitId)
-    .then(r => { occupantCounts[unitId].owners = (r.data ?? []).filter(o => o.isActive).length })
-    .catch(() => { occupantCounts[unitId].owners = 0 })
-  unitTenantApi.getByUnit(unitId)
-    .then(r => { occupantCounts[unitId].tenants = (r.data ?? []).filter(t => t.isActive).length })
-    .catch(() => { occupantCounts[unitId].tenants = 0 })
-}
-
 function openOccupanti(unit) {
   occupantiUnit.value = unit
 }
 
 function onOccupantiClose() {
-  const unitId = occupantiUnit.value?.id
   occupantiUnit.value = null
-  if (unitId) loadOccupantCounts(unitId)
+  loadData()
 }
 
 function openModal(item = null) {

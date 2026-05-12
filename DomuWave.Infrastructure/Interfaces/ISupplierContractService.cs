@@ -8,6 +8,7 @@ namespace DomuWave.Services.Interfaces
 {
     public interface ISupplierContractService : IBaseService<SupplierContract, int>
     {
+        Task<SupplierContract> GetByIdAsync(int id, Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<SupplierContract>> GetByCondominiumIdAsync(int condominiumId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<SupplierContract>> GetBySupplierIdAsync(int supplierId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<SupplierContract>> GetActiveContractsAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);

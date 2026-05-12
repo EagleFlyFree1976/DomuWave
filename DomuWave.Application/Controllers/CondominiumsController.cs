@@ -33,7 +33,7 @@ public class CondominiumsController(
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
-            new GetCondominiumByIdCommand(CurrentUser.Id, id), ct);
+            new GetCondominiumByIdCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -97,7 +97,7 @@ public class CondominiumsController(
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
         var result = await _mediator.GetResponse(
-            new UpdateCondominiumCommand(CurrentUser.Id, id, dto), ct);
+            new UpdateCondominiumCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id, dto), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }
@@ -107,7 +107,7 @@ public class CondominiumsController(
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(
-            new DeleteCondominiumCommand(CurrentUser.Id, id), ct);
+            new DeleteCondominiumCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
         if (!deleted) return NotFound();
         return NoContent();
     }

@@ -33,7 +33,7 @@ public class GetCondominiumByIdCommandConsumer : InMemoryConsumerBase<GetCondomi
             .ConfigureAwait(false);
 
         var result = await _condominiumService
-            .GetByIdAsync(command.CondominiumId, currentUser, cancellationToken)
+            .GetByIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         return result.ToReadDto();
