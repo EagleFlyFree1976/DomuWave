@@ -30,6 +30,7 @@ public class UsersController(
     IUserService userService,
     IMediator mediator)
     : PrivateControllerBase(logger, configuration)
+
 {
     private readonly IMediator _mediator = mediator;
     // ─── GET /api/users/search ────────────────────────────────────────────────
@@ -48,7 +49,7 @@ public class UsersController(
         if (!this.CurrentUser.IsSystemUser)
         {
             var items = await _mediator.GetResponse(new GetUserTenantsByTenantCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
-            var user = users.Where(k => k.Id == 356).FirstOrDefault();
+            
             users = users.Where(u => items.Any(k => k.UserId == u.Id && k.IsActive && !k.IsDeleted)).ToList();
 
         }

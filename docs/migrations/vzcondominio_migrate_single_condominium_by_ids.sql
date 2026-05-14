@@ -19,15 +19,15 @@
 -- - Esegue UPDATE del record destinazione (non crea nuovo Condominium)
 -- ============================================================================
 
+CREATE PROCEDURE dbo.sp_system_migrate_vzcondominio_to_domuweb
+    @SourceVZCondominioId INT,
+    @TargetCondominiumId INT,
+    @UpdatedById INT = NULL,
+    @UpdatedByFullName NVARCHAR(200) = N'Migrazione VZCondominio'
+AS
+BEGIN
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
-
-DECLARE @SourceVZCondominioId INT = 4;   -- TODO: valorizzare
-DECLARE @TargetCondominiumId INT = 1276;    -- TODO: valorizzare
-
-
--- Opzionale ma consigliato per audit
-DECLARE @UpdatedById INT = NULL;            -- es: 1
 
 -- â”€â”€ Variabili scalari di sessione â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -37,40 +37,51 @@ DECLARE @TargetTenantId        UNIQUEIDENTIFIER;
 
 -- HiLo: Building
 DECLARE @BuildingMaxId          INT;
-DECLARE @BuildingMaxLo          INT    = 10;
-DECLARE @BuildingBlock          BIGINT = 11; -- max_lo + 1
+DECLARE @BuildingMaxLo          INT;
+DECLARE @BuildingBlock          BIGINT; -- max_lo + 1
 DECLARE @BuildingComputedNextHi INT;
 DECLARE @CurrentNextHi          INT;
 
 -- HiLo: Staircase
 DECLARE @StaircaseMaxId          INT;
-DECLARE @StaircaseMaxLo          INT    = 10;
-DECLARE @StaircaseBlock          BIGINT = 11; -- max_lo + 1
+DECLARE @StaircaseMaxLo          INT;
+DECLARE @StaircaseBlock          BIGINT; -- max_lo + 1
 DECLARE @StaircaseComputedNextHi INT;
 DECLARE @CurrentStaircaseNextHi  INT;
 
 -- HiLo: RealEstateUnit
 DECLARE @RealEstateUnitMaxId          INT;
-DECLARE @RealEstateUnitMaxLo          INT    = 10;
-DECLARE @RealEstateUnitBlock          BIGINT = 11; -- max_lo + 1
+DECLARE @RealEstateUnitMaxLo          INT;
+DECLARE @RealEstateUnitBlock          BIGINT; -- max_lo + 1
 DECLARE @RealEstateUnitComputedNextHi INT;
 DECLARE @CurrentRealEstateUnitNextHi  INT;
 
 -- HiLo: UnitOwner
 DECLARE @UnitOwnerMaxId          INT;
-DECLARE @UnitOwnerMaxLo          INT    = 10;
-DECLARE @UnitOwnerBlock          BIGINT = 11; -- max_lo + 1
+DECLARE @UnitOwnerMaxLo          INT;
+DECLARE @UnitOwnerBlock          BIGINT; -- max_lo + 1
 DECLARE @UnitOwnerComputedNextHi INT;
 DECLARE @CurrentUnitOwnerNextHi  INT;
 
 -- HiLo: UserTenant
 DECLARE @UserTenantMaxId          INT;
-DECLARE @UserTenantMaxLo          INT    = 10;
-DECLARE @UserTenantBlock          BIGINT = 11; -- max_lo + 1
+DECLARE @UserTenantMaxLo          INT;
+DECLARE @UserTenantBlock          BIGINT; -- max_lo + 1
 DECLARE @UserTenantComputedNextHi INT;
 DECLARE @CurrentUserTenantNextHi  INT;
-DECLARE @Now                   DATETIME2 = SYSDATETIME();
-DECLARE @UpdatedByFullName NVARCHAR(200) = N'Migrazione VZCondominio';
+DECLARE @Now                      DATETIME2;
+
+SET @BuildingMaxLo = 10;
+SET @BuildingBlock = 11; -- max_lo + 1
+SET @StaircaseMaxLo = 10;
+SET @StaircaseBlock = 11; -- max_lo + 1
+SET @RealEstateUnitMaxLo = 10;
+SET @RealEstateUnitBlock = 11; -- max_lo + 1
+SET @UnitOwnerMaxLo = 10;
+SET @UnitOwnerBlock = 11; -- max_lo + 1
+SET @UserTenantMaxLo = 10;
+SET @UserTenantBlock = 11; -- max_lo + 1
+SET @Now = SYSDATETIME();
 -- â”€â”€ Tabelle di audit / risultati â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 DECLARE @Changes TABLE
 (
@@ -411,13 +422,15 @@ BEGIN TRY
         END AS BuildingDescription,
         NULLIF(
             LEFT(
-                CONCAT_WS(
-                    N', ',
-                    NULLIF(CONVERT(NVARCHAR(255), LTRIM(RTRIM(vzb.indirizzo))), N''),
-                    NULLIF(CONVERT(NVARCHAR(50), LTRIM(RTRIM(vzb.codicePostale))), N''),
-                    NULLIF(CONVERT(NVARCHAR(255), LTRIM(RTRIM(vzb.citta))), N''),
-                    NULLIF(CONVERT(NVARCHAR(255), LTRIM(RTRIM(vzb.provincia))), N''),
-                    NULLIF(CONVERT(NVARCHAR(50), LTRIM(RTRIM(vzb.nazione))), N'')
+                STUFF(
+                    COALESCE(N', ' + NULLIF(CONVERT(NVARCHAR(255), LTRIM(RTRIM(vzb.indirizzo))), N''), N'') +
+                    COALESCE(N', ' + NULLIF(CONVERT(NVARCHAR(50), LTRIM(RTRIM(vzb.codicePostale))), N''), N'') +
+                    COALESCE(N', ' + NULLIF(CONVERT(NVARCHAR(255), LTRIM(RTRIM(vzb.citta))), N''), N'') +
+                    COALESCE(N', ' + NULLIF(CONVERT(NVARCHAR(255), LTRIM(RTRIM(vzb.provincia))), N''), N'') +
+                    COALESCE(N', ' + NULLIF(CONVERT(NVARCHAR(50), LTRIM(RTRIM(vzb.nazione))), N''), N''),
+                    1,
+                    2,
+                    N''
                 ),
                 500
             ),
@@ -1941,10 +1954,12 @@ BEGIN CATCH
     IF @@TRANCOUNT > 0
         ROLLBACK TRANSACTION;
 
-    DECLARE @ErrMsg NVARCHAR(4000) = ERROR_MESSAGE();
-    DECLARE @ErrLine INT = ERROR_LINE();
+    DECLARE @ErrMsg NVARCHAR(4000);
+    DECLARE @ErrLine INT;
     DECLARE @ThrowMsg NVARCHAR(2048);
+    SET @ErrMsg = ERROR_MESSAGE();
+    SET @ErrLine = ERROR_LINE();
     SET @ThrowMsg = N'Migrazione fallita alla linea ' + CONVERT(NVARCHAR(20), @ErrLine) + N': ' + ISNULL(@ErrMsg, N'Errore sconosciuto');
     THROW 51099, @ThrowMsg, 1;
 END CATCH;
-GO
+END;

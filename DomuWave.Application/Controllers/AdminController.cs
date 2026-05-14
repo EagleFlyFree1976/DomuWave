@@ -7,14 +7,16 @@ using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Security;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
+using CPQ.Core.Extensions;
+using DomuWave.Services.Command.Admin;
 using DomuWave.Services.Jobs;
 using Hangfire;
-using MassTransit;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
- 
+using SimpleMediator.Core;
+
 
 
 namespace DomuWave.Microservice.Controllers
@@ -36,19 +38,22 @@ namespace DomuWave.Microservice.Controllers
          
         protected readonly ICoreAuthorizationManager _authorizationManager;
         protected readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly IMediator _mediator;
 
         public AdminController(
             ILogger<AdminController> logger,
             IOptionsMonitor<OxCoreSettings> configuration,
-       
+
             ISessionFactoryProvider sessionFactory,
             ICoreAuthorizationManager authorizationManager,
-            IBackgroundJobClient backgroundJobClient) : base(logger, configuration)
+            IBackgroundJobClient backgroundJobClient,
+            IMediator mediator) : base(logger, configuration)
         {
-    
+
             _sessionFactory        = sessionFactory;
             _authorizationManager  = authorizationManager;
             _backgroundJobClient   = backgroundJobClient;
+            _mediator              = mediator;
         }
 
 
@@ -89,6 +94,14 @@ namespace DomuWave.Microservice.Controllers
         public Task<IActionResult> GetThrowException(CancellationToken cancellationToken)
         {
             throw new Exception("TEST");
+        }
+
+        [HttpPost("hilo/align")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> AlignHilo(CancellationToken ct)
+        {
+            var result = await _mediator.GetResponse(new AlignHiloCommand(CurrentUser.Id), ct);
+            return Ok(result);
         }
 
         [HttpPost("jobs/truncate-old-log")]
