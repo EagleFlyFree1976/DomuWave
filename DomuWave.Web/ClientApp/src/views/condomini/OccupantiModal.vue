@@ -1,5 +1,5 @@
-<template>
-  <div class="modal-overlay" @click.self="$emit('close')">
+﻿<template>
+  <div class="modal-overlay" @mousedown.self="$emit('close')">
     <div class="modal modal-xl">
       <div class="modal-header">
         <h2>Occupanti · {{ unitLabel }}</h2>
@@ -109,7 +109,7 @@
   </div>
 
   <!-- ══════════ SUB-MODAL: Aggiungi/Modifica Proprietario ══════════ -->
-  <div class="modal-overlay" v-if="ownerModal.show" @click.self="ownerModal.show = false">
+  <div class="modal-overlay" v-if="ownerModal.show" @mousedown.self="ownerModal.show = false">
     <div class="modal modal-lg">
       <div class="modal-header">
         <h2>{{ ownerModal.editing ? 'Modifica proprietario' : 'Aggiungi proprietario' }}</h2>
@@ -294,7 +294,7 @@
   </div>
 
   <!-- ══════════ SUB-MODAL: Aggiungi/Modifica Inquilino ══════════ -->
-  <div class="modal-overlay" v-if="tenantModal.show" @click.self="tenantModal.show = false">
+  <div class="modal-overlay" v-if="tenantModal.show" @mousedown.self="tenantModal.show = false">
     <div class="modal modal-lg">
       <div class="modal-header">
         <h2>{{ tenantModal.editing ? 'Modifica inquilino' : 'Aggiungi inquilino' }}</h2>

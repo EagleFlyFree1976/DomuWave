@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <!-- ── Header ──────────────────────────────────────── -->
     <div class="page-header">
@@ -124,7 +124,7 @@
     <!-- ══════════════════════════════════════════════════
          MODAL — Approvazione Budget + Rate
     ══════════════════════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showApproveModal" @click.self="showApproveModal = false">
+    <div class="modal-overlay" v-if="showApproveModal" @mousedown.self="showApproveModal = false">
       <div class="modal">
         <div class="modal-header">
           <h2>Approva budget</h2>
@@ -163,7 +163,7 @@
     <!-- ══════════════════════════════════════════════════
          MODAL — Genera rate da budget
     ══════════════════════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showGenerateModal" @click.self="showGenerateModal = false">
+    <div class="modal-overlay" v-if="showGenerateModal" @mousedown.self="showGenerateModal = false">
       <div class="modal">
         <div class="modal-header">
           <h2>Genera rate</h2>
@@ -421,7 +421,7 @@
          MODAL — Seleziona conti da aggiungere al budget
     ══════════════════════════════════════════════════ -->
     <Teleport to="body">
-    <div class="modal-overlay add-accounts-overlay" v-if="showAddAccountsModal" @click.self="showAddAccountsModal = false">
+    <div class="modal-overlay add-accounts-overlay" v-if="showAddAccountsModal" @mousedown.self="showAddAccountsModal = false">
       <div class="modal modal-lg">
         <div class="modal-header">
           <h2>Aggiungi voci dal piano dei conti</h2>

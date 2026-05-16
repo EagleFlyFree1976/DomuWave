@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="view-container">
 
     <!-- Header -->
@@ -60,7 +60,7 @@
 
     <!-- Modal Create/Edit -->
     <Teleport to="body">
-      <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div v-if="showModal" class="modal-overlay" @mousedown.self="closeModal">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>{{ editing ? 'Modifica Categoria' : 'Nuova Categoria' }}</h2>
@@ -104,7 +104,7 @@
 
     <!-- Confirm delete -->
     <Teleport to="body">
-      <div v-if="deleteTarget" class="modal-overlay" @click.self="deleteTarget = null">
+      <div v-if="deleteTarget" class="modal-overlay" @mousedown.self="deleteTarget = null">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>Elimina categoria</h2>
@@ -129,7 +129,7 @@
 
     <!-- Import from template modal -->
     <Teleport to="body">
-      <div v-if="showImport" class="modal-overlay" @click.self="showImport = false">
+      <div v-if="showImport" class="modal-overlay" @mousedown.self="showImport = false">
         <div class="modal modal-md">
           <div class="modal-header">
             <h2>Importa da Template</h2>

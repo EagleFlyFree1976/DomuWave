@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="toolbar">
       <select class="form-select filter-select" v-model="filterStatus">
@@ -64,7 +64,7 @@
     </div>
 
     <!-- Modal crea/modifica assemblea -->
-    <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
+    <div class="modal-overlay" v-if="showModal" @mousedown.self="showModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editing ? 'Modifica' : 'Nuova' }} assemblea</h2>
@@ -117,7 +117,7 @@
     </div>
 
     <!-- Modal chiusura assemblea -->
-    <div class="modal-overlay" v-if="showCloseModal" @click.self="showCloseModal=false">
+    <div class="modal-overlay" v-if="showCloseModal" @mousedown.self="showCloseModal=false">
       <div class="modal" style="max-width:420px">
         <div class="modal-header">
           <h2>Segna assemblea come svolta</h2>

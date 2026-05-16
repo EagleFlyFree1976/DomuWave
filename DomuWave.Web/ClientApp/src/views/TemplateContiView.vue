@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="view-container">
 
     <!-- Header -->
@@ -126,7 +126,7 @@
 
     <!-- ── Template create/edit modal ────────────────────────── -->
     <Teleport to="body">
-      <div v-if="showTemplateModal" class="modal-overlay" @click.self="showTemplateModal = false">
+      <div v-if="showTemplateModal" class="modal-overlay" @mousedown.self="showTemplateModal = false">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>{{ editingTemplate ? 'Modifica Template' : 'Nuovo Template' }}</h2>
@@ -164,7 +164,7 @@
 
     <!-- ── Item create/edit modal ─────────────────────────────── -->
     <Teleport to="body">
-      <div v-if="showItemModal" class="modal-overlay" @click.self="showItemModal = false">
+      <div v-if="showItemModal" class="modal-overlay" @mousedown.self="showItemModal = false">
         <div class="modal modal-md">
           <div class="modal-header">
             <h2>{{ editingItem ? 'Modifica Voce' : 'Nuova Voce' }}</h2>
@@ -236,7 +236,7 @@
 
     <!-- Delete template confirm -->
     <Teleport to="body">
-      <div v-if="deleteTemplateTarget" class="modal-overlay" @click.self="deleteTemplateTarget = null">
+      <div v-if="deleteTemplateTarget" class="modal-overlay" @mousedown.self="deleteTemplateTarget = null">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>Elimina Template</h2>
@@ -258,7 +258,7 @@
 
     <!-- Delete item confirm -->
     <Teleport to="body">
-      <div v-if="deleteItemTarget" class="modal-overlay" @click.self="deleteItemTarget = null">
+      <div v-if="deleteItemTarget" class="modal-overlay" @mousedown.self="deleteItemTarget = null">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>Elimina Voce</h2>

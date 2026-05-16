@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <ToolbarRow>
       <template #left>
@@ -60,7 +60,7 @@
     </div>
 
     <!-- Modal Suggerimenti -->
-    <div class="modal-overlay" v-if="showSuggestModal" @click.self="showSuggestModal=false">
+    <div class="modal-overlay" v-if="showSuggestModal" @mousedown.self="showSuggestModal=false">
       <div class="modal modal--wide">
         <div class="modal-header">
           <h2>Suggerimenti gruppi di fatturazione</h2>
@@ -113,7 +113,7 @@
     </div>
 
     <!-- Modal Create/Edit gruppo -->
-    <div class="modal-overlay" v-if="showGroupModal" @click.self="showGroupModal=false">
+    <div class="modal-overlay" v-if="showGroupModal" @mousedown.self="showGroupModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editingGroup ? 'Modifica gruppo' : 'Nuovo gruppo' }}</h2>

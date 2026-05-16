@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <!-- ══════════════════════════════════════════════════
          MODALITÀ LISTA TABELLE
@@ -191,7 +191,7 @@
     <!-- ══════════════════════════════════════════════════
          MODAL — Crea / Modifica Tabella
     ══════════════════════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showTableModal" @click.self="showTableModal = false">
+    <div class="modal-overlay" v-if="showTableModal" @mousedown.self="showTableModal = false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editingTableId ? 'Modifica tabella' : 'Nuova tabella millesimale' }}</h2>

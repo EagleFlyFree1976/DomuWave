@@ -21,7 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function requestReset(email) {
     console.log("[AuthStore] request-reset-password:", email);
-    await api.post('PublicUser/request-reset-password', {
+    await api.post('auth/reset-password', {
       email: email,
     })
   }
@@ -33,7 +33,6 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await api.post('PublicUser/login', {
         "Email": username,
         "Password": password
-
       });
 
       

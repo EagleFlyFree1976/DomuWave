@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <!-- Tab-level action bar -->
     <div v-if="canEdit" class="tab-actions">
@@ -134,7 +134,7 @@
     </div>
 
     <!-- Edit Modal -->
-    <div class="modal-overlay" v-if="showEdit" @click.self="showEdit=false">
+    <div class="modal-overlay" v-if="showEdit" @mousedown.self="showEdit=false">
       <div class="modal modal-wide">
         <div class="modal-header">
           <h2>Modifica condominio</h2>

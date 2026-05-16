@@ -1,5 +1,5 @@
-<template>
-  <div class="modal-overlay" @click.self="$emit('close')">
+﻿<template>
+  <div class="modal-overlay" @mousedown.self="$emit('close')">
     <div class="modal">
       <div class="modal-header">
         <h2>{{ props.user ? 'Modifica condomino' : 'Nuovo condomino' }}</h2>

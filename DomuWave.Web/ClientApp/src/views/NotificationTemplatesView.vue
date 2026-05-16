@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="page-header">
       <h1>Template Notifiche</h1>
@@ -57,7 +57,7 @@
     </div>
 
     <!-- Modal create/edit -->
-    <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
+    <div class="modal-overlay" v-if="showModal" @mousedown.self="showModal=false">
       <div class="modal" style="max-width:760px;width:95vw">
         <div class="modal-header">
           <h2>{{ editing ? 'Modifica template' : 'Nuovo template' }}</h2>

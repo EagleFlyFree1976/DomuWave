@@ -61,11 +61,13 @@ public class AuthPublicController(
     [HttpPost("reset-password")]
     [ProducesResponseType(statusCode: StatusCodes.Status204NoContent)]
     [ProducesResponseType(statusCode: StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ResetPasswordByEmail(string email, CancellationToken cancellationToken)
+    public async Task<IActionResult> ResetPasswordByEmail([FromBody] ResetPasswordRequest request, CancellationToken cancellationToken)
     {
-        await _authOrchestator.GeneratePasswordResetAsync(email, cancellationToken).ConfigureAwait(false);
+        await _authOrchestator.GeneratePasswordResetAsync(request.Email, cancellationToken).ConfigureAwait(false);
         return NoContent();
     }
+
+    public record ResetPasswordRequest(string Email);
 
     [HttpPost("confirm-reset-password")]
     [ProducesResponseType(statusCode: StatusCodes.Status204NoContent)]

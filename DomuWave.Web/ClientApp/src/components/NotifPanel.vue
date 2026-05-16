@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="notif-panel-inner">
 
     <!-- Toolbar azioni -->
@@ -145,7 +145,7 @@
     </div>
 
     <!-- Modal modifica testo notifica -->
-    <div class="modal-overlay" v-if="editTextModal.show" @click.self="editTextModal.show=false">
+    <div class="modal-overlay" v-if="editTextModal.show" @mousedown.self="editTextModal.show=false">
       <div class="modal" style="max-width:640px;width:95vw">
         <div class="modal-header">
           <h2>Modifica testo — {{ editTextModal.notif?.recipientFullName }}</h2>
@@ -172,7 +172,7 @@
     </div>
 
     <!-- Modal tracking raccomandata -->
-    <div class="modal-overlay" v-if="trackingModal.show" @click.self="trackingModal.show=false">
+    <div class="modal-overlay" v-if="trackingModal.show" @mousedown.self="trackingModal.show=false">
       <div class="modal" style="max-width:420px">
         <div class="modal-header">
           <h2>{{ trackingModal.action === 'sent' ? 'Segna come spedita' : 'Segna come consegnata' }}</h2>
@@ -195,7 +195,7 @@
     </div>
 
     <!-- Modal preview messaggio -->
-    <div class="modal-overlay" v-if="previewModal.show" @click.self="previewModal.show=false">
+    <div class="modal-overlay" v-if="previewModal.show" @mousedown.self="previewModal.show=false">
       <div class="modal" style="max-width:620px">
         <div class="modal-header">
           <h2>Anteprima messaggio</h2>
@@ -242,7 +242,7 @@
     </div>
 
     <!-- Modal selezione rate per FeeNotice -->
-    <div class="modal-overlay" v-if="feeModal.show" @click.self="feeModal.show=false">
+    <div class="modal-overlay" v-if="feeModal.show" @mousedown.self="feeModal.show=false">
       <div class="modal" style="max-width:520px">
         <div class="modal-header">
           <h2>Genera notifiche avvisi di pagamento</h2>

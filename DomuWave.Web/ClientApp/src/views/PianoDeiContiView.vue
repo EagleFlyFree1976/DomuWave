@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="view-container">
 
     <!-- Header -->
@@ -103,7 +103,7 @@
 
     <!-- Modal Create/Edit Conto -->
     <Teleport to="body">
-      <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
+      <div v-if="showModal" class="modal-overlay" @mousedown.self="showModal = false">
         <div class="modal modal-md">
           <div class="modal-header">
             <h2>{{ editing ? 'Modifica Conto' : 'Nuovo Conto' }}</h2>
@@ -249,7 +249,7 @@
 
     <!-- Copy from existing condominium -->
     <Teleport to="body">
-      <div v-if="showCopy" class="modal-overlay" @click.self="showCopy = false">
+      <div v-if="showCopy" class="modal-overlay" @mousedown.self="showCopy = false">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>Copia Piano dei Conti</h2>
@@ -288,7 +288,7 @@
 
     <!-- Apply Template Modal -->
     <Teleport to="body">
-      <div v-if="showApplyTemplate" class="modal-overlay" @click.self="showApplyTemplate = false">
+      <div v-if="showApplyTemplate" class="modal-overlay" @mousedown.self="showApplyTemplate = false">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>Applica Template Piano dei Conti</h2>
@@ -328,7 +328,7 @@
 
     <!-- Modale eliminazione conto (con eventuale selezione sostitutivo) -->
     <Teleport to="body">
-      <div v-if="showDeleteModal && deleteTarget" class="modal-overlay" @click.self="showDeleteModal = false">
+      <div v-if="showDeleteModal && deleteTarget" class="modal-overlay" @mousedown.self="showDeleteModal = false">
         <div class="modal modal-sm">
           <div class="modal-header">
             <h2>Elimina conto</h2>

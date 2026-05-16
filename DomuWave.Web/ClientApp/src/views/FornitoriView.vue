@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="page-header">
       <h1>Fornitori</h1>
@@ -127,7 +127,7 @@
     </div>
 
     <!-- Fornitore Modal -->
-    <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
+    <div class="modal-overlay" v-if="showModal" @mousedown.self="showModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editing ? 'Modifica' : 'Nuovo' }} fornitore</h2>
@@ -224,7 +224,7 @@
     </div>
 
     <!-- Contratto Modal -->
-    <div class="modal-overlay" v-if="showContractModal" @click.self="showContractModal=false">
+    <div class="modal-overlay" v-if="showContractModal" @mousedown.self="showContractModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editingContract ? 'Modifica' : 'Nuovo' }} contratto</h2>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="scale-page">
 
     <!-- Pannello genera scale -->
@@ -94,7 +94,7 @@
     </div>
 
     <!-- Modal crea/modifica -->
-    <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
+    <div class="modal-overlay" v-if="showModal" @mousedown.self="showModal=false">
       <div class="modal" style="max-width:420px">
         <div class="modal-header">
           <h2>{{ editing ? 'Modifica scala' : 'Nuova scala' }}</h2>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <!-- Search / filter toolbar -->
     <ToolbarRow>
@@ -82,7 +82,7 @@
     </div>
 
     <!-- Modal -->
-    <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
+    <div class="modal-overlay" v-if="showModal" @mousedown.self="showModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editing ? 'Modifica' : isCloning ? 'Clona' : 'Nuova' }} unità</h2>
@@ -215,7 +215,7 @@
   />
 
   <!-- Bilancio esercizio modal -->
-  <div class="modal-overlay" v-if="showBalanceModal" @click.self="showBalanceModal=false">
+  <div class="modal-overlay" v-if="showBalanceModal" @mousedown.self="showBalanceModal=false">
     <div class="modal modal--wide">
       <div class="modal-header">
         <h2>Bilancio esercizio — {{ balanceUnit?.displayName || balanceUnit?.internalNumber }}</h2>

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="page-header">
       <h1>Lavori Straordinari</h1>
@@ -99,7 +99,7 @@
     </div>
 
     <!-- Work Modal -->
-    <div class="modal-overlay" v-if="showWorkModal" @click.self="showWorkModal=false">
+    <div class="modal-overlay" v-if="showWorkModal" @mousedown.self="showWorkModal=false">
       <div class="modal modal-lg">
         <div class="modal-header">
           <h2>{{ editingWork ? 'Modifica' : 'Nuovo' }} lavoro straordinario</h2>
@@ -190,7 +190,7 @@
     </div>
 
     <!-- Quote Modal -->
-    <div class="modal-overlay" v-if="showQuoteModal" @click.self="showQuoteModal=false">
+    <div class="modal-overlay" v-if="showQuoteModal" @mousedown.self="showQuoteModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editingQuote ? 'Modifica' : 'Nuovo' }} preventivo</h2>
@@ -248,7 +248,7 @@
     </div>
 
     <!-- Document Modal -->
-    <div class="modal-overlay" v-if="showDocumentModal" @click.self="showDocumentModal=false">
+    <div class="modal-overlay" v-if="showDocumentModal" @mousedown.self="showDocumentModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>Aggiungi documento</h2>

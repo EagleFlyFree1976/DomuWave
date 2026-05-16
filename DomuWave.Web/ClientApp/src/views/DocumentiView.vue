@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="page-header">
       <h1>Documenti</h1>
@@ -51,7 +51,7 @@
     </div>
 
     <!-- Modal -->
-    <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
+    <div class="modal-overlay" v-if="showModal" @mousedown.self="showModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editing ? 'Modifica' : 'Nuovo' }} documento</h2>

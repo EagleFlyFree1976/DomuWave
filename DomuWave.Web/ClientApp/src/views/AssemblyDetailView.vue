@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div v-if="assembly" class="assembly-detail">
 
     <!-- Header card -->
@@ -243,7 +243,7 @@
     </div>
 
     <!-- Modal modifica assemblea -->
-    <div class="modal-overlay" v-if="showEditModal" @click.self="showEditModal=false">
+    <div class="modal-overlay" v-if="showEditModal" @mousedown.self="showEditModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>Modifica assemblea</h2>
@@ -296,7 +296,7 @@
     </div>
 
     <!-- Modal OdG -->
-    <div class="modal-overlay" v-if="showAgendaModal" @click.self="showAgendaModal=false">
+    <div class="modal-overlay" v-if="showAgendaModal" @mousedown.self="showAgendaModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editingAgenda ? 'Modifica punto OdG' : 'Nuovo punto OdG' }}</h2>
@@ -343,7 +343,7 @@
     </div>
 
     <!-- Modal Presenza -->
-    <div class="modal-overlay" v-if="showAttendanceModal" @click.self="showAttendanceModal=false">
+    <div class="modal-overlay" v-if="showAttendanceModal" @mousedown.self="showAttendanceModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editingAttendance ? 'Modifica presenza' : 'Registra presenza' }}</h2>
@@ -398,7 +398,7 @@
     </div>
 
     <!-- Modal chiusura -->
-    <div class="modal-overlay" v-if="showCloseModal" @click.self="showCloseModal=false">
+    <div class="modal-overlay" v-if="showCloseModal" @mousedown.self="showCloseModal=false">
       <div class="modal" style="max-width:420px">
         <div class="modal-header">
           <h2>Segna assemblea come svolta</h2>

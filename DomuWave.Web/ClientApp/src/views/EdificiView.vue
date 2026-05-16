@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <ToolbarRow>
       <template #left>
@@ -67,7 +67,7 @@
     </div>
 
     <!-- Modal -->
-    <div class="modal-overlay" v-if="showModal" @click.self="showModal=false">
+    <div class="modal-overlay" v-if="showModal" @mousedown.self="showModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editing ? 'Modifica' : 'Nuovo' }} edificio</h2>

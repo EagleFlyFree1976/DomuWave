@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div>
     <div class="page-header">
       <h1>Rate</h1>
@@ -526,7 +526,7 @@
     </div>
 
     <!-- ══ Modal Rata ══════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showInstModal" @click.self="showInstModal=false">
+    <div class="modal-overlay" v-if="showInstModal" @mousedown.self="showInstModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>{{ editingInst ? 'Modifica' : 'Nuova' }} rata</h2>
@@ -586,7 +586,7 @@
     </div>
 
     <!-- ══ Modal Quota ═════════════════════════════════ -->
-    <div class="modal-overlay" v-if="showFeeModal" @click.self="showFeeModal=false">
+    <div class="modal-overlay" v-if="showFeeModal" @mousedown.self="showFeeModal=false">
       <div class="modal">
         <div class="modal-header">
           <h2>
@@ -676,7 +676,7 @@
     </div>
 
     <!-- Modal notifiche rate -->
-    <div class="modal-overlay" v-if="showNotifModal" @click.self="showNotifModal=false">
+    <div class="modal-overlay" v-if="showNotifModal" @mousedown.self="showNotifModal=false">
       <div class="modal" style="max-width:560px">
         <div class="modal-header">
           <h2>📧 Notifica condomini</h2>
