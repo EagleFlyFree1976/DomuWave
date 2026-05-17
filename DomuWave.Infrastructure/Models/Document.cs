@@ -18,7 +18,8 @@ namespace DomuWave.Services.Models
         public virtual bool IsArchived { get; set; }
         public virtual string? Tags { get; set; }
 
-        public virtual IList<DocumentAccess> Accesses { get; set; } = new List<DocumentAccess>();
+        public virtual DocumentContent?      Content   { get; set; }
+        public virtual IList<DocumentAccess> Accesses  { get; set; } = new List<DocumentAccess>();
         public override int GetHashCode()
         {
             return this.Id.GetHashCode();

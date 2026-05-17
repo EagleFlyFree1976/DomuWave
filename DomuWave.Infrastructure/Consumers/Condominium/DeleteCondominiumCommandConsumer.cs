@@ -117,8 +117,8 @@ public class DeleteCondominiumCommandConsumer : InMemoryConsumerBase<DeleteCondo
             session.Query<Payment>().Where(x => x.Condominium.Id == cid && !x.IsDeleted),
             currentUser, cancellationToken);
 
-        await SoftDeleteInt<Document>(
-            session.Query<Document>().Where(x => x.Condominium.Id == cid && !x.IsDeleted),
+        await SoftDeleteInt<Models.Document>(
+            session.Query<Models.Document>().Where(x => x.Condominium.Id == cid && !x.IsDeleted),
             currentUser, cancellationToken);
 
         await SoftDeleteInt<Communication>(

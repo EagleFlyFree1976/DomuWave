@@ -38,6 +38,8 @@
     <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
     <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
 
+    <one-to-one name="Content" class="DomuWave.Services.Models.DocumentContent, DomuWave.Services" property-ref="Document" cascade="all" lazy="proxy" />
+
     <bag name="Accesses" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="DocumentId" />
       <one-to-many class="DomuWave.Services.Models.DocumentAccess, DomuWave.Services" />
