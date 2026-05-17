@@ -1,4 +1,5 @@
 using CPQ.Core.Consumers;
+using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Clients;
@@ -47,7 +48,9 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
             .ConfigureAwait(false);
         if (existing == null) return null;
 
+        var previousEmail = existing.Email;
         existing.ApplyUpdate(command.Dto);
+        var newEmail      = existing.Email;
 
         var updated = await _unitOwnerService
             .UpdateAsync(existing, currentUser, cancellationToken)
@@ -67,8 +70,37 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
                 cancellationToken).ConfigureAwait(false);
         }
 
-        // Ricalcola DisplayName dell'unità solo se non è stato personalizzato
+        // Cascade email change to BillingGroup.ContactEmail and unsent CommunicationNotifications
         var unitId = existing.Unit?.Id ?? 0;
+        if (unitId > 0 && !string.Equals(previousEmail, newEmail, StringComparison.OrdinalIgnoreCase))
+        {
+            var billingGroup = await session.Query<BillingGroup>()
+                .Where(bg => bg.Units.Any(u => u.Id == unitId) && !bg.IsDeleted)
+                .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
+
+            if (billingGroup != null)
+            {
+                billingGroup.ContactEmail = newEmail;
+                billingGroup.Trace(currentUser);
+                await session.UpdateAsync(billingGroup, cancellationToken).ConfigureAwait(false);
+
+                // Update EmailAddress on Draft/Scheduled notifications sent to this billing group
+                var pendingNotifs = await session.Query<CommunicationNotification>()
+                    .Where(n => n.EmailAddress == previousEmail && n.Status <= 1 && !n.IsDeleted)
+                    .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+                foreach (var notif in pendingNotifs)
+                {
+                    notif.EmailAddress = newEmail;
+                    notif.Trace(currentUser);
+                    await session.UpdateAsync(notif, cancellationToken).ConfigureAwait(false);
+                }
+
+                await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        // Ricalcola DisplayName dell'unità solo se non è stato personalizzato
         if (unitId > 0)
             await RefreshUnitDisplayName(unitId, currentUser, cancellationToken).ConfigureAwait(false);
 

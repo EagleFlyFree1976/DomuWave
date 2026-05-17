@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace DomuWave.Services.Models
 {
@@ -21,6 +22,8 @@ namespace DomuWave.Services.Models
         public virtual string?            SubjectResolved   { get; set; }
         public virtual string?            BodyResolved      { get; set; }
         public virtual string?            UnitsDisplay      { get; set; }
+
+        public virtual IList<NotificationAttachment> Attachments { get; set; } = new List<NotificationAttachment>();
 
         public override int GetHashCode() => Id.GetHashCode();
     }

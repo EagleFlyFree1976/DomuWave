@@ -119,19 +119,20 @@
                 <button class="btn-icon" title="Anteprima messaggio" style="font-size:0.78rem" @click="openPreview(n)">👁</button>
                 <!-- Azioni operative — solo se non readonly -->
                 <template v-if="!readonly">
-                  <button v-if="n.status <= 1" class="btn-icon" title="Modifica testo" style="font-size:0.78rem" @click="openEditText(n)">✎</button>
-                  <button v-if="n.deliveryMethod === 0 && n.status <= 1" class="btn-icon" title="Invia email"
+                  <button v-if="n.status === 0" class="btn-icon" title="Modifica testo" style="font-size:0.78rem" @click="openEditText(n)">✎</button>
+                  <button v-if="n.status === 0" class="btn-icon" title="Allegati" style="font-size:0.78rem" @click="openAttachModal(n)">📎</button>
+                  <button v-if="n.deliveryMethod === 0 && n.status === 0" class="btn-icon" title="Invia email"
                           style="font-size:0.78rem" :disabled="sendingId === n.id || sending" @click="sendSingleEmail(n)">
                     <span v-if="sendingId === n.id" class="spinner" style="width:10px;height:10px;display:inline-block"></span>
                     <span v-else>📧</span>
                   </button>
                   <template v-if="n.deliveryMethod === 1">
-                    <button v-if="n.status <= 5" class="btn-icon" title="Segna come spedita"
+                    <button v-if="n.status === 0" class="btn-icon" title="Segna come spedita"
                             style="font-size:0.78rem" @click="openTrackingModal(n, 'sent')">✉</button>
                     <button v-if="n.status === 2" class="btn-icon" title="Segna come consegnata"
                             style="font-size:0.78rem;color:var(--accent-green)" @click="openTrackingModal(n, 'delivered')">✓</button>
                   </template>
-                  <button v-if="n.status < 2" class="btn-icon" style="color:var(--accent-red);font-size:0.78rem" title="Elimina"
+                  <button v-if="n.status === 0" class="btn-icon" style="color:var(--accent-red);font-size:0.78rem" title="Elimina"
                           :disabled="sending || sendingId !== null"
                           @click="deleteNotif(n.id)">✕</button>
                 </template>
@@ -231,12 +232,52 @@
             </div>
           </div>
         </div>
+        <!-- Allegati -->
+        <div class="preview-attachments">
+          <div class="preview-attach-label">📎 Allegati</div>
+          <div v-if="previewModal.loadingAttachments" class="preview-attach-empty">Caricamento…</div>
+          <div v-else-if="isFeeNotice || previewModal.attachments.length" class="preview-attach-list">
+            <button v-if="isFeeNotice" class="preview-attach-chip preview-attach-dl"
+                    @click="downloadAttachment(previewModal.notif)" :disabled="previewModal.downloading">
+              <span v-if="previewModal.downloading" class="spinner" style="width:10px;height:10px"></span>
+              <span v-else>📕</span> cedolini.pdf ⬇
+            </button>
+            <button v-for="att in previewModal.attachments" :key="att.id"
+                    class="preview-attach-chip preview-attach-dl"
+                    :disabled="previewModal.downloadingAttId === att.id"
+                    @click="downloadDoc(att)">
+              <span v-if="previewModal.downloadingAttId === att.id" class="spinner" style="width:10px;height:10px"></span>
+              <span v-else>{{ attIcon(att.mimeType) }}</span> {{ att.fileName }} ⬇
+            </button>
+          </div>
+          <div v-else class="preview-attach-empty">Nessun allegato</div>
+        </div>
         <div class="modal-footer">
           <button v-if="isFeeNotice" class="btn btn-ghost" @click="downloadAttachment(previewModal.notif)" :disabled="previewModal.downloading">
             <span v-if="previewModal.downloading" class="spinner" style="width:13px;height:13px"></span>
             <span v-else>⬇ Scarica cedolini PDF</span>
           </button>
           <button class="btn btn-ghost" @click="previewModal.show=false">Chiudi</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal allegati notifica -->
+    <div class="modal-overlay" v-if="attachModal.show" @mousedown.self="attachModal.show=false">
+      <div class="modal" style="max-width:600px;width:95vw">
+        <div class="modal-header">
+          <h2>Allegati — {{ attachModal.notif?.recipientFullName }}</h2>
+          <button class="btn-icon" @click="attachModal.show=false">✕</button>
+        </div>
+        <div class="modal-body">
+          <AttachPanel
+            v-if="attachModal.notif"
+            :notification-ids="[attachModal.notif.id]"
+            :condominium-id="props.condominiumId"
+          />
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="attachModal.show=false">Chiudi</button>
         </div>
       </div>
     </div>
@@ -297,7 +338,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { communicationNotificationApi, installmentApi, notificationTemplateApi } from '@/services/api'
+import { communicationNotificationApi, installmentApi, notificationTemplateApi, notificationAttachmentApi, documentApi } from '@/services/api'
+import AttachPanel from '@/components/AttachPanel.vue'
 
 const props = defineProps({
   communication:  { type: Object, required: true },
@@ -358,8 +400,15 @@ const filteredGroups = computed(() => {
 })
 
 const trackingModal  = ref({ show: false, notif: null, action: '', trackingNumber: '', saving: false })
-const previewModal   = ref({ show: false, notif: null, downloading: false })
+const previewModal   = ref({ show: false, notif: null, downloading: false, attachments: [], loadingAttachments: false, downloadingAttId: null })
 const editTextModal  = ref({ show: false, notif: null, subject: '', body: '', saving: false })
+
+// ── Attachment modal ──────────────────────────────────────────────────────────
+const attachModal = ref({ show: false, notif: null })
+
+function openAttachModal(n) {
+  attachModal.value = { show: true, notif: n }
+}
 
 // ── Modal selezione rate (solo per FeeNotice) ─────────────────────────────────
 const isFeeNotice = computed(() => props.communication.communicationType === 'FeeNotice')
@@ -533,8 +582,12 @@ async function saveEditText() {
 }
 
 // ── Preview ───────────────────────────────────────────────────────────────────
-function openPreview(n) {
-  previewModal.value = { show: true, notif: n, downloading: false }
+async function openPreview(n) {
+  previewModal.value = { show: true, notif: n, downloading: false, attachments: [], loadingAttachments: true }
+  try {
+    const { data } = await notificationAttachmentApi.getByNotification(n.id)
+    previewModal.value.attachments = data ?? []
+  } catch { /* global handler */ } finally { previewModal.value.loadingAttachments = false }
 }
 
 async function downloadAttachment(n) {
@@ -553,6 +606,19 @@ async function downloadAttachment(n) {
   } finally {
     previewModal.value.downloading = false
   }
+}
+
+async function downloadDoc(att) {
+  previewModal.value.downloadingAttId = att.id
+  try {
+    const { data } = await documentApi.download(att.documentId)
+    const url = URL.createObjectURL(new Blob([data], { type: att.mimeType || 'application/octet-stream' }))
+    const a = document.createElement('a')
+    a.href = url; a.download = att.fileName; a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { previewModal.value.downloadingAttId = null }
 }
 
 function emailBody(body) {
@@ -596,6 +662,15 @@ function statusBadge(s) {
     'badge-red',     // 4 Failed
     'badge-purple',  // 5 Printed
   ][s] ?? 'badge-muted'
+}
+
+function attIcon(mime) {
+  if (!mime) return '📄'
+  if (mime.includes('pdf')) return '📕'
+  if (mime.includes('image')) return '🖼'
+  if (mime.includes('word') || mime.includes('document')) return '📝'
+  if (mime.includes('sheet') || mime.includes('excel')) return '📊'
+  return '📄'
 }
 
 function fmtDt(d) {
@@ -672,6 +747,32 @@ onMounted(load)
   overflow-y: auto;
 }
 
+/* Attachments strip */
+.preview-attachments {
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-base);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.preview-attach-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.preview-attach-empty { font-size: 0.82rem; color: var(--text-muted); }
+.preview-attach-list  { display: flex; flex-wrap: wrap; gap: 6px; }
+.preview-attach-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  font-size: 0.78rem; color: var(--text-secondary);
+}
+.preview-attach-dl {
+  cursor: pointer; transition: border-color 0.15s, color 0.15s;
+}
+.preview-attach-dl:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.preview-attach-dl:disabled { opacity: 0.6; cursor: default; }
+
 /* Raccomandata / letter preview */
 .preview-letter {
   padding: 24px;
@@ -701,4 +802,5 @@ onMounted(load)
   white-space: pre-wrap;
   min-height: 80px;
 }
+
 </style>

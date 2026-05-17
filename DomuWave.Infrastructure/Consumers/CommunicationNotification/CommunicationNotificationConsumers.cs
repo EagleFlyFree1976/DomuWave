@@ -10,6 +10,7 @@ using DomuWave.Services.Dto.PaymentNotice;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using DomuWave.Services.Consumers.Document;
 using DomuWave.Services.Pdf;
 using NHibernate.Linq;
 using QuestPDF.Fluent;
@@ -89,34 +90,70 @@ public class GenerateCommunicationNotificationsCommandConsumer
                      && t.IsDefault && !t.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken).ConfigureAwait(false);
 
-        // Load all active unit owners for the condominium
-        var owners = await session.Query<UnitOwner>()
-            .Where(o => o.Unit.Condominium.Id == condominium.Id && o.IsActive && !o.IsDeleted)
+        // Load active unit owners — optionally filtered by selected units
+        var ownersQuery = session.Query<UnitOwner>()
+            .Where(o => o.Unit.Condominium.Id == condominium.Id && o.IsActive && !o.IsDeleted);
+        if (command.Dto.UnitIds != null && command.Dto.UnitIds.Count > 0)
+            ownersQuery = ownersQuery.Where(o => command.Dto.UnitIds.Contains(o.Unit.Id));
+        var owners = await ownersQuery.ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        // Load billing groups with their units
+        var billingGroups = await session.Query<BillingGroup>()
+            .Where(g => g.Condominium.Id == condominium.Id && !g.IsDeleted)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        // Build lookup: unitId → billingGroup
+        var unitToBillingGroup = billingGroups
+            .SelectMany(g => g.Units.Select(u => (UnitId: u.Id, Group: g)))
+            .ToDictionary(x => x.UnitId, x => x.Group);
 
         var addressParts = condominium.Address != null
             ? $"{condominium.Address.Street} {condominium.Address.StreetNumber}, {condominium.Address.PostalCode} {condominium.Address.City}"
             : string.Empty;
 
         // Delete previously generated Draft notifications for this communication
+        // but preserve the set of attached document IDs so they can be re-linked to the new ones
         var existing = await session.Query<CommunicationNotification>()
             .Where(n => n.Communication.Id == command.CommunicationId && n.Status == 0 && !n.IsDeleted)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
-        foreach (var old in existing)
+
+        var preservedDocumentIds = new List<Models.Document>();
+        if (existing.Count > 0)
         {
-            old.IsDeleted = true;
-            await session.UpdateAsync(old, cancellationToken).ConfigureAwait(false);
+            var existingIds = existing.Select(n => n.Id).ToList();
+            var oldAttachments = await session.Query<DomuWave.Services.Models.NotificationAttachment>()
+                .Where(a => existingIds.Contains(a.Notification.Id) && !a.IsDeleted)
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+            preservedDocumentIds = oldAttachments
+                .GroupBy(a => a.Document.Id)
+                .Select(g => g.First().Document)
+                .ToList();
+
+            foreach (var old in existing)
+            {
+                old.IsDeleted = true;
+                await session.UpdateAsync(old, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         var created = new List<CommunicationNotification>();
 
-        foreach (var owner in owners)
+        // Separate owners: those whose unit belongs to a billing group vs. those without
+        var ownersInGroup      = owners.Where(o => o.Unit != null && unitToBillingGroup.ContainsKey(o.Unit.Id)).ToList();
+        var ownersWithoutGroup = owners.Except(ownersInGroup).ToList();
+
+        // ── One notification per billing group ───────────────────────────────
+        foreach (var bgGroup in ownersInGroup.GroupBy(o => unitToBillingGroup[o.Unit!.Id].Id))
         {
-            var recipientName = $"{owner.FirstName} {owner.LastName}".Trim();
+            var billingGroup  = unitToBillingGroup[bgGroup.First().Unit!.Id];
+            var groupUnits    = bgGroup.Select(o => o.Unit!.InternalNumber).Distinct().OrderBy(n => n);
+            var unitsDisplay  = string.Join(", ", groupUnits);
+            var recipientName = billingGroup.Name;
+
             var ctx = new NotificationVariableContext
             {
                 RecipientName      = recipientName,
-                UnitNumber         = owner.Unit?.InternalNumber ?? string.Empty,
+                UnitNumber         = unitsDisplay,
                 CondominiumName    = condominium.Name,
                 CommunicationTitle = communication.Title,
                 CommunicationBody  = communication.Content,
@@ -137,21 +174,91 @@ public class GenerateCommunicationNotificationsCommandConsumer
                 Tenant            = condominium.Tenant,
                 Communication     = communication,
                 Name              = $"{recipientName} — {communication.Title}",
-                RecipientUserId   = owner.UserId,
+                RecipientUserId   = 0,
                 RecipientFullName = recipientName,
-                Unit              = owner.Unit,
+                Unit              = null,
+                UnitsDisplay      = unitsDisplay,
                 DeliveryMethod    = command.Dto.DeliveryMethod,
-                Status            = 0, // Draft
+                Status            = 0,
                 ScheduledAt       = command.Dto.ScheduledAt,
-                EmailAddress      = owner.Email,
+                EmailAddress      = billingGroup.ContactEmail,
                 PostalAddress     = addressParts,
                 SubjectResolved   = subject,
                 BodyResolved      = body,
             };
             notification.Trace(currentUser);
-
             await session.SaveAsync(notification, cancellationToken).ConfigureAwait(false);
             created.Add(notification);
+        }
+
+        // ── One notification per unique owner (no billing group) ─────────────
+        var byOwner = ownersWithoutGroup.GroupBy(o =>
+            !string.IsNullOrWhiteSpace(o.Email)
+                ? o.Email.ToLowerInvariant()
+                : $"{o.FirstName?.Trim()} {o.LastName?.Trim()}".ToLowerInvariant());
+
+        foreach (var ownerGroup in byOwner)
+        {
+            var first        = ownerGroup.First();
+            var recipientName = $"{first.FirstName} {first.LastName}".Trim();
+            var unitNumbers  = ownerGroup.Select(o => o.Unit?.InternalNumber).Where(n => n != null).Distinct().OrderBy(n => n).ToList();
+            var unitsDisplay = string.Join(", ", unitNumbers);
+
+            var ctx = new NotificationVariableContext
+            {
+                RecipientName      = recipientName,
+                UnitNumber         = unitsDisplay,
+                CondominiumName    = condominium.Name,
+                CommunicationTitle = communication.Title,
+                CommunicationBody  = communication.Content,
+                AdministratorName  = condominium.AdministratorName ?? string.Empty,
+                AdministratorEmail = condominium.AdministratorEmail ?? string.Empty,
+                AdministratorPhone = condominium.AdministratorPhone ?? string.Empty,
+                Iban               = condominium.Iban ?? string.Empty,
+                AssemblyDate       = communication.Assembly?.ScheduledDate.ToString("dd/MM/yyyy HH:mm") ?? string.Empty,
+                AssemblyLocation   = communication.Assembly?.Location ?? string.Empty,
+                AssemblyType       = communication.Assembly?.AssemblyType?.Name ?? string.Empty,
+            };
+
+            var subject = template != null ? _resolver.Resolve(template.SubjectTemplate, ctx) : communication.Title;
+            var body    = template != null ? _resolver.Resolve(template.BodyTemplate,    ctx) : communication.Content;
+
+            var notification = new CommunicationNotification
+            {
+                Tenant            = condominium.Tenant,
+                Communication     = communication,
+                Name              = $"{recipientName} — {communication.Title}",
+                RecipientUserId   = first.UserId,
+                RecipientFullName = recipientName,
+                Unit              = unitNumbers.Count == 1 ? first.Unit : null,
+                UnitsDisplay      = unitNumbers.Count > 1 ? unitsDisplay : null,
+                DeliveryMethod    = command.Dto.DeliveryMethod,
+                Status            = 0,
+                ScheduledAt       = command.Dto.ScheduledAt,
+                EmailAddress      = first.Email,
+                PostalAddress     = addressParts,
+                SubjectResolved   = subject,
+                BodyResolved      = body,
+            };
+            notification.Trace(currentUser);
+            await session.SaveAsync(notification, cancellationToken).ConfigureAwait(false);
+            created.Add(notification);
+        }
+
+        // Re-attach preserved documents to all newly created notifications
+        foreach (var newNotif in created)
+        {
+            foreach (var doc in preservedDocumentIds)
+            {
+                var na = new DomuWave.Services.Models.NotificationAttachment
+                {
+                    Tenant       = condominium.Tenant,
+                    Notification = newNotif,
+                    Document     = doc,
+                };
+                na.Trace(currentUser);
+                await session.SaveAsync(na, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -302,6 +409,26 @@ public class SendEmailNotificationsCommandConsumer
                             FileName:    $"cedolini-{notification.RecipientFullName?.Replace(" ", "-")}.pdf",
                             Content:     pdfBytes,
                             ContentType: "application/pdf")];
+                    }
+                }
+
+                // Carica gli allegati documentali agganciati alla notifica
+                var notifAttachments = await session.Query<DomuWave.Services.Models.NotificationAttachment>()
+                    .Where(a => a.Notification.Id == notification.Id && !a.IsDeleted)
+                    .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+                foreach (var na in notifAttachments)
+                {
+                    var docContent = await session.Query<DocumentContent>()
+                        .FirstOrDefaultAsync(c => c.Document.Id == na.Document.Id && !c.IsDeleted, cancellationToken)
+                        .ConfigureAwait(false);
+                    if (docContent != null)
+                    {
+                        attachments ??= new List<EmailAttachment>();
+                        attachments.Add(new EmailAttachment(
+                            FileName:    na.Document.FileName,
+                            Content:     DocumentCompression.Decompress(docContent.FileContent),
+                            ContentType: na.Document.MimeType ?? "application/octet-stream"));
                     }
                 }
 
@@ -480,6 +607,26 @@ public class SendSingleEmailNotificationCommandConsumer
                     FileName:    $"cedolini-{notification.RecipientFullName?.Replace(" ", "-")}.pdf",
                     Content:     pdfBytes,
                     ContentType: "application/pdf")];
+            }
+        }
+
+        // Carica gli allegati documentali agganciati alla notifica
+        var notifDocAttachments = await session.Query<DomuWave.Services.Models.NotificationAttachment>()
+            .Where(a => a.Notification.Id == notification.Id && !a.IsDeleted)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        foreach (var na in notifDocAttachments)
+        {
+            var docContent = await session.Query<DocumentContent>()
+                .FirstOrDefaultAsync(c => c.Document.Id == na.Document.Id && !c.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (docContent != null)
+            {
+                attachments ??= new List<EmailAttachment>();
+                attachments.Add(new EmailAttachment(
+                    FileName:    na.Document.FileName,
+                    Content:     DocumentCompression.Decompress(docContent.FileContent),
+                    ContentType: na.Document.MimeType ?? "application/octet-stream"));
             }
         }
 
@@ -1030,8 +1177,8 @@ public class UpdateNotificationTextCommandConsumer
         var entity = await session.GetAsync<CommunicationNotification>(command.NotificationId, cancellationToken).ConfigureAwait(false)
                      ?? throw new NotFoundException("Notifica non trovata.");
 
-        if (entity.Status > 1)
-            throw new ValidatorException("Non è possibile modificare una notifica già inviata.");
+        if (entity.Status >= 1)
+            throw new ValidatorException("Non è possibile modificare una notifica già schedulata o inviata.");
 
         entity.SubjectResolved = command.Dto.SubjectResolved ?? entity.SubjectResolved;
         entity.BodyResolved    = command.Dto.BodyResolved;
@@ -1141,8 +1288,8 @@ public class DeleteCommunicationNotificationCommandConsumer
         var entity = await session.GetAsync<CommunicationNotification>(command.NotificationId, cancellationToken).ConfigureAwait(false);
         if (entity == null) return false;
 
-        if (entity.Status >= 2)
-            throw new ValidatorException("Non è possibile eliminare una notifica già inviata.");
+        if (entity.Status >= 1)
+            throw new ValidatorException("Non è possibile eliminare una notifica già schedulata o inviata.");
 
         entity.IsDeleted = true;
         entity.Trace(currentUser);

@@ -409,9 +409,16 @@ export const documentApi = {
   getVisibleToOwners: (condId)        => api.get(`/documents/condominium/${condId}/visible`),
   search:             (condId, q)     => api.get(`/documents/condominium/${condId}/search`, { params: { q } }),
   getRecent:          (condId, n)     => api.get(`/documents/condominium/${condId}/recent`, { params: { n } }),
-  create:             (data)          => api.post('/documents', data),
+  upload:             (data)          => api.post('/documents', data),
   update:             (id, data)      => api.put(`/documents/${id}`, data),
+  download:           (id)            => api.get(`/documents/${id}/download`, { responseType: 'blob' }),
   delete:             (id)            => api.delete(`/documents/${id}`),
+}
+
+export const notificationAttachmentApi = {
+  getByNotification: (notifId)              => api.get(`/notification-attachments/by-notification/${notifId}`),
+  add:               (notificationId, documentId) => api.post('/notification-attachments', { notificationId, documentId }),
+  remove:            (id)                   => api.delete(`/notification-attachments/${id}`),
 }
 
 // ─── Assemblee ────────────────────────────────────────────────

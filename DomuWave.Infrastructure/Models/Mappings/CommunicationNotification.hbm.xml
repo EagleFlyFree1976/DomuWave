@@ -36,6 +36,11 @@
     <property name="BodyResolved"      column="BodyResolved"      type="StringClob"               />
     <property name="UnitsDisplay"      column="UnitsDisplay"      type="String"     length="500"  />
 
+    <bag name="Attachments" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="NotificationId" />
+      <one-to-many class="DomuWave.Services.Models.NotificationAttachment, DomuWave.Services" />
+    </bag>
+
     <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
     <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />
     <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />

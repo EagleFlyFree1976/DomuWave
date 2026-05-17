@@ -94,14 +94,81 @@
       </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal wizard -->
     <div class="modal-overlay" v-if="showModal" @mousedown.self="showModal=false">
-      <div class="modal">
+      <div class="modal modal-wide">
         <div class="modal-header">
-          <h2>{{ editing ? 'Modifica' : 'Nuova' }} comunicazione</h2>
+          <div style="display:flex;flex-direction:column;gap:0.25rem">
+            <h2>{{ editing ? 'Modifica' : 'Nuova' }} comunicazione</h2>
+            <div class="wizard-steps">
+              <span class="wizard-step" :class="{ active: wizardStep === 1, done: wizardStep > 1 }">1. Destinatari</span>
+              <span class="wizard-sep">›</span>
+              <span class="wizard-step" :class="{ active: wizardStep === 2 }">2. Messaggio</span>
+            </div>
+          </div>
           <button class="btn-icon" @click="showModal=false">✕</button>
         </div>
-        <div class="modal-body">
+
+        <!-- Step 1: destinatari -->
+        <div v-if="wizardStep === 1" class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Destinatari</label>
+            <div class="recipient-options">
+              <label class="recipient-option" :class="{ selected: recipientMode === 'all' }">
+                <input type="radio" v-model="recipientMode" value="all" />
+                <span>Tutti i condòmini</span>
+              </label>
+              <label class="recipient-option" :class="{ selected: recipientMode === 'select' }">
+                <input type="radio" v-model="recipientMode" value="select" />
+                <span>Seleziona unità specifiche</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="recipientMode === 'select'" class="form-group">
+            <label class="form-label">Unità immobiliari</label>
+            <div v-if="loadingUnits" style="font-size:0.85rem;color:var(--text-muted)">Caricamento unità…</div>
+            <div v-else-if="!availableUnits.length" style="font-size:0.85rem;color:var(--text-muted)">Nessuna unità disponibile</div>
+            <div v-else class="unit-checklist-scroll">
+              <div v-for="group in unitGroups" :key="group.label" class="unit-group">
+                <div class="unit-group-header">
+                  <label class="unit-group-label" :class="{ 'is-billing': group.isBillingGroup, 'is-ungrouped': !group.isBillingGroup }">
+                    <input type="checkbox" :checked="isGroupChecked(group)" :indeterminate.prop="isGroupIndeterminate(group)" @change="toggleGroup(group)" />
+                    <span>{{ group.label }}</span>
+                    <span v-if="group.isBillingGroup" style="font-weight:400;text-transform:none;letter-spacing:0;font-style:normal;color:var(--text-muted)">({{ group.units.length }} unità)</span>
+                  </label>
+                </div>
+                <div class="unit-group-items">
+                  <label v-for="u in group.units" :key="u.id" class="unit-check-item">
+                    <input type="checkbox" :value="u.id" v-model="selectedUnitIds" />
+                    <div class="unit-check-info">
+                      <span class="unit-code">{{ u.internalNumber }}</span>
+                      <span class="unit-owners text-muted">{{ ownerNames(u) }}</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div v-if="recipientMode === 'select' && !selectedUnitIds.length" class="field-error" style="margin-top:0.4rem">Seleziona almeno un'unità</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Metodo di consegna</label>
+            <div class="recipient-options">
+              <label class="recipient-option" :class="{ selected: deliveryMethod === 0 }">
+                <input type="radio" v-model="deliveryMethod" :value="0" />
+                <span>📧 Email</span>
+              </label>
+              <label class="recipient-option" :class="{ selected: deliveryMethod === 1 }">
+                <input type="radio" v-model="deliveryMethod" :value="1" />
+                <span>✉ Raccomandata</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: messaggio -->
+        <div v-if="wizardStep === 2" class="modal-body">
           <div class="form-group">
             <label class="form-label">Titolo *</label>
             <input class="form-input" v-model="form.title" />
@@ -157,13 +224,37 @@
               Invia email notifica
             </label>
           </div>
+
+          <!-- Allegati comunicazione (solo in modifica, se esistono bozze) -->
+          <div v-if="editing && commDraftNotifIds.length" style="border-top:1px solid var(--border);margin-top:0.75rem;padding-top:0.75rem">
+            <button class="attach-toggle-btn" @click="showAttachSection = !showAttachSection">
+              <span>{{ showAttachSection ? '▲' : '▼' }}</span>
+              📎 Allegati comunicazione
+            </button>
+            <div v-if="showAttachSection" style="margin-top:0.75rem">
+              <div class="text-muted" style="font-size:0.8rem;margin-bottom:0.5rem">
+                Gli allegati vengono applicati a tutte le notifiche in bozza ({{ commDraftNotifIds.length }}).
+              </div>
+              <AttachPanel
+                :notification-ids="commDraftNotifIds"
+                :condominium-id="store.selectedCondominioId"
+              />
+            </div>
+          </div>
         </div>
+
         <div class="modal-footer">
           <button class="btn btn-ghost" @click="showModal=false">Annulla</button>
-          <button class="btn btn-primary" @click="save" :disabled="saving">
-            <span v-if="saving" class="spinner" style="width:14px;height:14px"></span>
-            {{ editing ? 'Salva' : 'Crea' }}
-          </button>
+          <template v-if="wizardStep === 1">
+            <button class="btn btn-primary" @click="goToStep2">Avanti →</button>
+          </template>
+          <template v-else>
+            <button class="btn btn-ghost" @click="wizardStep = 1">← Indietro</button>
+            <button class="btn btn-primary" @click="save" :disabled="saving">
+              <span v-if="saving" class="spinner" style="width:14px;height:14px"></span>
+              {{ editing ? 'Salva' : 'Crea e genera notifiche' }}
+            </button>
+          </template>
         </div>
       </div>
     </div>
@@ -173,8 +264,9 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { communicationApi, communicationNotificationApi, assemblyApi } from '@/services/api'
+import { communicationApi, communicationNotificationApi, assemblyApi, unitApi, billingGroupApi } from '@/services/api'
 import NotifPanel from '@/components/NotifPanel.vue'
+import AttachPanel from '@/components/AttachPanel.vue'
 
 const store = useAppStore()
 
@@ -219,15 +311,92 @@ const search = ref('')
 const filterType = ref('')
 const filterPriority = ref('')
 
-const assembliesBozza = ref([])
+const assembliesBozza    = ref([])
+const wizardStep         = ref(1)
+const recipientMode      = ref('all')   // 'all' | 'select'
+const deliveryMethod     = ref(0)       // 0=Email 1=Raccomandata
+const selectedUnitIds    = ref([])
+const availableUnits     = ref([])
+const billingGroups      = ref([])
+const loadingUnits       = ref(false)
+const commDraftNotifIds  = ref([])    // draft notification IDs for comm-level attach panel
+const showAttachSection  = ref(false)
 
 async function loadAssemblies() {
   if (!store.selectedCondominioId) return
   try {
     const { data } = await assemblyApi.getByCondominium(store.selectedCondominioId)
-    // Bozza = statusId 1
     assembliesBozza.value = (data ?? []).filter(a => a.statusId === 1)
   } catch { assembliesBozza.value = [] }
+}
+
+async function loadUnits() {
+  if (!store.selectedCondominioId) return
+  loadingUnits.value = true
+  try {
+    const [unitsRes, groupsRes] = await Promise.all([
+      unitApi.getPanoramica(store.selectedCondominioId),
+      billingGroupApi.getByCondominium(store.selectedCondominioId),
+    ])
+    availableUnits.value = unitsRes.data ?? []
+    billingGroups.value  = groupsRes.data ?? []
+  } catch { availableUnits.value = []; billingGroups.value = [] }
+  finally { loadingUnits.value = false }
+}
+
+const unitGroups = computed(() => {
+  const allUnits = availableUnits.value
+  const groups   = billingGroups.value
+
+  // Unità già assegnate a un gruppo di fatturazione
+  const assignedIds = new Set(groups.flatMap(g => g.units?.map(u => u.unitId) ?? []))
+
+  // Gruppi di fatturazione con le unità complete (panoramica)
+  const billingEntries = groups.map(g => ({
+    label:   g.name,
+    isBillingGroup: true,
+    units:   (g.units ?? [])
+      .map(gu => allUnits.find(u => u.id === gu.unitId))
+      .filter(Boolean),
+  })).filter(g => g.units.length > 0)
+
+  // Unità senza gruppo
+  const unassigned = allUnits.filter(u => !assignedIds.has(u.id))
+  const ungroupedEntry = unassigned.length
+    ? [{ label: 'Senza gruppo', isBillingGroup: false, units: unassigned }]
+    : []
+
+  return [...billingEntries, ...ungroupedEntry]
+})
+
+function ownerNames(unit) {
+  if (!unit.owners?.length) return '—'
+  return unit.owners
+    .filter(o => o.isActive)
+    .map(o => `${o.firstName ?? ''} ${o.lastName ?? ''}`.trim())
+    .filter(Boolean)
+    .join(', ') || '—'
+}
+
+function isGroupChecked(group) {
+  return group.units.every(u => selectedUnitIds.value.includes(u.id))
+}
+function isGroupIndeterminate(group) {
+  const some = group.units.some(u => selectedUnitIds.value.includes(u.id))
+  return some && !isGroupChecked(group)
+}
+function toggleGroup(group) {
+  if (isGroupChecked(group)) {
+    selectedUnitIds.value = selectedUnitIds.value.filter(id => !group.units.some(u => u.id === id))
+  } else {
+    const toAdd = group.units.map(u => u.id).filter(id => !selectedUnitIds.value.includes(id))
+    selectedUnitIds.value = [...selectedUnitIds.value, ...toAdd]
+  }
+}
+
+function goToStep2() {
+  if (recipientMode.value === 'select' && !selectedUnitIds.value.length) return
+  wizardStep.value = 2
 }
 
 const defaultForm = () => ({
@@ -276,11 +445,34 @@ function switchTab(archived) {
   loadData()
 }
 
-function openModal(c = null) {
+async function openModal(c = null) {
   editing.value = c?.id ?? null
   form.value = c
     ? { ...c, publicationDate: c.publicationDate?.slice(0,16), expirationDate: c.expirationDate?.slice(0,16), assemblyId: c.assemblyId ?? null }
     : defaultForm()
+  wizardStep.value       = 1
+  recipientMode.value    = 'all'
+  deliveryMethod.value   = 0
+  selectedUnitIds.value  = []
+  commDraftNotifIds.value = []
+  showAttachSection.value = false
+  await loadUnits()
+  if (c) {
+    // Pre-populate recipients + collect draft notification IDs for attach panel
+    try {
+      const { data: notifs } = await communicationNotificationApi.getByCommunication(c.id)
+      const drafts = (notifs ?? []).filter(n => n.status === 0)
+      commDraftNotifIds.value = drafts.map(n => n.id)
+      if (drafts.length) {
+        deliveryMethod.value = drafts[0].deliveryMethod ?? 0
+        const unitIds = drafts.map(n => n.unitId).filter(id => id != null)
+        if (unitIds.length < availableUnits.value.length) {
+          recipientMode.value   = 'select'
+          selectedUnitIds.value = unitIds
+        }
+      }
+    } catch { /* lascia i default */ }
+  }
   if (form.value.communicationType === 'Meeting') loadAssemblies()
   showModal.value = true
 }
@@ -295,12 +487,27 @@ async function save() {
   if (form.value.communicationType === 'Meeting' && !form.value.assemblyId) return store.toast("Seleziona l'assemblea collegata", 'error')
   saving.value = true
   try {
-    if (editing.value) await communicationApi.update(editing.value, form.value)
-    else await communicationApi.create({ ...form.value, condominiumId: store.selectedCondominioId })
-    store.toast('Comunicazione salvata', 'success')
+    const payload = {
+      ...form.value,
+      condominiumId:  store.selectedCondominioId,
+      expirationDate: form.value.expirationDate || null,
+    }
+    const generatePayload = {
+      deliveryMethod: deliveryMethod.value,
+      unitIds: recipientMode.value === 'select' ? selectedUnitIds.value : null,
+    }
+    if (editing.value) {
+      await communicationApi.update(editing.value, payload)
+      await communicationNotificationApi.generate(editing.value, generatePayload)
+      store.toast('Comunicazione aggiornata e notifiche rigenerate', 'success')
+    } else {
+      const { data: created } = await communicationApi.create(payload)
+      await communicationNotificationApi.generate(created.id, generatePayload)
+      store.toast('Comunicazione creata e notifiche generate', 'success')
+    }
     showModal.value = false
     loadData()
-  } catch { store.toast('Errore', 'error') } finally { saving.value = false }
+  } catch { store.toast('Errore durante il salvataggio', 'error') } finally { saving.value = false }
 }
 
 async function publishComm(id) {
@@ -375,4 +582,67 @@ window.addEventListener('app:refresh', loadData)
   padding: 16px;
   background: var(--bg-base);
 }
+
+/* Wizard */
+.modal-wide { width: min(640px, 96vw); }
+.wizard-steps { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; }
+.wizard-step { color: var(--text-muted); }
+.wizard-step.active { color: var(--accent); font-weight: 600; }
+.wizard-step.done { color: var(--accent-green); }
+.wizard-sep { color: var(--text-muted); }
+
+/* Selezione destinatari */
+.recipient-options { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.recipient-option {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: border-color 0.15s, background 0.15s;
+}
+.recipient-option input { display: none; }
+.recipient-option:hover { border-color: var(--accent); }
+.recipient-option.selected { border-color: var(--accent); background: var(--accent-glow); color: var(--accent); font-weight: 500; }
+
+.attach-toggle-btn {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.875rem; color: var(--accent);
+  background: none; border: none; cursor: pointer; padding: 0;
+}
+.attach-toggle-btn:hover { text-decoration: underline; }
+
+/* Lista unità raggruppata */
+.unit-checklist-scroll {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  max-height: 260px;
+  overflow-y: auto;
+}
+.unit-group { border-bottom: 1px solid var(--border); }
+.unit-group:last-child { border-bottom: none; }
+.unit-group-header {
+  padding: 0.4rem 0.75rem;
+  background: var(--bg-base);
+  position: sticky; top: 0; z-index: 1;
+}
+.unit-group-label {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.78rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--text-muted); cursor: pointer;
+}
+.unit-group-label.is-billing { color: var(--accent); }
+.unit-group-label.is-ungrouped { color: var(--text-muted); font-style: italic; }
+.unit-group-items { padding: 0.25rem 0; }
+.unit-check-item {
+  display: flex; align-items: flex-start; gap: 0.6rem;
+  font-size: 0.85rem; cursor: pointer;
+  padding: 0.35rem 0.75rem 0.35rem 1.5rem;
+  transition: background 0.1s;
+}
+.unit-check-item:hover { background: var(--bg-base); }
+.unit-check-info { display: flex; flex-direction: column; gap: 0.1rem; }
+.unit-code { font-weight: 500; }
+.unit-owners { font-size: 0.78rem; }
 </style>

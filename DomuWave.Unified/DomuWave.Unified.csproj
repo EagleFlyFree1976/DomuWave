@@ -71,6 +71,7 @@
     <Compile Include="..\DomuWave.Application\Controllers\CondominiumsController.cs" Link="Controllers\CondominiumsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\ConsumptionController.cs" Link="Controllers\ConsumptionController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\DashboardController.cs" Link="Controllers\DashboardController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\DocumentsController.cs" Link="Controllers\DocumentsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\DynamicFilesController.cs" Link="Controllers\DynamicFilesController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\ExpensesController.cs" Link="Controllers\ExpensesController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\ExtraordinaryWorksController.cs" Link="Controllers\ExtraordinaryWorksController.cs" />
@@ -79,6 +80,7 @@
     <Compile Include="..\DomuWave.Application\Controllers\FiscalYearsController.cs" Link="Controllers\FiscalYearsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\MaintenanceController.cs" Link="Controllers\MaintenanceController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\MenuesController.cs" Link="Controllers\MenuesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\NotificationAttachmentsController.cs" Link="Controllers\NotificationAttachmentsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\NotificationSystemController.cs" Link="Controllers\NotificationSystemController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\PublicUserController.cs" Link="Controllers\PublicUserController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\RealEstateUnitsController.cs" Link="Controllers\RealEstateUnitsController.cs" />
