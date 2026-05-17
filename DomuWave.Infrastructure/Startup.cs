@@ -102,6 +102,14 @@ public static class Startup
         services.AddScoped<IUnitTenantService, UnitTenantService>();
         services.AddScoped<IUserTenantService, UserTenantService>();
 
+        // ─── Communication center ─────────────────────────────────────────────
+        services.AddScoped<IBoardPostService, BoardPostService>();
+        services.AddScoped<IBoardPostCommentService, BoardPostCommentService>();
+        services.AddScoped<IFaultService, FaultService>();
+        services.AddScoped<IFaultMessageService, FaultMessageService>();
+        services.AddScoped<IPrivateThreadService, PrivateThreadService>();
+        services.AddScoped<IPrivateMessageService, PrivateMessageService>();
+
         // ─── Notification system ──────────────────────────────────────────────
         services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddScoped<INotificationTemplateVariableResolver, NotificationTemplateVariableResolver>();

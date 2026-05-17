@@ -68,6 +68,13 @@
     <None Remove="Models\Mappings\CommunicationNotification.hbm.xml" />
     <None Remove="Models\Mappings\NotificationAttachment.hbm.xml" />
     <None Remove="Models\Mappings\Building.hbm.xml" />
+    <None Remove="Models\Mappings\BoardPost.hbm.xml" />
+    <None Remove="Models\Mappings\BoardPostComment.hbm.xml" />
+    <None Remove="Models\Mappings\FaultStatus.hbm.xml" />
+    <None Remove="Models\Mappings\Fault.hbm.xml" />
+    <None Remove="Models\Mappings\FaultMessage.hbm.xml" />
+    <None Remove="Models\Mappings\PrivateThread.hbm.xml" />
+    <None Remove="Models\Mappings\PrivateMessage.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -139,6 +146,13 @@
     <EmbeddedResource Include="Models\Mappings\CommunicationNotification.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\NotificationAttachment.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Building.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BoardPost.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BoardPostComment.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\FaultStatus.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\Fault.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\FaultMessage.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\PrivateThread.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\PrivateMessage.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>

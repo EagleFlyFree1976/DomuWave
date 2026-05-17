@@ -95,7 +95,10 @@
             <!-- Prima notifica del gruppo: mostra destinatario -->
             <tr v-for="(n, idx) in group.notifications" :key="n.id" :class="idx > 0 ? 'grouped-row' : 'group-first-row'">
               <td>
-                <span v-if="idx === 0" class="recipient-name">{{ group.recipient || '—' }}</span>
+                <template v-if="idx === 0">
+                  <span class="recipient-name">{{ group.recipient || '—' }}</span>
+                  <span v-if="n.emailAddress" class="text-muted" style="display:block;font-size:0.72rem">{{ n.emailAddress }}</span>
+                </template>
                 <span v-else class="text-muted" style="font-size:0.78rem;padding-left:12px">↳</span>
               </td>
               <td class="text-muted mono" style="font-size:0.78rem">{{ n.unitsDisplay || n.unitDisplayName || '—' }}</td>

@@ -569,4 +569,32 @@ export const communicationNotificationApi = {
   delete:             (id)                    => api.delete(`/communication-notifications/${id}`),
 }
 
+export const boardPostApi = {
+  getByCondominium: (condominiumId)      => api.get(`/board-posts/by-condominium/${condominiumId}`),
+  create:           (data)               => api.post('/board-posts', data),
+  update:           (id, data)           => api.put(`/board-posts/${id}`, data),
+  delete:           (id)                 => api.delete(`/board-posts/${id}`),
+  getComments:      (postId)             => api.get(`/board-posts/${postId}/comments`),
+  createComment:    (postId, data)       => api.post(`/board-posts/${postId}/comments`, data),
+  deleteComment:    (commentId)          => api.delete(`/board-posts/comments/${commentId}`),
+}
+
+export const faultApi = {
+  getByCondominium: (condominiumId)      => api.get(`/faults/by-condominium/${condominiumId}`),
+  getById:          (id)                 => api.get(`/faults/${id}`),
+  create:           (data)               => api.post('/faults', data),
+  updateStatus:     (id, data)           => api.patch(`/faults/${id}/status`, data),
+  delete:           (id)                 => api.delete(`/faults/${id}`),
+  getMessages:      (faultId)            => api.get(`/faults/${faultId}/messages`),
+  createMessage:    (faultId, data)      => api.post(`/faults/${faultId}/messages`, data),
+}
+
+export const privateThreadApi = {
+  getByCondominium: (condominiumId)      => api.get(`/private-threads/by-condominium/${condominiumId}`),
+  getOrCreate:      (data)               => api.post('/private-threads/get-or-create', data),
+  getMessages:      (threadId)           => api.get(`/private-threads/${threadId}/messages`),
+  createMessage:    (threadId, data)     => api.post(`/private-threads/${threadId}/messages`, data),
+  markRead:         (threadId)           => api.post(`/private-threads/${threadId}/mark-read`),
+}
+
 export default api

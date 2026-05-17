@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.BoardPost, DomuWave.Services" table="BoardPost" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='BoardPost'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant"      class="DomuWave.Services.Models.Tenant, DomuWave.Services"      column="TenantId"      not-null="true" />
+    <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
+
+    <property name="Name"        column="Title" type="String"    length="300" not-null="true" />
+    <property name="Description" column="Body"  type="StringClob"             not-null="true" />
+
+    <property name="AuthorUserId"   column="AuthorUserId"   type="Int64"  not-null="true" />
+    <property name="AuthorFullName" column="AuthorFullName" type="String" length="200" not-null="true" />
+    <property name="IsPinned"       column="IsPinned"       type="Boolean" not-null="true" />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"  length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean" not-null="true" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+    <bag name="Comments" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="BoardPostId" />
+      <one-to-many class="DomuWave.Services.Models.BoardPostComment, DomuWave.Services" />
+    </bag>
+
+  </class>
+
+</hibernate-mapping>
