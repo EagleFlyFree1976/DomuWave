@@ -2,6 +2,7 @@ using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.Document;
 using DomuWave.Services.Dto.Document;
 using Microsoft.AspNetCore.Mvc;
@@ -21,11 +22,13 @@ public class DocumentsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Documents, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<DocumentReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetDocumentsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Documents, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DocumentReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -35,6 +38,7 @@ public class DocumentsController(
     }
 
     [HttpGet("{id:int}/download")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Documents, Modules.DomuWaveModule)]
     public async Task<IActionResult> Download(int id, CancellationToken ct)
     {
         var (content, fileName, mimeType) = await _mediator.GetResponse(new DownloadDocumentCommand(CurrentUser.Id, id), ct);
@@ -42,6 +46,7 @@ public class DocumentsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Documents, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DocumentReadDto), 201)]
     public async Task<IActionResult> Upload([FromBody] UploadDocumentDto dto, CancellationToken ct)
     {
@@ -51,6 +56,7 @@ public class DocumentsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Documents, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DocumentReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateDocumentDto dto, CancellationToken ct)
     {
@@ -61,6 +67,7 @@ public class DocumentsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Documents, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteDocumentCommand(CurrentUser.Id, id), ct);

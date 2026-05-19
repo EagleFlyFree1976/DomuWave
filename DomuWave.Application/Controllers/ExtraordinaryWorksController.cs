@@ -1,5 +1,7 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.ExtraordinaryWork;
 using DomuWave.Services.Dto.ExtraordinaryWork;
 using Microsoft.AspNetCore.Mvc;
@@ -17,16 +19,19 @@ public class ExtraordinaryWorksController(
 {
     private readonly IMediator _mediator = mediator;
     [HttpGet("condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExtraordinaryWorkReadDto>))]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetWorksByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("condominium/{condominiumId:int}/status/{status}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExtraordinaryWorkReadDto>))]
     public async Task<IActionResult> GetByStatus(int condominiumId, string status, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetWorksByStatusCommand(CurrentUser.Id, condominiumId, status), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExtraordinaryWorkReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
@@ -37,6 +42,7 @@ public class ExtraordinaryWorksController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ExtraordinaryWorkReadDto))]
     public async Task<IActionResult> Create([FromBody] CreateExtraordinaryWorkDto dto, CancellationToken ct)
     {
@@ -46,6 +52,7 @@ public class ExtraordinaryWorksController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExtraordinaryWorkReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateExtraordinaryWorkDto dto, CancellationToken ct)
@@ -57,6 +64,7 @@ public class ExtraordinaryWorksController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -68,11 +76,13 @@ public class ExtraordinaryWorksController(
     // ── Quotes sub-resource ──────────────────────────────────────────
 
     [HttpGet("{workId:int}/quotes")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<WorkQuoteReadDto>))]
     public async Task<IActionResult> GetQuotes(int workId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetQuotesByWorkCommand(CurrentUser.Id, workId), ct));
 
     [HttpPost("{workId:int}/quotes")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(WorkQuoteReadDto))]
     public async Task<IActionResult> CreateQuote(int workId, [FromBody] CreateWorkQuoteDto dto, CancellationToken ct)
     {
@@ -83,6 +93,7 @@ public class ExtraordinaryWorksController(
     }
 
     [HttpPut("{workId:int}/quotes/{quoteId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorkQuoteReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateQuote(int workId, int quoteId, [FromBody] UpdateWorkQuoteDto dto, CancellationToken ct)
@@ -94,6 +105,7 @@ public class ExtraordinaryWorksController(
     }
 
     [HttpDelete("{workId:int}/quotes/{quoteId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteQuote(int workId, int quoteId, CancellationToken ct)
     {
@@ -103,6 +115,7 @@ public class ExtraordinaryWorksController(
     }
 
     [HttpPost("{workId:int}/quotes/{quoteId:int}/approve")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorkQuoteReadDto))]
     public async Task<IActionResult> ApproveQuote(int workId, int quoteId, CancellationToken ct)
     {
@@ -112,6 +125,7 @@ public class ExtraordinaryWorksController(
     }
 
     [HttpPost("{workId:int}/quotes/{quoteId:int}/reject")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(WorkQuoteReadDto))]
     public async Task<IActionResult> RejectQuote(int workId, int quoteId, CancellationToken ct)
     {
@@ -123,6 +137,7 @@ public class ExtraordinaryWorksController(
     // ── Documents sub-resource ───────────────────────────────────────
 
     [HttpPost("{workId:int}/quotes/{quoteId:int}/documents")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(WorkQuoteDocumentReadDto))]
     public async Task<IActionResult> AddDocument(int workId, int quoteId, [FromBody] CreateWorkQuoteDocumentDto dto, CancellationToken ct)
     {
@@ -133,6 +148,7 @@ public class ExtraordinaryWorksController(
     }
 
     [HttpDelete("{workId:int}/quotes/{quoteId:int}/documents/{documentId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.ExtraordinaryWorks, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteDocument(int workId, int quoteId, int documentId, CancellationToken ct)
     {

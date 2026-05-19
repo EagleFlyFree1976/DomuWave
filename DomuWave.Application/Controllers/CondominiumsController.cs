@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.Condominium;
 using DomuWave.Services.Dto.Condominium;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +21,7 @@ public class CondominiumsController(
 {
     private readonly IMediator _mediator = mediator;
     [HttpGet]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumReadDto>))]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
@@ -28,6 +31,7 @@ public class CondominiumsController(
     }
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
@@ -39,6 +43,7 @@ public class CondominiumsController(
     }
 
     [HttpGet("active")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumReadDto>))]
     public async Task<IActionResult> GetActive(CancellationToken ct)
     {
@@ -48,6 +53,7 @@ public class CondominiumsController(
     }
 
     [HttpGet("by-code/{code}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByCode(string code, CancellationToken ct)
@@ -59,6 +65,7 @@ public class CondominiumsController(
     }
 
     [HttpGet("upcoming-assembly")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumReadDto>))]
     public async Task<IActionResult> GetWithUpcomingAssembly(
         [FromQuery] int daysAhead = 30, CancellationToken ct = default)
@@ -69,6 +76,7 @@ public class CondominiumsController(
     }
 
     [HttpGet("paged")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetPaged(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
@@ -81,6 +89,7 @@ public class CondominiumsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(CondominiumReadDto))]
     public async Task<IActionResult> Create([FromBody] CreateCondominiumDto dto, CancellationToken ct)
     {
@@ -91,6 +100,7 @@ public class CondominiumsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateCondominiumDto dto, CancellationToken ct)
@@ -103,6 +113,7 @@ public class CondominiumsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -113,6 +124,7 @@ public class CondominiumsController(
     }
 
     [HttpGet("{id:int}/setup-status")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumSetupStatusDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSetupStatus(int id, CancellationToken ct)

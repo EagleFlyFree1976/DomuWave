@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.BillingGroup;
 using DomuWave.Services.Dto.BillingGroup;
 using Microsoft.AspNetCore.Mvc;
@@ -20,11 +22,13 @@ public class BillingGroupsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<BillingGroupReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetBillingGroupsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BillingGroupReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateBillingGroupDto dto, CancellationToken ct)
     {
@@ -34,6 +38,7 @@ public class BillingGroupsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BillingGroupReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateBillingGroupDto dto, CancellationToken ct)
     {
@@ -43,6 +48,7 @@ public class BillingGroupsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -51,11 +57,13 @@ public class BillingGroupsController(
     }
 
     [HttpGet("suggest/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(SuggestBillingGroupsResultDto), 200)]
     public async Task<IActionResult> Suggest(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new SuggestBillingGroupsCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpPost("apply-suggestions/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<BillingGroupReadDto>), 201)]
     public async Task<IActionResult> ApplySuggestions(int condominiumId, [FromBody] IList<BillingGroupSuggestionDto> suggestions, CancellationToken ct)
     {
@@ -65,6 +73,7 @@ public class BillingGroupsController(
     }
 
     [HttpGet("{id:int}/fiscal-year/{fiscalYearId:int}/notice/pdf")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FileContentResult), 200)]
     public async Task<IActionResult> GetGroupNoticePdf(int id, int fiscalYearId, CancellationToken ct)
     {
@@ -74,6 +83,7 @@ public class BillingGroupsController(
     }
 
     [HttpGet("{id:int}/installment/{installmentId:int}/notice/pdf")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FileContentResult), 200)]
     public async Task<IActionResult> GetGroupInstallmentNoticePdf(int id, int installmentId, CancellationToken ct)
     {

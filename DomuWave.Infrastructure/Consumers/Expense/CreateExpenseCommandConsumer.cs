@@ -50,11 +50,12 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
             throw new ValidatorException("La data documento è obbligatoria.");
         if (dto.RegistrationDate == default)
             throw new ValidatorException("La data di registrazione è obbligatoria.");
-        if (dto.GrossAmount <= 0)
-            throw new ValidatorException("L'importo lordo deve essere maggiore di zero.");
+        var calcGross = dto.TaxableAmount + dto.TaxableAmountVatExempt + dto.VatAmount + dto.PensionFund + dto.StampDuty - dto.WithholdingTax;
+        if (calcGross <= 0)
+            throw new ValidatorException("L'importo lordo calcolato deve essere maggiore di zero.");
         if (dto.VatAmount < 0)
             throw new ValidatorException("L'importo IVA non può essere negativo.");
-        if (dto.VatAmount > dto.GrossAmount)
+        if (dto.VatAmount > calcGross)
             throw new ValidatorException("L'importo IVA non può essere superiore all'importo lordo.");
 
         var condominium = await session.Query<Models.Condominium>()

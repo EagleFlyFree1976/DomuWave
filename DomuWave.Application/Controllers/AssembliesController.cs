@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.Assembly;
 using DomuWave.Services.Command.AssemblyAgendaItem;
 using DomuWave.Services.Command.AssemblyAttendance;
@@ -27,11 +29,13 @@ public class AssembliesController(
     // ── Assembly ─────────────────────────────────────────────────────────────
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<AssemblyReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetAssembliesByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -41,6 +45,7 @@ public class AssembliesController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateAssemblyDto dto, CancellationToken ct)
     {
@@ -50,6 +55,7 @@ public class AssembliesController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateAssemblyDto dto, CancellationToken ct)
     {
@@ -60,6 +66,7 @@ public class AssembliesController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -69,6 +76,7 @@ public class AssembliesController(
     }
 
     [HttpPost("{id:int}/plan")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> Plan(int id, CancellationToken ct)
     {
@@ -78,6 +86,7 @@ public class AssembliesController(
     }
 
     [HttpPost("{id:int}/close")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> Close(int id, [FromBody] CloseAssemblyRequestDto dto, CancellationToken ct)
     {
@@ -87,6 +96,7 @@ public class AssembliesController(
     }
 
     [HttpPost("{id:int}/open")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> Open(int id, CancellationToken ct)
     {
@@ -96,6 +106,7 @@ public class AssembliesController(
     }
 
     [HttpPost("{id:int}/cancel")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> Cancel(int id, CancellationToken ct)
     {
@@ -105,6 +116,7 @@ public class AssembliesController(
     }
 
     [HttpPut("{id:int}/minutes")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyReadDto), 200)]
     public async Task<IActionResult> SaveMinutes(int id, [FromBody] SaveAssemblyMinutesRequestDto dto, CancellationToken ct)
     {
@@ -116,11 +128,13 @@ public class AssembliesController(
     // ── Agenda Items ─────────────────────────────────────────────────────────
 
     [HttpGet("{assemblyId:int}/agenda-items")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<AssemblyAgendaItemReadDto>), 200)]
     public async Task<IActionResult> GetAgendaItems(int assemblyId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetAgendaItemsByAssemblyCommand(CurrentUser.Id, assemblyId), ct));
 
     [HttpPost("agenda-items")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyAgendaItemReadDto), 201)]
     public async Task<IActionResult> CreateAgendaItem([FromBody] CreateAssemblyAgendaItemDto dto, CancellationToken ct)
     {
@@ -130,6 +144,7 @@ public class AssembliesController(
     }
 
     [HttpPut("agenda-items/{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyAgendaItemReadDto), 200)]
     public async Task<IActionResult> UpdateAgendaItem(int id, [FromBody] UpdateAssemblyAgendaItemDto dto, CancellationToken ct)
     {
@@ -140,6 +155,7 @@ public class AssembliesController(
     }
 
     [HttpDelete("agenda-items/{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> DeleteAgendaItem(int id, CancellationToken ct)
     {
@@ -151,16 +167,19 @@ public class AssembliesController(
     // ── Attendances ───────────────────────────────────────────────────────────
 
     [HttpGet("{assemblyId:int}/attendances")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<AssemblyAttendanceReadDto>), 200)]
     public async Task<IActionResult> GetAttendances(int assemblyId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetAttendancesByAssemblyCommand(CurrentUser.Id, assemblyId), ct));
 
     [HttpPost("{assemblyId:int}/attendances/prepopulate")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<AssemblyAttendanceReadDto>), 200)]
     public async Task<IActionResult> PrepopulateAttendances(int assemblyId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new PrepopulateAttendancesCommand(CurrentUser.Id, assemblyId), ct));
 
     [HttpPost("attendances")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyAttendanceReadDto), 201)]
     public async Task<IActionResult> CreateAttendance([FromBody] CreateAssemblyAttendanceDto dto, CancellationToken ct)
     {
@@ -170,6 +189,7 @@ public class AssembliesController(
     }
 
     [HttpPut("attendances/{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AssemblyAttendanceReadDto), 200)]
     public async Task<IActionResult> UpdateAttendance(int id, [FromBody] UpdateAssemblyAttendanceDto dto, CancellationToken ct)
     {
@@ -180,6 +200,7 @@ public class AssembliesController(
     }
 
     [HttpDelete("attendances/{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> DeleteAttendance(int id, CancellationToken ct)
     {

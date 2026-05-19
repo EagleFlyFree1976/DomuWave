@@ -74,44 +74,54 @@ const selectedOption = ref(null)
 
 function syncSelection() {
   if (session.isCondomino) {
-    selectedOption.value = options.value.find(o => o.tenantId === session.activeTenant?.id) ?? null
+    selectedOption.value = options.value.find(o => o.id === appStore.selectedCondominioId)
+      ?? options.value[0]
+      ?? null
   } else {
     selectedOption.value = options.value.find(o => o.id === appStore.selectedCondominioId) ?? null
   }
 }
 
 // ── Nome del condominio attivo (per il badge) ────────────────────────────────
-const activeName = computed(() => {
-  if (session.isCondomino) return session.activeTenant?.name ?? null
-  return appStore.selectedCondominio?.name ?? null
-})
+const activeName = computed(() => selectedOption.value?.label ?? null)
 
 // ── Cambio selezione ─────────────────────────────────────────────────────────
 async function onCondominioChange({ value }) {
   if (!value) return
   if (session.isCondomino) {
-    // Cambia tenant (X-Tenant-Id) + aggiorna menu
+    // Imposta il tenant corretto per le chiamate API (X-Tenant-Id)
     session.selectTenant({ id: value.tenantId, name: value.label })
+    // Imposta il condominio attivo nello store → tutte le view si aggiornano
+    appStore.selectCondominio(value.id)
     await menuStore.fetchMenu()
-    // Resetta e ricarica i condomini del nuovo tenant così tutte le
-    // view che watchano selectedCondominioId si aggiornano automaticamente
-    appStore.selectCondominio(null)
-    await appStore.loadCondomini()
   } else {
-    // Admin: imposta il condominio selezionato → tutti i watcher nelle view scattano
     appStore.selectCondominio(value.id)
   }
 }
 
 // ── Sincronizzazione reattiva ────────────────────────────────────────────────
-watch(options, syncSelection, { immediate: false })
-watch(() => session.activeTenant, syncSelection)
+watch(options, () => {
+  syncSelection()
+  // Se il Condomino non ha ancora un condominio selezionato, seleziona il primo
+  if (session.isCondomino && !appStore.selectedCondominioId && options.value.length) {
+    const first = options.value[0]
+    session.selectTenant({ id: first.tenantId, name: first.label })
+    appStore.selectCondominio(first.id)
+    selectedOption.value = first
+  }
+}, { immediate: false })
 watch(() => appStore.selectedCondominioId, syncSelection)
 
 // ── Init: carica i condomini se non ancora presenti (admin e superadmin) ─────
 onMounted(async () => {
   if ((session.isTenantAdmin || session.isSuperAdmin) && !appStore.condomini.length) {
     await appStore.loadCondomini()
+  }
+  // Condomino: auto-seleziona il primo condominio se non già impostato
+  if (session.isCondomino && options.value.length && !appStore.selectedCondominioId) {
+    const first = options.value[0]
+    session.selectTenant({ id: first.tenantId, name: first.label })
+    appStore.selectCondominio(first.id)
   }
   syncSelection()
 })

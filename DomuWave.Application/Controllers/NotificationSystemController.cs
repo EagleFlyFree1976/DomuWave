@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.CommunicationNotification;
 using DomuWave.Services.Command.NotificationTemplate;
 using DomuWave.Services.Command.TenantSmtp;
@@ -27,11 +29,13 @@ public class NotificationTemplatesController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.NotificationTemplates, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<NotificationTemplateReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetNotificationTemplatesByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.NotificationTemplates, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(NotificationTemplateReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -41,6 +45,7 @@ public class NotificationTemplatesController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.NotificationTemplates, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(NotificationTemplateReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateNotificationTemplateDto dto, CancellationToken ct)
     {
@@ -50,6 +55,7 @@ public class NotificationTemplatesController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.NotificationTemplates, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(NotificationTemplateReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateNotificationTemplateDto dto, CancellationToken ct)
     {
@@ -60,6 +66,7 @@ public class NotificationTemplatesController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.NotificationTemplates, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteNotificationTemplateCommand(CurrentUser.Id, id), ct);
@@ -68,6 +75,7 @@ public class NotificationTemplatesController(
     }
 
     [HttpPost("seed-defaults/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.NotificationTemplates, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<NotificationTemplateReadDto>), 201)]
     public async Task<IActionResult> SeedDefaults(int condominiumId, CancellationToken ct)
     {
@@ -90,6 +98,7 @@ public class TenantSmtpController(
     
 
     [HttpGet]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.TenantSmtp, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(TenantSmtpSettingsReadDto), 200)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> Get(CancellationToken ct)
@@ -100,6 +109,7 @@ public class TenantSmtpController(
     }
 
     [HttpPut]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.TenantSmtp, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(TenantSmtpSettingsReadDto), 200)]
     public async Task<IActionResult> Upsert([FromBody] UpsertTenantSmtpSettingsDto dto, CancellationToken ct)
     {
@@ -109,6 +119,7 @@ public class TenantSmtpController(
     }
 
     [HttpPost("test")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.TenantSmtp, Modules.DomuWaveModule)]
     public async Task<IActionResult> Test([FromBody] TestSmtpRequest request, CancellationToken ct)
     {
         await _mediator.GetResponse(new TestTenantSmtpCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), request.EmailTo), ct);
@@ -132,11 +143,13 @@ public class CommunicationNotificationsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-communication/{communicationId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<CommunicationNotificationReadDto>), 200)]
     public async Task<IActionResult> GetByCommunication(int communicationId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetNotificationsByCommunicationCommand(CurrentUser.Id, communicationId), ct));
 
     [HttpPost("generate/{communicationId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<CommunicationNotificationReadDto>), 201)]
     public async Task<IActionResult> Generate(int communicationId, [FromBody] GenerateNotificationsDto dto, CancellationToken ct)
     {
@@ -145,6 +158,7 @@ public class CommunicationNotificationsController(
     }
 
     [HttpPost("generate-from-fees")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(GenerateFromFeesResultDto), 201)]
     public async Task<IActionResult> GenerateFromFees([FromBody] GenerateNotificationsFromFeesDto dto, CancellationToken ct)
     {
@@ -154,31 +168,37 @@ public class CommunicationNotificationsController(
     }
 
     [HttpPost("send-email/{communicationId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(SendNotificationsResultDto), 200)]
     public async Task<IActionResult> SendEmail(int communicationId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new SendEmailNotificationsCommand(CurrentUser.Id, communicationId), ct));
 
     [HttpPost("{id:long}/send-email")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]
     public async Task<IActionResult> SendSingleEmail(long id, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new SendSingleEmailNotificationCommand(CurrentUser.Id, id), ct));
 
     [HttpPost("{id:long}/mark-printed")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]
     public async Task<IActionResult> MarkPrinted(long id, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new MarkNotificationPrintedCommand(CurrentUser.Id, id), ct));
 
     [HttpPost("{id:long}/mark-sent")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]
     public async Task<IActionResult> MarkSent(long id, [FromBody] UpdateNotificationStatusDto dto, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new MarkNotificationSentCommand(CurrentUser.Id, id, dto), ct));
 
     [HttpPost("{id:long}/mark-delivered")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]
     public async Task<IActionResult> MarkDelivered(long id, [FromBody] UpdateNotificationStatusDto dto, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new MarkNotificationDeliveredCommand(CurrentUser.Id, id, dto), ct));
 
     [HttpGet("{id:long}/attachment-pdf")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FileContentResult), 200)]
     public async Task<IActionResult> GetAttachmentPdf(long id, CancellationToken ct)
     {
@@ -187,6 +207,7 @@ public class CommunicationNotificationsController(
     }
 
     [HttpGet("batch-pdf/{communicationId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FileContentResult), 200)]
     public async Task<IActionResult> GetBatchPdf(int communicationId, CancellationToken ct)
     {
@@ -195,11 +216,13 @@ public class CommunicationNotificationsController(
     }
 
     [HttpPost("regenerate-texts/{communicationId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(int), 200)]
     public async Task<IActionResult> RegenerateTexts(int communicationId, [FromBody] RegenerateTextsRequest request, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new RegenerateNotificationTextsCommand(CurrentUser.Id, communicationId, request.NotificationTemplateId), ct));
 
     [HttpPut("{id:long}/text")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(CommunicationNotificationReadDto), 200)]
     public async Task<IActionResult> UpdateText(long id, [FromBody] UpdateNotificationTextDto dto, CancellationToken ct)
     {
@@ -209,6 +232,7 @@ public class CommunicationNotificationsController(
     }
 
     [HttpDelete("{id:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.CommunicationNotifications, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(long id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteCommunicationNotificationCommand(CurrentUser.Id, id), ct);

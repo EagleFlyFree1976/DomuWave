@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.BoardPost;
 using DomuWave.Services.Command.Fault;
 using DomuWave.Services.Command.PrivateThread;
@@ -27,11 +29,13 @@ public class BoardPostsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.BoardPost, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<BoardPostReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetBoardPostsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.BoardPost, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BoardPostReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateBoardPostDto dto, CancellationToken ct)
     {
@@ -41,6 +45,7 @@ public class BoardPostsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.BoardPost, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BoardPostReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateBoardPostDto dto, CancellationToken ct)
     {
@@ -51,6 +56,7 @@ public class BoardPostsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.BoardPost, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -60,11 +66,13 @@ public class BoardPostsController(
     }
 
     [HttpGet("{postId:int}/comments")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.BoardPost, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<BoardPostCommentReadDto>), 200)]
     public async Task<IActionResult> GetComments(int postId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetBoardPostCommentsByPostCommand(CurrentUser.Id, postId), ct));
 
     [HttpPost("{postId:int}/comments")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.BoardPost, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BoardPostCommentReadDto), 201)]
     public async Task<IActionResult> CreateComment(int postId, [FromBody] CreateBoardPostCommentDto dto, CancellationToken ct)
     {
@@ -75,6 +83,7 @@ public class BoardPostsController(
     }
 
     [HttpDelete("comments/{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.BoardPost, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> DeleteComment(int id, CancellationToken ct)
     {
@@ -97,11 +106,13 @@ public class FaultsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Faults, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<FaultReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetFaultsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Faults, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FaultReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -111,6 +122,7 @@ public class FaultsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Faults, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FaultReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateFaultDto dto, CancellationToken ct)
     {
@@ -120,6 +132,7 @@ public class FaultsController(
     }
 
     [HttpPatch("{id:int}/status")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Faults, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FaultReadDto), 200)]
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateFaultStatusDto dto, CancellationToken ct)
     {
@@ -129,6 +142,7 @@ public class FaultsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Faults, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -138,11 +152,13 @@ public class FaultsController(
     }
 
     [HttpGet("{faultId:int}/messages")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Faults, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<FaultMessageReadDto>), 200)]
     public async Task<IActionResult> GetMessages(int faultId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetFaultMessagesByFaultCommand(CurrentUser.Id, faultId), ct));
 
     [HttpPost("{faultId:int}/messages")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Faults, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FaultMessageReadDto), 201)]
     public async Task<IActionResult> CreateMessage(int faultId, [FromBody] CreateFaultMessageDto dto, CancellationToken ct)
     {
@@ -166,11 +182,13 @@ public class PrivateThreadsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.PrivateThreads, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<PrivateThreadReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetPrivateThreadsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpPost("get-or-create")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.PrivateThreads, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(PrivateThreadReadDto), 200)]
     public async Task<IActionResult> GetOrCreate([FromBody] GetOrCreateThreadDto dto, CancellationToken ct)
     {
@@ -179,11 +197,13 @@ public class PrivateThreadsController(
     }
 
     [HttpGet("{threadId:int}/messages")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.PrivateThreads, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<PrivateMessageReadDto>), 200)]
     public async Task<IActionResult> GetMessages(int threadId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetPrivateMessagesByThreadCommand(CurrentUser.Id, threadId), ct));
 
     [HttpPost("{threadId:int}/messages")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.PrivateThreads, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(PrivateMessageReadDto), 201)]
     public async Task<IActionResult> CreateMessage(int threadId, [FromBody] CreatePrivateMessageDto dto, CancellationToken ct)
     {
@@ -194,6 +214,7 @@ public class PrivateThreadsController(
     }
 
     [HttpPost("{threadId:int}/mark-read")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.PrivateThreads, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> MarkRead(int threadId, CancellationToken ct)
     {

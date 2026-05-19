@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.ChartOfAccountsTemplate;
 using DomuWave.Services.Dto.ChartOfAccountsTemplate;
 using Microsoft.AspNetCore.Mvc;
@@ -21,11 +23,13 @@ public class ChartOfAccountsTemplatesController(
     // ── Templates ─────────────────────────────────────────────────────────────
 
     [HttpGet]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<ChartOfAccountsTemplateReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetChartOfAccountsTemplatesCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct));
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsTemplateReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateChartOfAccountsTemplateDto dto, CancellationToken ct)
     {
@@ -35,6 +39,7 @@ public class ChartOfAccountsTemplatesController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsTemplateReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateChartOfAccountsTemplateDto dto, CancellationToken ct)
     {
@@ -44,6 +49,7 @@ public class ChartOfAccountsTemplatesController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -54,11 +60,13 @@ public class ChartOfAccountsTemplatesController(
     // ── Template Items ────────────────────────────────────────────────────────
 
     [HttpGet("{templateId:int}/items")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<ChartOfAccountsTemplateItemReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetItems(int templateId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetChartOfAccountsTemplateItemsCommand(CurrentUser.Id, templateId), ct));
 
     [HttpPost("{templateId:int}/items")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsTemplateItemReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateItem(int templateId, [FromBody] SaveChartOfAccountsTemplateItemDto dto, CancellationToken ct)
     {
@@ -69,6 +77,7 @@ public class ChartOfAccountsTemplatesController(
     }
 
     [HttpPut("{templateId:int}/items/{itemId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsTemplateItemReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateItem(int templateId, int itemId, [FromBody] SaveChartOfAccountsTemplateItemDto dto, CancellationToken ct)
     {
@@ -79,6 +88,7 @@ public class ChartOfAccountsTemplatesController(
     }
 
     [HttpDelete("{templateId:int}/items/{itemId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> DeleteItem(int templateId, int itemId, CancellationToken ct)
     {
@@ -89,6 +99,7 @@ public class ChartOfAccountsTemplatesController(
     // ── Set default ───────────────────────────────────────────────────────────
 
     [HttpPatch("{id:int}/set-default")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> SetDefault(int id, CancellationToken ct)
     {
@@ -99,6 +110,7 @@ public class ChartOfAccountsTemplatesController(
     // ── Apply ─────────────────────────────────────────────────────────────────
 
     [HttpPost("{templateId:int}/apply/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ChartOfAccountsTemplate, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     public async Task<IActionResult> Apply(int templateId, int condominiumId, CancellationToken ct)
     {

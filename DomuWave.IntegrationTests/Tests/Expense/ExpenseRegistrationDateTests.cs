@@ -240,9 +240,8 @@ public class ExpenseRegistrationDateTests(IntegrationTestFactory factory)
         Name                = $"Spesa test {TestDataBuilder.ShortId()}",
         DocumentDate        = DateTime.Today,
         RegistrationDate    = registrationDate ?? DateTime.Today,
-        GrossAmount         = 100m,
+        TaxableAmount       = 78m,
         VatAmount           = 22m,
-        NetAmount           = 78m,
         ExpenseTypeId       = 1,
         ChargeabilityTypeId = ChargeabilityType.Owner,
     };

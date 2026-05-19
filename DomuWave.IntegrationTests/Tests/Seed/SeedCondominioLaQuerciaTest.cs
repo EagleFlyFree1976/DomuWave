@@ -498,34 +498,33 @@ public class SeedCondominioLaQuerciaTest(
         output.WriteLine($"  Fornitori creati: {suppliers.Count}");
 
         // Spese
-        // (accountId, supplierId_key, name, gross, net, vat, expenseTypeId, docDate, regDate)
+        // (accountId, supplierId_key, name, taxable, vat, expenseTypeId, docDate, regDate)
         var spese = new[]
         {
-            (accManutenzione,    "TECNO-IMPL", "Manutenzione cancello automatico",  1250.00m, 1025.41m, 224.59m, ExpenseType.Manutenzione, new DateTime(2024,  3, 10), new DateTime(2024,  3, 12)),
-            (accManutenzione,    "TECNO-IMPL", "Riparazione citofoni scala B",        580.00m,  475.41m, 104.59m, ExpenseType.Manutenzione, new DateTime(2024,  5, 20), new DateTime(2024,  5, 22)),
-            (accPulizie,         "CLEANPRO",   "Servizio pulizie annuale",           2400.00m, 1967.21m, 432.79m, ExpenseType.Pulizie,      new DateTime(2024, 12, 31), new DateTime(2024, 12, 31)),
-            (accAmministrazione, "STUD-FERR",  "Onorario amministratore 2024",       1800.00m, 1639.34m, 160.66m, ExpenseType.Professionale,new DateTime(2024, 12, 31), new DateTime(2024, 12, 31)),
-            (accAssicurazione,   (string?)null,"Assicurazione fabbricato 2024",      1420.00m, 1420.00m,   0.00m, ExpenseType.Altro,        new DateTime(2024,  1, 15), new DateTime(2024,  1, 16)),
-            (accUtenze,          (string?)null,"Bollette energia elettrica scale",   2380.00m, 1950.82m, 429.18m, ExpenseType.Utenze,       new DateTime(2024, 12, 15), new DateTime(2024, 12, 16)),
+            (accManutenzione,    "TECNO-IMPL", "Manutenzione cancello automatico",  1025.41m, 224.59m, ExpenseType.Manutenzione, new DateTime(2024,  3, 10), new DateTime(2024,  3, 12)),
+            (accManutenzione,    "TECNO-IMPL", "Riparazione citofoni scala B",        475.41m, 104.59m, ExpenseType.Manutenzione, new DateTime(2024,  5, 20), new DateTime(2024,  5, 22)),
+            (accPulizie,         "CLEANPRO",   "Servizio pulizie annuale",           1967.21m, 432.79m, ExpenseType.Pulizie,      new DateTime(2024, 12, 31), new DateTime(2024, 12, 31)),
+            (accAmministrazione, "STUD-FERR",  "Onorario amministratore 2024",       1639.34m, 160.66m, ExpenseType.Professionale,new DateTime(2024, 12, 31), new DateTime(2024, 12, 31)),
+            (accAssicurazione,   (string?)null,"Assicurazione fabbricato 2024",      1420.00m,   0.00m, ExpenseType.Altro,        new DateTime(2024,  1, 15), new DateTime(2024,  1, 16)),
+            (accUtenze,          (string?)null,"Bollette energia elettrica scale",   1950.82m, 429.18m, ExpenseType.Utenze,       new DateTime(2024, 12, 15), new DateTime(2024, 12, 16)),
         };
 
-        foreach (var (accountId, supKey, name, gross, net, vat, expenseTypeId, docDate, regDate) in spese)
+        foreach (var (accountId, supKey, name, taxable, vat, expenseTypeId, docDate, regDate) in spese)
         {
             var dto = new CreateExpenseDto
             {
-                CondominiumId       = condId,
-                FiscalYearId        = fyId,
-                AccountId           = accountId,
-                MillesimalTableId   = tmgTable.Id,
-                SupplierId          = supKey != null && suppliers.ContainsKey(supKey) ? suppliers[supKey] : (int?)null,
-                Name                = name,
-                GrossAmount         = gross,
-                NetAmount           = net,
-                VatAmount           = vat,
-                ExpenseTypeId       = expenseTypeId,
-                DocumentDate        = docDate,
-                RegistrationDate    = regDate,
-                ChargeabilityTypeId = ChargeabilityType.Owner,
+                CondominiumId          = condId,
+                FiscalYearId           = fyId,
+                AccountId              = accountId,
+                MillesimalTableId      = tmgTable.Id,
+                SupplierId             = supKey != null && suppliers.ContainsKey(supKey) ? suppliers[supKey] : (int?)null,
+                Name                   = name,
+                TaxableAmount          = taxable,
+                VatAmount              = vat,
+                ExpenseTypeId          = expenseTypeId,
+                DocumentDate           = docDate,
+                RegistrationDate       = regDate,
+                ChargeabilityTypeId    = ChargeabilityType.Owner,
             };
             var (r, _) = await PostAsync<ExpenseReadDto>("/api/expenses", dto);
             r.StatusCode.Should().Be(HttpStatusCode.Created, $"spesa: {name}");

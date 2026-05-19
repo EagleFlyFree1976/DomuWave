@@ -27,6 +27,11 @@ public class GetCondominiumsByUserCommandConsumer
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
     {
+        // Recupera l'utente corrente per verificare il ruolo
+        var currentUser = await _userService
+            .GetByIdAsync((int)command.UserId, cancellationToken)
+            .ConfigureAwait(false);
+
         // 1. Recupera i tenant dell'utente
         var userTenants = await session.Query<UserTenant>()
             .Where(ut => ut.UserId == command.UserId && ut.IsActive && !ut.IsDeleted)
@@ -39,16 +44,41 @@ public class GetCondominiumsByUserCommandConsumer
 
         var tenantIds = userTenants.Select(ut => ut.Tenant.Id).ToHashSet();
 
-        // 2. Recupera tutti i condomini appartenenti a quei tenant
-        var condominiums = await session.Query<Models.Condominium>()
-            .Where(c => tenantIds.Contains(c.Tenant.Id) && !c.IsDeleted)
+        // 2. Per utenti con ruolo "condomino", filtra solo i condomini dove è proprietario
+        IEnumerable<int> allowedCondominiumIds = null;
+        if (currentUser != null && 
+            string.Equals(currentUser.Role?.Code, "condomino", StringComparison.OrdinalIgnoreCase))
+        {
+            allowedCondominiumIds = await session.Query<UnitOwner>()
+                .Where(o => o.UserId == command.UserId && o.IsActive && !o.IsDeleted)
+                .Select(o => o.Unit.Condominium.Id)
+                .Distinct()
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            // Se l'utente condomino non ha unità, non deve vedere nessun condominio
+            if (!allowedCondominiumIds.Any())
+                return new List<UserCondominiumDto>();
+        }
+
+        // 3. Recupera i condomini del tenant
+        var query = session.Query<Models.Condominium>()
+            .Where(c => tenantIds.Contains(c.Tenant.Id) && !c.IsDeleted);
+
+        // Applica il filtro per ruolo condomino
+        if (allowedCondominiumIds != null)
+        {
+            query = query.Where(c => allowedCondominiumIds.Contains(c.Id));
+        }
+
+        var condominiums = await query
             .Fetch(c => c.Tenant)
             .OrderBy(c => c.Tenant.Id)
             .ThenBy(c => c.Name)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // 3. Mappa il risultato arricchito con il nome del tenant
+        // 4. Mappa il risultato arricchito con il nome del tenant
         var tenantMap = userTenants.ToDictionary(ut => ut.Tenant.Id, ut => ut.Tenant.Name ?? string.Empty);
 
         return condominiums

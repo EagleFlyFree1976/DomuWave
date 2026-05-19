@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.DynamicFile;
 using DomuWave.Services.Dto.DynamicFile;
 using Microsoft.AspNetCore.Mvc;
@@ -23,6 +25,7 @@ public class DynamicFilesController(
     /// Usa entityName per ricerca semplice o entityFullName per ricerca esatta sul tipo completo.
     /// </summary>
     [HttpGet("by-entity")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.DynamicFiles, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<DynamicFileReadDto>), 200)]
     public async Task<IActionResult> GetByEntity(
         [FromQuery] string entityName,
@@ -34,6 +37,7 @@ public class DynamicFilesController(
 
     /// <summary>Restituisce i metadati del file (senza contenuto base64).</summary>
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.DynamicFiles, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DynamicFileReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -44,6 +48,7 @@ public class DynamicFilesController(
 
     /// <summary>Restituisce i metadati + contenuto base64 del file (per download).</summary>
     [HttpGet("{id:int}/download")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.DynamicFiles, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DynamicFileReadDto), 200)]
     public async Task<IActionResult> Download(int id, CancellationToken ct)
     {
@@ -54,6 +59,7 @@ public class DynamicFilesController(
 
     /// <summary>Carica un nuovo file nel repository.</summary>
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.DynamicFiles, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DynamicFileReadDto), 201)]
     public async Task<IActionResult> Upload([FromBody] UploadDynamicFileDto dto, CancellationToken ct)
     {
@@ -64,6 +70,7 @@ public class DynamicFilesController(
 
     /// <summary>Aggiorna descrizione e tag del file.</summary>
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.DynamicFiles, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DynamicFileReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateDynamicFileDto dto, CancellationToken ct)
     {
@@ -75,6 +82,7 @@ public class DynamicFilesController(
 
     /// <summary>Elimina un file (soft delete + pulizia storage esterno se presente).</summary>
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.DynamicFiles, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.CondominiumFee;
 using DomuWave.Services.Command.CondominiumInstallment;
 using DomuWave.Services.Dto.CondominiumFee;
@@ -24,26 +26,32 @@ public class CondominiumFeesController(
     
 
     [HttpGet("by-installment/{installmentId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByInstallment(int installmentId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetFeesByInstallmentCommand(CurrentUser.Id, installmentId), ct));
 
     [HttpGet("by-unit/{unitId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByUnit(int unitId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetFeesByUnitCommand(CurrentUser.Id, unitId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-user/{userId:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByUser(long userId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetFeesByUserCommand(CurrentUser.Id, userId), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/unpaid")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetUnpaid(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetUnpaidFeesCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/overdue")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetOverdue(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetOverdueFeesCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("total-due/{userId:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetTotalDue(long userId, CancellationToken ct)
     {
         var total = await _mediator.GetResponse(new GetFeesTotalDueCommand(CurrentUser.Id, userId), ct);
@@ -51,6 +59,7 @@ public class CondominiumFeesController(
     }
 
     [HttpGet("balance/{userId:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetBalance(long userId, CancellationToken ct)
     {
         var balance = await _mediator.GetResponse(new GetFeesTotalBalanceCommand(CurrentUser.Id, userId), ct);
@@ -58,6 +67,7 @@ public class CondominiumFeesController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> Create([FromBody] CreateCondominiumFeeDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -66,6 +76,7 @@ public class CondominiumFeesController(
     }
 
     [HttpPut("{id:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateCondominiumFeeDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -75,6 +86,7 @@ public class CondominiumFeesController(
     }
 
     [HttpPatch("{feeId:long}/pay")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> RecordPayment(
         long feeId, [FromBody] RecordFeePaymentRequest request, CancellationToken ct)
     {
@@ -85,6 +97,7 @@ public class CondominiumFeesController(
     }
 
     [HttpDelete("{id:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(long id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteCondominiumFeeCommand(CurrentUser.Id, id), ct);
@@ -93,6 +106,7 @@ public class CondominiumFeesController(
     }
 
     [HttpGet("unit-notice/{unitId:int}/fiscal-year/{fiscalYearId:int}/pdf")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FileContentResult), 200)]
     public async Task<IActionResult> GetUnitPaymentNoticePdf(int unitId, int fiscalYearId, CancellationToken ct)
     {
@@ -102,6 +116,7 @@ public class CondominiumFeesController(
     }
 
     [HttpGet("installment-notice/{installmentId:int}/pdf")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FileContentResult), 200)]
     public async Task<IActionResult> GetInstallmentBatchNoticePdf(int installmentId, CancellationToken ct)
     {
@@ -111,6 +126,7 @@ public class CondominiumFeesController(
     }
 
     [HttpGet("by-payment-code/{code}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<FeeByPaymentCodeResultDto>), 200)]
     [ProducesResponseType(404)]
     public async Task<IActionResult> GetByPaymentCode(string code, CancellationToken ct)
@@ -121,6 +137,7 @@ public class CondominiumFeesController(
     }
 
     [HttpGet("unit-notice/{unitId:int}/installment/{installmentId:int}/pdf")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FileContentResult), 200)]
     public async Task<IActionResult> GetUnitInstallmentNoticePdf(int unitId, int installmentId, CancellationToken ct)
     {
@@ -146,14 +163,17 @@ public class CondominiumInstallmentsController(
     
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetInstallmentsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-fiscal-year/{fiscalYearId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByFiscalYear(int fiscalYearId, [FromQuery] int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetInstallmentsByFiscalYearCommand(CurrentUser.Id, condominiumId, fiscalYearId), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/year/{year:int}/number/{number:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByYearAndNumber(int condominiumId, int year, int number, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -163,18 +183,22 @@ public class CondominiumInstallmentsController(
     }
 
     [HttpGet("by-budget/{budgetId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByBudget(int budgetId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetInstallmentsByBudgetCommand(CurrentUser.Id, budgetId), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/open")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetOpen(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetOpenInstallmentsCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/overdue")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetOverdue(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetOverdueInstallmentsCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpPost("by-condominium/{condominiumId:int}/generate")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GenerateInstallments(
         int condominiumId, [FromBody] GenerateInstallmentsRequest request, CancellationToken ct)
     {
@@ -185,6 +209,7 @@ public class CondominiumInstallmentsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> Create([FromBody] CreateCondominiumInstallmentDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -193,6 +218,7 @@ public class CondominiumInstallmentsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateCondominiumInstallmentDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -203,6 +229,7 @@ public class CondominiumInstallmentsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteCondominiumInstallmentCommand(CurrentUser.Id, id), ct);

@@ -220,15 +220,15 @@
                 <label class="form-label">A carico di</label>
                 <div class="radio-group">
                   <label class="radio-label">
-                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="0" />
+                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="1" />
                     Proprietario
                   </label>
                   <label class="radio-label">
-                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="1" />
+                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="2" />
                     Inquilino (se presente)
                   </label>
                   <label class="radio-label">
-                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="2" />
+                    <input type="radio" v-model.number="form.chargeabilityTypeId" :value="3" />
                     Automatico (inquilino se attivo, altrimenti proprietario)
                   </label>
                 </div>
@@ -447,7 +447,7 @@ const emptyForm = () => ({
   code: '', name: '', type: 2, categoryId: null, description: '',
   parentAccountId: null, isActive: true, defaultMillesimalTableId: null,
   allocationMethod: 0, millesimalPercentage: null, floorWeight: null, inhabitantsWeight: null,
-  chargeabilityTypeId: 0,
+  chargeabilityTypeId: 1,
 })
 const form = ref(emptyForm())
 
@@ -556,7 +556,7 @@ function openModal(a = null) {
       millesimalPercentage: a.millesimalPercentage ?? null,
       floorWeight: a.floorWeight ?? null,
       inhabitantsWeight: a.inhabitantsWeight ?? null,
-      chargeabilityTypeId: a.chargeabilityTypeId ?? 0,
+      chargeabilityTypeId: a.chargeabilityTypeId ?? 1,
     }
   } else {
     editing.value = null

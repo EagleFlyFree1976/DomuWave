@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.Building;
 using DomuWave.Services.Dto.Building;
 using Microsoft.AspNetCore.Mvc;
@@ -20,11 +22,13 @@ public class BuildingsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Buildings, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<BuildingReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetBuildingsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Buildings, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BuildingReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -34,6 +38,7 @@ public class BuildingsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Buildings, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BuildingReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateBuildingDto dto, CancellationToken ct)
     {
@@ -43,6 +48,7 @@ public class BuildingsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Buildings, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(BuildingReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateBuildingDto dto, CancellationToken ct)
     {
@@ -53,6 +59,7 @@ public class BuildingsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Buildings, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

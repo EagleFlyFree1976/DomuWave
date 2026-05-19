@@ -272,9 +272,8 @@ public class ExpenseFiscalYearStatusTests(IntegrationTestFactory factory)
             Name                = $"Spesa auto-fy {TestDataBuilder.ShortId()}",
             DocumentDate        = DateTime.Today,
             RegistrationDate    = DateTime.Today,
-            GrossAmount         = 50m,
+            TaxableAmount       = 39m,
             VatAmount           = 11m,
-            NetAmount           = 39m,
             ExpenseTypeId       = 1,
             ChargeabilityTypeId = ChargeabilityType.Owner,
         };
@@ -309,9 +308,8 @@ public class ExpenseFiscalYearStatusTests(IntegrationTestFactory factory)
         Name                = $"Spesa test {TestDataBuilder.ShortId()}",
         DocumentDate        = DateTime.Today,
         RegistrationDate    = DateTime.Today,
-        GrossAmount         = 100m,
+        TaxableAmount       = 78m,
         VatAmount           = 22m,
-        NetAmount           = 78m,
         ExpenseTypeId       = 1,
         ChargeabilityTypeId = ChargeabilityType.Owner,
     };

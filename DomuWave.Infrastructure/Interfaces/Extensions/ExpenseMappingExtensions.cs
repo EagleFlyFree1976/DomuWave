@@ -6,6 +6,10 @@ namespace DomuWave.Services.Interfaces.Extensions;
 
 public static class ExpenseMappingExtensions
 {
+    // GrossAmount = imponibile + esente IVA + IVA + cassa previdenziale + bollo - ritenuta d'acconto
+    private static decimal CalcGross(decimal taxable, decimal taxExempt, decimal vat, decimal pension, decimal stamp, decimal withholding)
+        => Math.Round(taxable + taxExempt + vat + pension + stamp - withholding, 2, MidpointRounding.AwayFromZero);
+
     public static ExpenseReadDto ToReadDto(this Expense entity)
     {
         if (entity == null) return null;
@@ -53,6 +57,7 @@ public static class ExpenseMappingExtensions
         ExpenseType expenseType, ExpensePaymentStatus paymentStatus,
         ChargeabilityType chargeabilityType)
     {
+        var gross = CalcGross(dto.TaxableAmount, dto.TaxableAmountVatExempt, dto.VatAmount, dto.PensionFund, dto.StampDuty, dto.WithholdingTax);
         return new Expense
         {
             Tenant             = condominium.Tenant,
@@ -67,12 +72,12 @@ public static class ExpenseMappingExtensions
             RegistrationDate   = dto.RegistrationDate,
             TaxableAmount          = dto.TaxableAmount,
             TaxableAmountVatExempt = dto.TaxableAmountVatExempt,
-            GrossAmount            = dto.GrossAmount,
             VatAmount              = dto.VatAmount,
-            NetAmount              = dto.NetAmount,
             PensionFund            = dto.PensionFund,
             WithholdingTax         = dto.WithholdingTax,
             StampDuty              = dto.StampDuty,
+            GrossAmount            = gross,
+            NetAmount              = gross - dto.WithholdingTax,
             ExpenseType            = expenseType,
             PaymentStatus          = paymentStatus,
             PaymentMethod          = dto.PaymentMethod,
@@ -86,6 +91,7 @@ public static class ExpenseMappingExtensions
         ExpenseType expenseType, ExpensePaymentStatus paymentStatus,
         ChargeabilityType chargeabilityType)
     {
+        var gross = CalcGross(dto.TaxableAmount, dto.TaxableAmountVatExempt, dto.VatAmount, dto.PensionFund, dto.StampDuty, dto.WithholdingTax);
         entity.Account            = account;
         entity.MillesimalTable    = millesimalTable;
         entity.Supplier           = supplier;
@@ -95,12 +101,12 @@ public static class ExpenseMappingExtensions
         entity.RegistrationDate   = dto.RegistrationDate;
         entity.TaxableAmount          = dto.TaxableAmount;
         entity.TaxableAmountVatExempt = dto.TaxableAmountVatExempt;
-        entity.GrossAmount            = dto.GrossAmount;
         entity.VatAmount              = dto.VatAmount;
-        entity.NetAmount              = dto.NetAmount;
         entity.PensionFund            = dto.PensionFund;
         entity.WithholdingTax         = dto.WithholdingTax;
         entity.StampDuty              = dto.StampDuty;
+        entity.GrossAmount            = gross;
+        entity.NetAmount              = gross - dto.WithholdingTax;
         entity.ExpenseType            = expenseType;
         entity.PaymentStatus      = paymentStatus;
         entity.PaymentMethod      = dto.PaymentMethod;

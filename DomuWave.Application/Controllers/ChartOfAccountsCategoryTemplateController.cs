@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.ChartOfAccountsCategoryTemplate;
 using DomuWave.Services.Dto.ChartOfAccountsCategoryTemplate;
 using Microsoft.AspNetCore.Mvc;
@@ -25,11 +27,13 @@ public class ChartOfAccountsCategoryTemplateController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<ChartOfAccountsCategoryTemplateReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetAllChartOfAccountsCategoryTemplatesCommand(CurrentUser.Id), ct));
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsCategoryTemplateReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateChartOfAccountsCategoryTemplateDto dto, CancellationToken ct)
     {
@@ -39,6 +43,7 @@ public class ChartOfAccountsCategoryTemplateController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsCategoryTemplateReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateChartOfAccountsCategoryTemplateDto dto, CancellationToken ct)
     {
@@ -49,6 +54,7 @@ public class ChartOfAccountsCategoryTemplateController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

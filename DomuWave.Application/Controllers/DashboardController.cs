@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.Dashboard;
 using DomuWave.Services.Dto.Dashboard;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +21,7 @@ public class DashboardController(
 {
     private readonly IMediator _mediator = mediator;
     [HttpGet("summary")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Dashboard, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DashboardSummaryDto))]
     public async Task<IActionResult> GetSummary(CancellationToken ct)
     {

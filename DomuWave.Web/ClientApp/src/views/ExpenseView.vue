@@ -279,15 +279,15 @@
         <label class="form-label">A carico di</label>
         <div class="radio-group">
           <label class="radio-label">
-            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="0" />
+            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="1" />
             Proprietario
           </label>
           <label class="radio-label">
-            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="1" />
+            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="2" />
             Inquilino (se presente)
           </label>
           <label class="radio-label">
-            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="2" />
+            <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="3" />
             Automatico
           </label>
         </div>
@@ -446,7 +446,7 @@ const emptyExpForm = () => ({
   pensionFund: 0, withholdingTax: 0, stampDuty: 0,
   expenseTypeId: 0, paymentStatusId: 1,
   paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: '',
-  chargeabilityTypeId: 0,
+  chargeabilityTypeId: 1,
 })
 
 function autoCalcGross() {
@@ -514,7 +514,7 @@ async function openExpenseModal(e = null) {
     accountId:          e.accountId ?? null,
     millesimalTableId:  e.millesimalTableId ?? null,
     description:        e.description ?? '',
-    chargeabilityTypeId: e.chargeabilityTypeId ?? 0,
+    chargeabilityTypeId: e.chargeabilityTypeId ?? 1,
   } : { ...emptyExpForm(), fiscalYearId: defaultFyId }
 
   if (!store.fiscalYears.length) await store.loadFiscalYears()
@@ -578,9 +578,7 @@ async function saveExpense() {
       registrationDate:   expForm.value.registrationDate,
       taxableAmount:          expForm.value.taxableAmount          || 0,
       taxableAmountVatExempt: expForm.value.taxableAmountVatExempt || 0,
-      grossAmount:            expForm.value.grossAmount            || 0,
       vatAmount:              expForm.value.vatAmount              || 0,
-      netAmount:              expForm.value.grossAmount - (expForm.value.withholdingTax || 0),
       pensionFund:            expForm.value.pensionFund            || 0,
       withholdingTax:         expForm.value.withholdingTax         || 0,
       stampDuty:              expForm.value.stampDuty              || 0,
@@ -593,7 +591,7 @@ async function saveExpense() {
       accountId:          expForm.value.accountId         ?? null,
       millesimalTableId:  expForm.value.millesimalTableId ?? null,
       supplierId:         expForm.value.supplierId        ?? null,
-      chargeabilityTypeId: expForm.value.chargeabilityTypeId ?? 0,
+      chargeabilityTypeId: expForm.value.chargeabilityTypeId ?? 1,
     }
     if (editingExp.value) {
       await expenseApi.update(editingExp.value, payload)

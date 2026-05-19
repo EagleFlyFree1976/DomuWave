@@ -1,3 +1,4 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Memberships;
 using CPQ.Core.Services;
@@ -36,6 +37,7 @@ public class UsersController(
     // ─── GET /api/users/search ────────────────────────────────────────────────
 
     [HttpGet("search")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Users, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Search(
         [FromQuery] string? search,
@@ -60,6 +62,7 @@ public class UsersController(
     // ─── GET /api/users/{id} ──────────────────────────────────────────────────
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Users, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
@@ -75,6 +78,7 @@ public class UsersController(
     // ─── POST /api/users ──────────────────────────────────────────────────────
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Users, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateAuthUserRequest dto, CancellationToken ct)
@@ -117,6 +121,7 @@ public class UsersController(
     // ─── PUT /api/users/{id} ──────────────────────────────────────────────────
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Users, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateAuthUserRequest dto, CancellationToken ct)
@@ -131,6 +136,7 @@ public class UsersController(
     // ─── DELETE /api/users/{id} ───────────────────────────────────────────────
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Users, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -141,6 +147,7 @@ public class UsersController(
     // ─── POST /api/users/{id}/reset-password ──────────────────────────────────
 
     [HttpPost("{id:int}/reset-password")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Users, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetPassword(int id, CancellationToken ct)
     {
@@ -151,6 +158,7 @@ public class UsersController(
     // ─── POST /api/users/{id}/impersonate ─────────────────────────────────────
 
     [HttpPost("{id:int}/impersonate")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Users, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DomuWave.Application.Models.UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

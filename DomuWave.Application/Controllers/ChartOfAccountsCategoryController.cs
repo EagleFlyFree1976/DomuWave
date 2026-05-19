@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.ChartOfAccountsCategory;
 using DomuWave.Services.Dto.ChartOfAccountsCategory;
 using Microsoft.AspNetCore.Mvc;
@@ -19,11 +21,13 @@ public class ChartOfAccountsCategoryController(
 {
     private readonly IMediator _mediator = mediator;
     [HttpGet]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<ChartOfAccountsCategoryReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetChartOfAccountsCategoriesCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct));
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsCategoryReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateChartOfAccountsCategoryDto dto, CancellationToken ct)
     {
@@ -33,6 +37,7 @@ public class ChartOfAccountsCategoryController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ChartOfAccountsCategoryReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateChartOfAccountsCategoryDto dto, CancellationToken ct)
     {
@@ -43,6 +48,7 @@ public class ChartOfAccountsCategoryController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -51,6 +57,7 @@ public class ChartOfAccountsCategoryController(
     }
 
     [HttpPost("import-from-template")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.ChartOfAccountsCategory, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     public async Task<IActionResult> ImportFromTemplate([FromBody] IList<int> templateIds, CancellationToken ct)
     {

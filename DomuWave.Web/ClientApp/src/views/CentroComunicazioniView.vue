@@ -2,11 +2,22 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { usePermissions } from '@/composables/usePermissions'
+import { useAuthStore } from '@/stores/authStore'
+import { useSessionStore } from '@/stores/sessionStore'
 import { boardPostApi, faultApi, privateThreadApi } from '@/services/api'
 import { userApi } from '@/services/userService'
 
-const store = useAppStore()
+const store   = useAppStore()
+const auth    = useAuthStore()
+const session = useSessionStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
+
+const currentUserId = computed(() => auth.currentUser?.id)
+const isAdminOrSuper = computed(() => session.isSuperAdmin || session.isTenantAdmin)
+
+function canDeletePost(post)    { return isAdminOrSuper.value || post.authorUserId == currentUserId.value }
+function canDeleteComment(c)    { return isAdminOrSuper.value || c.authorUserId    == currentUserId.value }
+function canDeleteFault(fault)  { return isAdminOrSuper.value || fault.reporterUserId == currentUserId.value }
 
 // ── Tab attiva ─────────────────────────────────────────────────────────────
 const activeTab = ref('bacheca')
@@ -354,8 +365,8 @@ watch(() => store.selectedCondominioId, () => loadTab(activeTab.value))
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
               <span class="text-muted" style="font-size:0.75rem">{{ post.authorFullName }} · {{ fmtDate(post.creationDate) }}</span>
-              <button class="btn-icon" style="font-size:0.75rem" title="Modifica" @click.stop="openPostModal(post)">✎</button>
-              <button class="btn-icon" style="color:var(--accent-red);font-size:0.75rem" title="Elimina" @click.stop="deletePost(post.id)">✕</button>
+              <button v-if="isAdminOrSuper" class="btn-icon" style="font-size:0.75rem" title="Modifica" @click.stop="openPostModal(post)">✎</button>
+              <button v-if="canDeletePost(post)" class="btn-icon" style="color:var(--accent-red);font-size:0.75rem" title="Elimina" @click.stop="deletePost(post.id)">✕</button>
             </div>
           </div>
 
@@ -373,7 +384,7 @@ watch(() => store.selectedCondominioId, () => loadTab(activeTab.value))
                       <span class="text-muted" style="font-size:0.72rem;margin-left:6px">{{ fmtDate(c.creationDate) }}</span>
                       <p style="margin:4px 0 0;white-space:pre-wrap;font-size:0.85rem">{{ c.body }}</p>
                     </div>
-                    <button class="btn-icon" style="color:var(--accent-red);font-size:0.72rem;flex-shrink:0" @click="deleteComment(post.id, c.id)">✕</button>
+                    <button v-if="canDeleteComment(c)" class="btn-icon" style="color:var(--accent-red);font-size:0.72rem;flex-shrink:0" @click="deleteComment(post.id, c.id)">✕</button>
                   </div>
                 </div>
                 <div v-if="!postComments[post.id].length" class="text-muted" style="font-size:0.8rem;margin-bottom:8px">Nessun commento.</div>
@@ -411,7 +422,7 @@ watch(() => store.selectedCondominioId, () => loadTab(activeTab.value))
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
               <span class="text-muted" style="font-size:0.75rem">{{ fault.reporterFullName }} · {{ fmtDate(fault.creationDate) }}</span>
-              <button class="btn-icon" style="color:var(--accent-red);font-size:0.75rem" title="Elimina" @click.stop="deleteFault(fault.id)">✕</button>
+              <button v-if="canDeleteFault(fault)" class="btn-icon" style="color:var(--accent-red);font-size:0.75rem" title="Elimina" @click.stop="deleteFault(fault.id)">✕</button>
             </div>
           </div>
 
@@ -419,7 +430,7 @@ watch(() => store.selectedCondominioId, () => loadTab(activeTab.value))
             <p style="white-space:pre-wrap;margin:0 0 12px">{{ fault.description }}</p>
 
             <!-- Cambio stato (admin) -->
-            <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+            <div v-if="isAdminOrSuper" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
               <span class="text-muted" style="font-size:0.8rem;line-height:28px">Cambia stato:</span>
               <button v-for="(label, sid) in faultStatusLabels" :key="sid"
                       :class="['btn btn-sm', fault.statusId == sid ? 'btn-primary' : 'btn-ghost']"

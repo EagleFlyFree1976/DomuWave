@@ -10,15 +10,15 @@ CREATE TABLE ChargeabilityTypeLookup (
 );
 
 INSERT INTO ChargeabilityTypeLookup (Id, Name) VALUES
-    (0, 'Proprietario'),
-    (1, 'Inquilino'),
-    (2, 'Automatico');
+    (1, 'Proprietario'),
+    (2, 'Inquilino'),
+    (3, 'Automatico');
 
 -- 2. Aggiunta colonne con FK
-ALTER TABLE ChartOfAccounts ADD ChargeabilityType INT NOT NULL DEFAULT 0;
+ALTER TABLE ChartOfAccounts ADD ChargeabilityType INT NOT NULL DEFAULT 1;
 ALTER TABLE ChartOfAccounts ADD CONSTRAINT FK_ChartOfAccounts_ChargeabilityType
     FOREIGN KEY (ChargeabilityType) REFERENCES ChargeabilityTypeLookup(Id);
 
-ALTER TABLE Expense ADD ChargeabilityType INT NOT NULL DEFAULT 0;
-ALTER TABLE Expense ADD CONSTRAINT FK_Expense_ChargeabilityType
+ALTER TABLE Expense ADD ChargeabilityType INT NOT NULL DEFAULT 1;
+ALTER TABLE Expense ADD CONSTRAINT FK_Expense_ChargeabilityTypeLookup
     FOREIGN KEY (ChargeabilityType) REFERENCES ChargeabilityTypeLookup(Id);

@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.AccountBalance;
 using DomuWave.Services.Dto.Contabilita.AccountBalance;
 using Microsoft.AspNetCore.Mvc;
@@ -20,6 +22,7 @@ public class AccountBalancesController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-fiscal-year/{fiscalYearId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.AccountBalances, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<AccountBalanceReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByFiscalYear(int fiscalYearId, CancellationToken ct)
     {
@@ -29,6 +32,7 @@ public class AccountBalancesController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.AccountBalances, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(AccountBalanceReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> UpdateOpening(
         int id, [FromBody] UpdateAccountBalanceOpeningDto dto, CancellationToken ct)

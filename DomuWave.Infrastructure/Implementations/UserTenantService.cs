@@ -54,18 +54,30 @@ public class UserTenantService : BaseService, IUserTenantService
         var unitOwners = await session.Query<UnitOwner>()
             .Where(x => x.UserId == userId && !x.IsDeleted && x.IsActive)
             .Fetch(x => x.Tenant)
+            .Fetch(x => x.Unit)
             .ToListAsync(ct);
 
-        return unitOwners
-            .Where(o => o.Unit?.Condominium != null && o.Tenant != null)
-            .Select(o => new CondominiumSummaryDto
+        var condominiumIds = unitOwners
+            .Where(o => o.Unit != null)
+            .Select(o => o.Unit.Condominium.Id)
+            .Distinct()
+            .ToList();
+
+        if (!condominiumIds.Any())
+            return new List<CondominiumSummaryDto>();
+
+        var condominiums = await session.Query<Condominium>()
+            .Where(c => condominiumIds.Contains(c.Id) && !c.IsDeleted)
+            .Fetch(c => c.Tenant)
+            .ToListAsync(ct);
+
+        return condominiums
+            .Select(c => new CondominiumSummaryDto
             {
-                CondominiumId   = o.Unit.Condominium.Id,
-                CondominiumName = o.Unit.Condominium.Name ?? string.Empty,
-                TenantId        = o.Tenant.Id,
+                CondominiumId   = c.Id,
+                CondominiumName = c.Name ?? string.Empty,
+                TenantId        = c.Tenant.Id,
             })
-            .GroupBy(x => x.TenantId)
-            .Select(g => g.First())
             .ToList();
     }
 

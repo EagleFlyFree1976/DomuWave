@@ -217,13 +217,13 @@ public class CreateBudgetCommandConsumer
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
-        // 2. Totale spese (NetAmount) per conto nell'esercizio
+        // 2. Totale spese (GrossAmount) per conto nell'esercizio
         var expensesByAccount = await session.Query<Expense>()
             .Where(e => e.FiscalYear.Id  == fiscalYear.Id
                      && e.Condominium.Id == condominium.Id
                      && !e.IsDeleted)
             .GroupBy(e => e.Account.Id)
-            .Select(g => new { AccountId = g.Key, Total = g.Sum(e => e.NetAmount) })
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(e => e.GrossAmount) })
             .ToListAsync(ct)
             .ConfigureAwait(false);
 

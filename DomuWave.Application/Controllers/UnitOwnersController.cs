@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.UnitOwner;
 using DomuWave.Services.Dto.UnitOwner;
 using Microsoft.AspNetCore.Mvc;
@@ -20,26 +22,31 @@ public class UnitOwnersController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UnitOwners, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UnitOwnerReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetUnitOwnersByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("search")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UnitOwners, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UnitOwnerReadDto>), 200)]
     public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new SearchUnitOwnersCommand(CurrentUser.Id, q ?? string.Empty, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-unit/{unitId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UnitOwners, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UnitOwnerReadDto>), 200)]
     public async Task<IActionResult> GetByUnit(int unitId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetUnitOwnersByUnitCommand(CurrentUser.Id, unitId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-user/{userId:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UnitOwners, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UserUnitOwnerDto>), 200)]
     public async Task<IActionResult> GetByUser(long userId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetUnitOwnersByUserCommand(CurrentUser.Id, userId), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UnitOwners, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitOwnerReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -49,6 +56,7 @@ public class UnitOwnersController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.UnitOwners, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitOwnerReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateUnitOwnerDto dto, CancellationToken ct)
     {
@@ -58,6 +66,7 @@ public class UnitOwnersController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.UnitOwners, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitOwnerReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUnitOwnerDto dto, CancellationToken ct)
     {
@@ -68,6 +77,7 @@ public class UnitOwnersController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.UnitOwners, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     [ProducesResponseType(typeof(UnitOwnerReadDto), 200)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)

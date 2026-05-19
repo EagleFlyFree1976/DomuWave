@@ -2,6 +2,7 @@ using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.NotificationAttachment;
 using DomuWave.Services.Dto.NotificationAttachment;
 using Microsoft.AspNetCore.Mvc;
@@ -21,11 +22,13 @@ public class NotificationAttachmentsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-notification/{notificationId:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.NotificationAttachments, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<NotificationAttachmentReadDto>), 200)]
     public async Task<IActionResult> GetByNotification(long notificationId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetNotificationAttachmentsCommand(CurrentUser.Id, notificationId), ct));
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.NotificationAttachments, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(NotificationAttachmentReadDto), 201)]
     public async Task<IActionResult> Add([FromBody] AddAttachmentDto dto, CancellationToken ct)
     {
@@ -35,6 +38,7 @@ public class NotificationAttachmentsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.NotificationAttachments, Modules.DomuWaveModule)]
     public async Task<IActionResult> Remove(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new RemoveNotificationAttachmentCommand(CurrentUser.Id, id), ct);

@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.Staircase;
 using DomuWave.Services.Dto.Staircase;
 using Microsoft.AspNetCore.Mvc;
@@ -20,11 +22,13 @@ public class StaircasesController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Staircases, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<StaircaseReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetStaircasesByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Staircases, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(StaircaseReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -34,6 +38,7 @@ public class StaircasesController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Staircases, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(StaircaseReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateStaircaseDto dto, CancellationToken ct)
     {
@@ -43,6 +48,7 @@ public class StaircasesController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Staircases, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(StaircaseReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateStaircaseDto dto, CancellationToken ct)
     {
@@ -53,6 +59,7 @@ public class StaircasesController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Staircases, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

@@ -1,5 +1,7 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.Expense;
 using DomuWave.Services.Dto.Expense;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +20,7 @@ public class ExpensesController(
 {
     private readonly IMediator _mediator = mediator;
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
     {
@@ -27,6 +30,7 @@ public class ExpensesController(
     }
 
     [HttpGet("{id:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExpenseReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(long id, CancellationToken ct)
@@ -38,6 +42,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/date-range")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetByDateRange(
         int condominiumId, [FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken ct)
@@ -48,6 +53,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-supplier/{supplierId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetBySupplier(int supplierId, CancellationToken ct)
     {
@@ -57,6 +63,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/type/{expenseTypeId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetByType(int condominiumId, int expenseTypeId, CancellationToken ct)
     {
@@ -66,6 +73,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/unpaid")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
     public async Task<IActionResult> GetUnpaid(int condominiumId, CancellationToken ct)
     {
@@ -75,6 +83,7 @@ public class ExpensesController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/total")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetTotal(
         int condominiumId, [FromQuery] DateTime from, [FromQuery] DateTime to, CancellationToken ct)
     {
@@ -84,6 +93,7 @@ public class ExpensesController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ExpenseReadDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create([FromBody] CreateExpenseDto dto, CancellationToken ct)
@@ -95,6 +105,7 @@ public class ExpensesController(
     }
 
     [HttpPut("{id:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ExpenseReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(long id, [FromBody] UpdateExpenseDto dto, CancellationToken ct)
@@ -107,6 +118,7 @@ public class ExpensesController(
     }
 
     [HttpPatch("{id:long}/pay")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> MarkAsPaid(
@@ -119,6 +131,7 @@ public class ExpensesController(
     }
 
     [HttpDelete("{id:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(long id, CancellationToken ct)

@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.RealEstateUnit;
 using DomuWave.Services.Command.UnitOpeningBalance;
 using DomuWave.Services.Dto.RealEstateUnit;
@@ -22,16 +24,19 @@ public class RealEstateUnitsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("by-condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<RealEstateUnitReadDto>), 200)]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/panoramica")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<RealEstateUnitPanoramaDto>), 200)]
     public async Task<IActionResult> GetPanoramica(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetCondominiumPanoramaCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(RealEstateUnitReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -41,21 +46,25 @@ public class RealEstateUnitsController(
     }
 
     [HttpGet("by-condominium/{condominiumId:int}/staircase/{staircase}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<RealEstateUnitReadDto>), 200)]
     public async Task<IActionResult> GetByStaircase(int condominiumId, string staircase, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByStaircaseCommand(CurrentUser.Id, condominiumId, staircase), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/floor/{floor:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<RealEstateUnitReadDto>), 200)]
     public async Task<IActionResult> GetByFloor(int condominiumId, int floor, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByFloorCommand(CurrentUser.Id, condominiumId, floor), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/type/{unitType}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<RealEstateUnitReadDto>), 200)]
     public async Task<IActionResult> GetByType(int condominiumId, string unitType, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetRealEstateUnitsByTypeCommand(CurrentUser.Id, condominiumId, unitType), ct));
 
 [HttpGet("by-condominium/{condominiumId:int}/count")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetCount(int condominiumId, CancellationToken ct)
     {
         var count = await _mediator.GetResponse(new GetRealEstateUnitsCountCommand(CurrentUser.Id, condominiumId), ct);
@@ -63,6 +72,7 @@ public class RealEstateUnitsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(RealEstateUnitReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateRealEstateUnitDto dto, CancellationToken ct)
     {
@@ -72,6 +82,7 @@ public class RealEstateUnitsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(RealEstateUnitReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateRealEstateUnitDto dto, CancellationToken ct)
     {
@@ -82,6 +93,7 @@ public class RealEstateUnitsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteRealEstateUnitCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id), ct);
@@ -92,6 +104,7 @@ public class RealEstateUnitsController(
     // ── Bilancio iniziale ──────────────────────────────────────────────────
 
     [HttpGet("opening-balances/by-fiscal-year/{fiscalYearId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UnitOpeningBalanceReadDto>), 200)]
     public async Task<IActionResult> GetOpeningBalancesByFiscalYear(int fiscalYearId, CancellationToken ct)
     {
@@ -101,6 +114,7 @@ public class RealEstateUnitsController(
     }
 
     [HttpGet("{unitId:int}/opening-balance")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitOpeningBalanceReadDto), 200)]
     public async Task<IActionResult> GetOpeningBalance(int unitId, [FromQuery] int fiscalYearId, CancellationToken ct)
     {
@@ -110,6 +124,7 @@ public class RealEstateUnitsController(
     }
 
     [HttpPut("opening-balances/bulk")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> SetOpeningBalancesBulk([FromBody] SetUnitOpeningBalancesBulkDto dto, CancellationToken ct)
     {
@@ -119,6 +134,7 @@ public class RealEstateUnitsController(
     }
 
     [HttpPut("{unitId:int}/opening-balance")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.RealEstateUnits, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitOpeningBalanceReadDto), 200)]
     public async Task<IActionResult> SetOpeningBalance(int unitId, [FromBody] SetUnitOpeningBalanceDto dto, CancellationToken ct)
     {

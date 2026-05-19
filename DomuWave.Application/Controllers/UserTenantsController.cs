@@ -1,3 +1,4 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
@@ -22,6 +23,7 @@ public class UserTenantsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("user/{userId:long}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UserTenantReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByUserId(long userId, CancellationToken ct)
     {
@@ -31,6 +33,7 @@ public class UserTenantsController(
     }
 
     [HttpGet("tenant/{tenantId:guid}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UserTenantReadDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetByTenantId(Guid tenantId, CancellationToken ct)
     {
@@ -39,6 +42,7 @@ public class UserTenantsController(
     }
 
     [HttpGet("user/{userId:long}/default")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UserTenantReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDefault(long userId, CancellationToken ct)
     {
@@ -48,6 +52,7 @@ public class UserTenantsController(
     }
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UserTenantReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -57,6 +62,7 @@ public class UserTenantsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UserTenantReadDto), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] UserTenantCreateDto dto, CancellationToken ct)
     {
@@ -66,6 +72,7 @@ public class UserTenantsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UserTenantReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> Update(int id, [FromBody] UserTenantUpdateDto dto, CancellationToken ct)
     {
@@ -78,6 +85,7 @@ public class UserTenantsController(
     }
 
     [HttpPatch("user/{userId:long}/set-default")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UserTenantReadDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> SetDefault(long userId, [FromBody] SetDefaultTenantDto dto, CancellationToken ct)
     {
@@ -88,6 +96,7 @@ public class UserTenantsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteUserTenantCommand(CurrentUser.Id, id), ct);
@@ -99,6 +108,7 @@ public class UserTenantsController(
     /// Usato dalla pagina di gestione utenti per SuperAdmin.
     /// </summary>
     [HttpGet("user/{userId:long}/condominiums")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UserCondominiumDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCondominiumsByUser(long userId, CancellationToken ct)
     {

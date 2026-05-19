@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.FileAttachment;
 using DomuWave.Services.Dto.FileAttachment;
 using Microsoft.AspNetCore.Mvc;
@@ -20,12 +22,14 @@ public class FileAttachmentsController(
     private readonly IMediator _mediator = mediator;
     /// <summary>Restituisce la lista dei metadati allegati a una specifica entita' (senza base64)</summary>
     [HttpGet("by-entity/{entityKey}/{entityId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FileAttachments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByEntity(string entityKey, int entityId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(
             new GetFileAttachmentsByEntityCommand(CurrentUser.Id, entityKey, entityId), ct));
 
     /// <summary>Scarica un allegato specifico con il contenuto base64</summary>
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FileAttachments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(new GetFileAttachmentCommand(CurrentUser.Id, id), ct);
@@ -35,6 +39,7 @@ public class FileAttachmentsController(
 
     /// <summary>Carica un nuovo file allegato</summary>
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.FileAttachments, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(FileAttachmentReadDto), 201)]
     public async Task<IActionResult> Upload([FromBody] UploadFileAttachmentDto dto, CancellationToken ct)
     {
@@ -46,6 +51,7 @@ public class FileAttachmentsController(
 
     /// <summary>Elimina un allegato</summary>
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.FileAttachments, Modules.DomuWaveModule)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
         var deleted = await _mediator.GetResponse(new DeleteFileAttachmentCommand(CurrentUser.Id, id), ct);

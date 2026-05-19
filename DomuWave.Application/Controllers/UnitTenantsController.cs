@@ -1,6 +1,8 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.UnitTenant;
 using DomuWave.Services.Dto.UnitTenant;
 using Microsoft.AspNetCore.Mvc;
@@ -20,16 +22,19 @@ public class UnitTenantsController(
     private readonly IMediator _mediator = mediator;
 
     [HttpGet("search")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UnitTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UnitTenantReadDto>), 200)]
     public async Task<IActionResult> Search([FromQuery] string q, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new SearchUnitTenantsCommand(CurrentUser.Id, q ?? string.Empty, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-unit/{unitId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UnitTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UnitTenantReadDto>), 200)]
     public async Task<IActionResult> GetByUnit(int unitId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetUnitTenantsByUnitCommand(CurrentUser.Id, unitId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UnitTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitTenantReadDto), 200)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
@@ -39,6 +44,7 @@ public class UnitTenantsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.UnitTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitTenantReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateUnitTenantDto dto, CancellationToken ct)
     {
@@ -48,6 +54,7 @@ public class UnitTenantsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.UnitTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitTenantReadDto), 200)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUnitTenantDto dto, CancellationToken ct)
     {
@@ -58,6 +65,7 @@ public class UnitTenantsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.UnitTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]
     [ProducesResponseType(typeof(UnitTenantReadDto), 200)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)

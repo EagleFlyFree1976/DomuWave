@@ -15,9 +15,7 @@ public class CreateExpenseDto
     public DateTime RegistrationDate  { get; set; }
     public decimal  TaxableAmount          { get; set; }
     public decimal  TaxableAmountVatExempt { get; set; }
-    public decimal  GrossAmount            { get; set; }
     public decimal  VatAmount              { get; set; }
-    public decimal  NetAmount              { get; set; }
     public decimal  PensionFund            { get; set; }
     public decimal  WithholdingTax         { get; set; }
     public decimal  StampDuty              { get; set; }

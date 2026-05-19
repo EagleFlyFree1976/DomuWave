@@ -77,8 +77,13 @@ export const useAuthStore = defineStore('auth', () => {
 
       // ── Flusso Condomino: salva la lista dei condomini nello store ──────────
       // Profilo 3 = User/Condomino; la lista arriva già dalla risposta di login
-      if (user.value.profile == 3 && Array.isArray(data.availableCondominiums)) {
-        session.setCondominoCondominiums(data.availableCondominiums)
+      if (user.value.profile == 3) {
+        console.log('[Condomino] availableCondominiums:', data.availableCondominiums)
+        if (Array.isArray(data.availableCondominiums) && data.availableCondominiums.length > 0) {
+          session.setCondominoCondominiums(data.availableCondominiums)
+        } else {
+          console.warn('[Condomino] Nessun condominio ricevuto dal login — controlla GetCondominiumsByCondominoUserIdAsync')
+        }
       }
       // ────────────────────────────────────────────────────────────────────────
 

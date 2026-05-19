@@ -1,5 +1,7 @@
+using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using DomuWave.Application.Code;
+using DomuWave.Services.Models;
 using DomuWave.Services.Command.SupplierContract;
 using DomuWave.Services.Dto.SupplierContract;
 using Microsoft.AspNetCore.Mvc;
@@ -17,21 +19,25 @@ public class SupplierContractsController(
 {
     private readonly IMediator _mediator = mediator;
     [HttpGet("condominium/{condominiumId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.SupplierContracts, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<SupplierContractReadDto>))]
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetContractsByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("supplier/{supplierId:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.SupplierContracts, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<SupplierContractReadDto>))]
     public async Task<IActionResult> GetBySupplier(int supplierId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetContractsBySupplierCommand(CurrentUser.Id, supplierId), ct));
 
     [HttpGet("condominium/{condominiumId:int}/active")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.SupplierContracts, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<SupplierContractReadDto>))]
     public async Task<IActionResult> GetActive(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetActiveContractsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
     [HttpGet("condominium/{condominiumId:int}/expiring")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.SupplierContracts, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<SupplierContractReadDto>))]
     public async Task<IActionResult> GetExpiring(
         int condominiumId,
@@ -40,6 +46,7 @@ public class SupplierContractsController(
         => Ok(await _mediator.GetResponse(new GetExpiringContractsByCondominiumCommand(CurrentUser.Id, condominiumId, days), ct));
 
     [HttpGet("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.SupplierContracts, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierContractReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
@@ -50,6 +57,7 @@ public class SupplierContractsController(
     }
 
     [HttpPost]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.SupplierContracts, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(SupplierContractReadDto))]
     public async Task<IActionResult> Create([FromBody] CreateSupplierContractDto dto, CancellationToken ct)
     {
@@ -59,6 +67,7 @@ public class SupplierContractsController(
     }
 
     [HttpPut("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.SupplierContracts, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(SupplierContractReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateSupplierContractDto dto, CancellationToken ct)
@@ -70,6 +79,7 @@ public class SupplierContractsController(
     }
 
     [HttpDelete("{id:int}")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.SupplierContracts, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
