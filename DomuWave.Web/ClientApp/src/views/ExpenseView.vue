@@ -69,7 +69,7 @@
               <td class="text-secondary">{{ e.fiscalYearCode || '—' }}</td>
               <td class="mono text-right">{{ fmt(e.grossAmount) }}</td>
               <td class="mono text-right text-secondary">{{ fmt(e.vatAmount) }}</td>
-              <td class="text-secondary">{{ e.paymentMethod || '—' }}</td>
+              <td class="text-secondary">{{ e.paymentMethodName || '—' }}</td>
               <td><span class="badge" :class="payBadge(e.paymentStatusId)">{{ e.paymentStatusName }}</span></td>
               <td>
                 <div class="row-actions">
@@ -78,6 +78,12 @@
                           @click="markPaid(e.id)">
                     <span v-if="actionInProgress[`pay-${e.id}`]" class="spinner" style="width:12px;height:12px"></span>
                     <span v-else>Paga</span>
+                  </button>
+                  <button v-if="canEdit && e.paymentStatusId === 2" class="btn btn-sm btn-ghost"
+                          :disabled="actionInProgress[`pay-${e.id}`]"
+                          @click="markUnpaid(e.id)">
+                    <span v-if="actionInProgress[`pay-${e.id}`]" class="spinner" style="width:12px;height:12px"></span>
+                    <span v-else>Segna non pagata</span>
                   </button>
                   <button v-if="canEdit" class="btn-icon"
                           :disabled="actionInProgress[`pay-${e.id}`] || actionInProgress[`del-${e.id}`]"
@@ -263,11 +269,9 @@
         </div>
         <div class="form-group">
           <label class="form-label">Metodo pagamento</label>
-          <select class="form-select" v-model="expForm.paymentMethod">
-            <option value="">—</option>
-            <option value="BankTransfer">Bonifico</option>
-            <option value="Cash">Contanti</option>
-            <option value="Check">Assegno</option>
+          <select class="form-select" v-model.number="expForm.paymentMethodId">
+            <option :value="null">—</option>
+            <option v-for="m in paymentMethods" :key="m.id" :value="m.id">{{ m.name }}</option>
           </select>
         </div>
       </div>
@@ -364,6 +368,9 @@ function onSupplierSearch() {
   supplierSearchTimer = setTimeout(applyFilters, 300)
 }
 
+// ─── Metodi di pagamento ──────────────────────────────────────
+const paymentMethods = ref([])
+
 // ─── Spese ────────────────────────────────────────────────────
 const expenses         = ref([])
 const loadingExp       = ref(false)
@@ -445,7 +452,7 @@ const emptyExpForm = () => ({
   grossAmount: 0, vatAmount: 0, netAmount: 0,
   pensionFund: 0, withholdingTax: 0, stampDuty: 0,
   expenseTypeId: 0, paymentStatusId: 1,
-  paymentMethod: '', supplierId: null, accountId: null, millesimalTableId: null, description: '',
+  paymentMethodId: null, supplierId: null, accountId: null, millesimalTableId: null, description: '',
   chargeabilityTypeId: 1,
 })
 
@@ -509,7 +516,7 @@ async function openExpenseModal(e = null) {
     stampDuty:              e.stampDuty              ?? 0,
     expenseTypeId:          e.expenseTypeId          ?? 0,
     paymentStatusId:    e.paymentStatusId ?? 1,
-    paymentMethod:      e.paymentMethod ?? '',
+    paymentMethodId:    e.paymentMethodId ?? null,
     supplierId:         e.supplierId ?? null,
     accountId:          e.accountId ?? null,
     millesimalTableId:  e.millesimalTableId ?? null,
@@ -584,7 +591,7 @@ async function saveExpense() {
       stampDuty:              expForm.value.stampDuty              || 0,
       expenseTypeId:      expForm.value.expenseTypeId,
       paymentStatusId:    expForm.value.paymentStatusId || 1,
-      paymentMethod:      expForm.value.paymentMethod || null,
+      paymentMethodId:    expForm.value.paymentMethodId || null,
       description:        expForm.value.description || null,
       condominiumId:      store.selectedCondominioId,
       fiscalYearId:       expForm.value.fiscalYearId ?? null,
@@ -607,7 +614,13 @@ async function saveExpense() {
 
 async function markPaid(id) {
   actionInProgress.value[`pay-${id}`] = true
-  try { await expenseApi.markAsPaid(id, today, 'BankTransfer'); await loadExpenses() }
+  try { await expenseApi.markAsPaid(id, today, null); await loadExpenses() }
+  catch {} finally { actionInProgress.value[`pay-${id}`] = false }
+}
+
+async function markUnpaid(id) {
+  actionInProgress.value[`pay-${id}`] = true
+  try { await expenseApi.markAsUnpaid(id); await loadExpenses() }
   catch {} finally { actionInProgress.value[`pay-${id}`] = false }
 }
 
@@ -647,6 +660,8 @@ watch(() => store.selectedCondominioId, () => {
 
 onMounted(async () => {
   if (!store.fiscalYears.length) await store.loadFiscalYears()
+  const { data } = await expenseApi.getPaymentMethods()
+  paymentMethods.value = data ?? []
   await loadExpenses()
 })
 onUnmounted(() => window.removeEventListener('app:refresh', loadExpenses))

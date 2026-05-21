@@ -291,7 +291,9 @@ export const expenseApi = {
   getTotal:           (condId, from, to)          => api.get(`/expenses/by-condominium/${condId}/total`, { params: { from, to } }),
   create:             (data)                      => api.post('/expenses', data),
   update:             (id, data)                  => api.put(`/expenses/${id}`, data),
-  markAsPaid:         (id, paymentDate, method)   => api.patch(`/expenses/${id}/pay`, { paymentDate, paymentMethod: method }),
+  markAsPaid:         (id, paymentDate, methodId)  => api.patch(`/expenses/${id}/pay`, { paymentDate, paymentMethodId: methodId }),
+  markAsUnpaid:       (id)                        => api.patch(`/expenses/${id}/unpay`),
+  getPaymentMethods:  ()                           => api.get('/expenses/payment-methods'),
   delete:             (id)                        => api.delete(`/expenses/${id}`),
 }
 

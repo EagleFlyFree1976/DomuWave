@@ -91,11 +91,14 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
         var expenseType       = session.Load<ExpenseType>(dto.ExpenseTypeId);
         var paymentStatus     = session.Load<ExpensePaymentStatus>(dto.PaymentStatusId > 0 ? dto.PaymentStatusId : entity.PaymentStatus?.Id ?? ExpensePaymentStatus.DaPagare);
         var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
+        var paymentMethod     = dto.PaymentMethodId.HasValue
+            ? session.Load<ExpensePaymentMethod>(dto.PaymentMethodId.Value)
+            : null;
 
         var condominiumId = entity.Condominium?.Id ?? 0;
         var fiscalYearId  = entity.FiscalYear?.Id  ?? 0;
 
-        entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType, paymentStatus, chargeabilityType);
+        entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType, paymentStatus, paymentMethod, chargeabilityType);
         var updated = await _expenseService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

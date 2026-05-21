@@ -21,7 +21,7 @@ public class CreateExpenseDto
     public decimal  StampDuty              { get; set; }
     public int      ExpenseTypeId        { get; set; }
     public int      PaymentStatusId      { get; set; } = 1;
-    public string?  PaymentMethod        { get; set; }
+    public int?     PaymentMethodId      { get; set; }
     public string?  Description          { get; set; }
     public int      ChargeabilityTypeId  { get; set; } = ChargeabilityType.Owner;
 }

@@ -44,7 +44,7 @@ public class MarkExpenseAsPaidCommandConsumer : InMemoryConsumerBase<MarkExpense
             .ConfigureAwait(false);
 
         var result = await _expenseService
-            .MarkAsPaidAsync(command.ExpenseId, command.PaymentDate, command.PaymentMethod, currentUser, cancellationToken)
+            .MarkAsPaidAsync(command.ExpenseId, command.PaymentDate, command.PaymentMethodId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
         if (expenseInfo?.FiscalYearId != null)

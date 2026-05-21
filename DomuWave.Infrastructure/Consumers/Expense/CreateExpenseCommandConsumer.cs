@@ -135,8 +135,11 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
         var expenseType       = session.Load<ExpenseType>(dto.ExpenseTypeId);
         var paymentStatus     = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
         var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
+        var paymentMethod     = dto.PaymentMethodId.HasValue
+            ? session.Load<ExpensePaymentMethod>(dto.PaymentMethodId.Value)
+            : null;
 
-        var entity  = dto.ToEntity(condominium, fiscalYear, account, millesimalTable, supplier, expenseType, paymentStatus, chargeabilityType);
+        var entity  = dto.ToEntity(condominium, fiscalYear, account, millesimalTable, supplier, expenseType, paymentStatus, paymentMethod, chargeabilityType);
         var created = await _expenseService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

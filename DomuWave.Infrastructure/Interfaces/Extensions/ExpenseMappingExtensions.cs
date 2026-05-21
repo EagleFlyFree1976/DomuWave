@@ -42,7 +42,8 @@ public static class ExpenseMappingExtensions
             PaymentStatusId         = entity.PaymentStatus?.Id ?? 0,
             PaymentStatusName       = entity.PaymentStatus?.Name ?? string.Empty,
             PaymentDate             = entity.PaymentDate,
-            PaymentMethod           = entity.PaymentMethod,
+            PaymentMethodId         = entity.PaymentMethod?.Id,
+            PaymentMethodName       = entity.PaymentMethod?.Name,
             Description             = entity.Description,
             ChargeabilityTypeId     = entity.ChargeabilityType?.Id ?? ChargeabilityType.Owner,
             ChargeabilityTypeName   = entity.ChargeabilityType?.Name ?? string.Empty,
@@ -55,21 +56,22 @@ public static class ExpenseMappingExtensions
         Condominium condominium, FiscalYear fiscalYear, ChartOfAccounts account,
         MillesimalTable millesimalTable, Supplier? supplier,
         ExpenseType expenseType, ExpensePaymentStatus paymentStatus,
+        ExpensePaymentMethod? paymentMethod,
         ChargeabilityType chargeabilityType)
     {
         var gross = CalcGross(dto.TaxableAmount, dto.TaxableAmountVatExempt, dto.VatAmount, dto.PensionFund, dto.StampDuty, dto.WithholdingTax);
         return new Expense
         {
-            Tenant             = condominium.Tenant,
-            Condominium        = condominium,
-            FiscalYear         = fiscalYear,
-            Account            = account,
-            MillesimalTable    = millesimalTable,
-            Supplier           = supplier,
-            Name               = dto.Name,
-            DocumentNumber     = dto.DocumentNumber,
-            DocumentDate       = dto.DocumentDate,
-            RegistrationDate   = dto.RegistrationDate,
+            Tenant                 = condominium.Tenant,
+            Condominium            = condominium,
+            FiscalYear             = fiscalYear,
+            Account                = account,
+            MillesimalTable        = millesimalTable,
+            Supplier               = supplier,
+            Name                   = dto.Name,
+            DocumentNumber         = dto.DocumentNumber,
+            DocumentDate           = dto.DocumentDate,
+            RegistrationDate       = dto.RegistrationDate,
             TaxableAmount          = dto.TaxableAmount,
             TaxableAmountVatExempt = dto.TaxableAmountVatExempt,
             VatAmount              = dto.VatAmount,
@@ -80,7 +82,7 @@ public static class ExpenseMappingExtensions
             NetAmount              = gross - dto.WithholdingTax,
             ExpenseType            = expenseType,
             PaymentStatus          = paymentStatus,
-            PaymentMethod          = dto.PaymentMethod,
+            PaymentMethod          = paymentMethod,
             Description            = dto.Description,
             ChargeabilityType      = chargeabilityType,
         };
@@ -89,28 +91,29 @@ public static class ExpenseMappingExtensions
     public static void ApplyUpdate(this Expense entity, UpdateExpenseDto dto,
         ChartOfAccounts account, MillesimalTable millesimalTable, Supplier? supplier,
         ExpenseType expenseType, ExpensePaymentStatus paymentStatus,
+        ExpensePaymentMethod? paymentMethod,
         ChargeabilityType chargeabilityType)
     {
         var gross = CalcGross(dto.TaxableAmount, dto.TaxableAmountVatExempt, dto.VatAmount, dto.PensionFund, dto.StampDuty, dto.WithholdingTax);
-        entity.Account            = account;
-        entity.MillesimalTable    = millesimalTable;
-        entity.Supplier           = supplier;
-        entity.Name               = dto.Name;
-        entity.DocumentNumber     = dto.DocumentNumber;
-        entity.DocumentDate       = dto.DocumentDate;
-        entity.RegistrationDate   = dto.RegistrationDate;
-        entity.TaxableAmount          = dto.TaxableAmount;
-        entity.TaxableAmountVatExempt = dto.TaxableAmountVatExempt;
-        entity.VatAmount              = dto.VatAmount;
-        entity.PensionFund            = dto.PensionFund;
-        entity.WithholdingTax         = dto.WithholdingTax;
-        entity.StampDuty              = dto.StampDuty;
-        entity.GrossAmount            = gross;
-        entity.NetAmount              = gross - dto.WithholdingTax;
-        entity.ExpenseType            = expenseType;
-        entity.PaymentStatus      = paymentStatus;
-        entity.PaymentMethod      = dto.PaymentMethod;
-        entity.Description        = dto.Description;
-        entity.ChargeabilityType  = chargeabilityType;
+        entity.Account                 = account;
+        entity.MillesimalTable         = millesimalTable;
+        entity.Supplier                = supplier;
+        entity.Name                    = dto.Name;
+        entity.DocumentNumber          = dto.DocumentNumber;
+        entity.DocumentDate            = dto.DocumentDate;
+        entity.RegistrationDate        = dto.RegistrationDate;
+        entity.TaxableAmount           = dto.TaxableAmount;
+        entity.TaxableAmountVatExempt  = dto.TaxableAmountVatExempt;
+        entity.VatAmount               = dto.VatAmount;
+        entity.PensionFund             = dto.PensionFund;
+        entity.WithholdingTax          = dto.WithholdingTax;
+        entity.StampDuty               = dto.StampDuty;
+        entity.GrossAmount             = gross;
+        entity.NetAmount               = gross - dto.WithholdingTax;
+        entity.ExpenseType             = expenseType;
+        entity.PaymentStatus           = paymentStatus;
+        entity.PaymentMethod           = paymentMethod;
+        entity.Description             = dto.Description;
+        entity.ChargeabilityType       = chargeabilityType;
     }
 }

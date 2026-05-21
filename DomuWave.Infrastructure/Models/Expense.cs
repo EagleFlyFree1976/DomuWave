@@ -26,7 +26,7 @@ namespace DomuWave.Services.Models
         public virtual MillesimalTable MillesimalTable { get; set; }
         public virtual ExpensePaymentStatus PaymentStatus { get; set; }
         public virtual DateTime? PaymentDate { get; set; }
-        public virtual string PaymentMethod { get; set; }
+        public virtual ExpensePaymentMethod PaymentMethod { get; set; }
         public virtual string DocumentPath { get; set; }
         public virtual string Notes { get; set; }
         public virtual ChargeabilityType ChargeabilityType { get; set; }

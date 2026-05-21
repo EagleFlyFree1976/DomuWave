@@ -16,6 +16,7 @@ namespace DomuWave.Services.Interfaces
         Task<IList<Expense>> GetByTypeAsync(int condominiumId, int expenseTypeId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<Expense>> GetUnpaidExpensesAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);
         Task<decimal> GetTotalExpensesAsync(int condominiumId, DateTime startDate, DateTime endDate, IUser currentUser, CancellationToken cancellationToken);
-        Task<bool> MarkAsPaidAsync(long expenseId, DateTime paymentDate, string paymentMethod, IUser currentUser, CancellationToken cancellationToken);
+        Task<bool> MarkAsPaidAsync(long expenseId, DateTime paymentDate, int? paymentMethodId, IUser currentUser, CancellationToken cancellationToken);
+        Task<bool> MarkAsUnpaidAsync(long expenseId, IUser currentUser, CancellationToken cancellationToken);
     }
 }

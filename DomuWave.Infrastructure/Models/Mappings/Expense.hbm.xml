@@ -36,7 +36,7 @@
     <many-to-one name="ExpenseType" class="DomuWave.Services.Models.ExpenseType, DomuWave.Services" column="ExpenseTypeId" not-null="true" lazy="false" fetch="join" />
     <many-to-one name="PaymentStatus" class="DomuWave.Services.Models.ExpensePaymentStatus, DomuWave.Services" column="PaymentStatusId" not-null="true" lazy="false" fetch="join" />
     <property name="PaymentDate" column="PaymentDate" type="DateTime" />
-    <property name="PaymentMethod" column="PaymentMethod" type="String" length="50" />
+    <many-to-one name="PaymentMethod" class="DomuWave.Services.Models.ExpensePaymentMethod, DomuWave.Services" column="PaymentMethodId" lazy="false" fetch="join" />
     <property name="DocumentPath" column="DocumentPath" type="String" length="500" />
     <property name="Notes" column="Notes" type="String" length="1000" insert="false" update="false" />
     <many-to-one name="ChargeabilityType" class="DomuWave.Services.Models.ChargeabilityType, DomuWave.Services" column="ChargeabilityType" not-null="true" lazy="false" fetch="join" />

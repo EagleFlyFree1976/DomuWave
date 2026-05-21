@@ -178,7 +178,7 @@ namespace DomuWave.Services.Implementations
                 .SumAsync(x => x.GrossAmount, cancellationToken);
         }
 
-        public async Task<bool> MarkAsPaidAsync(long expenseId, DateTime paymentDate, string paymentMethod,
+        public async Task<bool> MarkAsPaidAsync(long expenseId, DateTime paymentDate, int? paymentMethodId,
             IUser currentUser,
             CancellationToken cancellationToken)
         {
@@ -189,8 +189,28 @@ namespace DomuWave.Services.Implementations
                 return false;
 
             expense.PaymentDate   = paymentDate;
-            expense.PaymentMethod = paymentMethod;
+            expense.PaymentMethod = paymentMethodId.HasValue
+                ? session.Load<ExpensePaymentMethod>(paymentMethodId.Value)
+                : null;
             expense.PaymentStatus = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.Pagata);
+            expense.Trace(currentUser);
+
+            await session.SaveOrUpdateAsync(expense, cancellationToken);
+            await session.FlushAsync(cancellationToken);
+            return true;
+        }
+
+        public async Task<bool> MarkAsUnpaidAsync(long expenseId, IUser currentUser, CancellationToken cancellationToken)
+        {
+            var expense = await session.Query<Expense>()
+                .FirstOrDefaultAsync(x => x.Id == expenseId && !x.IsDeleted, cancellationToken);
+
+            if (expense == null)
+                return false;
+
+            expense.PaymentDate   = null;
+            expense.PaymentMethod = null;
+            expense.PaymentStatus = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
             expense.Trace(currentUser);
 
             await session.SaveOrUpdateAsync(expense, cancellationToken);

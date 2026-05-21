@@ -30,8 +30,9 @@ public class ExpenseReadDto : TraceEntityDTO<long>
     public string   ExpenseTypeName    { get; set; } = string.Empty;
     public int      PaymentStatusId    { get; set; }
     public string   PaymentStatusName  { get; set; } = string.Empty;
-    public DateTime? PaymentDate       { get; set; }
-    public string?  PaymentMethod      { get; set; }
+    public DateTime? PaymentDate         { get; set; }
+    public int?     PaymentMethodId     { get; set; }
+    public string?  PaymentMethodName   { get; set; }
     public string?  Description        { get; set; }
     public int      ChargeabilityTypeId   { get; set; }
     public string   ChargeabilityTypeName { get; set; } = string.Empty;

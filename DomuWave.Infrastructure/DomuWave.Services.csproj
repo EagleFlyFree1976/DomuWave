@@ -35,6 +35,7 @@
     <None Remove="Models\Mappings\ChargeabilityType.hbm.xml" />
     <None Remove="Models\Mappings\Expense.hbm.xml" />
     <None Remove="Models\Mappings\ExpenseAllocation.hbm.xml" />
+    <None Remove="Models\Mappings\ExpensePaymentMethod.hbm.xml" />
     <None Remove="Models\Mappings\ExpensePaymentStatus.hbm.xml" />
     <None Remove="Models\Mappings\ExpenseType.hbm.xml" />
     <None Remove="Models\Mappings\FiscalYear.hbm.xml" />
@@ -109,6 +110,7 @@
     <EmbeddedResource Include="Models\Mappings\DocumentContent.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Expense.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ExpenseAllocation.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ExpensePaymentMethod.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ExpensePaymentStatus.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\ExpenseType.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\FiscalYear.hbm.xml" />

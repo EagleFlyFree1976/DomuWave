@@ -19,6 +19,11 @@ public class ExpensesController(
     : PrivateControllerBase(logger, configuration)
 {
     private readonly IMediator _mediator = mediator;
+    [HttpGet("payment-methods")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpensePaymentMethodDto>))]
+    public async Task<IActionResult> GetPaymentMethods(CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetExpensePaymentMethodsCommand(CurrentUser.Id), ct));
+
     [HttpGet("by-condominium/{condominiumId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
@@ -125,9 +130,20 @@ public class ExpensesController(
         long id, [FromBody] PayExpenseRequest request, CancellationToken ct)
     {
         var success = await _mediator.GetResponse(
-            new MarkExpenseAsPaidCommand(CurrentUser.Id, id, request.PaymentDate, request.PaymentMethod), ct);
+            new MarkExpenseAsPaidCommand(CurrentUser.Id, id, request.PaymentDate, request.PaymentMethodId), ct);
         if (!success) return NotFound();
         return Ok(new { id, paid = true });
+    }
+
+    [HttpPatch("{id:long}/unpay")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkAsUnpaid(long id, CancellationToken ct)
+    {
+        var success = await _mediator.GetResponse(new MarkExpenseAsUnpaidCommand(CurrentUser.Id, id), ct);
+        if (!success) return NotFound();
+        return Ok(new { id, paid = false });
     }
 
     [HttpDelete("{id:long}")]
@@ -143,4 +159,4 @@ public class ExpensesController(
     }
 }
 
-public record PayExpenseRequest(decimal Amount, DateTime PaymentDate, string PaymentMethod);
+public record PayExpenseRequest(decimal Amount, DateTime PaymentDate, int? PaymentMethodId);

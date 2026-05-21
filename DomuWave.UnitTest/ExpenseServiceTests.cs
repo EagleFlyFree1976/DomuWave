@@ -163,16 +163,16 @@ public class ExpenseServiceTests : TestBase
     {
         // Arrange
         var payDate = DateTime.Today;
-        _serviceMock.Setup(s => s.MarkAsPaidAsync(1L, payDate, "Bonifico", _currentUser, _ct))
+        _serviceMock.Setup(s => s.MarkAsPaidAsync(1L, payDate, ExpensePaymentMethod.BonificoBancarioImm, _currentUser, _ct))
                     .ReturnsAsync(true);
 
         // Act
-        var result = await _serviceMock.Object.MarkAsPaidAsync(1L, payDate, "Bonifico", _currentUser, _ct);
+        var result = await _serviceMock.Object.MarkAsPaidAsync(1L, payDate, ExpensePaymentMethod.BonificoBancarioImm, _currentUser, _ct);
 
         // Assert
         result.Should().BeTrue();
         // Verifica che non ci siano doppi pagamenti: il metodo deve essere chiamato una volta sola
-        _serviceMock.Verify(s => s.MarkAsPaidAsync(1L, payDate, "Bonifico", _currentUser, _ct), Times.Once);
+        _serviceMock.Verify(s => s.MarkAsPaidAsync(1L, payDate, ExpensePaymentMethod.BonificoBancarioImm, _currentUser, _ct), Times.Once);
     }
 
     /// <summary>
@@ -185,11 +185,11 @@ public class ExpenseServiceTests : TestBase
     {
         // Arrange
         _serviceMock.Setup(s => s.MarkAsPaidAsync(999L, It.IsAny<DateTime>(),
-                               It.IsAny<string>(), _currentUser, _ct))
+                               It.IsAny<int?>(), _currentUser, _ct))
                     .ReturnsAsync(false);
 
         // Act
-        var result = await _serviceMock.Object.MarkAsPaidAsync(999L, DateTime.Today, "Contanti", _currentUser, _ct);
+        var result = await _serviceMock.Object.MarkAsPaidAsync(999L, DateTime.Today, ExpensePaymentMethod.Contanti, _currentUser, _ct);
 
         // Assert
         result.Should().BeFalse();
