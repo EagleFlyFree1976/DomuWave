@@ -27,6 +27,15 @@ public class DocumentsController(
     public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
         => Ok(await _mediator.GetResponse(new GetDocumentsByCondominiumCommand(CurrentUser.Id, condominiumId), ct));
 
+    [HttpGet("by-entity")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Documents, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(IList<DocumentReadDto>), 200)]
+    public async Task<IActionResult> GetByEntity(
+        [FromQuery] int    entityId,
+        [FromQuery] string entityFullName,
+        CancellationToken  ct)
+        => Ok(await _mediator.GetResponse(new GetDocumentsByEntityCommand(CurrentUser.Id, entityId, entityFullName), ct));
+
     [HttpGet("{id:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Documents, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(DocumentReadDto), 200)]

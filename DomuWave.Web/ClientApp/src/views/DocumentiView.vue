@@ -46,6 +46,10 @@
             <div v-if="d.tags" class="doc-tags">
               <span v-for="tag in d.tags.split(',').slice(0,3)" :key="tag" class="tag">{{ tag.trim() }}</span>
             </div>
+            <div v-if="d.entityId && d.entityFullName" class="doc-entity">
+              <span class="doc-entity-label">{{ entityLabel(d.entityFullName) }}</span>
+              <button class="doc-entity-link" @click="goToEntity(d)">→ Vai al dettaglio</button>
+            </div>
           </div>
           <div class="doc-actions">
             <span v-if="d.isVisibleToOwners" class="badge badge-blue" style="font-size:0.7rem">👁 Proprietari</span>
@@ -153,12 +157,31 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { documentApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 
-const store = useAppStore()
+const store  = useAppStore()
+const router = useRouter()
 const { canCreate, canEdit, canDelete } = usePermissions()
+
+// ── Entity link ───────────────────────────────────────────────────────────────
+const ENTITY_META = {
+  'DomuWave.Services.Models.Expense':   { label: 'Spesa',    route: (condId) => `/condomini/${condId}/spese` },
+  'DomuWave.Services.Models.WorkQuote': { label: 'Lavoro',   route: (condId) => `/condomini/${condId}/lavori` },
+}
+
+function entityLabel(entityFullName) {
+  return ENTITY_META[entityFullName]?.label ?? entityFullName.split('.').pop()
+}
+
+function goToEntity(doc) {
+  const meta = ENTITY_META[doc.entityFullName]
+  if (!meta) return
+  const condId = doc.condominiumId || store.selectedCondominioId
+  router.push(meta.route(condId))
+}
 
 const documents     = ref([])
 const loading       = ref(false)
@@ -344,6 +367,14 @@ window.addEventListener('app:refresh', loadData)
 .doc-trace-sep { color: var(--border); }
 .tag { font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 99px; background: rgba(255,255,255,0.05); color: var(--text-muted); }
 .doc-actions { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.doc-entity { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; }
+.doc-entity-label { color: var(--text-muted); }
+.doc-entity-link {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--accent); font-size: 0.75rem;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.doc-entity-link:hover { opacity: 0.8; }
 
 /* File drop area */
 .file-drop-area {

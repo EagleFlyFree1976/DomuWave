@@ -51,3 +51,12 @@ public class DeleteDocumentCommand : BaseCommand, IQuery<bool>
     public DeleteDocumentCommand(int currentUserId, int id) : base(currentUserId)
         => Id = id;
 }
+
+public class GetDocumentsByEntityCommand : BaseCommand, IQuery<IList<DocumentReadDto>>
+{
+    public int    EntityId       { get; set; }
+    public string EntityFullName { get; set; } = string.Empty;
+    public GetDocumentsByEntityCommand() { }
+    public GetDocumentsByEntityCommand(int currentUserId, int entityId, string entityFullName) : base(currentUserId)
+    { EntityId = entityId; EntityFullName = entityFullName; }
+}

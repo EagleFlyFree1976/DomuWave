@@ -16,4 +16,6 @@ public class DocumentReadDto : TraceEntityDTO<int>
     public bool    IsArchived         { get; set; }
     public string? Tags               { get; set; }
     public string? Description        { get; set; }
+    public int?    EntityId           { get; set; }
+    public string? EntityFullName     { get; set; }
 }

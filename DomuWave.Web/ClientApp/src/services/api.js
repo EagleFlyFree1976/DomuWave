@@ -415,6 +415,7 @@ export const documentApi = {
   update:             (id, data)      => api.put(`/documents/${id}`, data),
   download:           (id)            => api.get(`/documents/${id}/download`, { responseType: 'blob' }),
   delete:             (id)            => api.delete(`/documents/${id}`),
+  getByEntity:        (entityId, entityFullName) => api.get('/documents/by-entity', { params: { entityId, entityFullName } }),
 }
 
 export const notificationAttachmentApi = {

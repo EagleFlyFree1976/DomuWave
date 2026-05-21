@@ -298,6 +298,29 @@
       </div>
       </template><!-- fine v-if !noFiscalYearAvailable -->
 
+      <!-- ── Documenti allegati ─────────────────────────────────── -->
+      <div v-if="editingExp || savedExpenseId" class="doc-section">
+        <div class="doc-section-header">
+          <span>Documenti allegati</span>
+          <label class="btn btn-sm btn-ghost doc-upload-btn" :class="{ 'btn-disabled': uploadingDoc }">
+            <span v-if="uploadingDoc" class="spinner" style="width:12px;height:12px;margin-right:4px"></span>
+            <span v-else>+ Allega file</span>
+            <input type="file" multiple style="display:none" @change="attachFiles" :disabled="uploadingDoc" />
+          </label>
+        </div>
+        <div v-if="loadingDocs" class="doc-loading"><div class="spinner" style="width:16px;height:16px"></div></div>
+        <div v-else-if="!attachedDocs.length" class="doc-empty">Nessun documento allegato</div>
+        <div v-else class="doc-list">
+          <div v-for="doc in attachedDocs" :key="doc.id" class="doc-item">
+            <span class="doc-icon">{{ fileIcon(doc.mimeType) }}</span>
+            <span class="doc-name" :title="doc.fileName">{{ doc.fileName }}</span>
+            <span class="doc-size text-muted">{{ fmtSize(doc.fileSize) }}</span>
+            <button class="btn-icon doc-dl" title="Scarica" @click="downloadDoc(doc)">↓</button>
+            <button v-if="canDelete" class="btn-icon doc-del" title="Elimina" @click="deleteDoc(doc.id)">✕</button>
+          </div>
+        </div>
+      </div>
+
       <template #footer>
         <button class="btn btn-ghost" @click="showExpenseModal = false">Annulla</button>
         <button class="btn btn-primary" @click="saveExpense"
@@ -313,9 +336,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { expenseApi, chartOfAccountsApi, supplierApi, millesimalTableApi } from '@/services/api'
+import { expenseApi, chartOfAccountsApi, supplierApi, millesimalTableApi, documentApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import BaseModal from '@/components/BaseModal.vue'
+
+const EXPENSE_ENTITY_FULL_NAME = 'DomuWave.Services.Models.Expense'
 
 const store = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
@@ -379,6 +404,99 @@ const editingExp       = ref(null)
 const savingExp        = ref(false)
 const expErrors        = ref({})
 const actionInProgress = ref({})
+
+// ─── Documenti allegati ───────────────────────────────────────
+const attachedDocs   = ref([])
+const loadingDocs    = ref(false)
+const uploadingDoc   = ref(false)
+const savedExpenseId = ref(null)   // id della spesa appena creata (per allegare subito)
+
+async function loadDocs(expenseId) {
+  if (!expenseId) return
+  loadingDocs.value = true
+  try {
+    const { data } = await documentApi.getByEntity(expenseId, EXPENSE_ENTITY_FULL_NAME)
+    attachedDocs.value = data ?? []
+  } catch { attachedDocs.value = [] } finally { loadingDocs.value = false }
+}
+
+async function attachFiles(event) {
+  const files = Array.from(event.target.files)
+  event.target.value = ''
+  if (!files.length) return
+  const expenseId = editingExp.value ?? savedExpenseId.value
+  if (!expenseId) return
+  uploadingDoc.value = true
+  try {
+    for (const file of files) {
+      const fileContent = await toBase64(file)
+      await documentApi.upload({
+        condominiumId:    store.selectedCondominioId,
+        entityId:         expenseId,
+        entityFullName:   EXPENSE_ENTITY_FULL_NAME,
+        title:            file.name,
+        fileName:         file.name,
+        mimeType:         file.type || 'application/octet-stream',
+        fileSize:         file.size,
+        isVisibleToOwners: false,
+        fileContent,
+      })
+    }
+    await loadDocs(expenseId)
+    store.toast(files.length === 1 ? 'Documento allegato' : `${files.length} documenti allegati`, 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { uploadingDoc.value = false }
+}
+
+async function downloadDoc(doc) {
+  try {
+    const response = await documentApi.download(doc.id)
+    const url = URL.createObjectURL(response.data)
+    const a   = Object.assign(document.createElement('a'), { href: url, download: doc.fileName })
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+async function deleteDoc(id) {
+  if (!confirm('Eliminare questo documento?')) return
+  try {
+    await documentApi.delete(id)
+    const expenseId = editingExp.value ?? savedExpenseId.value
+    await loadDocs(expenseId)
+    store.toast('Documento eliminato', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+function toBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload  = () => resolve(reader.result.split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+function fileIcon(mimeType) {
+  const m = (mimeType ?? '').toLowerCase()
+  if (m.includes('pdf'))   return '📄'
+  if (m.includes('image')) return '🖼'
+  if (m.includes('word') || m.includes('msword')) return '📝'
+  if (m.includes('excel') || m.includes('spreadsheet')) return '📊'
+  if (m.includes('zip') || m.includes('compressed')) return '🗜'
+  return '📎'
+}
+function fmtSize(bytes) {
+  if (!bytes) return ''
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
 
 // Filtro lato client: esercizio fiscale + testo (fornitore e descrizione)
 const filteredExpenses = computed(() => {
@@ -494,6 +612,8 @@ async function openExpenseModal(e = null) {
   expErrors.value  = {}
   registrationDateWarning.value = ''
   editingExp.value = e?.id ?? null
+  savedExpenseId.value = null
+  attachedDocs.value   = []
 
   // Auto-seleziona l'esercizio attivo per le nuove spese
   const defaultFyId = selectableFiscalYears.value.find(f => f.isActive)?.id
@@ -546,7 +666,10 @@ async function openExpenseModal(e = null) {
     } catch {}
   }
   // Controlla subito il warning se stiamo modificando una spesa esistente
-  if (e) checkRegistrationDateWarning()
+  if (e) {
+    checkRegistrationDateWarning()
+    await loadDocs(e.id)
+  }
 
   showExpenseModal.value = true
 }
@@ -602,11 +725,17 @@ async function saveExpense() {
     }
     if (editingExp.value) {
       await expenseApi.update(editingExp.value, payload)
+      store.toast('Spesa aggiornata', 'success')
+      showExpenseModal.value = false
+      await loadExpenses()
     } else {
-      await expenseApi.create(payload)
+      const { data } = await expenseApi.create(payload)
+      store.toast('Spesa creata', 'success')
+      savedExpenseId.value = data?.id ?? null
+      editingExp.value     = savedExpenseId.value
+      await loadExpenses()
+      if (savedExpenseId.value) await loadDocs(savedExpenseId.value)
     }
-    showExpenseModal.value = false
-    await loadExpenses()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally { savingExp.value = false }
@@ -706,4 +835,39 @@ window.addEventListener('app:refresh', loadExpenses)
   font-size: .85rem;
   line-height: 1.45;
 }
+
+/* ── Documenti allegati ── */
+.doc-section {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+.doc-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 0.875rem;
+  margin-bottom: 0.6rem;
+}
+.doc-upload-btn { cursor: pointer; }
+.doc-upload-btn.btn-disabled { opacity: 0.6; pointer-events: none; }
+.doc-loading { display: flex; justify-content: center; padding: 0.75rem 0; }
+.doc-empty { font-size: 0.85rem; color: var(--text-muted); padding: 0.5rem 0; }
+.doc-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+.doc-icon { flex-shrink: 0; }
+.doc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-size { flex-shrink: 0; font-size: 0.78rem; color: var(--text-muted); }
+.doc-dl, .doc-del { flex-shrink: 0; font-size: 0.85rem; }
+.doc-del { color: var(--accent-red); }
 </style>

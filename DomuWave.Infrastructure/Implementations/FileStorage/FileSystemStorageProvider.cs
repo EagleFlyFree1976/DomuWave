@@ -14,14 +14,20 @@ public class FileSystemStorageProvider : IFileStorageProvider
 
     public FileSystemStorageProvider(IOptions<DynamicFileSettings> options)
     {
-        _basePath = options.Value.FileSystemBasePath
-            ?? throw new InvalidOperationException("DynamicFileSettings.FileSystemBasePath non configurato.");
+        _basePath = options.Value.FileSystemBasePath ?? string.Empty;
+    }
+
+    private void EnsureConfigured()
+    {
+        if (string.IsNullOrWhiteSpace(_basePath))
+            throw new InvalidOperationException("DynamicFileSettings.FileSystemBasePath non configurato.");
     }
 
     public int StorageTypeId => 1; // FileSystem
 
     public async Task<string?> SaveAsync(int fileId, string base64Data, string fileName, string contentType, CancellationToken ct)
     {
+        EnsureConfigured();
         Directory.CreateDirectory(_basePath);
 
         var safeFileName = $"{fileId}_{Path.GetFileName(fileName)}";
@@ -35,6 +41,7 @@ public class FileSystemStorageProvider : IFileStorageProvider
 
     public async Task<string> ReadAsync(string storageReference, CancellationToken ct)
     {
+        EnsureConfigured();
         var bytes = await File.ReadAllBytesAsync(storageReference, ct).ConfigureAwait(false);
         return Convert.ToBase64String(bytes);
     }

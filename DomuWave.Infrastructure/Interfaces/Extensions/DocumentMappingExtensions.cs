@@ -23,6 +23,8 @@ public static class DocumentMappingExtensions
             IsArchived        = entity.IsArchived,
             Tags              = entity.Tags,
             Description       = entity.Description,
+            EntityId          = entity.EntityId,
+            EntityFullName    = entity.EntityFullName,
         };
         dto.SetTraceInfo(entity);
         return dto;
@@ -47,6 +49,8 @@ public static class DocumentMappingExtensions
             IsArchived        = false,
             Tags              = dto.Tags,
             Description       = dto.Description,
+            EntityId          = dto.EntityId,
+            EntityFullName    = dto.EntityFullName,
         };
     }
 

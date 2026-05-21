@@ -12,5 +12,7 @@ public class UploadDocumentDto
     public bool    IsVisibleToOwners { get; set; }
     public string? Tags              { get; set; }
     public string? Description       { get; set; }
-    public byte[]  FileContent       { get; set; } = Array.Empty<byte>();
+    public int?    EntityId          { get; set; }
+    public string? EntityFullName    { get; set; }
+    public string  FileContent       { get; set; } = string.Empty;
 }

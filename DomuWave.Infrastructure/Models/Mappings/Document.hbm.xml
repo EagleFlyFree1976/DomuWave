@@ -28,7 +28,9 @@
     <property name="DocumentDate" column="DocumentDate" type="DateTime" />
     <property name="IsVisibleToOwners" column="IsVisibleToOwners" type="Boolean" not-null="true" />
     <property name="IsArchived" column="IsArchived" type="Boolean" not-null="true" />
-    <property name="Tags" column="Tags" type="String" length="500" />
+    <property name="Tags"           column="Tags"           type="String" length="500" />
+    <property name="EntityId"       column="EntityId"       type="Int32" />
+    <property name="EntityFullName" column="EntityFullName" type="String" length="500" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />

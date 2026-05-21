@@ -17,6 +17,8 @@ namespace DomuWave.Services.Models
         public virtual bool IsVisibleToOwners { get; set; }
         public virtual bool IsArchived { get; set; }
         public virtual string? Tags { get; set; }
+        public virtual int? EntityId { get; set; }
+        public virtual string? EntityFullName { get; set; }
 
         public virtual DocumentContent?      Content   { get; set; }
         public virtual IList<DocumentAccess> Accesses  { get; set; } = new List<DocumentAccess>();

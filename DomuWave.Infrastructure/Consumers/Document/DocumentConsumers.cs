@@ -155,10 +155,14 @@ public class UploadDocumentCommandConsumer
         var condominium  = await _condominiumService.GetByIdAsync(command.Dto.CondominiumId, currentUser, cancellationToken).ConfigureAwait(false)
                            ?? throw new NotFoundException("Condominio non trovato.");
 
-        if (string.IsNullOrWhiteSpace(command.Dto.Title))
+        if (string.IsNullOrWhiteSpace(command.Dto.Title) && command.Dto.EntityId == null)
             throw new ValidatorException("Il titolo è obbligatorio.");
-        if (command.Dto.FileContent == null || command.Dto.FileContent.Length == 0)
+        if (string.IsNullOrWhiteSpace(command.Dto.Title))
+            command.Dto.Title = command.Dto.FileName;
+        if (string.IsNullOrWhiteSpace(command.Dto.FileContent))
             throw new ValidatorException("Il file è obbligatorio.");
+
+        var fileBytes = Convert.FromBase64String(command.Dto.FileContent);
 
         var entity = command.Dto.ToEntity(condominium, condominium.Tenant);
         entity.Trace(currentUser);
@@ -168,7 +172,7 @@ public class UploadDocumentCommandConsumer
         {
             Tenant      = condominium.Tenant,
             Document    = entity,
-            FileContent = DocumentCompression.Compress(command.Dto.FileContent),
+            FileContent = DocumentCompression.Compress(fileBytes),
         };
         contentEntity.Trace(currentUser);
         await session.SaveAsync(contentEntity, cancellationToken).ConfigureAwait(false);
@@ -207,6 +211,36 @@ public class UpdateDocumentCommandConsumer
         await session.UpdateAsync(entity, cancellationToken).ConfigureAwait(false);
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
         return entity.ToReadDto();
+    }
+}
+
+// ── GET BY ENTITY ─────────────────────────────────────────────────────────────
+
+public class GetDocumentsByEntityCommandConsumer
+    : InMemoryConsumerBase<GetDocumentsByEntityCommand, IList<DocumentReadDto>>
+{
+    private readonly IUserService _userService;
+
+    public GetDocumentsByEntityCommandConsumer(
+        ISessionFactoryProvider sessionFactoryProvider,
+        IUserService            userService) : base(sessionFactoryProvider)
+        => _userService = userService;
+
+    protected override async Task<IList<DocumentReadDto>> Consume(
+        GetDocumentsByEntityCommand command,
+        IMediationContext            mediationContext,
+        CancellationToken           cancellationToken)
+    {
+        await _userService.GetByIdAsync(command.CurrentUserId, cancellationToken).ConfigureAwait(false);
+
+        var list = await session.Query<DomuWave.Services.Models.Document>()
+            .Where(d => d.EntityId == command.EntityId
+                     && d.EntityFullName == command.EntityFullName
+                     && !d.IsDeleted)
+            .OrderByDescending(d => d.CreationDate)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
+        return list.Select(d => d.ToReadDto()).ToList();
     }
 }
 
