@@ -275,10 +275,6 @@
           </select>
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Note</label>
-        <textarea class="form-textarea" v-model="expForm.description" rows="2"></textarea>
-      </div>
       <div class="form-group" style="margin-top:0.5rem">
         <label class="form-label">A carico di</label>
         <div class="radio-group">
@@ -295,6 +291,10 @@
             Automatico
           </label>
         </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Note</label>
+        <textarea class="form-textarea" v-model="expForm.description" rows="2"></textarea>
       </div>
       </template><!-- fine v-if !noFiscalYearAvailable -->
 
