@@ -284,7 +284,7 @@ export const budgetItemApi = {
 export const expenseApi = {
   getAll:             ()                          => api.get('/expenses'),
   getById:            (id)                        => api.get(`/expenses/${id}`),
-  getByCondominium:   (condId)                    => api.get(`/expenses/by-condominium/${condId}`),
+  getByCondominium:   (condId, params = {})        => api.get(`/expenses/by-condominium/${condId}`, { params }),
   getByDateRange:     (condId, from, to)          => api.get(`/expenses/by-condominium/${condId}/date-range`, { params: { from, to } }),
   getByType:          (condId, typeId)            => api.get(`/expenses/by-condominium/${condId}/type/${typeId}`),
   getUnpaid:          (condId)                    => api.get(`/expenses/by-condominium/${condId}/unpaid`),

@@ -4,6 +4,7 @@ using DomuWave.Application.Code;
 using DomuWave.Services.Models;
 using DomuWave.Services.Command.Expense;
 using DomuWave.Services.Dto.Expense;
+using DomuWave.Services.Helper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -26,11 +27,35 @@ public class ExpensesController(
 
     [HttpGet("by-condominium/{condominiumId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Expenses, Modules.DomuWaveModule)]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<ExpenseReadDto>))]
-    public async Task<IActionResult> GetByCondominium(int condominiumId, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResult<ExpenseReadDto>))]
+    public async Task<IActionResult> GetByCondominium(
+        int               condominiumId,
+        [FromQuery] int   page            = 1,
+        [FromQuery] int   pageSize        = 20,
+        [FromQuery] string sortField      = "documentdate",
+        [FromQuery] bool  sortAsc         = false,
+        [FromQuery] int?  expenseTypeId   = null,
+        [FromQuery] int?  paymentStatusId = null,
+        [FromQuery] int?  supplierId      = null,
+        [FromQuery] string? dateFrom      = null,
+        [FromQuery] string? dateTo        = null,
+        [FromQuery] string? search        = null,
+        CancellationToken ct = default)
     {
         var result = await _mediator.GetResponse(
-            new GetExpensesByCondominiumCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault()), ct);
+            new GetPagedExpensesCommand(CurrentUser.Id, condominiumId, TenantId.GetValueOrDefault())
+            {
+                PageNumber      = page,
+                PageSize        = pageSize,
+                SortField       = sortField,
+                Asc             = sortAsc,
+                ExpenseTypeId   = expenseTypeId,
+                PaymentStatusId = paymentStatusId,
+                SupplierId      = supplierId,
+                DateFrom        = dateFrom  != null ? DateTime.Parse(dateFrom)  : null,
+                DateTo          = dateTo    != null ? DateTime.Parse(dateTo)    : null,
+                Search          = search,
+            }, ct);
         return Ok(result);
     }
 

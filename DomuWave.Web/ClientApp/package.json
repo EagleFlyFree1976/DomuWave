@@ -21,13 +21,16 @@
         "@vuelidate/validators": "^2.0.4",
         "animate.css": "^4.1.1",
         "axios": "^1.13.5",
+        "jspdf": "^4.2.1",
+        "jspdf-autotable": "^5.0.8",
         "pinia": "^3.0.1",
         "primeicons": "^7.0.0",
         "primevue": "^4.3.6",
         "toastr": "^2.1.4",
         "vue": "^3.5.13",
         "vue-router": "^4.5.0",
-        "vue-toastification": "^2.0.0-rc.5"
+        "vue-toastification": "^2.0.0-rc.5",
+        "xlsx": "^0.18.5"
     },
     "devDependencies": {
         "@eslint/js": "^9.22.0",

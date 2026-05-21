@@ -4,13 +4,21 @@
       <button class="btn btn-ghost btn-sm" @click="router.back()">← Torna al budget</button>
       <h1>Dettaglio consuntivo</h1>
       <span v-if="detail" class="text-secondary">{{ detail.fiscalYear }}</span>
-      <button v-if="detail" class="btn btn-sm btn-ghost" style="margin-left:auto"
-              :disabled="regenerating"
-              @click="regenerate"
-              title="Rigenera le ripartizioni millesimali per tutte le spese">
-        <span v-if="regenerating" class="spinner" style="width:12px;height:12px"></span>
-        Rigenera ripartizioni
-      </button>
+      <div v-if="detail" style="display:flex;gap:0.5rem;margin-left:auto;align-items:center">
+        <button class="btn-icon" @click="doExportExcel" title="Esporta in Excel">
+          <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.04em;color:#22c55e">XLS</span>
+        </button>
+        <button class="btn-icon" @click="doExportPdf" title="Esporta in PDF">
+          <span style="font-size:0.62rem;font-weight:700;letter-spacing:0.04em;color:var(--accent-red)">PDF</span>
+        </button>
+        <button class="btn btn-sm btn-ghost"
+                :disabled="regenerating"
+                @click="regenerate"
+                title="Rigenera le ripartizioni millesimali per tutte le spese">
+          <span v-if="regenerating" class="spinner" style="width:12px;height:12px"></span>
+          Rigenera ripartizioni
+        </button>
+      </div>
     </div>
 
     <div v-if="loading" class="loading-state"><div class="spinner"></div></div>
@@ -154,6 +162,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { budgetApi } from '@/services/api'
+import { exportConsuntivoExcel, exportConsuntivoPdf } from '@/composables/useConsuntivoExport'
 
 const route  = useRoute()
 const router = useRouter()
@@ -219,6 +228,19 @@ async function regenerate() {
   } finally {
     regenerating.value = false
   }
+}
+
+function exportFilename() {
+  return `consuntivo_${detail.value?.fiscalYear ?? budgetId}`.replace(/\s+/g, '_')
+}
+
+function doExportExcel() {
+  exportConsuntivoExcel(detail.value, exportFilename())
+}
+
+function doExportPdf() {
+  const title = `Dettaglio Consuntivo — ${detail.value?.fiscalYear ?? ''}`
+  exportConsuntivoPdf(detail.value, title, exportFilename())
 }
 
 onMounted(load)

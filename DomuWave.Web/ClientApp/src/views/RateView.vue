@@ -1421,7 +1421,7 @@ watch(() => [store.selectedFiscalYearId, instFilter.value, route.query.budgetId]
   if (viewMode.value === 'by-unit') await loadByUnit()
 })
 onMounted(async () => {
-  if (!store.fiscalYears.length) await store.loadFiscalYears()
+  await store.loadFiscalYears()
   await Promise.all([loadInstallments(), loadBillingGroups()])
 })
 onUnmounted(() => window.removeEventListener('app:refresh', loadInstallments))

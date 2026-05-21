@@ -1046,7 +1046,7 @@ watch(() => store.selectedCondominioId, async () => {
 watch(() => store.selectedFiscalYearId, loadBudgets)
 
 onMounted(async () => {
-  if (!store.fiscalYears.length) await store.loadFiscalYears()
+  await store.loadFiscalYears()
   await loadBudgets()
   // Ripristina la modale voci se l'URL contiene ?voci=<id>
   const vociId = Number(route.query.voci)

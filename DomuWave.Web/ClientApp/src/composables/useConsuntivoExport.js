@@ -1,0 +1,262 @@
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
+// ── helpers ──────────────────────────────────────────────────────────────────
+const fmt = (v) =>
+  new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v ?? 0)
+
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—')
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const a   = Object.assign(document.createElement('a'), { href: url, download: filename })
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
+// ── Excel ─────────────────────────────────────────────────────────────────────
+export function exportConsuntivoExcel(detail, filename = 'consuntivo') {
+  const wb = XLSX.utils.book_new()
+
+  // ── Foglio 1: Per conto ────────────────────────────────────────────────────
+  const rowsAcc = []
+  for (const acc of detail.accounts) {
+    rowsAcc.push({
+      Conto:       `${acc.accountCode} ${acc.accountName}`,
+      Data:        '',
+      Spesa:       '',
+      Fornitore:   '',
+      Unità:       '',
+      Millesimi:   '',
+      'Importo (€)': acc.totalAmount,
+      _bold: true,
+    })
+    for (const exp of acc.expenses) {
+      if (exp.allocations?.length) {
+        for (const alloc of exp.allocations) {
+          rowsAcc.push({
+            Conto:         '',
+            Data:          fmtDate(exp.documentDate),
+            Spesa:         exp.name,
+            Fornitore:     exp.supplierName ?? '',
+            Unità:         alloc.unitName,
+            Millesimi:     alloc.millesimal,
+            'Importo (€)': alloc.allocatedAmount,
+          })
+        }
+      } else {
+        rowsAcc.push({
+          Conto:         '',
+          Data:          fmtDate(exp.documentDate),
+          Spesa:         exp.name,
+          Fornitore:     exp.supplierName ?? '',
+          Unità:         '—',
+          Millesimi:     '',
+          'Importo (€)': exp.grossAmount,
+        })
+      }
+    }
+  }
+
+  const wsAcc = XLSX.utils.json_to_sheet(
+    rowsAcc.map(({ _bold, ...r }) => r)
+  )
+  wsAcc['!cols'] = [
+    { wch: 35 }, { wch: 12 }, { wch: 40 }, { wch: 25 },
+    { wch: 20 }, { wch: 12 }, { wch: 14 },
+  ]
+  XLSX.utils.book_append_sheet(wb, wsAcc, 'Per conto')
+
+  // ── Foglio 2: Per unità (pivot) ────────────────────────────────────────────
+  if (detail.units?.length) {
+    const accounts = detail.accounts.map(a => ({
+      accountId:   a.accountId,
+      accountCode: a.accountCode,
+      accountName: a.accountName,
+    }))
+
+    const header = [
+      'Unità',
+      ...accounts.map(a => `${a.accountCode} ${a.accountName}`),
+      'Spese ripartite',
+      'Dovuto (rate)',
+      'Pagato',
+      'Saldo',
+    ]
+
+    const rows = detail.units.map(u => {
+      const cells = [u.unitName]
+      for (const acc of accounts) {
+        const entry = u.entries.find(e => e.accountId === acc.accountId)
+        cells.push(entry?.allocatedAmount ?? 0)
+      }
+      cells.push(u.total ?? 0)
+      cells.push(u.amountDue ?? 0)
+      cells.push(u.amountPaid ?? 0)
+      cells.push(u.balance ?? 0)
+      return cells
+    })
+
+    // Riga totale
+    const totals = ['Totale']
+    for (const acc of accounts) {
+      totals.push(detail.accounts.find(a => a.accountId === acc.accountId)?.totalAmount ?? 0)
+    }
+    totals.push(detail.units.reduce((s, u) => s + (u.total ?? 0), 0))
+    totals.push(detail.units.reduce((s, u) => s + (u.amountDue ?? 0), 0))
+    totals.push(detail.units.reduce((s, u) => s + (u.amountPaid ?? 0), 0))
+    totals.push(detail.units.reduce((s, u) => s + (u.balance ?? 0), 0))
+
+    const wsUnits = XLSX.utils.aoa_to_sheet([header, ...rows, totals])
+    wsUnits['!cols'] = [
+      { wch: 25 },
+      ...accounts.map(() => ({ wch: 14 })),
+      { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 12 },
+    ]
+    XLSX.utils.book_append_sheet(wb, wsUnits, 'Per unità')
+  }
+
+  const buf  = XLSX.write(wb, { type: 'array', bookType: 'xlsx' })
+  const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+  triggerDownload(blob, `${filename}.xlsx`)
+}
+
+// ── PDF ───────────────────────────────────────────────────────────────────────
+export function exportConsuntivoPdf(detail, title = 'Dettaglio Consuntivo', filename = 'consuntivo') {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+
+  // ── Intestazione ──────────────────────────────────────────────────────────
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.text(title, 14, 15)
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(120)
+  doc.text(`Generato il ${new Date().toLocaleDateString('it-IT')}`, 14, 21)
+  doc.setTextColor(0)
+
+  let y = 28
+
+  // ── Sezione Per unità (pivot) — PRIMA pagina ──────────────────────────────
+  if (detail.units?.length && detail.hasAllocations) {
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Suddivisione per unità', 14, y)
+    y += 4
+
+    const accounts = detail.accounts.map(a => ({
+      accountId:   a.accountId,
+      accountCode: a.accountCode,
+      accountName: a.accountName,
+    }))
+
+    const head = [
+      'Unità',
+      ...accounts.map(a => `${a.accountCode}\n${a.accountName}`),
+      'Spese ripartite', 'Dovuto', 'Pagato', 'Saldo',
+    ]
+
+    const body = detail.units.map(u => {
+      const cells = [u.unitName]
+      for (const acc of accounts) {
+        const entry = u.entries.find(e => e.accountId === acc.accountId)
+        cells.push(fmt(entry?.allocatedAmount ?? 0))
+      }
+      cells.push(fmt(u.total ?? 0))
+      cells.push(fmt(u.amountDue ?? 0))
+      cells.push(fmt(u.amountPaid ?? 0))
+      cells.push(fmt(u.balance ?? 0))
+      return cells
+    })
+
+    const footTotals = [{ content: 'TOTALE', styles: { fontStyle: 'bold' } }]
+    for (const acc of accounts) {
+      footTotals.push({ content: fmt(detail.accounts.find(a => a.accountId === acc.accountId)?.totalAmount ?? 0), styles: { halign: 'right', fontStyle: 'bold' } })
+    }
+    footTotals.push({ content: fmt(detail.units.reduce((s, u) => s + (u.total ?? 0), 0)),     styles: { halign: 'right', fontStyle: 'bold' } })
+    footTotals.push({ content: fmt(detail.units.reduce((s, u) => s + (u.amountDue ?? 0), 0)), styles: { halign: 'right', fontStyle: 'bold' } })
+    footTotals.push({ content: fmt(detail.units.reduce((s, u) => s + (u.amountPaid ?? 0), 0)),styles: { halign: 'right', fontStyle: 'bold' } })
+    footTotals.push({ content: fmt(detail.units.reduce((s, u) => s + (u.balance ?? 0), 0)),   styles: { halign: 'right', fontStyle: 'bold' } })
+
+    const numericCols = {}
+    for (let i = 1; i < head.length; i++) numericCols[i] = { halign: 'right' }
+
+    autoTable(doc, {
+      startY: y,
+      head: [head],
+      body,
+      foot: [footTotals],
+      styles:      { fontSize: 7.5, cellPadding: 1.5 },
+      headStyles:  { fillColor: [80, 80, 160], textColor: 255, fontSize: 7 },
+      footStyles:  { fillColor: [50, 50, 120], textColor: 255, fontSize: 8 },
+      columnStyles: numericCols,
+      margin: { left: 14, right: 14 },
+      showFoot: 'lastPage',
+    })
+  }
+
+  // ── Sezione Per conto — pagina successiva ─────────────────────────────────
+  doc.addPage()
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Dettaglio per conto', 14, 15)
+  y = 20
+
+  for (const acc of detail.accounts) {
+    const accRows = []
+    for (const exp of acc.expenses) {
+      if (exp.allocations?.length) {
+        for (const alloc of exp.allocations) {
+          accRows.push([
+            fmtDate(exp.documentDate),
+            exp.name,
+            exp.supplierName ?? '—',
+            alloc.unitName,
+            alloc.millesimal.toFixed(3),
+            fmt(alloc.allocatedAmount),
+          ])
+        }
+      } else {
+        accRows.push([
+          fmtDate(exp.documentDate),
+          exp.name,
+          exp.supplierName ?? '—',
+          '—',
+          '—',
+          fmt(exp.grossAmount),
+        ])
+      }
+    }
+
+    autoTable(doc, {
+      startY: y,
+      head: [[
+        { content: `${acc.accountCode}  ${acc.accountName}`, colSpan: 5, styles: { fontStyle: 'bold', fillColor: [50, 50, 80] } },
+        { content: fmt(acc.totalAmount), styles: { fontStyle: 'bold', fillColor: [50, 50, 80], halign: 'right' } },
+      ], [
+        'Data', 'Spesa', 'Fornitore', 'Unità', 'Millesimi', 'Importo (€)',
+      ]],
+      body: accRows,
+      foot: [[
+        { content: 'Totale', colSpan: 5, styles: { fontStyle: 'bold' } },
+        { content: fmt(acc.totalAmount), styles: { fontStyle: 'bold', halign: 'right' } },
+      ]],
+      styles:      { fontSize: 8, cellPadding: 2 },
+      headStyles:  { fillColor: [80, 80, 160], textColor: 255 },
+      footStyles:  { fillColor: [50, 50, 120], textColor: 255 },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        4: { halign: 'right', cellWidth: 20 },
+        5: { halign: 'right', cellWidth: 28 },
+      },
+      margin: { left: 14, right: 14 },
+      showFoot: 'lastPage',
+    })
+    y = doc.lastAutoTable.finalY + 6
+  }
+
+  doc.save(`${filename}.pdf`)
+}

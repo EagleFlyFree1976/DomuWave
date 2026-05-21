@@ -9,22 +9,18 @@
 
     <!-- ── Toolbar filtri ──────────────────────────────── -->
     <div class="tab-toolbar">
-      <!-- Esercizio fiscale -->
-      <select class="form-select" v-model.number="selectedFiscalYearId" style="min-width:180px"
-              :disabled="!fiscalYears.length">
+      <input class="form-input" v-model="search" placeholder="Cerca descrizione, n° doc…"
+             style="min-width:200px" @input="onSearchInput" />
+
+      <select class="form-select" v-model.number="selectedFiscalYearId" style="min-width:160px">
         <option :value="null">Tutti gli esercizi</option>
         <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">
           {{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}
         </option>
       </select>
 
-      <!-- Ricerca fornitore -->
-      <input class="form-input" v-model="supplierSearch" placeholder="Cerca fornitore…"
-             style="min-width:180px" @input="onSupplierSearch" />
-
-      <!-- Tipo spesa -->
-      <select class="form-select" v-model.number="expTypeFilter" style="width:160px" @change="loadExpenses">
-        <option :value="0">Tutti i tipi</option>
+      <select class="form-select" v-model.number="expTypeFilter" style="width:150px" @change="resetAndLoad">
+        <option :value="null">Tutti i tipi</option>
         <option :value="1">Manutenzione</option>
         <option :value="2">Pulizie</option>
         <option :value="3">Sicurezza</option>
@@ -33,28 +29,35 @@
         <option :value="6">Altro</option>
       </select>
 
-      <!-- Stato pagamento -->
-      <select class="form-select" v-model="expFilter" style="width:140px" @change="loadExpenses">
-        <option value="">Tutte</option>
-        <option value="unpaid">Non pagate</option>
+      <select class="form-select" v-model.number="paymentStatusFilter" style="width:140px" @change="resetAndLoad">
+        <option :value="null">Tutti gli stati</option>
+        <option :value="1">Da pagare</option>
+        <option :value="2">Pagata</option>
       </select>
     </div>
 
     <!-- ── Tabella ──────────────────────────────────────── -->
     <div class="card">
       <div v-if="loadingExp" class="loading-state"><div class="spinner"></div></div>
-      <div v-else-if="!filteredExpenses.length" class="empty-state">
+      <div v-else-if="!expenses.length" class="empty-state">
         <div class="empty-icon">◎</div><div>Nessuna spesa trovata</div>
       </div>
       <div v-else class="table-wrap">
+        <AppPaginator v-model="currentPage" v-model:pageSize="pageSize" :total-count="totalCount" />
         <table>
           <thead>
             <tr>
-              <th>Data</th>
+              <th class="sortable" @click="setSort('documentdate')">
+                Data <span class="sort-icon">{{ sortIcon('documentdate') }}</span>
+              </th>
               <th>Descrizione</th>
-              <th>Fornitore</th>
+              <th class="sortable" @click="setSort('suppliername')">
+                Fornitore <span class="sort-icon">{{ sortIcon('suppliername') }}</span>
+              </th>
               <th>Esercizio</th>
-              <th class="text-right">Importo</th>
+              <th class="text-right sortable" @click="setSort('grossamount')">
+                Importo <span class="sort-icon">{{ sortIcon('grossamount') }}</span>
+              </th>
               <th class="text-right">IVA</th>
               <th>Pagamento</th>
               <th>Stato</th>
@@ -62,7 +65,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="e in filteredExpenses" :key="e.id">
+            <tr v-for="e in expenses" :key="e.id">
               <td class="mono text-secondary">{{ fmtDate(e.documentDate) }}</td>
               <td>{{ e.name }}</td>
               <td>{{ e.supplierName || '—' }}</td>
@@ -99,6 +102,7 @@
             </tr>
           </tbody>
         </table>
+        <AppPaginator v-model="currentPage" v-model:pageSize="pageSize" :total-count="totalCount" />
       </div>
     </div>
 
@@ -130,7 +134,7 @@
       <div class="form-group form-group--full" :class="{ 'has-error': expErrors.fiscalYearId }">
         <label class="form-label">Esercizio fiscale *</label>
         <select class="form-select" v-model.number="expForm.fiscalYearId"
-                @change="clearExpError('fiscalYearId'); checkRegistrationDateWarning()">
+                @change="clearExpError('fiscalYearId')">
           <option :value="null" disabled>Seleziona esercizio…</option>
           <option v-for="fy in selectableFiscalYears" :key="fy.id" :value="fy.id">
             {{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}
@@ -139,11 +143,6 @@
           </option>
         </select>
         <span v-if="expErrors.fiscalYearId" class="field-error">{{ expErrors.fiscalYearId }}</span>
-      </div>
-
-      <!-- ── Warning data fuori periodo (solo Closing) ─────────── -->
-      <div v-if="registrationDateWarning" class="warning-banner">
-        ⚠ {{ registrationDateWarning }}
       </div>
 
       <div class="form-grid">
@@ -335,14 +334,18 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { expenseApi, chartOfAccountsApi, supplierApi, millesimalTableApi, documentApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import BaseModal from '@/components/BaseModal.vue'
+import AppPaginator from '@/components/AppPaginator.vue'
 
 const EXPENSE_ENTITY_FULL_NAME = 'DomuWave.Services.Models.Expense'
 
-const store = useAppStore()
+const store  = useAppStore()
+const route  = useRoute()
+const router = useRouter()
 const { canCreate, canEdit, canDelete } = usePermissions()
 
 // ─── Fiscal Years ─────────────────────────────────────────────
@@ -357,40 +360,67 @@ const selectableFiscalYears = computed(() =>
 )
 const noFiscalYearAvailable = computed(() => selectableFiscalYears.value.length === 0)
 
-// Warning non bloccante: data registrazione fuori dal periodo, solo se esercizio in Closing
-const registrationDateWarning = ref('')
-
-function checkRegistrationDateWarning() {
-  registrationDateWarning.value = ''
-  const fyId = expForm.value.fiscalYearId
-  const regDate = expForm.value.registrationDate
-  if (!fyId || !regDate) return
-
-  const fy = fiscalYears.value.find(f => f.id === fyId)
-  if (!fy || fy.statusId !== FY_CLOSING) return
-
-  const parseLocal = s => { const [y,m,d] = s.slice(0,10).split('-').map(Number); return new Date(y, m-1, d) }
-  const reg   = parseLocal(regDate)
-  const start = parseLocal(fy.startDate)
-  const end   = parseLocal(fy.endDate)
-  if (reg < start || reg > end) {
-    const fmt = d => parseLocal(d).toLocaleDateString('it-IT')
-    registrationDateWarning.value =
-      `La data di registrazione (${fmt(regDate)}) è fuori dal periodo dell'esercizio ` +
-      `(${fmt(fy.startDate)} – ${fmt(fy.endDate)}). Il movimento verrà registrato ugualmente ` +
-      `perché l'esercizio è in fase di chiusura.`
-  }
+// ─── Filtri e paginazione ─────────────────────────────────────
+// Inizializzati dai query param per supportare link condivisibili
+function qInt(key, fallback = null) {
+  const v = route.query[key]
+  return v != null && v !== '' ? parseInt(v, 10) : fallback
+}
+function qStr(key, fallback = '') {
+  return route.query[key] ?? fallback
 }
 
-// ─── Filtri ───────────────────────────────────────────────────
-const supplierSearch = ref('')
-const expTypeFilter  = ref(0)
-const expFilter      = ref('')
+const pageSize            = ref(qInt('pageSize', 20))
+const currentPage         = ref(qInt('page',     1))
+const totalCount          = ref(0)
+const search              = ref(qStr('search'))
+const expTypeFilter       = ref(qInt('type'))
+const paymentStatusFilter = ref(qInt('status'))
+const sortField           = ref(qStr('sortField', 'documentdate'))
+const sortAsc             = ref(route.query.sortAsc === 'true')
 
-let supplierSearchTimer = null
-function onSupplierSearch() {
-  clearTimeout(supplierSearchTimer)
-  supplierSearchTimer = setTimeout(applyFilters, 300)
+// Sovrascrive selectedFiscalYearId se presente in query
+if (qInt('fy')) selectedFiscalYearId.value = qInt('fy')
+
+// Mantiene la URL allineata allo stato — senza aggiungere entry nello history
+function syncUrl() {
+  const q = {}
+  if (currentPage.value  > 1)                 q.page      = currentPage.value
+  if (pageSize.value     !== 20)               q.pageSize  = pageSize.value
+  if (search.value)                            q.search    = search.value
+  if (expTypeFilter.value)                     q.type      = expTypeFilter.value
+  if (paymentStatusFilter.value)               q.status    = paymentStatusFilter.value
+  if (selectedFiscalYearId.value)              q.fy        = selectedFiscalYearId.value
+  if (sortField.value !== 'documentdate')      q.sortField = sortField.value
+  if (sortAsc.value)                           q.sortAsc   = 'true'
+  router.replace({ query: q })
+}
+
+function setSort(field) {
+  if (sortField.value === field) {
+    sortAsc.value = !sortAsc.value
+  } else {
+    sortField.value = field
+    sortAsc.value   = false
+  }
+  currentPage.value = 1
+  loadExpenses()
+}
+
+function sortIcon(field) {
+  if (sortField.value !== field) return '↕'
+  return sortAsc.value ? '↑' : '↓'
+}
+
+let searchTimer = null
+function onSearchInput() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(resetAndLoad, 300)
+}
+
+function resetAndLoad() {
+  currentPage.value = 1
+  loadExpenses()
 }
 
 // ─── Metodi di pagamento ──────────────────────────────────────
@@ -498,23 +528,6 @@ function fmtSize(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
-// Filtro lato client: esercizio fiscale + testo (fornitore e descrizione)
-const filteredExpenses = computed(() => {
-  const q  = supplierSearch.value.trim().toLowerCase()
-  const fy = selectedFiscalYearId.value
-  return expenses.value.filter(e => {
-    if (fy && e.fiscalYearId !== fy) return false
-    if (q && !(
-      (e.supplierName ?? '').toLowerCase().includes(q) ||
-      (e.name         ?? '').toLowerCase().includes(q)
-    )) return false
-    return true
-  })
-})
-
-function applyFilters() {
-  loadExpenses()
-}
 
 function clearExpError(field) { delete expErrors.value[field] }
 
@@ -534,22 +547,6 @@ function validateExpForm() {
     e.vatAmount = "L'IVA è obbligatoria quando è presente l'imponibile"
   if (!f.accountId)             e.accountId        = 'Selezionare un conto'
   if (!f.millesimalTableId)     e.millesimalTableId = 'Selezionare una tabella millesimale'
-
-  // Data registrazione fuori periodo: bloccante solo se l'esercizio è Open (non Closing)
-  if (f.fiscalYearId && f.registrationDate) {
-    const fy = fiscalYears.value.find(fy => fy.id === f.fiscalYearId)
-    if (fy && fy.statusId === FY_OPEN) {
-      const parseLocal = s => { const [y,m,d] = s.slice(0,10).split('-').map(Number); return new Date(y, m-1, d) }
-      const reg   = parseLocal(f.registrationDate)
-      const start = parseLocal(fy.startDate)
-      const end   = parseLocal(fy.endDate)
-      if (reg < start || reg > end) {
-        const fmt = d => parseLocal(d).toLocaleDateString('it-IT')
-        e.registrationDate =
-          `La data deve essere compresa nel periodo dell'esercizio (${fmt(fy.startDate)} – ${fmt(fy.endDate)})`
-      }
-    }
-  }
 
   expErrors.value = e
   return Object.keys(e).length === 0
@@ -594,24 +591,29 @@ let accountsLoaded = false
 
 async function loadExpenses() {
   if (!store.selectedCondominioId) return
+  syncUrl()
   loadingExp.value = true
   try {
-    let res
-    if (expFilter.value === 'unpaid') {
-      res = await expenseApi.getUnpaid(store.selectedCondominioId)
-    } else if (expTypeFilter.value) {
-      res = await expenseApi.getByType(store.selectedCondominioId, expTypeFilter.value)
-    } else {
-      res = await expenseApi.getByCondominium(store.selectedCondominioId)
-    }
-    expenses.value = res.data ?? []
-  } catch { expenses.value = [] } finally { loadingExp.value = false }
+    const fy = fiscalYears.value.find(f => f.id === selectedFiscalYearId.value)
+    const { data } = await expenseApi.getByCondominium(store.selectedCondominioId, {
+      page:            currentPage.value,
+      pageSize:        pageSize.value,
+      sortField:       sortField.value,
+      sortAsc:         sortAsc.value,
+      search:          search.value || undefined,
+      expenseTypeId:   expTypeFilter.value  || undefined,
+      paymentStatusId: paymentStatusFilter.value || undefined,
+      dateFrom:        fy?.startDate ? fy.startDate.slice(0, 10) : undefined,
+      dateTo:          fy?.endDate   ? fy.endDate.slice(0, 10)   : undefined,
+    })
+    expenses.value   = data?.items      ?? []
+    totalCount.value = data?.totalCount ?? 0
+  } catch { expenses.value = []; totalCount.value = 0 } finally { loadingExp.value = false }
 }
 
 async function openExpenseModal(e = null) {
   expErrors.value  = {}
-  registrationDateWarning.value = ''
-  editingExp.value = e?.id ?? null
+editingExp.value = e?.id ?? null
   savedExpenseId.value = null
   attachedDocs.value   = []
 
@@ -665,11 +667,7 @@ async function openExpenseModal(e = null) {
       millesimalTables.value = mtRes.data ?? []
     } catch {}
   }
-  // Controlla subito il warning se stiamo modificando una spesa esistente
-  if (e) {
-    checkRegistrationDateWarning()
-    await loadDocs(e.id)
-  }
+  if (e) await loadDocs(e.id)
 
   showExpenseModal.value = true
 }
@@ -761,8 +759,6 @@ async function deleteExpense(id) {
 }
 
 // Ricalcola warning quando cambia la data di registrazione
-watch(() => expForm.value.registrationDate, checkRegistrationDateWarning)
-
 // Auto-select DefaultMillesimalTable when account changes
 watch(() => expForm.value.accountId, (accountId) => {
   if (!accountId) return
@@ -781,11 +777,18 @@ const payBadge = (id) => ({ 1: 'badge-amber', 2: 'badge-green', 3: 'badge-red' }
 watch(() => store.selectedCondominioId, () => {
   accountsLoaded = false
   expenseAccountGroups.value = []
-  expTypeFilter.value = 0
-  expFilter.value = ''
-  supplierSearch.value = ''
+  search.value              = ''
+  expTypeFilter.value       = null
+  paymentStatusFilter.value = null
+  selectedFiscalYearId.value = null
+  currentPage.value         = 1
   loadExpenses()
 })
+
+// I filtri che cambiano pagina resettano a 1 via resetAndLoad; currentPage chiama direttamente
+watch(currentPage,         loadExpenses)
+watch(pageSize,            () => { currentPage.value = 1; loadExpenses() })
+watch(selectedFiscalYearId, () => { currentPage.value = 1; loadExpenses() })
 
 onMounted(async () => {
   if (!store.fiscalYears.length) await store.loadFiscalYears()
@@ -799,6 +802,19 @@ window.addEventListener('app:refresh', loadExpenses)
 
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+th.sortable:hover { color: var(--accent); }
+.sort-icon {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 0.2rem;
+}
+th.sortable:hover .sort-icon { color: var(--accent); }
 
 .no-fiscal-year-banner {
   display: flex;

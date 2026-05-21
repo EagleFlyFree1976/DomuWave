@@ -143,7 +143,8 @@ public class CreateBudgetCommandConsumer
                 .ConfigureAwait(false);
         }
 
-        var sourceItems = sourceConsuntivo?.Items
+        var itms = session.Query<BudgetItem>().Where(j => j.Budget.Id == sourceConsuntivo.Id);
+        var sourceItems = itms
             .Where(i => !i.IsDeleted && i.Account != null && i.Account.IsActive)
             .OrderBy(i => i.Account.Code)
             .ToList();
@@ -160,10 +161,8 @@ public class CreateBudgetCommandConsumer
                     Budget      = budget,
                     Tenant      = budget.Tenant,
                     Account     = src.Account,
-                    // Fotografa codice e nome del conto al momento della creazione
                     AccountCode = src.Account.Code,
                     AccountName = src.Account.Name,
-                    Name        = src.Name ?? string.Empty,
                     Amount      = amount,
                     Notes       = dto.IncreasePercentage != 0
                         ? $"Importato da consuntivo con maggiorazione {dto.IncreasePercentage:0.##}%"
@@ -171,6 +170,7 @@ public class CreateBudgetCommandConsumer
                 };
                 item.Trace(currentUser);
                 await session.SaveAsync(item, ct).ConfigureAwait(false);
+                await session.FlushAsync(ct).ConfigureAwait(false);
             }
         }
         else
@@ -191,11 +191,11 @@ public class CreateBudgetCommandConsumer
                     Account     = account,
                     AccountCode = account.Code,
                     AccountName = account.Name,
-                    Name        = string.Empty,
                     Amount      = 0,
                 };
                 item.Trace(currentUser);
                 await session.SaveAsync(item, ct).ConfigureAwait(false);
+                await session.FlushAsync(ct).ConfigureAwait(false);
             }
         }
     }
@@ -243,11 +243,11 @@ public class CreateBudgetCommandConsumer
                 Account     = account,
                 AccountCode = account.Code,
                 AccountName = account.Name,
-                Name        = string.Empty,
                 Amount      = amount,
             };
             item.Trace(currentUser);
             await session.SaveAsync(item, ct).ConfigureAwait(false);
+            await session.FlushAsync(ct).ConfigureAwait(false);
         }
 
         // 4. Aggiorna il totale uscite sul budget
