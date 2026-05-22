@@ -143,11 +143,16 @@ public class CreateBudgetCommandConsumer
                 .ConfigureAwait(false);
         }
 
-        var itms = session.Query<BudgetItem>().Where(j => j.Budget.Id == sourceConsuntivo.Id);
-        var sourceItems = itms
-            .Where(i => !i.IsDeleted && i.Account != null && i.Account.IsActive)
-            .OrderBy(i => i.Account.Code)
-            .ToList();
+        List<BudgetItem> sourceItems = [];
+        if (sourceConsuntivo != null)
+        {
+            var sourceId = sourceConsuntivo.Id;
+            sourceItems = await session.Query<BudgetItem>()
+                .Where(i => i.Budget.Id == sourceId && !i.IsDeleted && i.Account != null && i.Account.IsActive)
+                .OrderBy(i => i.Account.Code)
+                .ToListAsync(ct)
+                .ConfigureAwait(false);
+        }
 
         if (sourceItems != null && sourceItems.Count > 0)
         {
