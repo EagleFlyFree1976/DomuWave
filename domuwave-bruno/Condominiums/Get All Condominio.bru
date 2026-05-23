@@ -1,0 +1,33 @@
+meta {
+  name: Get All Condominio
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/condominiums
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json, text/plain, */*
+  Accept-Language: it,en-US;q=0.9,en;q=0.8
+  Authorization: Bearer Wc9jQlR5baGSkJyaaIAsDw==
+  Connection: keep-alive
+  Referer: http://localhost:40300/condomini
+  Sec-Fetch-Dest: empty
+  Sec-Fetch-Mode: cors
+  Sec-Fetch-Site: same-origin
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+  X-Auth-Token: Wc9jQlR5baGSkJyaaIAsDw==
+  X-Tenant-Id: e60ce426-b371-444a-9d44-b40500664f9f
+  sec-ch-ua: "Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-platform: "Windows"
+}
+
+settings {
+  encodeUrl: false
+  timeout: 0
+}

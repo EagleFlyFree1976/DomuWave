@@ -1,6 +1,8 @@
 ﻿using System.Reflection;
 using Auth.Microservice;
 using Auth.Services;
+using DomuWave.Application.Middleware;
+using LicenseManager.Client.Extensions;
 using QuestPDF.Infrastructure;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
@@ -143,6 +145,12 @@ try
 
     builder.Services.Configure<DomuWaveSettings>(builder.Configuration.GetSection("DomuWave"));
 
+    builder.Services
+        .AddLicenseManager(builder.Configuration.GetSection("LicenseManager"))
+        .WithHttpHeaderTenantResolver();
+    builder.Services.AddScoped<LicenseManager.Client.LicenseManagerHelper>();
+    builder.Services.AddScoped<LicenseNotActivatedMiddleware>();
+
     builder.Host.UseSerilog(logger);
 
     var app = builder.Build();
@@ -170,6 +178,9 @@ try
     app.UseRouting();
 
     app.UseAuthorization();
+
+    app.UseLicenseManager();
+    app.UseMiddleware<LicenseNotActivatedMiddleware>();
 
     app.UseSwagger(c =>
     {

@@ -11,6 +11,9 @@
 <script setup>
 import { onMounted, onUnmounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 const toast = useToast()
 
@@ -39,6 +42,16 @@ function onApiError(event) {
   })
 }
 
-onMounted(() => window.addEventListener('api:error', onApiError))
-onUnmounted(() => window.removeEventListener('api:error', onApiError))
+function onLicenseNotActivated() {
+  router.push({ name: 'servizio-non-attivato' })
+}
+
+onMounted(() => {
+  window.addEventListener('api:error', onApiError)
+  window.addEventListener('license:not-activated', onLicenseNotActivated)
+})
+onUnmounted(() => {
+  window.removeEventListener('api:error', onApiError)
+  window.removeEventListener('license:not-activated', onLicenseNotActivated)
+})
 </script>

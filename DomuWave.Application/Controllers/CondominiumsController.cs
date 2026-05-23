@@ -2,9 +2,10 @@ using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
-using DomuWave.Services.Models;
 using DomuWave.Services.Command.Condominium;
 using DomuWave.Services.Dto.Condominium;
+using DomuWave.Services.Models;
+using LicenseManager.Client.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -23,6 +24,7 @@ public class CondominiumsController(
     [HttpGet]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumReadDto>))]
+    [RequiresFeature("GET_CONDOMINIO")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -34,6 +36,7 @@ public class CondominiumsController(
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumReadDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
         var result = await _mediator.GetResponse(
@@ -91,6 +94,7 @@ public class CondominiumsController(
     [HttpPost]
     [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(CondominiumReadDto))]
+ 
     public async Task<IActionResult> Create([FromBody] CreateCondominiumDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);

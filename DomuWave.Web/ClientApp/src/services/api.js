@@ -54,6 +54,12 @@ api.interceptors.response.use(
     const status  = err.response?.status
     const message = extractErrorMessage(err)
 
+    // 402 — licenza non attiva: reindirizza alla pagina piani
+    if (status === 402 && err.response?.data?.reason === 'LICENSE_NOT_ACTIVATED') {
+      window.dispatchEvent(new CustomEvent('license:not-activated'))
+      return Promise.reject(err)
+    }
+
     // Errori di rete / timeout (nessuna risposta dal server)
     if (!err.response) {
       window.dispatchEvent(new CustomEvent('api:error', {
@@ -598,6 +604,12 @@ export const privateThreadApi = {
   getMessages:      (threadId)           => api.get(`/private-threads/${threadId}/messages`),
   createMessage:    (threadId, data)     => api.post(`/private-threads/${threadId}/messages`, data),
   markRead:         (threadId)           => api.post(`/private-threads/${threadId}/mark-read`),
+}
+
+// ─── License ──────────────────────────────────────────────────
+export const licenseApi = {
+  getPlans:      () => api.get('/license/plans'),
+  getHandoffUrl: () => api.get('/license/handoff'),
 }
 
 export default api

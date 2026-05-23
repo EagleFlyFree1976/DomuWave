@@ -97,6 +97,8 @@
     <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthorizationUsersController.cs" Link="Controllers\Auth\AuthorizationUsersController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthUsersController.cs" Link="Controllers\Auth\AuthUsersController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\Auth\PublicUserController.cs" Link="Controllers\Auth\Auth.PublicUserController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\LicenseController.cs" Link="Controllers\LicenseController.cs" />
+    <Compile Include="..\DomuWave.Application\Middleware\LicenseNotActivatedMiddleware.cs" Link="Middleware\LicenseNotActivatedMiddleware.cs" />
   </ItemGroup>
 
   <!-- Config NHibernate (file fisici nella directory config/ del progetto) -->
@@ -119,6 +121,7 @@
     <PackageReference Include="CPQ.Core.EventSource" Version="1.0.0" />
     <PackageReference Include="FluentNHibernate" Version="3.4.1" />
     <PackageReference Include="Hellang.Middleware.ProblemDetails" Version="6.5.1" />
+    <PackageReference Include="LicenseManager.Client" Version="1.1.4" />
     <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="8.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />

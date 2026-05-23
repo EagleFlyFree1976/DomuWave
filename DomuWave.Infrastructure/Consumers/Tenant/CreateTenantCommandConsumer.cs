@@ -8,6 +8,8 @@ using DomuWave.Services.Dto.Tenant;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using LicenseManager.Client.Services;
+using Microsoft.Extensions.Logging;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers.Tenant;
@@ -20,6 +22,8 @@ public class CreateTenantCommandConsumer
     private readonly IChartOfAccountsCategoryService         _categoryService;
     private readonly IChartOfAccountsCategoryTemplateService _templateService;
     private readonly IChartOfAccountsTemplateSeedService     _coaTemplateSeed;
+    private readonly ILicenseManagerClient                   _licenseClient;
+    private readonly ILogger<CreateTenantCommandConsumer>    _logger;
 
     public CreateTenantCommandConsumer(
         ISessionFactoryProvider                  sessionFactoryProvider,
@@ -27,13 +31,17 @@ public class CreateTenantCommandConsumer
         IUserService                             userService,
         IChartOfAccountsCategoryService          categoryService,
         IChartOfAccountsCategoryTemplateService  templateService,
-        IChartOfAccountsTemplateSeedService      coaTemplateSeed) : base(sessionFactoryProvider)
+        IChartOfAccountsTemplateSeedService      coaTemplateSeed,
+        ILicenseManagerClient                    licenseClient,
+        ILogger<CreateTenantCommandConsumer>     logger) : base(sessionFactoryProvider)
     {
         _tenantService   = tenantService;
         _userService     = userService;
         _categoryService = categoryService;
         _templateService = templateService;
         _coaTemplateSeed = coaTemplateSeed;
+        _licenseClient   = licenseClient;
+        _logger          = logger;
     }
 
     protected override async Task<TenantReadDto> Consume(
@@ -81,6 +89,26 @@ public class CreateTenantCommandConsumer
 
         // Seed template piano dei conti standard
         await _coaTemplateSeed.SeedAsync(created, cancellationToken).ConfigureAwait(false);
+
+        // Notifica LicenseManager della creazione del tenant (fire-and-forget: non blocca se LM è down)
+        try
+        {
+            var ownerEmail = currentUser.Email ?? string.Empty;
+            var result = await _licenseClient
+                .NotifyTenantCreatedAsync(created.Id, ownerEmail, created.Name, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!result.Success)
+                _logger.LogWarning(
+                    "LicenseManager: notifica tenant {TenantId} fallita: {Error}",
+                    created.Id, result.Error);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "LicenseManager non raggiungibile durante la creazione del tenant {TenantId}. Il tenant verrà registrato manualmente.",
+                created.Id);
+        }
 
         return created.ToReadDto();
     }

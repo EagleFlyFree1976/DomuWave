@@ -1,0 +1,26 @@
+meta {
+  name: LM - Token
+  type: http
+  seq: 4
+}
+
+get {
+  url: https://localhost:62906/api/tokens/:appId/:tenantId
+  body: none
+  auth: inherit
+}
+
+params:path {
+  tenantId: e60ce426-b371-444a-9d44-b40500664f9f
+  appId: 99A663FE-0721-4F5E-BAB7-B45200D50441
+}
+
+headers {
+  accept: */*
+  X-Api-Key: lm_live_56612b4473de465fbfab6b03e34042f2
+}
+
+settings {
+  encodeUrl: false
+  timeout: 0
+}

@@ -1,9 +1,7 @@
 using System.Configuration;
 using System.Reflection;
-using Microsoft.Extensions.FileProviders;
 using Auth.Microservice;
 using Auth.Services;
-using QuestPDF.Infrastructure;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Extensions;
 using CPQ.Core.Settings;
@@ -12,7 +10,11 @@ using DomuWave.Application.Filters;
 using DomuWave.Services;
 using DomuWave.Services.Settings;
 using Hangfire;
+using DomuWave.Application.Middleware;
+using LicenseManager.Client.Extensions;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
+using QuestPDF.Infrastructure;
 using Serilog;
 using Serilog.Exceptions;
 using Serilog.Exceptions.Core;
@@ -150,7 +152,11 @@ try
     #endregion
 
     builder.Services.Configure<DomuWaveSettings>(builder.Configuration.GetSection("DomuWave"));
-
+    builder.Services
+        .AddLicenseManager(builder.Configuration.GetSection("LicenseManager"))
+        .WithHttpHeaderTenantResolver();
+    builder.Services.AddScoped<LicenseManager.Client.LicenseManagerHelper>();
+    builder.Services.AddScoped<LicenseNotActivatedMiddleware>();
     builder.Host.UseSerilog(logger);
 
     var app = builder.Build();
@@ -192,7 +198,8 @@ try
     app.UseRouting();
 
     app.UseAuthorization();
-
+    app.UseLicenseManager();
+    app.UseMiddleware<LicenseNotActivatedMiddleware>();
     app.UseSwagger(c =>
     {
         c.RouteTemplate = "swagger/{documentName}/swagger.json";

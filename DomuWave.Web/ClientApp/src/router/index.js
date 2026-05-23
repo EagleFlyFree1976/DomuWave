@@ -119,6 +119,11 @@ const routes = [
         meta: { title: 'Nuovo Utente', requiresAuth: true, requiredRole: 'SuperAdmin' },
       },
       {
+        path: 'servizio-non-attivato', name: 'servizio-non-attivato',
+        component: () => import('@/views/ServizioNonAttivatoView.vue'),
+        meta: { title: 'Servizio non attivato', requiresAuth: true },
+      },
+      {
         path: 'users/:id', name: 'user-detail',
         component: () => import('@/views/users/UserDetail.vue'),
         props: true,
