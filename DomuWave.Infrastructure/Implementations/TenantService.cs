@@ -60,8 +60,10 @@ namespace DomuWave.Services.Implementations
 
         public async Task<Tenant> CreateAsync(Tenant entity, IUser currentUser, CancellationToken cancellationToken)
         {
+            if (entity.Id == Guid.Empty)
+                entity.Id = Guid.NewGuid();
             entity.Trace(currentUser);
-            await session.SaveOrUpdateAsync(entity, cancellationToken);
+            await session.SaveAsync(entity, cancellationToken);
             await session.FlushAsync(cancellationToken);
             return entity;
         }

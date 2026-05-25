@@ -95,6 +95,8 @@ public static class Startup
         services.AddScoped<ISupplierContractService, SupplierContractService>();
         services.AddScoped<IStaircaseService, StaircaseService>();
         services.AddScoped<ISupplierService, SupplierService>();
+        services.AddScoped<IPendingRegistrationService, PendingRegistrationService>();
+        services.AddSingleton<ITenantAccessCache, TenantAccessCache>();
         services.AddScoped<ITenantService, TenantService>();
         services.AddScoped<IUnitMillesimalService, UnitMillesimalService>();
         services.AddScoped<IUnitOwnerService, UnitOwnerService>();

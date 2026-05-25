@@ -4,14 +4,17 @@ using Auth.Services.Models.Dto;
 using Auth.Services.Orchestators;
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Controllers;
-using CPQ.Core.Memberships;
+using CPQ.Core.Extensions;
 using CPQ.Core.Security;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
 using DomuWave.Microservice.Models;
+using DomuWave.Services.Command.Auth;
+using DomuWave.Services.Dto.Auth;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using SimpleMediator.Core;
 
 namespace DomuWave.Microservice.Controllers;
 
@@ -22,12 +25,14 @@ public class AuthPublicController(
     IOptionsMonitor<OxCoreSettings> configuration,
     IUserService userService,
     AuthOrchestator authOrchestator,
+    IMediator mediator,
     IMemoryCache cache)
     : OxCoreControllerBase(logger, configuration)
 {
     protected readonly AuthOrchestator _authOrchestator = authOrchestator;
     private readonly IMemoryCache _cache = cache;
     protected readonly IUserService _userService = userService;
+    private readonly IMediator _mediator = mediator;
 
     [HttpPost("login")]
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(BaseDto))]
@@ -76,5 +81,40 @@ public class AuthPublicController(
     {
         await _authOrchestator.ConfirmPasswordResetAsync(request.Token, request.NewPassword, cancellationToken).ConfigureAwait(false);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Verifica se una email appartiene a un utente Condomino già registrato.
+    /// </summary>
+    [HttpPost("check-email")]
+    [ProducesResponseType(typeof(CheckEmailResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CheckEmail([FromBody] CheckEmailDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.GetResponse(new CheckEmailCommand(dto), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Avvia la registrazione pubblica: valida l'email, salva i dati in staging e restituisce il GUID
+    /// da usare come Id del tenant al momento della conferma (dopo il pagamento).
+    /// </summary>
+    [HttpPost("self-register")]
+    [ProducesResponseType(typeof(SelfRegisterResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SelfRegister([FromBody] SelfRegisterDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.GetResponse(new SelfRegisterCommand(dto), cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Conferma la registrazione dopo il pagamento: crea l'utente (o promuove il Condomino ad Admin),
+    /// crea il tenant con l'Id uguale al RegistrationId, e restituisce il token di sessione.
+    /// </summary>
+    [HttpPost("confirm-registration")]
+    [ProducesResponseType(typeof(ConfirmRegistrationResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ConfirmRegistration([FromBody] ConfirmRegistrationDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.GetResponse(new ConfirmRegistrationCommand(dto), cancellationToken);
+        return Ok(result);
     }
 }

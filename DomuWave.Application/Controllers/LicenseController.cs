@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
@@ -52,6 +53,37 @@ public class LicenseController(
         {
             logger.LogWarning(ex, "Impossibile recuperare i piani da LicenseManager.");
             return Ok(Array.Empty<object>());
+        }
+    }
+
+    /// <summary>Registrazione pubblica: proxy verso LicenseManager POST /api/auth/register.</summary>
+    [HttpPost("register")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> Register([FromBody] object payload, CancellationToken ct)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(_lmOpts.BaseUrl))
+                return StatusCode(503, "LicenseManager non configurato.");
+
+            using var http = new HttpClient();
+            http.BaseAddress = new Uri(_lmOpts.BaseUrl.TrimEnd('/'));
+
+            var json    = System.Text.Json.JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            var response = await http.PostAsync($"/api/auth/register?appId={_lmOpts.AppId}", content, ct);
+            var body     = await response.Content.ReadAsStringAsync(ct);
+
+            return response.IsSuccessStatusCode
+                ? Content(body, "application/json")
+                : StatusCode((int)response.StatusCode, body);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Errore durante la registrazione pubblica.");
+            return StatusCode(503, "Servizio non raggiungibile.");
         }
     }
 

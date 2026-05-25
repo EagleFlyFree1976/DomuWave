@@ -54,6 +54,7 @@
     <None Remove="Models\Mappings\WorkQuote.hbm.xml" />
     <None Remove="Models\Mappings\WorkQuoteDocument.hbm.xml" />
     <None Remove="Models\Mappings\SupplierContract.hbm.xml" />
+    <None Remove="Models\Mappings\PendingRegistration.hbm.xml" />
     <None Remove="Models\Mappings\Tenant.hbm.xml" />
     <None Remove="Models\Mappings\UnitMillesimal.hbm.xml" />
     <None Remove="Models\Mappings\UnitOwner.hbm.xml" />
@@ -129,6 +130,7 @@
     <EmbeddedResource Include="Models\Mappings\WorkQuote.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\WorkQuoteDocument.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\SupplierContract.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\PendingRegistration.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Tenant.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UnitMillesimal.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UnitOwner.hbm.xml" />

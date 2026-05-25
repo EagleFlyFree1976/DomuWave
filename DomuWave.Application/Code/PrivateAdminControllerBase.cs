@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace DomuWave.Application.Code;
 
-[ServiceFilter(typeof(SystemBookHeaderFilter))]
+//[ServiceFilter(typeof(SystemBookHeaderFilter))]
 public class PrivateAdminControllerBase : OxCoreTokenAuthorizeControllerBase
 {
 

@@ -88,6 +88,13 @@
                   class="login-btn"
                   :loading="authStore.loading"
                   :disabled="authStore.loading" />
+
+          <p style="text-align:center;font-size:0.85rem;color:#64748b;margin-top:8px">
+            Non hai un account?
+            <RouterLink to="/register" style="color:var(--p-primary-color);font-weight:600;text-decoration:none">
+              Inizia la prova gratuita
+            </RouterLink>
+          </p>
         </form>
       </div>
 

@@ -1,0 +1,38 @@
+meta {
+  name: Registrazione 
+  type: http
+  seq: 5
+}
+
+post {
+  url: http://localhost:40300/api/auth/confirm-registration
+  body: json
+  auth: inherit
+}
+
+headers {
+  Accept: application/json, text/plain, */*
+  Accept-Language: it,en-US;q=0.9,en;q=0.8
+  Connection: keep-alive
+  Content-Type: application/json
+  Cookie: __stripe_mid=375ad02f-e947-4355-b642-a5a4f662ba45c87e01; lm_user=%7B%22userId%22%3A%225a66402a-56fc-498a-8f71-3993364878d8%22%2C%22fullName%22%3A%22oraziogr%40gmail.com%20Greco%22%7D; lm_session=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YTY2NDAyYS01NmZjLTQ5OGEtOGY3MS0zOTkzMzY0ODc4ZDgiLCJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9lbWFpbGFkZHJlc3MiOiJvcmF6aW9nckBnbWFpbC5jb20iLCJmdWxsTmFtZSI6Im9yYXppb2dyQGdtYWlsLmNvbSBHcmVjbyIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlN1cGVyVXNlciIsImp0aSI6ImI5NDJlY2Q1LTM2MzktNDc4Mi1iNWVhLTI3MjY0MDU4YjQ4NSIsImV4cCI6MTc3OTcxMjU0MCwiaXNzIjoiTGljZW5zZU1hbmFnZXIiLCJhdWQiOiJMaWNlbnNlTWFuYWdlclVJIn0.Rjli9KUZqGOHBDxDcLVoV6qrpZFiwBFPFnLbSuRjd08
+  Origin: http://localhost:40300
+  Referer: http://localhost:40300/register
+  Sec-Fetch-Dest: empty
+  Sec-Fetch-Mode: cors
+  Sec-Fetch-Site: same-origin
+  User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36
+  sec-ch-ua: "Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-platform: "Windows"
+}
+
+body:json {
+  {
+    "registrationId": "d11e33f4-687a-4c28-b6e3-856cde8c2d6f"
+  }
+}
+
+settings {
+  encodeUrl: false
+}

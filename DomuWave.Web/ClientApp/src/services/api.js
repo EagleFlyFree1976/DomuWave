@@ -610,9 +610,18 @@ export const privateThreadApi = {
 export const licenseApi = {
   getPlans:      () => api.get('/license/plans'),
   getHandoffUrl: () => api.get('/license/handoff'),
+  register:      (data) => api.post('/license/register', data),
   refreshCache:  (tenantId) => api.post('/license/refresh-cache', {}, {
     headers: tenantId ? { 'X-Tenant-Id': tenantId } : {}
   }),
+}
+
+// ─── Auth pubblico ─────────────────────────────────────────────
+export const authApi = {
+  checkEmail:          (data) => api.post('/auth/check-email', data),
+  selfRegister:        (data) => api.post('/auth/self-register', data),
+  confirmRegistration: (data) => api.post('/auth/confirm-registration', data),
+  login:               (data) => api.post('/PublicUser/login', data),
 }
 
 export default api

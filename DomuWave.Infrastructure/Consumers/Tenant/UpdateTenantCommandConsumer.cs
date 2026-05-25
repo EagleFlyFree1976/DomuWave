@@ -13,16 +13,19 @@ namespace DomuWave.Services.Consumers.Tenant;
 public class UpdateTenantCommandConsumer
     : InMemoryConsumerBase<UpdateTenantCommand, TenantReadDto>
 {
-    private readonly ITenantService _tenantService;
-    private readonly IUserService _userService;
+    private readonly ITenantService     _tenantService;
+    private readonly IUserService       _userService;
+    private readonly ITenantAccessCache _accessCache;
 
     public UpdateTenantCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
-        ITenantService tenantService,
-        IUserService userService) : base(sessionFactoryProvider)
+        ITenantService          tenantService,
+        IUserService            userService,
+        ITenantAccessCache      accessCache) : base(sessionFactoryProvider)
     {
         _tenantService = tenantService;
         _userService   = userService;
+        _accessCache   = accessCache;
     }
 
     protected override async Task<TenantReadDto> Consume(
@@ -60,6 +63,10 @@ public class UpdateTenantCommandConsumer
         var updated = await _tenantService
             .UpdateAsync(existing, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        // Invalida la cache per tutti gli utenti di questo tenant:
+        // se IsActive è cambiato, nessuno deve più avere un accesso cached obsoleto.
+        _accessCache.InvalidateForTenant(updated.Id);
 
         return updated.ToReadDto();
     }

@@ -15,6 +15,11 @@ const routes = [
     meta: { title: 'Reimposta password' },
   },
   {
+    path: '/register',
+    component: () => import('@/views/RegisterView.vue'),
+    meta: { title: 'Inizia la prova gratuita' },
+  },
+  {
     path: '/select-tenant',
     component: () => import('@/views/CondomininoTenantSelectView.vue'),
     meta: { title: 'Seleziona condominio', requiresAuth: true },

@@ -122,7 +122,7 @@ try
     if (hostEnvironment.IsProduction())
         builder.Services.AddHealthChecks();
 
-    builder.Services.AddScoped<SystemBookHeaderFilter>();
+   // builder.Services.AddScoped<SystemBookHeaderFilter>();
     builder.Services.AddScoped<TenantHeaderFilter>();
 
     services.AddOxConfigureServices(

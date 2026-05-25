@@ -17,6 +17,7 @@
 		<property name="UserId"    column="UserId"    type="Int32"   not-null="true" />
 		<property name="IsDefault" column="IsDefault" type="Boolean" not-null="true" />
 		<property name="IsActive"  column="IsActive"  type="Boolean" not-null="true" />
+		<property name="IsEnabled" column="IsActive"  type="Boolean" insert="false" update="false" />
 
 		<many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant"
 		             column="TenantId" not-null="true" fetch="join" />
