@@ -28,9 +28,14 @@ async function acquista() {
   }
 }
 
-function formatPrice(price, billingPeriod) {
-  const period = billingPeriod === 'yearly' ? 'anno' : 'mese'
-  return `€ ${Number(price).toFixed(2)} / ${period}`
+const periodOrder = { monthly: 0, yearly: 1, 'one-time': 2 }
+
+function sortedPricings(plan) {
+  return [...(plan.pricings ?? [])].sort((a, b) => (periodOrder[a.billingPeriod] ?? 99) - (periodOrder[b.billingPeriod] ?? 99))
+}
+
+function formatPeriod(bp) {
+  return bp === 'yearly' ? 'Annuale' : bp === 'monthly' ? 'Mensile' : 'Una tantum'
 }
 </script>
 
@@ -58,7 +63,12 @@ function formatPrice(price, billingPeriod) {
       >
         <div v-if="plan.badge" class="plan-badge">{{ plan.badge }}</div>
         <h2 class="plan-name">{{ plan.name }}</h2>
-        <div class="plan-price">{{ formatPrice(plan.price, plan.billingPeriod) }}</div>
+        <div class="plan-pricings">
+          <div v-for="pr in sortedPricings(plan)" :key="pr.id" class="plan-pricing-row">
+            <span class="plan-pricing-period">{{ formatPeriod(pr.billingPeriod) }}</span>
+            <span class="plan-price">€ {{ Number(pr.price).toFixed(2) }}</span>
+          </div>
+        </div>
         <ul class="plan-features">
           <li v-for="f in plan.features" :key="f.id">
             <span class="plan-check">✓</span> {{ f.name }}
@@ -162,11 +172,10 @@ function formatPrice(price, billingPeriod) {
   margin: 0;
 }
 
-.plan-price {
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--accent);
-}
+.plan-pricings       { display: flex; flex-direction: column; gap: 6px; }
+.plan-pricing-row    { display: flex; justify-content: space-between; align-items: center; }
+.plan-pricing-period { font-size: 0.85rem; color: var(--text-secondary); }
+.plan-price          { font-size: 1.2rem; font-weight: 800; color: var(--accent); }
 
 .plan-features {
   list-style: none;

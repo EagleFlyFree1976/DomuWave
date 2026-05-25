@@ -48,6 +48,7 @@ export const useMenuStore = defineStore('menu', () => {
         icon: resolveIcon(item.icon, item.action, item.description),
         order: item.orderKey ?? item.id,
         tags: item.tags ? item.tags.split(',').map((t) => t.trim()) : [],
+        features: item.features ? item.features.split(',').map((f) => f.trim()) : [],
         children: [],
       }
     })

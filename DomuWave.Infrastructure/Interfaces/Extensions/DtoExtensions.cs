@@ -47,6 +47,7 @@ public static class DtoExtensions
             AuthorizationCode = item.AuthorizationCode,
             Description = item.Description,
             Tags = item.Tags,
+            Features = item.Features,
             OrderKey = item.OrderKey
         };
         return dto;

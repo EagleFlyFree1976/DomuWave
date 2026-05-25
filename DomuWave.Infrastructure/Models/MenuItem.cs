@@ -29,5 +29,11 @@ namespace DomuWave.Services.Models
         /// Etichette aggiuntive separate da virgola (es. "admin,report,beta")
         /// </summary>
         public virtual string? Tags { get; set; }
+
+        /// <summary>
+        /// Feature code separati da virgola richiesti per visualizzare la voce di menu.
+        /// Se null o vuoto, la voce è sempre visibile.
+        /// </summary>
+        public virtual string? Features { get; set; }
     }
 }

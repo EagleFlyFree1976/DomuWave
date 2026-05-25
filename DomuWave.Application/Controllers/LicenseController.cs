@@ -3,6 +3,7 @@ using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Interfaces;
 using LicenseManager.Client;
+using LicenseManager.Client.Cache;
 using LicenseManager.Client.Configuration;
 using LicenseManager.Client.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -18,6 +19,7 @@ public class LicenseController(
     IOptionsMonitor<OxCoreSettings> configuration,
     IOptions<LicenseManagerOptions> lmOptions,
     ILicenseManagerClient lmClient,
+    ITokenCache tokenCache,
     LicenseManagerHelper licenseHelper,
     IUserService userService,
     ITenantService tenantService)
@@ -102,6 +104,33 @@ public class LicenseController(
             else
                 logger.LogWarning("Registrazione tenant {TenantId} su LM fallita: {Error}", tenantId, result.Error);
         }
+    }
+
+    /// <summary>
+    /// Forza il refetch dei token di licenza dal LicenseManager per il tenant corrente.
+    /// Utile quando il webhook di invalidazione non è stato ricevuto (es. servizio era offline).
+    /// </summary>
+    [HttpPost("refresh-cache")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RefreshCache(CancellationToken ct)
+    {
+        if (!TenantId.HasValue)
+            return BadRequest(new { error = "Tenant non disponibile." });
+
+        tokenCache.Invalidate(TenantId.Value);
+        var cache = await lmClient.FetchTokensAsync(TenantId.Value, ct);
+
+        if (cache is null)
+            return StatusCode(503, new { error = "LicenseManager non raggiungibile." });
+
+        var features = cache.Tokens
+            .Where(kv => kv.Value.IsActive)
+            .Select(kv => kv.Key)
+            .ToList();
+
+        logger.LogInformation("[License] Cache aggiornata manualmente per tenant {TenantId}: {Count} feature attive.", TenantId, features.Count);
+
+        return Ok(new { tenantId = TenantId, activeFeatures = features });
     }
 
     /// <summary>

@@ -610,6 +610,9 @@ export const privateThreadApi = {
 export const licenseApi = {
   getPlans:      () => api.get('/license/plans'),
   getHandoffUrl: () => api.get('/license/handoff'),
+  refreshCache:  (tenantId) => api.post('/license/refresh-cache', {}, {
+    headers: tenantId ? { 'X-Tenant-Id': tenantId } : {}
+  }),
 }
 
 export default api

@@ -96,9 +96,14 @@
         </Column>
 
         <!-- Colonna: Azioni -->
-        <Column header="" style="width: 100px; text-align: right">
+        <Column header="" style="width: 130px; text-align: right">
           <template #body="{ data }">
             <div class="row-actions">
+              <Button icon="pi pi-sync"
+                      class="btn-row-action"
+                      v-tooltip="'Aggiorna cache licenza'"
+                      :loading="refreshingId === data.id"
+                      @click="refreshLicense(data)" />
               <Button icon="pi pi-pencil"
                       class="btn-row-action"
                       v-tooltip="'Modifica'"
@@ -152,6 +157,7 @@
   import { useConfirm } from 'primevue/useconfirm'
   import { useToast } from 'primevue/usetoast'
   import { useTenantStore } from '@/stores/tenantStore'
+  import { licenseApi } from '@/services/api'
 
   import DataTable from 'primevue/datatable'
   import Column from 'primevue/column'
@@ -171,6 +177,8 @@
   // ─── LOCAL STATE ────────────────────────────────────────────────────────────
   /** Timeout handle per il debounce della ricerca */
   let searchDebounce = null
+
+  const refreshingId = ref(null)
 
   const searchText = ref(store.query.search)
   const selectedStatus = ref(store.query.isActive)
@@ -274,6 +282,25 @@
       acceptClass: 'p-button-danger',
       accept: () => doDelete(tenant),
     })
+  }
+
+  async function refreshLicense(tenant) {
+    refreshingId.value = tenant.id
+    try {
+      const { data } = await licenseApi.refreshCache(tenant.id)
+      const count = data.activeFeatures?.length ?? 0
+      toast.add({
+        severity: 'success',
+        summary: 'Cache aggiornata',
+        detail: `Tenant "${tenant.name}": ${count} feature attive.`,
+        life: 4000,
+      })
+    } catch (err) {
+      if (!err?.response)
+        toast.add({ severity: 'error', summary: 'Errore', detail: 'Impossibile raggiungere il server.', life: 3000 })
+    } finally {
+      refreshingId.value = null
+    }
   }
 
   async function doDelete(tenant) {

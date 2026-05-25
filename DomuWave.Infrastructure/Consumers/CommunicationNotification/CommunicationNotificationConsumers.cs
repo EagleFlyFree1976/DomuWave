@@ -273,18 +273,14 @@ public class SendEmailNotificationsCommandConsumer
 {
     private readonly IUserService    _userService;
     private readonly IEmailService   _emailService;
-    private readonly string?         _testEmail;
 
     public SendEmailNotificationsCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUserService            userService,
-        IEmailService           emailService,
-        IConfiguration          configuration) : base(sessionFactoryProvider)
+        IEmailService           emailService) : base(sessionFactoryProvider)
     {
         _userService  = userService;
         _emailService = emailService;
-        _testEmail    = configuration["DomuWave:TestEmail"]?.Trim();
-        if (string.IsNullOrEmpty(_testEmail)) _testEmail = null;
     }
 
     protected override async Task<SendNotificationsResultDto> Consume(
@@ -436,24 +432,9 @@ public class SendEmailNotificationsCommandConsumer
                 var bodyHtml = (notification.BodyResolved ?? communication.Content ?? string.Empty)
                                .Replace("\n", "<br/>");
 
-                var toAddress = notification.EmailAddress!;
-                var toName    = notification.RecipientFullName ?? string.Empty;
-
-                if (_testEmail != null)
-                {
-                    var testNotice =
-                        $"<div style=\"background:#fff3cd;border:1px solid #ffc107;padding:12px 16px;margin-bottom:20px;font-family:sans-serif;font-size:13px;\">" +
-                        $"<strong>⚠ MODALITÀ TEST</strong><br/>" +
-                        $"Questa email sarebbe stata inviata a: <strong>{toAddress}</strong> ({toName})" +
-                        $"</div><hr style=\"margin-bottom:20px\"/>";
-                    bodyHtml  = testNotice + bodyHtml;
-                    toAddress = _testEmail;
-                    toName    = $"[TEST] {toName}";
-                }
-
                 var msg = new EmailMessage(
-                    To:          toAddress,
-                    ToName:      toName,
+                    To:          notification.EmailAddress!,
+                    ToName:      notification.RecipientFullName ?? string.Empty,
                     Subject:     notification.SubjectResolved   ?? communication.Title,
                     BodyHtml:    bodyHtml,
                     Attachments: attachments);
@@ -495,18 +476,14 @@ public class SendSingleEmailNotificationCommandConsumer
 {
     private readonly IUserService  _userService;
     private readonly IEmailService _emailService;
-    private readonly string?       _testEmail;
 
     public SendSingleEmailNotificationCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUserService            userService,
-        IEmailService           emailService,
-        IConfiguration          configuration) : base(sessionFactoryProvider)
+        IEmailService           emailService) : base(sessionFactoryProvider)
     {
         _userService  = userService;
         _emailService = emailService;
-        _testEmail    = configuration["DomuWave:TestEmail"]?.Trim();
-        if (string.IsNullOrEmpty(_testEmail)) _testEmail = null;
     }
 
     protected override async Task<CommunicationNotificationReadDto> Consume(
@@ -630,25 +607,11 @@ public class SendSingleEmailNotificationCommandConsumer
             }
         }
 
-        var bodyHtml  = (notification.BodyResolved ?? communication.Content ?? string.Empty).Replace("\n", "<br/>");
-        var toAddress = notification.EmailAddress!;
-        var toName    = notification.RecipientFullName ?? string.Empty;
-
-        if (_testEmail != null)
-        {
-            var testNotice =
-                $"<div style=\"background:#fff3cd;border:1px solid #ffc107;padding:12px 16px;margin-bottom:20px;font-family:sans-serif;font-size:13px;\">" +
-                $"<strong>⚠ MODALITÀ TEST</strong><br/>" +
-                $"Questa email sarebbe stata inviata a: <strong>{toAddress}</strong> ({toName})" +
-                $"</div><hr style=\"margin-bottom:20px\"/>";
-            bodyHtml  = testNotice + bodyHtml;
-            toAddress = _testEmail;
-            toName    = $"[TEST] {toName}";
-        }
+        var bodyHtml = (notification.BodyResolved ?? communication.Content ?? string.Empty).Replace("\n", "<br/>");
 
         var msg = new EmailMessage(
-            To:          toAddress,
-            ToName:      toName,
+            To:          notification.EmailAddress!,
+            ToName:      notification.RecipientFullName ?? string.Empty,
             Subject:     notification.SubjectResolved ?? communication.Title,
             BodyHtml:    bodyHtml,
             Attachments: attachments);

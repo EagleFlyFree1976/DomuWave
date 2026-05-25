@@ -24,7 +24,6 @@ public class CondominiumsController(
     [HttpGet]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IList<CondominiumReadDto>))]
-    [RequiresFeature("GET_CONDOMINIO")]
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var result = await _mediator.GetResponse(

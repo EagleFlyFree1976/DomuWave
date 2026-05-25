@@ -15,6 +15,11 @@ public class MenuItemDto
 
     public string Tags { get; set; }
 
+    /// <summary>
+    /// Feature code separati da virgola richiesti per visualizzare la voce.
+    /// Se null o vuoto, la voce è sempre visibile.
+    /// </summary>
+    public string? Features { get; set; }
 
     public int OrderKey { get; set; }
 }

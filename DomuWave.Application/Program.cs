@@ -150,6 +150,8 @@ try
         .WithHttpHeaderTenantResolver();
     builder.Services.AddScoped<LicenseManager.Client.LicenseManagerHelper>();
     builder.Services.AddScoped<LicenseNotActivatedMiddleware>();
+    builder.Services.AddScoped<LicenseManager.Client.TenantResolver.ISuperAdminChecker,
+        DomuWave.Application.Middleware.DomuWaveSuperAdminChecker>();
 
     builder.Host.UseSerilog(logger);
 
@@ -193,6 +195,7 @@ try
     });
 
     app.MapControllers();
+    app.MapLicenseManagerWebhook();
 
     app.Run();
 }

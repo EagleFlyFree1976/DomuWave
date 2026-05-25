@@ -11,6 +11,7 @@ using DomuWave.Services;
 using DomuWave.Services.Settings;
 using Hangfire;
 using DomuWave.Application.Middleware;
+using DomuWave.Unified.Middleware;
 using LicenseManager.Client.Extensions;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
@@ -157,6 +158,8 @@ try
         .WithHttpHeaderTenantResolver();
     builder.Services.AddScoped<LicenseManager.Client.LicenseManagerHelper>();
     builder.Services.AddScoped<LicenseNotActivatedMiddleware>();
+    builder.Services.AddScoped<LicenseManager.Client.TenantResolver.ISuperAdminChecker,
+        DomuWave.Unified.Middleware.DomuWaveSuperAdminChecker>();
     builder.Host.UseSerilog(logger);
 
     var app = builder.Build();
@@ -212,6 +215,7 @@ try
 
     // API controllers
     app.MapControllers();
+    app.MapLicenseManagerWebhook();
 
     string GetWwwroot() => app.Environment.IsDevelopment()
         ? Path.GetFullPath(Path.Combine(app.Environment.ContentRootPath, "..", "DomuWave.Web", "wwwroot"))

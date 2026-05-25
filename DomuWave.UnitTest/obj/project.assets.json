@@ -483,7 +483,7 @@
           }
         }
       },
-      "LicenseManager.Client/1.1.4": {
+      "LicenseManager.Client/1.1.9": {
         "type": "package",
         "dependencies": {
           "Microsoft.IdentityModel.Tokens": "8.0.2",
@@ -4099,7 +4099,7 @@
           "CPQ.Core.EventSource": "1.0.0",
           "CsvHelper": "33.1.0",
           "Hangfire.Core": "1.8.18",
-          "LicenseManager.Client": "1.1.4",
+          "LicenseManager.Client": "1.1.9",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.0",
           "QuestPDF": "2026.2.4",
           "System.ServiceProcess.ServiceController": "8.0.1"
@@ -4766,16 +4766,16 @@
         "lib/netstandard1.3/Iesi.Collections.xml"
       ]
     },
-    "LicenseManager.Client/1.1.4": {
-      "sha512": "QEfX2Apa7lxwIM4NnQUQa3345jUWYEFmNn9Kkl8Elr3iTHu+C+BC3Esx9+fOQkDu/elTtmCCTpiNh/CXXsZShw==",
+    "LicenseManager.Client/1.1.9": {
+      "sha512": "/fFWzXXa6NUG4vettzNHkGDtEUCvcbVCnJizp5UebMMuoxHe7d5Kg4Mt4JOQGXFb3/xAWYNJrcD+PI8H6sKrrg==",
       "type": "package",
-      "path": "licensemanager.client/1.1.4",
+      "path": "licensemanager.client/1.1.9",
       "files": [
         ".nupkg.metadata",
         "lib/net10.0/LicenseManager.Client.dll",
         "lib/net8.0/LicenseManager.Client.dll",
         "lib/net9.0/LicenseManager.Client.dll",
-        "licensemanager.client.1.1.4.nupkg.sha512",
+        "licensemanager.client.1.1.9.nupkg.sha512",
         "licensemanager.client.nuspec"
       ]
     },

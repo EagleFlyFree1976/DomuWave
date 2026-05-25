@@ -1,10 +1,11 @@
+using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Interfaces;
-using DomuWave.Services.Settings;
+using DomuWave.Services.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using NHibernate.Linq;
 using System.Net;
 using System.Text.Json;
 
@@ -22,14 +23,14 @@ public class LicenseNotActivatedMiddleware(
     IEmailService                          emailService,
     IConfiguration                         configuration,
     IUserService                           userService,
-    ITenantService                         tenantService) : IMiddleware
+    ITenantService                         tenantService,
+    ISessionFactoryProvider                sessionFactoryProvider) : IMiddleware
 {
     // Evita di inviare la stessa mail più volte per lo stesso tenant nella stessa ora
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, DateTime> _mailSent = new();
 
     public async Task InvokeAsync(HttpContext context, RequestDelegate next)
     {
-        // Intercettiamo la risposta usando un body buffer
         var originalBody = context.Response.Body;
         using var buffer = new System.IO.MemoryStream();
         context.Response.Body = buffer;
@@ -45,13 +46,11 @@ public class LicenseNotActivatedMiddleware(
 
         if (context.Response.StatusCode != (int)HttpStatusCode.PaymentRequired)
         {
-            // Non è un 402 — ripristina il body originale invariato
             buffer.Seek(0, System.IO.SeekOrigin.Begin);
             await buffer.CopyToAsync(originalBody, context.RequestAborted);
             return;
         }
 
-        // È un 402 — invia la mail e riscrivi la risposta
         var tenantIdStr = context.Request.Headers["X-Tenant-Id"].FirstOrDefault();
         if (Guid.TryParse(tenantIdStr, out var tenantId))
             await TrySendActivationMailAsync(tenantId, context.RequestAborted);
@@ -75,21 +74,20 @@ public class LicenseNotActivatedMiddleware(
             DateTime.UtcNow - lastSent < TimeSpan.FromHours(1))
             return;
 
-        var smtpConfig = BuildSmtpConfig();
-        if (smtpConfig == null)
-        {
-            logger.LogWarning("[LicenseNotActivated] SMTP non configurato — mail saltata per tenant {TenantId}", tenantId);
-            return;
-        }
-
         try
         {
-            // Recupera il tenant e il suo creatore (owner)
             var tenant = await tenantService.GetByIdAsync(tenantId, null!, ct).ConfigureAwait(false);
             if (tenant == null) return;
 
             var owner = await userService.GetByIdAsync(tenant.CreatedBy, ct).ConfigureAwait(false);
             if (owner == null || string.IsNullOrWhiteSpace(owner.Email)) return;
+
+            var smtpConfig = await BuildSmtpConfigAsync(tenantId, ct).ConfigureAwait(false);
+            if (smtpConfig == null)
+            {
+                logger.LogWarning("[LicenseNotActivated] SMTP non configurato — mail saltata per tenant {TenantId}", tenantId);
+                return;
+            }
 
             var appBaseUrl = configuration["AppBaseUrl"] ?? string.Empty;
             var plansUrl   = $"{appBaseUrl.TrimEnd('/')}/servizio-non-attivato";
@@ -134,23 +132,20 @@ public class LicenseNotActivatedMiddleware(
         }
     }
 
-    private SmtpConfig? BuildSmtpConfig()
+    private async Task<SmtpConfig?> BuildSmtpConfigAsync(Guid tenantId, CancellationToken ct)
     {
-        var host      = configuration["DomuWave:SmtpSettings:Host"];
-        var portStr   = configuration["DomuWave:SmtpSettings:Port"];
-        var useSslStr = configuration["DomuWave:SmtpSettings:UseSsl"];
-        var username  = configuration["DomuWave:SmtpSettings:Username"];
-        var password  = configuration["DomuWave:SmtpSettings:Password"];
-        var fromEmail = configuration["DomuWave:SmtpSettings:FromEmail"];
-        var fromName  = configuration["DomuWave:SmtpSettings:FromName"] ?? "DomuWave";
+        var session = sessionFactoryProvider.GetSession(null);
 
-        if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(username) ||
-            string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fromEmail))
-            return null;
+        var settings = await session.Query<TenantSmtpSettings>()
+            .Where(s => s.Tenant.Id == tenantId && !s.IsDeleted && s.IsEnabled)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
 
-        int.TryParse(portStr,   out var port);
-        bool.TryParse(useSslStr, out var useSsl);
+        if (settings == null) return null;
 
-        return new SmtpConfig(host, port > 0 ? port : 587, useSsl, username, password, fromEmail, fromName);
+        var password = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(settings.PasswordEncrypted));
+        return new SmtpConfig(settings.Host, settings.Port, settings.UseSsl,
+                              settings.Username, password,
+                              settings.FromEmail, settings.FromName);
     }
 }

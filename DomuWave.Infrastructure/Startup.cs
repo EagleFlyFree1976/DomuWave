@@ -12,6 +12,7 @@ using CPQ.Core.Services;
 using CPQ.Core.Services.Clients;
 using CPQ.Core.Settings;
 using CPQ.Core.Startups;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Refit;
 
@@ -110,8 +111,15 @@ public static class Startup
         services.AddScoped<IPrivateThreadService, PrivateThreadService>();
         services.AddScoped<IPrivateMessageService, PrivateMessageService>();
 
+        // ─── LicenseManager ───────────────────────────────────────────────────
+        services.AddScoped<LicenseManager.Client.TenantResolver.ITenantProvider, LicenseTenantProvider>();
+
         // ─── Notification system ──────────────────────────────────────────────
-        services.AddScoped<IEmailService, SmtpEmailService>();
+        services.AddScoped<SmtpEmailService>();
+        services.AddScoped<IEmailService>(sp =>
+            new TestEmailDecorator(
+                sp.GetRequiredService<SmtpEmailService>(),
+                sp.GetRequiredService<IConfiguration>()));
         services.AddScoped<INotificationTemplateVariableResolver, NotificationTemplateVariableResolver>();
 
         return services;

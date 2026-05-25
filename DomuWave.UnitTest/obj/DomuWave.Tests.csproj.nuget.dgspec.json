@@ -79,7 +79,7 @@
             },
             "LicenseManager.Client": {
               "target": "Package",
-              "version": "[1.1.4, )"
+              "version": "[1.1.9, )"
             },
             "Microsoft.Extensions.DependencyInjection.Abstractions": {
               "target": "Package",
