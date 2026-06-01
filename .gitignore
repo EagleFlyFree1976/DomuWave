@@ -95,3 +95,7 @@ DomuWave.IntegrationTests/Logs/
 /DomuWave.Web/obj/project.assets.json
 /DomuWave.Web/obj/project.nuget.cache
 migrations/.claude/
+
+# Frontend build output (generato da `npm run build`, hashato ad ogni build)
+/DomuWave.Web/wwwroot/assets/
+/DomuWave.Web/ClientApp/dist/
