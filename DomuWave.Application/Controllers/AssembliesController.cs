@@ -9,6 +9,7 @@ using DomuWave.Services.Command.AssemblyAttendance;
 using DomuWave.Services.Dto.Assembly;
 using DomuWave.Services.Dto.AssemblyAgendaItem;
 using DomuWave.Services.Dto.AssemblyAttendance;
+using LicenseManager.Client.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -17,6 +18,7 @@ namespace DomuWave.Microservice.Controllers;
 
 [Route("api/assemblies")]
 [Produces("application/json")]
+[RequiresFeature(FeatureKeys.ASSEMBLY)]
 public class AssembliesController(
     ILogger<AssembliesController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,

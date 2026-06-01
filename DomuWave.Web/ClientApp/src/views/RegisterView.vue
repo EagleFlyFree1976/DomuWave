@@ -35,7 +35,7 @@
         <p class="med-subtitle">Bastano 30 secondi per iniziare la prova gratuita.</p>
 
         <!-- Fase 1a: inserimento email + nuova password -->
-        <form v-if="!awaitingCondominoVerify" @submit.prevent="handleStep1" novalidate>
+        <form v-if="!awaitingCondominoVerify && !existingAdmin" @submit.prevent="handleStep1" novalidate>
           <div class="field-group">
             <label class="med-label">Email</label>
             <input class="med-input" :class="{ 'med-input--error': errors.email }"
@@ -67,8 +67,28 @@
           </button>
         </form>
 
+        <!-- Fase 1c: account amministratore già esistente → invito al login -->
+        <template v-else-if="existingAdmin">
+          <div class="condomino-banner">
+            <div class="condomino-banner__icon">👤</div>
+            <div>
+              <strong>Account già esistente</strong>
+              <p>L'email <em>{{ form.email }}</em> è già associata a un account amministratore. Accedi alla piattaforma con le tue credenziali.</p>
+            </div>
+          </div>
+          <RouterLink
+            :to="{ path: '/login', query: { email: form.email.trim() } }"
+            class="med-btn"
+            style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;margin-top:16px">
+            Vai al login <span style="font-size:16px">→</span>
+          </RouterLink>
+          <button type="button" class="med-btn med-btn--ghost" style="margin-top:10px" @click="resetStep1">
+            ← Usa un'altra email
+          </button>
+        </template>
+
         <!-- Fase 1b: verifica identità Condomino -->
-        <template v-else>
+        <template v-else-if="awaitingCondominoVerify">
           <div class="condomino-banner">
             <div class="condomino-banner__icon">🏠</div>
             <div>
@@ -160,27 +180,20 @@
         </form>
       </template>
 
-      <!-- ── STEP 4: Welcome ── -->
+      <!-- ── STEP 4: Controlla la posta ── -->
       <template v-if="step === 4">
-        <div class="welcome-icon">🌊</div>
-        <h2 class="step-title">Benvenuto in DomuWave!</h2>
-        <p class="med-subtitle">Il tuo account è pronto. La prova gratuita è attiva per 30 giorni.</p>
-
-        <ul class="checklist">
-          <li class="checklist__item checklist__item--done">Account creato</li>
-          <li class="checklist__item checklist__item--done">Studio configurato</li>
-          <li class="checklist__item" :class="condominiumCreated ? 'checklist__item--done' : 'checklist__item--skip'">
-            {{ condominiumCreated ? 'Primo condominio aggiunto' : 'Condominio (da aggiungere)' }}
-          </li>
-          <li class="checklist__item checklist__item--done">Prova gratuita attivata</li>
-        </ul>
-
+        <div class="welcome-icon">📧</div>
+        <h2 class="step-title">Controlla la tua casella</h2>
+        <p class="med-subtitle">
+          Abbiamo inviato un'email di conferma a <strong>{{ sentEmail || form.email }}</strong>.
+          Clicca il link nell'email per completare la registrazione e attivare il tuo account.
+        </p>
+        <p class="med-subtitle" style="font-size:13px;color:#888;margin-top:16px">
+          Non hai ricevuto l'email? Controlla la cartella spam, oppure
+          <a href="#" class="link" @click.prevent="resendVerification">invia di nuovo</a>.
+        </p>
         <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
-        <button class="med-btn" @click="goToDashboard" :disabled="loading">
-          <span v-if="loading" class="btn-spinner"></span>
-          <span v-else>Vai alla dashboard</span>
-          <span v-if="!loading" style="font-size:16px">→</span>
-        </button>
+        <div v-if="resendOk" class="api-ok">✓ Email inviata di nuovo.</div>
       </template>
     </div>
 
@@ -190,22 +203,17 @@
 
 <script setup>
 import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { authApi, condominiumApi, licenseApi } from '@/services/api'
-import { useAuthStore } from '@/stores/authStore'
-import { useMenuStore } from '@/stores/menuStore'
-
-const router    = useRouter()
-const authStore = useAuthStore()
-const menuStore = useMenuStore()
+import { authApi } from '@/services/api'
 
 const step                  = ref(1)
 const loading               = ref(false)
 const apiError              = ref('')
 const errors                = reactive({})
-const condominiumCreated    = ref(false)
 const registrationId        = ref(null)   // GUID restituito da selfRegister
+const sentEmail             = ref('')     // email a cui è stata inviata la verifica
+const resendOk              = ref(false)
 const awaitingCondominoVerify = ref(false) // true = email è Condomino → chiedi verifica
+const existingAdmin           = ref(false) // true = email già amministratore → invita al login
 
 const form = reactive({
   email: '', password: '', confirmPassword: '', acceptTerms: false,
@@ -216,8 +224,20 @@ const form = reactive({
 
 function clearErrors() { Object.keys(errors).forEach(k => delete errors[k]) }
 
+// Estrae un messaggio leggibile dalla response di errore.
+// Il backend CPQ.Core risponde { "Errors": ["..."] }; gestiamo anche message/title/string.
+function extractApiError(err, fallback = 'Si è verificato un errore. Riprova.') {
+  const d = err?.response?.data
+  if (!d) return err?.message || fallback
+  if (typeof d === 'string') return d
+  const errs = d.Errors ?? d.errors
+  if (Array.isArray(errs) && errs.length) return errs.join(' ')
+  return d.message ?? d.title ?? d.detail ?? fallback
+}
+
 function resetStep1() {
   awaitingCondominoVerify.value = false
+  existingAdmin.value = false
   form.currentPassword = ''
   clearErrors()
   apiError.value = ''
@@ -238,14 +258,16 @@ async function handleStep1() {
   loading.value = true
   try {
     const res = await authApi.checkEmail({ email: form.email.trim() })
-    if (res.data.isExistingCondomino) {
+    if (res.data.isExistingAdmin) {
+      // Account amministratore già esistente → deve accedere, non registrarsi
+      existingAdmin.value = true
+    } else if (res.data.isExistingCondomino) {
       awaitingCondominoVerify.value = true
     } else {
       step.value = 2
     }
   } catch (err) {
-    const d = err.response?.data
-    apiError.value = typeof d === 'string' ? d : d?.message ?? d?.title ?? 'Errore di rete. Riprova.'
+    apiError.value = extractApiError(err, 'Errore di rete. Riprova.')
   } finally {
     loading.value = false
   }
@@ -268,8 +290,7 @@ async function handleCondominoVerify() {
     if (status === 404 || status === 401) {
       errors.currentPassword = 'Password non corretta. Riprova.'
     } else {
-      const d = err.response?.data
-      apiError.value = typeof d === 'string' ? d : d?.message ?? d?.title ?? 'Errore di verifica. Riprova.'
+      apiError.value = extractApiError(err, 'Errore di verifica. Riprova.')
     }
   } finally {
     loading.value = false
@@ -291,99 +312,47 @@ async function handleStep2() {
     registrationId.value = res.data.registrationId
     step.value = 3
   } catch (err) {
-    const d = err.response?.data
-    apiError.value = typeof d === 'string' ? d : d?.message ?? d?.title ?? 'Errore durante la registrazione. Riprova.'
+    apiError.value = extractApiError(err, 'Errore durante la registrazione. Riprova.')
   } finally {
     loading.value = false
   }
 }
 
-// ── Step 3: crea condominio (opzionale), poi conferma registrazione ──────
+// ── Step 3: salva i dati condominio + invia mail di verifica ─────────────
 async function handleStep3() {
   clearErrors()
   if (!form.condominiumName.trim()) { errors.condominiumName = 'La denominazione è obbligatoria'; return }
-  loading.value = true
-  apiError.value = ''
-  try {
-    // Prima conferma registrazione (crea utente + tenant)
-    await confirmRegistration()
-    // Poi crea condominio con il tenant già attivo
-    await condominiumApi.create({
-      name:    form.condominiumName.trim(),
-      code:    form.condominiumCode.trim() || null,
-      address: {
-        city:       form.condominiumCity.trim() || null,
-        postalCode: form.condominiumZip.trim()  || null,
-      }
-    })
-    condominiumCreated.value = true
-    await activateTrial()
-  } catch (err) {
-    if (!condominiumCreated.value) {
-      const d = err.response?.data
-      apiError.value = typeof d === 'string' ? d : d?.message ?? d?.title ?? 'Si è verificato un errore. Riprova.'
-      loading.value = false
-    }
-  }
+  await sendVerification()
 }
 
 async function skipStep3() {
+  await sendVerification()
+}
+
+async function sendVerification() {
   loading.value = true
   apiError.value = ''
+  resendOk.value = false
   try {
-    await confirmRegistration()
-    await activateTrial()
-  } catch (err) {
-    const d = err.response?.data
-    apiError.value = typeof d === 'string' ? d : d?.message ?? d?.title ?? 'Si è verificato un errore. Riprova.'
-    loading.value = false
-  }
-}
-
-// ── Conferma registrazione: crea utente + tenant con l'Id del pending ───
-async function confirmRegistration() {
-  const res  = await authApi.confirmRegistration({ registrationId: registrationId.value })
-  const data = res.data
-  // Imposta token e tenant in localStorage così le successive chiamate api li trovano
-  localStorage.setItem('domuwave_token', data.token ?? '')
-  localStorage.setItem('domuwave_user', JSON.stringify({ id: data.userId, username: form.email }))
-  localStorage.setItem('tenantId',   data.tenantId)
-  localStorage.setItem('tenantName', data.tenantName)
-}
-
-// ── Attiva piano trial su LicenseManager ────────────────────────────────
-async function activateTrial() {
-  try {
-    await licenseApi.register({
-      firstName: '', lastName: '',
-      email:      form.email,
-      password:   form.password,
-      tenantName: form.tenantName.trim(),
+    const res = await authApi.requestVerification({
+      registrationId:  registrationId.value,
+      condominiumName: form.condominiumName.trim() || null,
+      condominiumCode: form.condominiumCode.trim() || null,
+      condominiumCity: form.condominiumCity.trim() || null,
+      condominiumZip:  form.condominiumZip.trim()  || null,
     })
-  } catch {
-    // trial non critico — continua comunque verso step 4
-  }
-  loading.value = false
-  step.value = 4
-}
-
-// ── Step 4: login completo e redirect ────────────────────────────────────
-async function goToDashboard() {
-  loading.value = true
-  apiError.value = ''
-  try {
-    const result = await authStore.login(form.email, form.password)
-    if (result?.success) {
-      await menuStore.fetchMenu()
-      router.push('/dashboard')
-    } else {
-      router.push({ path: '/login', query: { email: form.email, registered: '1' } })
-    }
-  } catch {
-    router.push({ path: '/login', query: { email: form.email, registered: '1' } })
+    sentEmail.value = res.data.email ?? form.email
+    step.value = 4
+  } catch (err) {
+    apiError.value = extractApiError(err, 'Impossibile inviare l\'email di verifica. Riprova.')
   } finally {
     loading.value = false
   }
+}
+
+async function resendVerification() {
+  await sendVerification()
+  if (!apiError.value) resendOk.value = true
 }
 </script>
 
@@ -543,6 +512,10 @@ form { display: flex; flex-direction: column; gap: 14px; }
 .api-error {
   background: rgba(224,82,82,0.08); border: 1px solid rgba(224,82,82,0.25);
   border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #b33a3a;
+}
+.api-ok {
+  background: rgba(34,197,94,0.10); border: 1px solid rgba(34,197,94,0.30);
+  border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #16a34a; margin-top: 10px;
 }
 
 .med-btn {

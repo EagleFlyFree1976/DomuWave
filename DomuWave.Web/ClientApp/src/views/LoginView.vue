@@ -123,7 +123,7 @@
   const menuStore = useMenuStore()
 
   const form = reactive({
-    username: '',
+    username: route.query.email ?? '',
     password: '',
   })
 

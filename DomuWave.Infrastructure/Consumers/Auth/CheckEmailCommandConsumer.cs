@@ -38,10 +38,14 @@ public class CheckEmailCommandConsumer
         var isCondomino = match != null &&
             string.Equals(match.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase);
 
+        // Esiste un account ma NON è un Condomino → è già amministratore: deve fare login
+        var isAdmin = match != null && !isCondomino;
+
         return new CheckEmailResultDto
         {
             Email               = command.Email,
             IsExistingCondomino = isCondomino,
+            IsExistingAdmin     = isAdmin,
         };
     }
 }

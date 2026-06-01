@@ -4,6 +4,7 @@ using DomuWave.Application.Code;
 using DomuWave.Services.Models;
 using DomuWave.Services.Command.SupplierContract;
 using DomuWave.Services.Dto.SupplierContract;
+using LicenseManager.Client.Filters;
 using Microsoft.AspNetCore.Mvc;
 using SimpleMediator.Core;
 
@@ -11,6 +12,7 @@ namespace DomuWave.Microservice.Controllers;
 
 [Route("api/supplier-contracts")]
 [Produces("application/json")]
+[RequiresFeature(FeatureKeys.SUPPLIER)]
 public class SupplierContractsController(
     ILogger<SupplierContractsController> logger,
     Microsoft.Extensions.Options.IOptionsMonitor<CPQ.Core.Settings.OxCoreSettings> configuration,

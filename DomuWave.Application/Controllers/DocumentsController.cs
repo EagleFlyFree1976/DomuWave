@@ -5,6 +5,7 @@ using DomuWave.Application.Code;
 using DomuWave.Services.Models;
 using DomuWave.Services.Command.Document;
 using DomuWave.Services.Dto.Document;
+using LicenseManager.Client.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -13,6 +14,7 @@ namespace DomuWave.Microservice.Controllers;
 
 [Route("api/documents")]
 [Produces("application/json")]
+[RequiresFeature(FeatureKeys.ATTACHMENTS)]
 public class DocumentsController(
     ILogger<DocumentsController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,

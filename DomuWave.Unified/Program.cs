@@ -195,6 +195,10 @@ try
         return next();
     });
 
+    // Forza charset=utf-8 sulle response JSON (fix encoding messaggi di errore CPQ.Core).
+    // Deve stare PRIMA di UseOxCore per agganciare OnStarting prima che l'ExceptionMiddleware scriva.
+    app.UseMiddleware<DomuWave.Unified.Middleware.JsonCharsetMiddleware>();
+
     app.UseOxCore(_oxCoreSettings);
     app.UseOxHangfireDashboard(_jobSettings);
 

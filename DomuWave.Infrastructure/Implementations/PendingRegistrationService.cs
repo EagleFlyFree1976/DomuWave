@@ -23,6 +23,11 @@ public class PendingRegistrationService : BaseService, IPendingRegistrationServi
             .FirstOrDefaultAsync(x => x.Email == email && x.Status == PendingRegistrationStatus.Pending, ct)
             .ConfigureAwait(false);
 
+    public async Task<PendingRegistration?> GetByTokenAsync(string token, CancellationToken ct)
+        => await session.Query<PendingRegistration>()
+            .FirstOrDefaultAsync(x => x.VerificationToken == token, ct)
+            .ConfigureAwait(false);
+
     public async Task<PendingRegistration> CreateAsync(PendingRegistration entity, CancellationToken ct)
     {
         await session.SaveAsync(entity, ct).ConfigureAwait(false);

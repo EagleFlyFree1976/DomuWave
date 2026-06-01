@@ -1,10 +1,13 @@
 ﻿using CPQ.Core.Controllers;
 using CPQ.Core.Settings;
+using DomuWave.Services.Models;
+using LicenseManager.Client.Filters;
 using Microsoft.Extensions.Options;
 
 namespace DomuWave.Application.Code
 {
- //   [ServiceFilter(typeof(TenantHeaderFilter))]
+    //   [ServiceFilter(typeof(TenantHeaderFilter))]
+    [RequiresFeature(FeatureKeys.LICENCE)]
     public class PrivateControllerBase : OxCoreTokenAuthorizeControllerBase
     {
         

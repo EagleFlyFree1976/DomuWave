@@ -100,11 +100,13 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
   import { useMenuStore } from '@/stores/menuStore'
   import { useSessionStore } from '@/stores/sessionStore'
+  import { useAppStore } from '@/stores/app'
+  import { useFeatureStatus } from '@/composables/useFeatureStatus'
   import TenantSelectorWidget from '@/components/layout/TenantSelectorWidget.vue'
   import CondominioSelectorWidget from '@/components/layout/CondominioSelectorWidget.vue'
 
@@ -113,6 +115,8 @@
   const authStore = useAuthStore()
   const menuStore = useMenuStore()
   const session   = useSessionStore()
+  const appStore  = useAppStore()
+  const { load: loadFeatureStatus, reset: resetFeatureStatus } = useFeatureStatus()
 
   const collapsed   = ref(false)
   const openGroups  = ref([])
@@ -173,8 +177,21 @@
     if (authStore.isAuthenticated) {
       await menuStore.fetchMenu().catch(() => {})
       autoOpenCurrentGroup()
+      await loadFeatureStatus().catch(() => {})
     }
     initialized.value = true
+
+    // Ricarica status quando un'operazione consumabile cambia i crediti
+    window.addEventListener('feature:usage-changed', loadFeatureStatus)
+  })
+
+  onUnmounted(() => {
+    window.removeEventListener('feature:usage-changed', loadFeatureStatus)
+  })
+
+  // Ricarica status al cambio di condominio (cambio tenant)
+  watch(() => appStore.selectedCondominioId, () => {
+    loadFeatureStatus().catch(() => {})
   })
 
   function autoOpenCurrentGroup() {

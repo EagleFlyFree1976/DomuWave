@@ -2,7 +2,13 @@
   <div>
     <div class="page-header">
       <h1>Documenti</h1>
-      <button v-if="canCreate && store.selectedCondominioId" class="btn btn-primary" @click="openModal()">+ Nuovo documento</button>
+      <FeatureGate v-if="canCreate && store.selectedCondominioId"
+        feature="ATTACHMENTS"
+        unit-label="allegati"
+        exhausted-label="Allegati esauriti — Acquista"
+      >
+        <button class="btn btn-primary" @click="openModal()">+ Nuovo documento</button>
+      </FeatureGate>
     </div>
 
     <div class="toolbar">
@@ -161,6 +167,7 @@ import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { documentApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import FeatureGate from '@/components/FeatureGate.vue'
 
 const store  = useAppStore()
 const router = useRouter()

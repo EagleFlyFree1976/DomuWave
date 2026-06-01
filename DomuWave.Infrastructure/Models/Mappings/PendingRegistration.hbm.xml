@@ -18,6 +18,14 @@
     <property name="ConfirmedAt"  column="ConfirmedAt"  type="datetime2" />
     <property name="ExpiresAt"    column="ExpiresAt"    type="datetime2" not-null="true" />
 
+    <property name="VerificationToken"     column="VerificationToken"     type="String"   length="200" />
+    <property name="VerificationExpiresAt" column="VerificationExpiresAt" type="datetime2" />
+
+    <property name="CondominiumName" column="CondominiumName" type="String" length="200" />
+    <property name="CondominiumCode" column="CondominiumCode" type="String" length="50" />
+    <property name="CondominiumCity" column="CondominiumCity" type="String" length="100" />
+    <property name="CondominiumZip"  column="CondominiumZip"  type="String" length="10" />
+
   </class>
 
 </hibernate-mapping>

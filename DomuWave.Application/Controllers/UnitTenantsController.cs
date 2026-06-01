@@ -5,6 +5,7 @@ using DomuWave.Application.Code;
 using DomuWave.Services.Models;
 using DomuWave.Services.Command.UnitTenant;
 using DomuWave.Services.Dto.UnitTenant;
+using LicenseManager.Client.Filters;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -13,6 +14,7 @@ namespace DomuWave.Microservice.Controllers;
 
 [Route("api/unit-tenants")]
 [Produces("application/json")]
+[RequiresFeature(FeatureKeys.UNITS)]
 public class UnitTenantsController(
     ILogger<UnitTenantsController> logger,
     IOptionsMonitor<OxCoreSettings> configuration,
@@ -46,6 +48,7 @@ public class UnitTenantsController(
     [HttpPost]
     [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.UnitTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitTenantReadDto), 201)]
+    [ConsumeFeature(FeatureKeys.UNITS)]
     public async Task<IActionResult> Create([FromBody] CreateUnitTenantDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);

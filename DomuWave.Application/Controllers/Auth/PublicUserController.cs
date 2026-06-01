@@ -117,4 +117,16 @@ public class AuthPublicController(
         var result = await _mediator.GetResponse(new ConfirmRegistrationCommand(dto), cancellationToken);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Step 3: salva i dati del condominio sul pending record, genera il token di verifica
+    /// e invia la mail di conferma. La registrazione si finalizza solo dopo il click sul link.
+    /// </summary>
+    [HttpPost("request-verification")]
+    [ProducesResponseType(typeof(RequestVerificationResultDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RequestVerification([FromBody] RequestVerificationDto dto, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.GetResponse(new RequestVerificationCommand(dto), cancellationToken);
+        return Ok(result);
+    }
 }

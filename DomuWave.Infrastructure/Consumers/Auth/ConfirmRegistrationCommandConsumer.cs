@@ -13,6 +13,7 @@ using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
 using LicenseManager.Client.Services;
 using Microsoft.Extensions.Logging;
+using NHibernate.Linq;
 using SimpleMediator.Core;
 
 namespace DomuWave.Services.Consumers.Auth;
@@ -29,6 +30,7 @@ public class ConfirmRegistrationCommandConsumer
     private readonly IChartOfAccountsCategoryService         _categoryService;
     private readonly IChartOfAccountsTemplateSeedService     _coaTemplateSeed;
     private readonly ILicenseManagerClient                   _licenseClient;
+    private readonly IMediator                               _mediator;
     private readonly ILogger<ConfirmRegistrationCommandConsumer> _logger;
 
     public ConfirmRegistrationCommandConsumer(
@@ -42,6 +44,7 @@ public class ConfirmRegistrationCommandConsumer
         IChartOfAccountsCategoryService          categoryService,
         IChartOfAccountsTemplateSeedService      coaTemplateSeed,
         ILicenseManagerClient                    licenseClient,
+        IMediator                                mediator,
         ILogger<ConfirmRegistrationCommandConsumer> logger) : base(sessionFactoryProvider)
     {
         _authClient              = authClient;
@@ -53,6 +56,7 @@ public class ConfirmRegistrationCommandConsumer
         _categoryService         = categoryService;
         _coaTemplateSeed         = coaTemplateSeed;
         _licenseClient           = licenseClient;
+        _mediator                = mediator;
         _logger                  = logger;
     }
 
@@ -61,21 +65,21 @@ public class ConfirmRegistrationCommandConsumer
         IMediationContext          mediationContext,
         CancellationToken          cancellationToken)
     {
-        // 1. Carica il record di staging
-        var pending = await _pendingService.GetByIdAsync(command.RegistrationId, cancellationToken)
+        // 1. Carica il record di staging tramite il token di verifica
+        var pending = await _pendingService.GetByTokenAsync(command.Token, cancellationToken)
             .ConfigureAwait(false);
 
         if (pending == null)
-            throw new NotFoundException("Registrazione non trovata.");
+            throw new NotFoundException("Link di verifica non valido.");
 
         if (pending.Status != PendingRegistrationStatus.Pending)
             throw new ValidatorException("La registrazione è già stata confermata o è scaduta.");
 
-        if (pending.ExpiresAt < DateTime.UtcNow)
+        if (pending.VerificationExpiresAt is null || pending.VerificationExpiresAt < DateTime.UtcNow)
         {
             pending.Status = PendingRegistrationStatus.Expired;
             await _pendingService.UpdateAsync(pending, cancellationToken).ConfigureAwait(false);
-            throw new ValidatorException("Il link di registrazione è scaduto. Effettua una nuova registrazione.");
+            throw new ValidatorException("Il link di verifica è scaduto. Effettua una nuova registrazione.");
         }
 
         // 2. Verifica esistenza utente per email
@@ -90,10 +94,18 @@ public class ConfirmRegistrationCommandConsumer
             string.Equals(u.Email, pending.Email, StringComparison.OrdinalIgnoreCase));
 
         CPQ.Core.DTO.UserDto authUser;
+        var createdNewAuthUser = false;   // true solo se abbiamo CREATO l'utente (per compensazione)
 
-        if (match != null && string.Equals(match.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase))
+        var isCondomino = match != null && string.Equals(match.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase);
+
+        // Un account amministratore ATTIVO con questa email blocca la registrazione.
+        // Se invece è disattivato (residuo di un tentativo precedente fallito) lo riusiamo.
+        if (match != null && !isCondomino && match.IsActive)
+            throw new ValidatorException("Esiste già un account amministratore con questo indirizzo email.");
+
+        if (match != null)
         {
-            // Promuovi da Condomino ad Amministratore (AMS)
+            // Promuovi/riattiva l'utente esistente come Amministratore (AMS)
             await _authClient.UpdateUserAsync(
                 CommonKeys.SystemUserToken,
                 match.Id,
@@ -111,7 +123,7 @@ public class ConfirmRegistrationCommandConsumer
                 CommonKeys.SystemUserToken, match.Id, cancellationToken)
                 .ConfigureAwait(false);
         }
-        else if (match == null)
+        else
         {
             // Crea nuovo utente; la password è già cifrata con EncryptString nel pending record
             authUser = await _authClient.CreateUserAsync(
@@ -126,20 +138,23 @@ public class ConfirmRegistrationCommandConsumer
                     ModuleCode = "DomuWeb",
                 },
                 cancellationToken).ConfigureAwait(false);
-        }
-        else
-        {
-            throw new ValidatorException("Esiste già un account amministratore con questo indirizzo email.");
+            createdNewAuthUser = true;
         }
 
         var domainUser = await _userService.GetByIdAsync(authUser.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        // 3. Crea tenant con il GUID del pending record come Id (same-id guarantee)
-        var code = System.Text.RegularExpressions.Regex
-            .Replace(pending.TenantName.ToUpperInvariant(), @"[^A-Z0-9_]", "_");
-        code = System.Text.RegularExpressions.Regex.Replace(code, @"_+", "_").Trim('_');
-        if (code.Length > 20) code = code[..20];
+        // Da qui in poi tutte le operazioni DomuWave devono essere atomiche: se una fallisce,
+        // il commit del NHibernateMiddleware fa rollback di tenant/condominio/pending.
+        // L'utente Auth è su un DB separato: in caso di errore lo eliminiamo per compensazione.
+        try
+        {
+
+        // 3. Crea tenant con il GUID del pending record come Id (same-id guarantee).
+        //    Il Code ha un vincolo UNIQUE: genero un codice base dal nome e, in caso di collisione,
+        //    aggiungo un suffisso numerico incrementale finché non ne trovo uno libero (univocità garantita).
+        var code = await GenerateUniqueTenantCodeAsync(pending.TenantName, cancellationToken)
+            .ConfigureAwait(false);
 
         var tenantEntity = new Models.Tenant
         {
@@ -192,10 +207,43 @@ public class ConfirmRegistrationCommandConsumer
             _logger.LogWarning(ex, "LicenseManager non raggiungibile durante la conferma registrazione per tenant {TenantId}.", createdTenant.Id);
         }
 
-        // 7. Marca pending come confermato
+        // 7. Marca pending come confermato e flush PRIMA di creare il condominio,
+        //    così il flush del pending non aggancia in cascade l'address del condominio.
         pending.Status      = PendingRegistrationStatus.Confirmed;
         pending.ConfirmedAt = DateTime.UtcNow;
         await _pendingService.UpdateAsync(pending, cancellationToken).ConfigureAwait(false);
+
+        // 8. Crea il primo condominio (se i dati sono stati forniti nello step 3).
+        //    Se fallisce, l'eccezione si propaga e fa rollback di TUTTO (atomicità).
+        if (!string.IsNullOrWhiteSpace(pending.CondominiumName))
+        {
+            var condoDto = new DomuWave.Services.Dto.Condominium.CreateCondominiumDto
+            {
+                Name = pending.CondominiumName!,
+                Code = string.IsNullOrWhiteSpace(pending.CondominiumCode)
+                    ? pending.CondominiumName!.Trim()
+                    : pending.CondominiumCode!,
+                // Campi NOT NULL con default sensati (l'utente li rifinirà dopo)
+                InstallmentFrequency = "Monthly",
+                InstallmentDueDay    = 1,
+                Address = new DomuWave.Services.Dto.Condominium.CondominiumAddressDto
+                {
+                    Street       = string.Empty,
+                    StreetNumber = string.Empty,
+                    PostalCode   = pending.CondominiumZip  ?? string.Empty,
+                    City         = pending.CondominiumCity ?? string.Empty,
+                    Province     = string.Empty,
+                    Country      = "IT",
+                },
+            };
+            await _mediator.GetResponse(
+                new DomuWave.Services.Command.Condominium.CreateCondominiumCommand(authUser.Id, createdTenant.Id, condoDto),
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        // Forza il flush per far emergere qui eventuali errori DB (es. constraint),
+        // prima di restituire — così la compensazione dell'utente Auth può scattare.
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
 
         return new ConfirmRegistrationResultDto
         {
@@ -205,5 +253,62 @@ public class ConfirmRegistrationCommandConsumer
             TenantId   = createdTenant.Id,
             TenantName = createdTenant.Name,
         };
+
+        }
+        catch (Exception ex)
+        {
+            // Compensazione: se abbiamo creato l'utente Auth ma qualcosa è poi fallito,
+            // ne facciamo la cancellazione LOGICA (DeleteUserAsync → IsActive=false): l'utente è su
+            // un DB separato non coperto dal rollback NHibernate del DB DomuWave.
+            _logger.LogError(ex, "Conferma registrazione fallita per {Email}: rollback in corso.", pending.Email);
+
+            if (createdNewAuthUser)
+            {
+                try
+                {
+                    await _authClient.DeleteUserAsync(CommonKeys.SystemUserToken, authUser.Id, cancellationToken)
+                        .ConfigureAwait(false);
+                }
+                catch (Exception delEx)
+                {
+                    _logger.LogError(delEx, "Compensazione: impossibile disattivare l'utente Auth {UserId}.", authUser.Id);
+                }
+            }
+
+            throw;   // rilancia: il NHibernateMiddleware farà rollback del DB DomuWave
+        }
+    }
+
+    /// <summary>
+    /// Genera un codice tenant univoco partendo dal nome. Normalizza il nome (A-Z, 0-9, _),
+    /// poi verifica l'esistenza nel DB e, in caso di collisione, aggiunge un suffisso numerico
+    /// incrementale (_2, _3, ...) finché non trova un codice libero. Univocità garantita.
+    /// </summary>
+    private async Task<string> GenerateUniqueTenantCodeAsync(string tenantName, CancellationToken ct)
+    {
+        const int maxLen = 50;
+
+        var baseCode = System.Text.RegularExpressions.Regex
+            .Replace(tenantName.ToUpperInvariant(), @"[^A-Z0-9_]", "_");
+        baseCode = System.Text.RegularExpressions.Regex.Replace(baseCode, @"_+", "_").Trim('_');
+        if (string.IsNullOrEmpty(baseCode)) baseCode = "TENANT";
+        if (baseCode.Length > maxLen) baseCode = baseCode[..maxLen];
+
+        var candidate = baseCode;
+        var suffix    = 1;
+
+        while (await session.Query<Models.Tenant>()
+                   .AnyAsync(t => t.Code == candidate, ct)
+                   .ConfigureAwait(false))
+        {
+            suffix++;
+            var tag = $"_{suffix}";
+            var trimmed = baseCode.Length + tag.Length > maxLen
+                ? baseCode[..(maxLen - tag.Length)]
+                : baseCode;
+            candidate = trimmed + tag;
+        }
+
+        return candidate;
     }
 }

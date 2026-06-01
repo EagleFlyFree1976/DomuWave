@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
+using CPQ.Core.ActionFilters;
+using CPQ.Core.Controllers;
 using CPQ.Core.Services;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
@@ -6,12 +8,24 @@ using DomuWave.Services.Interfaces;
 using LicenseManager.Client;
 using LicenseManager.Client.Cache;
 using LicenseManager.Client.Configuration;
+using LicenseManager.Client.Context;
 using LicenseManager.Client.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
 
 namespace DomuWave.Microservice.Controllers;
+
+public class FeatureStatusDto
+{
+    public string Code        { get; set; } = string.Empty;
+    public bool   IsConsumable { get; set; }
+    public int    Used        { get; set; }
+    public int?   Limit       { get; set; }
+    public int?   Remaining   { get; set; }
+    public bool   IsExhausted { get; set; }
+    public bool   IsWarning   { get; set; }
+}
 
 [Route("api/license")]
 [Produces("application/json")]
@@ -21,15 +35,24 @@ public class LicenseController(
     IOptions<LicenseManagerOptions> lmOptions,
     ILicenseManagerClient lmClient,
     ITokenCache tokenCache,
+    ILicenseContext licenseContext,
     LicenseManagerHelper licenseHelper,
     IUserService userService,
     ITenantService tenantService)
-    : PrivateControllerBase(logger, configuration)
+    : OxCoreTokenAuthorizeControllerBase(logger, configuration)
 {
     private readonly LicenseManagerOptions _lmOpts = lmOptions.Value;
 
+    // LicenseController NON eredita da PrivateControllerBase per evitare il vincolo
+    // [RequiresFeature(LICENCE)]: alcuni endpoint sono pubblici (register, plans) o servono
+    // proprio ad attivare la prima licenza. TenantId riportato qui.
+    protected Guid? TenantId =>
+        Request.Headers.TryGetValue("X-Tenant-Id", out var v) && Guid.TryParse(v, out var g)
+            ? g : null;
+
     /// <summary>Restituisce i piani disponibili per questa applicazione (da LicenseManager).</summary>
     [HttpGet("plans")]
+    [NoAccessTokenRequired]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPlans(CancellationToken ct)
     {
@@ -59,6 +82,7 @@ public class LicenseController(
     /// <summary>Registrazione pubblica: proxy verso LicenseManager POST /api/auth/register.</summary>
     [HttpPost("register")]
     [AllowAnonymous]
+    [NoAccessTokenRequired]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Register([FromBody] object payload, CancellationToken ct)
     {
@@ -112,6 +136,47 @@ public class LicenseController(
             logger.LogWarning(ex, "Impossibile generare l'URL handoff verso LicenseManager.");
             return Ok(new { url = string.Empty });
         }
+    }
+
+    /// <summary>
+    /// Restituisce lo stato corrente di tutte le feature abilitate per il tenant corrente.
+    /// Forza un refresh della cache se la cache è vuota o fail-open, in modo da
+    /// mostrare le licenze appena acquistate senza dover riavviare l'app.
+    /// </summary>
+    [HttpGet("status")]
+    [ProducesResponseType(typeof(IList<FeatureStatusDto>), 200)]
+    public async Task<IActionResult> GetStatus(CancellationToken ct)
+    {
+        if (!TenantId.HasValue)
+            return Ok(Array.Empty<FeatureStatusDto>());
+
+        // Forza sempre un fetch fresco: garantisce che licenze appena acquistate
+        // siano visibili senza dover attendere il webhook o riavviare l'app.
+        tokenCache.Invalidate(TenantId.Value);
+        var freshCache = await lmClient.GetTokensAsync(TenantId.Value, ct).ConfigureAwait(false);
+
+        if (freshCache is null || freshCache.IsFailOpen)
+            return Ok(Array.Empty<FeatureStatusDto>());
+
+        var result = freshCache.Tokens
+            .Where(kv => kv.Value.IsActive)
+            .Select(kv =>
+            {
+                var t   = kv.Value;
+                var pct = t.UsageLimit > 0 ? (double)t.UsedCount / t.UsageLimit.Value : 0;
+                return new FeatureStatusDto
+                {
+                    Code         = kv.Key,
+                    IsConsumable = t.UsageLimit.HasValue,
+                    Used         = t.UsedCount,
+                    Limit        = t.UsageLimit,
+                    Remaining    = t.Remaining,
+                    IsExhausted  = t.UsageLimit.HasValue && t.Remaining <= 0,
+                    IsWarning    = t.UsageLimit.HasValue && pct >= 0.9 && t.Remaining > 0,
+                };
+            }).ToList();
+
+        return Ok(result);
     }
 
     private async Task EnsureTenantRegisteredAsync(Guid tenantId, CancellationToken ct)

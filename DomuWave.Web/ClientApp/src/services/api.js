@@ -48,7 +48,15 @@ async function parseErrorData(err) {
 }
 
 api.interceptors.response.use(
-  res => res,
+  res => {
+    // Ricarica lo status delle feature quando il server segnala warning o limite esaurito
+    const warning   = res.headers?.['x-usage-warning']
+    const remaining = res.headers?.['x-usage-remaining']
+    if (warning === 'true' || remaining === '0') {
+      window.dispatchEvent(new CustomEvent('feature:usage-changed'))
+    }
+    return res
+  },
   async err => {
     await parseErrorData(err)
     const status  = err.response?.status
@@ -57,6 +65,20 @@ api.interceptors.response.use(
     // 402 — licenza non attiva: reindirizza alla pagina piani
     if (status === 402 && err.response?.data?.reason === 'LICENSE_NOT_ACTIVATED') {
       window.dispatchEvent(new CustomEvent('license:not-activated'))
+      return Promise.reject(err)
+    }
+
+    // 402 — crediti esauriti (ConsumeFeature)
+    if (status === 402 && err.response?.data?.status === 'LIMIT_EXCEEDED') {
+      window.dispatchEvent(new CustomEvent('feature:exhausted', {
+        detail: {
+          featureCode: err.response.data.featureCode,
+          used:        err.response.data.used,
+          limit:       err.response.data.limit,
+        }
+      }))
+      // Ricarica lo status per aggiornare UI
+      window.dispatchEvent(new CustomEvent('feature:usage-changed'))
       return Promise.reject(err)
     }
 
@@ -610,6 +632,7 @@ export const privateThreadApi = {
 export const licenseApi = {
   getPlans:      () => api.get('/license/plans'),
   getHandoffUrl: () => api.get('/license/handoff'),
+  getStatus:     () => api.get('/license/status'),
   register:      (data) => api.post('/license/register', data),
   refreshCache:  (tenantId) => api.post('/license/refresh-cache', {}, {
     headers: tenantId ? { 'X-Tenant-Id': tenantId } : {}
@@ -620,6 +643,7 @@ export const licenseApi = {
 export const authApi = {
   checkEmail:          (data) => api.post('/auth/check-email', data),
   selfRegister:        (data) => api.post('/auth/self-register', data),
+  requestVerification: (data) => api.post('/auth/request-verification', data),
   confirmRegistration: (data) => api.post('/auth/confirm-registration', data),
   login:               (data) => api.post('/PublicUser/login', data),
 }

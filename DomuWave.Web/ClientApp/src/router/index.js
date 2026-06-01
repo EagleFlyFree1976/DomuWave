@@ -20,6 +20,11 @@ const routes = [
     meta: { title: 'Inizia la prova gratuita' },
   },
   {
+    path: '/register/verify',
+    component: () => import('@/views/VerifyRegistrationView.vue'),
+    meta: { title: 'Conferma registrazione' },
+  },
+  {
     path: '/select-tenant',
     component: () => import('@/views/CondomininoTenantSelectView.vue'),
     meta: { title: 'Seleziona condominio', requiresAuth: true },
@@ -127,6 +132,11 @@ const routes = [
         path: 'servizio-non-attivato', name: 'servizio-non-attivato',
         component: () => import('@/views/ServizioNonAttivatoView.vue'),
         meta: { title: 'Servizio non attivato', requiresAuth: true },
+      },
+      {
+        path: 'licenze', name: 'licenze',
+        component: () => import('@/views/LicenzeView.vue'),
+        meta: { title: 'La mia licenza', requiresAuth: true },
       },
       {
         path: 'users/:id', name: 'user-detail',

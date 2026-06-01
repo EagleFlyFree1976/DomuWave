@@ -11,6 +11,17 @@ public class PendingRegistration
     public virtual DateTime? ConfirmedAt { get; set; }
     public virtual DateTime ExpiresAt   { get; set; }
 
+    // ── Verifica email (double opt-in) ────────────────────────
+    /// <summary>Token inviato via email; il click sul link conferma la registrazione.</summary>
+    public virtual string?   VerificationToken     { get; set; }
+    public virtual DateTime? VerificationExpiresAt { get; set; }
+
+    // ── Dati del primo condominio (creato alla conferma) ──────
+    public virtual string?  CondominiumName { get; set; }
+    public virtual string?  CondominiumCode { get; set; }
+    public virtual string?  CondominiumCity { get; set; }
+    public virtual string?  CondominiumZip  { get; set; }
+
     public override int GetHashCode() => Id.GetHashCode();
 }
 
