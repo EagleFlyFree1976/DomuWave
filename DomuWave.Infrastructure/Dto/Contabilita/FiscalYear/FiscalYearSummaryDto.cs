@@ -7,6 +7,10 @@ namespace DomuWave.Services.Dto.Contabilita.FiscalYear
     /// </summary>
     public class FiscalYearSummaryDto
     {
+        /// <summary>Saldo iniziale dell'esercizio: somma dei saldi iniziali delle unità
+        /// (propagati dal saldo di chiusura dell'esercizio precedente, se esistente).</summary>
+        public decimal TotalOpeningBalance { get; set; }
+
         /// <summary>Totale spese registrate nell'esercizio (tutte, indipendentemente dallo stato).</summary>
         public decimal TotalExpenses { get; set; }
 

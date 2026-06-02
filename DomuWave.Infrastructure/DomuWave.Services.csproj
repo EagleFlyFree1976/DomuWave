@@ -66,6 +66,7 @@
     <None Remove="Models\Mappings\ConsumptionChargeItem.hbm.xml" />
     <None Remove="Models\Mappings\NotificationTemplate.hbm.xml" />
     <None Remove="Models\Mappings\TenantSmtpSettings.hbm.xml" />
+    <None Remove="Models\Mappings\TenantDisplaySettings.hbm.xml" />
     <None Remove="Models\Mappings\CommunicationNotification.hbm.xml" />
     <None Remove="Models\Mappings\NotificationAttachment.hbm.xml" />
     <None Remove="Models\Mappings\Building.hbm.xml" />
@@ -145,6 +146,7 @@
     <EmbeddedResource Include="Models\Mappings\ConsumptionChargeItem.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\NotificationTemplate.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\TenantSmtpSettings.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\TenantDisplaySettings.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\CommunicationNotification.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\NotificationAttachment.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Building.hbm.xml" />

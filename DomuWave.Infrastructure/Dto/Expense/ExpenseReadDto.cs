@@ -12,12 +12,14 @@ public class ExpenseReadDto : TraceEntityDTO<long>
     public string?  SupplierName       { get; set; }
     public int      AccountId          { get; set; }
     public string   AccountName        { get; set; } = string.Empty;
-    public int      MillesimalTableId  { get; set; }
+    public int?     MillesimalTableId  { get; set; }
     public string   MillesimalTableName { get; set; } = string.Empty;
+    public int?     UnitId             { get; set; }
+    public string?  UnitName           { get; set; }
     public string   Name               { get; set; } = string.Empty;
     public string?  DocumentNumber     { get; set; }
-    public DateTime DocumentDate       { get; set; }
-    public DateTime RegistrationDate   { get; set; }
+    public DateTime? DocumentDate      { get; set; }
+    public DateTime? RegistrationDate  { get; set; }
     public decimal  TaxableAmount          { get; set; }
     public decimal  TaxableAmountVatExempt { get; set; }
     public decimal  GrossAmount            { get; set; }
@@ -36,4 +38,5 @@ public class ExpenseReadDto : TraceEntityDTO<long>
     public string?  Description        { get; set; }
     public int      ChargeabilityTypeId   { get; set; }
     public string   ChargeabilityTypeName { get; set; } = string.Empty;
+    public bool     Send770               { get; set; }
 }

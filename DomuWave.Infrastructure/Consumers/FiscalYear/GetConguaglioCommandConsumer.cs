@@ -61,6 +61,29 @@ public class GetConguaglioCommandConsumer
             .SumAsync(i => (decimal?)i.Amount, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
+        // ── Quote a CONSUMO ────────────────────────────────────────────────────
+        // Le spese su conti collegati a un tipo di consumo (con ripartizione approvata)
+        // NON vanno ripartite a millesimi: si usano le quote per unità calcolate sui consumi.
+        // Carica la quota di consumo per unità (somma ConsumptionChargeItem.Amount).
+        var consumoItems = await session.Query<ConsumptionChargeItem>()
+            .Where(ci => !ci.IsDeleted
+                      && !ci.Charge.IsDeleted
+                      && ci.Charge.Status.Id     == ConsumptionChargeStatus.Approved
+                      && ci.Charge.FiscalYear.Id == fiscalYear.Id)
+            .Select(ci => new { UnitId = ci.Unit.Id, ci.Amount })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var consumoByUnit = consumoItems
+            .GroupBy(x => x.UnitId)
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Amount));
+
+        // Totale delle spese da ripartire a CONSUMO (somma delle quote per unità)
+        var totalConsumo = consumoByUnit.Values.Sum();
+
+        // Totale da ripartire a MILLESIMI = totale spese - quota consumo
+        var totalMillesimalExpenses = totalExpenses - totalConsumo;
+
         // Verifica integrità tabella millesimale abilitata
         var (millesimalTable, unitMillesimals) = await MillesimalTableGuard
             .LoadAndValidateAsync(session, fiscalYear.Condominium.Id, cancellationToken)
@@ -98,9 +121,13 @@ public class GetConguaglioCommandConsumer
         // Costruisce le righe individuali per ogni unità millesimale
         ConguaglioUnitItemDto BuildUnitRow(UnitMillesimal um)
         {
-            var quotaConsuntiva = totalMillesimal > 0
-                ? Math.Round(totalExpenses * um.Millesimal / totalMillesimal, 2)
+            // Quota a millesimi (solo sulle spese NON a consumo)
+            var quotaMillesimi = totalMillesimal > 0
+                ? Math.Round(totalMillesimalExpenses * um.Millesimal / totalMillesimal, 2)
                 : 0m;
+            // Quota a consumo (già calcolata per unità nelle ripartizioni consumi)
+            var quotaConsumo = consumoByUnit.TryGetValue(um.Unit.Id, out var qc) ? qc : 0m;
+            var quotaConsuntiva = quotaMillesimi + quotaConsumo;
             var alreadyPaid = paidMap.TryGetValue(um.Unit.Id, out var p) ? p : 0m;
             var saldo       = quotaConsuntiva - alreadyPaid;
             return new ConguaglioUnitItemDto

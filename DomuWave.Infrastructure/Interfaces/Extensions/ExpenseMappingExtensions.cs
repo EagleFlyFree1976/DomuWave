@@ -23,8 +23,10 @@ public static class ExpenseMappingExtensions
             SupplierName            = entity.Supplier?.Name,
             AccountId               = entity.Account?.Id ?? 0,
             AccountName             = entity.Account?.Name ?? string.Empty,
-            MillesimalTableId       = entity.MillesimalTable?.Id ?? 0,
+            MillesimalTableId       = entity.MillesimalTable?.Id,
             MillesimalTableName     = entity.MillesimalTable?.Name ?? string.Empty,
+            UnitId                  = entity.Unit?.Id,
+            UnitName                = entity.Unit?.DisplayName ?? entity.Unit?.Name ?? entity.Unit?.InternalNumber,
             Name                    = entity.Name ?? string.Empty,
             DocumentNumber          = entity.DocumentNumber,
             DocumentDate            = entity.DocumentDate,
@@ -47,6 +49,7 @@ public static class ExpenseMappingExtensions
             Description             = entity.Description,
             ChargeabilityTypeId     = entity.ChargeabilityType?.Id ?? ChargeabilityType.Owner,
             ChargeabilityTypeName   = entity.ChargeabilityType?.Name ?? string.Empty,
+            Send770                 = entity.Send770,
         };
         dto.SetTraceInfo(entity);
         return dto;
@@ -54,7 +57,7 @@ public static class ExpenseMappingExtensions
 
     public static Expense ToEntity(this CreateExpenseDto dto,
         Condominium condominium, FiscalYear fiscalYear, ChartOfAccounts account,
-        MillesimalTable millesimalTable, Supplier? supplier,
+        MillesimalTable? millesimalTable, RealEstateUnit? unit, Supplier? supplier,
         ExpenseType expenseType, ExpensePaymentStatus paymentStatus,
         ExpensePaymentMethod? paymentMethod,
         ChargeabilityType chargeabilityType)
@@ -67,6 +70,7 @@ public static class ExpenseMappingExtensions
             FiscalYear             = fiscalYear,
             Account                = account,
             MillesimalTable        = millesimalTable,
+            Unit                   = unit,
             Supplier               = supplier,
             Name                   = dto.Name,
             DocumentNumber         = dto.DocumentNumber,
@@ -85,11 +89,12 @@ public static class ExpenseMappingExtensions
             PaymentMethod          = paymentMethod,
             Description            = dto.Description,
             ChargeabilityType      = chargeabilityType,
+            Send770                = dto.Send770,
         };
     }
 
     public static void ApplyUpdate(this Expense entity, UpdateExpenseDto dto,
-        ChartOfAccounts account, MillesimalTable millesimalTable, Supplier? supplier,
+        ChartOfAccounts account, MillesimalTable? millesimalTable, RealEstateUnit? unit, Supplier? supplier,
         ExpenseType expenseType, ExpensePaymentStatus paymentStatus,
         ExpensePaymentMethod? paymentMethod,
         ChargeabilityType chargeabilityType)
@@ -97,6 +102,7 @@ public static class ExpenseMappingExtensions
         var gross = CalcGross(dto.TaxableAmount, dto.TaxableAmountVatExempt, dto.VatAmount, dto.PensionFund, dto.StampDuty, dto.WithholdingTax);
         entity.Account                 = account;
         entity.MillesimalTable         = millesimalTable;
+        entity.Unit                    = unit;
         entity.Supplier                = supplier;
         entity.Name                    = dto.Name;
         entity.DocumentNumber          = dto.DocumentNumber;
@@ -115,5 +121,6 @@ public static class ExpenseMappingExtensions
         entity.PaymentMethod           = paymentMethod;
         entity.Description             = dto.Description;
         entity.ChargeabilityType       = chargeabilityType;
+        entity.Send770                 = dto.Send770;
     }
 }

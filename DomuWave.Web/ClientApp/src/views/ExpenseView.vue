@@ -168,15 +168,13 @@
           </select>
           <span v-if="expErrors.expenseTypeId" class="field-error">{{ expErrors.expenseTypeId }}</span>
         </div>
-        <div class="form-group" :class="{ 'has-error': expErrors.documentDate }">
-          <label class="form-label">Data documento *</label>
-          <input class="form-input" type="date" v-model="expForm.documentDate" @input="clearExpError('documentDate')" />
-          <span v-if="expErrors.documentDate" class="field-error">{{ expErrors.documentDate }}</span>
+        <div class="form-group">
+          <label class="form-label">Data documento</label>
+          <input class="form-input" type="date" v-model="expForm.documentDate" />
         </div>
-        <div class="form-group" :class="{ 'has-error': expErrors.registrationDate }">
-          <label class="form-label">Data registrazione *</label>
-          <input class="form-input" type="date" v-model="expForm.registrationDate" @input="clearExpError('registrationDate')" />
-          <span v-if="expErrors.registrationDate" class="field-error">{{ expErrors.registrationDate }}</span>
+        <div class="form-group">
+          <label class="form-label">Data registrazione</label>
+          <input class="form-input" type="date" v-model="expForm.registrationDate" />
         </div>
         <!-- Errore base imponibile -->
         <div v-if="expErrors.taxableBase" class="field-error" style="grid-column:span 2;margin-bottom:0.25rem">
@@ -195,8 +193,8 @@
         </div>
         <div class="form-group" :class="{ 'has-error': expErrors.taxableAmountVatExempt }">
           <label class="form-label">
-            Imponibile esente IVA (€)
-            <span class="label-hint">obbligatorio se non imponibile</span>
+            Imp. es. IVA (€)
+            <span class="label-hint">obbl. se non imponibile</span>
           </label>
           <input class="form-input" type="number" step="0.01" min="0"
                  v-model.number="expForm.taxableAmountVatExempt"
@@ -247,15 +245,33 @@
           </select>
           <span v-if="expErrors.accountId" class="field-error">{{ expErrors.accountId }}</span>
         </div>
-        <div class="form-group" :class="{ 'has-error': expErrors.millesimalTableId }">
-          <label class="form-label">Tabella millesimale *</label>
-          <select class="form-select" v-model.number="expForm.millesimalTableId" @change="clearExpError('millesimalTableId')">
+        <div class="form-group" style="grid-column:span 2" :class="{ 'has-error': expErrors.allocation }">
+          <label class="form-label">Imputazione spesa *</label>
+          <div class="radio-group" style="margin-bottom:0.4rem">
+            <label class="radio-label">
+              <input type="radio" value="table" v-model="expForm.allocationMode" @change="onAllocationModeChange" />
+              Tabella millesimale
+            </label>
+            <label class="radio-label">
+              <input type="radio" value="unit" v-model="expForm.allocationMode" @change="onAllocationModeChange" />
+              Immobile specifico
+            </label>
+          </div>
+          <select v-if="expForm.allocationMode === 'table'" class="form-select"
+                  v-model.number="expForm.millesimalTableId" @change="clearExpError('allocation')">
             <option :value="null" disabled>Seleziona tabella…</option>
             <option v-for="t in enabledMillesimalTables" :key="t.id" :value="t.id">
               {{ t.code }}{{ t.name ? ' – ' + t.name : '' }}{{ !t.isEnabled ? ' (disabilitata)' : '' }}
             </option>
           </select>
-          <span v-if="expErrors.millesimalTableId" class="field-error">{{ expErrors.millesimalTableId }}</span>
+          <select v-else class="form-select"
+                  v-model.number="expForm.unitId" @change="clearExpError('allocation')">
+            <option :value="null" disabled>Seleziona immobile…</option>
+            <option v-for="u in units" :key="u.id" :value="u.id">
+              {{ u.displayName || u.name || u.internalNumber }}
+            </option>
+          </select>
+          <span v-if="expErrors.allocation" class="field-error">{{ expErrors.allocation }}</span>
         </div>
         <div class="form-group">
           <label class="form-label">Fornitore</label>
@@ -274,9 +290,9 @@
           </select>
         </div>
       </div>
-      <div class="form-group" style="margin-top:0.5rem">
+      <div class="form-group form-group--full" style="margin-top:0.5rem">
         <label class="form-label">A carico di</label>
-        <div class="radio-group">
+        <div class="charge-row">
           <label class="radio-label">
             <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="1" />
             Proprietario
@@ -288,6 +304,11 @@
           <label class="radio-label">
             <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="3" />
             Automatico
+          </label>
+          <span class="charge-divider"></span>
+          <label class="checkbox-label">
+            <input type="checkbox" v-model="expForm.send770" />
+            Includi nel modello 770
           </label>
         </div>
       </div>
@@ -336,7 +357,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { expenseApi, chartOfAccountsApi, supplierApi, millesimalTableApi, documentApi } from '@/services/api'
+import { expenseApi, chartOfAccountsApi, supplierApi, millesimalTableApi, documentApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import BaseModal from '@/components/BaseModal.vue'
 import AppPaginator from '@/components/AppPaginator.vue'
@@ -531,14 +552,19 @@ function fmtSize(bytes) {
 
 function clearExpError(field) { delete expErrors.value[field] }
 
+// Cambio modalità imputazione: azzera il campo non più usato (esclusività)
+function onAllocationModeChange() {
+  if (expForm.value.allocationMode === 'unit') expForm.value.millesimalTableId = null
+  else                                          expForm.value.unitId = null
+  clearExpError('allocation')
+}
+
 function validateExpForm() {
   const e = {}
   const f = expForm.value
   if (!f.fiscalYearId)          e.fiscalYearId     = 'Selezionare un esercizio fiscale'
   if (!f.name?.trim())          e.name             = 'Campo obbligatorio'
   if (!f.expenseTypeId)         e.expenseTypeId    = 'Selezionare un tipo spesa'
-  if (!f.documentDate)          e.documentDate     = 'Campo obbligatorio'
-  if (!f.registrationDate)      e.registrationDate = 'Campo obbligatorio'
   const hasTaxable    = f.taxableAmount          > 0
   const hasTaxExempt  = f.taxableAmountVatExempt > 0
   if (!hasTaxable && !hasTaxExempt)
@@ -546,7 +572,11 @@ function validateExpForm() {
   if (hasTaxable && !(f.vatAmount > 0))
     e.vatAmount = "L'IVA è obbligatoria quando è presente l'imponibile"
   if (!f.accountId)             e.accountId        = 'Selezionare un conto'
-  if (!f.millesimalTableId)     e.millesimalTableId = 'Selezionare una tabella millesimale'
+  if (f.allocationMode === 'unit') {
+    if (!f.unitId)              e.allocation = 'Selezionare un immobile'
+  } else {
+    if (!f.millesimalTableId)   e.allocation = 'Selezionare una tabella millesimale'
+  }
 
   expErrors.value = e
   return Object.keys(e).length === 0
@@ -555,6 +585,7 @@ function validateExpForm() {
 const today = new Date().toISOString().slice(0, 10)
 const suppliers        = ref([])
 const millesimalTables = ref([])
+const units            = ref([])
 const enabledMillesimalTables = computed(() => {
   const currentId = editingExp.value ? expForm.value.millesimalTableId : null
   return millesimalTables.value.filter(t => t.isEnabled || t.id === currentId)
@@ -569,6 +600,8 @@ const emptyExpForm = () => ({
   expenseTypeId: 0, paymentStatusId: 1,
   paymentMethodId: null, supplierId: null, accountId: null, millesimalTableId: null, description: '',
   chargeabilityTypeId: 1,
+  send770: false,
+  allocationMode: 'table', unitId: null,
 })
 
 function autoCalcGross() {
@@ -626,8 +659,8 @@ editingExp.value = e?.id ?? null
     fiscalYearId:       e.fiscalYearId ?? defaultFyId,
     name:               e.name ?? '',
     documentNumber:     e.documentNumber ?? '',
-    documentDate:       e.documentDate?.slice(0, 10) ?? today,
-    registrationDate:   e.registrationDate?.slice(0, 10) ?? today,
+    documentDate:       e.documentDate?.slice(0, 10) ?? '',
+    registrationDate:   e.registrationDate?.slice(0, 10) ?? '',
     taxableAmount:          e.taxableAmount          ?? 0,
     taxableAmountVatExempt: e.taxableAmountVatExempt ?? 0,
     grossAmount:            e.grossAmount            ?? 0,
@@ -642,8 +675,11 @@ editingExp.value = e?.id ?? null
     supplierId:         e.supplierId ?? null,
     accountId:          e.accountId ?? null,
     millesimalTableId:  e.millesimalTableId ?? null,
+    unitId:             e.unitId ?? null,
+    allocationMode:     e.unitId ? 'unit' : 'table',
     description:        e.description ?? '',
     chargeabilityTypeId: e.chargeabilityTypeId ?? 1,
+    send770:            e.send770 ?? false,
   } : { ...emptyExpForm(), fiscalYearId: defaultFyId }
 
   if (!store.fiscalYears.length) await store.loadFiscalYears()
@@ -659,12 +695,14 @@ editingExp.value = e?.id ?? null
 
   if (store.selectedCondominioId) {
     try {
-      const [supRes, mtRes] = await Promise.all([
+      const [supRes, mtRes, unitRes] = await Promise.all([
         supplierApi.getAll(),
         millesimalTableApi.getByCondominium(store.selectedCondominioId),
+        unitApi.getByCondominium(store.selectedCondominioId),
       ])
       suppliers.value = supRes.data ?? []
       millesimalTables.value = mtRes.data ?? []
+      units.value = unitRes.data ?? []
     } catch {}
   }
   if (e) await loadDocs(e.id)
@@ -702,8 +740,8 @@ async function saveExpense() {
     const payload = {
       name:               expForm.value.name,
       documentNumber:     expForm.value.documentNumber || null,
-      documentDate:       expForm.value.documentDate,
-      registrationDate:   expForm.value.registrationDate,
+      documentDate:       expForm.value.documentDate || null,
+      registrationDate:   expForm.value.registrationDate || null,
       taxableAmount:          expForm.value.taxableAmount          || 0,
       taxableAmountVatExempt: expForm.value.taxableAmountVatExempt || 0,
       vatAmount:              expForm.value.vatAmount              || 0,
@@ -717,9 +755,11 @@ async function saveExpense() {
       condominiumId:      store.selectedCondominioId,
       fiscalYearId:       expForm.value.fiscalYearId ?? null,
       accountId:          expForm.value.accountId         ?? null,
-      millesimalTableId:  expForm.value.millesimalTableId ?? null,
+      millesimalTableId:  expForm.value.allocationMode === 'unit' ? null : (expForm.value.millesimalTableId ?? null),
+      unitId:             expForm.value.allocationMode === 'unit' ? (expForm.value.unitId ?? null) : null,
       supplierId:         expForm.value.supplierId        ?? null,
       chargeabilityTypeId: expForm.value.chargeabilityTypeId ?? 1,
+      send770:            expForm.value.send770 ?? false,
     }
     if (editingExp.value) {
       await expenseApi.update(editingExp.value, payload)
@@ -762,6 +802,7 @@ async function deleteExpense(id) {
 // Auto-select DefaultMillesimalTable when account changes
 watch(() => expForm.value.accountId, (accountId) => {
   if (!accountId) return
+  if (expForm.value.allocationMode === 'unit') return   // in modalità immobile non tocca la tabella
   const account = chartOfAccounts.value.find(a => a.id === accountId)
   if (account?.defaultMillesimalTableId) {
     expForm.value.millesimalTableId = account.defaultMillesimalTableId
@@ -802,6 +843,23 @@ window.addEventListener('app:refresh', loadExpenses)
 
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+
+/* Riga "A carico di" + flag 770: tutto in linea, va a capo solo se manca spazio */
+.charge-row {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+.charge-row .radio-label,
+.charge-row .checkbox-label {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.875rem; cursor: pointer; user-select: none;
+  white-space: nowrap; margin: 0;
+}
+.charge-row input { cursor: pointer; }
+.charge-divider {
+  width: 1px; align-self: stretch; min-height: 20px;
+  background: var(--border); margin: 0 0.25rem;
+}
 
 th.sortable {
   cursor: pointer;

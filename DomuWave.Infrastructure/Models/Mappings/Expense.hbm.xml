@@ -18,13 +18,14 @@
     <many-to-one name="Condominium" class="DomuWave.Services.Models.Condominium, DomuWave.Services" column="CondominiumId" not-null="true" />
     <many-to-one name="Account" class="DomuWave.Services.Models.ChartOfAccounts, DomuWave.Services" column="AccountId" not-null="true" />
     <many-to-one name="Supplier" class="DomuWave.Services.Models.Supplier, DomuWave.Services" column="SupplierId" />
-    <many-to-one name="MillesimalTable" class="DomuWave.Services.Models.MillesimalTable, DomuWave.Services" column="MillesimalTableId" not-null="true" />
+    <many-to-one name="MillesimalTable" class="DomuWave.Services.Models.MillesimalTable, DomuWave.Services" column="MillesimalTableId" />
+    <many-to-one name="Unit" class="DomuWave.Services.Models.RealEstateUnit, DomuWave.Services" column="UnitId" />
     <many-to-one name="FiscalYear"  class="DomuWave.Services.Models.FiscalYear,DomuWave.Services"     column="FiscalYearId"  not-null="true" />
     <property name="Name" column="Description" type="String" length="500" not-null="true" />
     <property name="Description" column="Notes" type="String" length="1000" />
     <property name="DocumentNumber" column="DocumentNumber" type="String" length="50" />
-    <property name="DocumentDate" column="DocumentDate" type="DateTime" not-null="true" />
-    <property name="RegistrationDate" column="RegistrationDate" type="DateTime" not-null="true" />
+    <property name="DocumentDate" column="DocumentDate" type="DateTime" />
+    <property name="RegistrationDate" column="RegistrationDate" type="DateTime" />
     <property name="TaxableAmount"          column="TaxableAmount"          type="Decimal" not-null="true" />
     <property name="TaxableAmountVatExempt" column="TaxableAmountVatExempt" type="Decimal" not-null="true" />
     <property name="GrossAmount"            column="GrossAmount"            type="Decimal" not-null="true" />
@@ -40,6 +41,7 @@
     <property name="DocumentPath" column="DocumentPath" type="String" length="500" />
     <property name="Notes" column="Notes" type="String" length="1000" insert="false" update="false" />
     <many-to-one name="ChargeabilityType" class="DomuWave.Services.Models.ChargeabilityType, DomuWave.Services" column="ChargeabilityType" not-null="true" lazy="false" fetch="join" />
+    <property name="Send770" column="Send770" type="Boolean" not-null="true" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />

@@ -98,6 +98,7 @@
     <Compile Include="..\DomuWave.Application\Controllers\Auth\AuthUsersController.cs" Link="Controllers\Auth\AuthUsersController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\Auth\PublicUserController.cs" Link="Controllers\Auth\Auth.PublicUserController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\LicenseController.cs" Link="Controllers\LicenseController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\TenantDisplayController.cs" Link="Controllers\TenantDisplayController.cs" />
     <Compile Include="..\DomuWave.Application\Middleware\LicenseNotActivatedMiddleware.cs" Link="Middleware\LicenseNotActivatedMiddleware.cs" />
   </ItemGroup>
 

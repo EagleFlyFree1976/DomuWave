@@ -4,11 +4,12 @@ public class UpdateExpenseDto
 {
     public int      AccountId         { get; set; }
     public int?     SupplierId        { get; set; }
-    public int      MillesimalTableId { get; set; }
+    public int?     MillesimalTableId { get; set; }
+    public int?     UnitId            { get; set; }
     public string   Name              { get; set; } = string.Empty;
     public string?  DocumentNumber    { get; set; }
-    public DateTime DocumentDate      { get; set; }
-    public DateTime RegistrationDate  { get; set; }
+    public DateTime? DocumentDate     { get; set; }
+    public DateTime? RegistrationDate { get; set; }
     public decimal  TaxableAmount          { get; set; }
     public decimal  TaxableAmountVatExempt { get; set; }
     public decimal  VatAmount              { get; set; }
@@ -20,4 +21,5 @@ public class UpdateExpenseDto
     public int?     PaymentMethodId      { get; set; }
     public string?  Description          { get; set; }
     public int      ChargeabilityTypeId  { get; set; } = 0;
+    public bool     Send770              { get; set; }
 }

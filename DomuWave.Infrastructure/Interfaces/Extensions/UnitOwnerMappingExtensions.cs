@@ -17,6 +17,7 @@ public static class UnitOwnerMappingExtensions
             FirstName      = owner.FirstName,
             LastName       = owner.LastName,
             Email          = owner.Email,
+            Phone          = owner.Phone,
             OwnerType      = owner.OwnerType,
             OwnershipQuota = owner.OwnershipQuota,
             StartDate      = owner.StartDate,
@@ -44,6 +45,7 @@ public static class UnitOwnerMappingExtensions
             FirstName      = dto.FirstName,
             LastName       = dto.LastName,
             Email          = dto.Email,
+            Phone          = dto.Phone,
             OwnershipQuota = dto.OwnershipQuota,
             StartDate      = dto.StartDate,
             EndDate        = dto.EndDate,
@@ -74,6 +76,7 @@ public static class UnitOwnerMappingExtensions
         entity.FirstName      = dto.FirstName;
         entity.LastName       = dto.LastName;
         entity.Email          = dto.Email;
+        entity.Phone          = dto.Phone;
         entity.Name           = dto.OwnerType ?? string.Empty;
         entity.OwnershipQuota = dto.OwnershipQuota;
         entity.StartDate      = dto.StartDate;

@@ -10,8 +10,8 @@ namespace DomuWave.Services.Models
         public virtual ChartOfAccounts Account { get; set; }
         public virtual Supplier Supplier { get; set; }
         public virtual string DocumentNumber { get; set; }
-        public virtual DateTime DocumentDate { get; set; }
-        public virtual DateTime RegistrationDate { get; set; }
+        public virtual DateTime? DocumentDate { get; set; }
+        public virtual DateTime? RegistrationDate { get; set; }
         public virtual decimal  TaxableAmount        { get; set; }
         public virtual decimal  TaxableAmountVatExempt { get; set; }
         public virtual decimal  GrossAmount          { get; set; }
@@ -24,12 +24,15 @@ namespace DomuWave.Services.Models
 
         public virtual FiscalYear FiscalYear { get; set; }
         public virtual MillesimalTable MillesimalTable { get; set; }
+        // Alternativa esclusiva alla tabella millesimale: imputazione a un singolo immobile.
+        public virtual RealEstateUnit Unit { get; set; }
         public virtual ExpensePaymentStatus PaymentStatus { get; set; }
         public virtual DateTime? PaymentDate { get; set; }
         public virtual ExpensePaymentMethod PaymentMethod { get; set; }
         public virtual string DocumentPath { get; set; }
         public virtual string Notes { get; set; }
         public virtual ChargeabilityType ChargeabilityType { get; set; }
+        public virtual bool Send770 { get; set; }
 
         public virtual IList<ExpenseAllocation> Allocations { get; set; } = new List<ExpenseAllocation>();
         public override int GetHashCode()
