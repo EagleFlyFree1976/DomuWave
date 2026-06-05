@@ -11,8 +11,10 @@ using DomuWave.Services.Dto.Auth;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using DomuWave.Services.Settings;
 using LicenseManager.Client.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NHibernate.Linq;
 using SimpleMediator.Core;
 
@@ -31,6 +33,7 @@ public class ConfirmRegistrationCommandConsumer
     private readonly IChartOfAccountsTemplateSeedService     _coaTemplateSeed;
     private readonly ILicenseManagerClient                   _licenseClient;
     private readonly IMediator                               _mediator;
+    private readonly DomuWaveSettings                        _settings;
     private readonly ILogger<ConfirmRegistrationCommandConsumer> _logger;
 
     public ConfirmRegistrationCommandConsumer(
@@ -45,6 +48,7 @@ public class ConfirmRegistrationCommandConsumer
         IChartOfAccountsTemplateSeedService      coaTemplateSeed,
         ILicenseManagerClient                    licenseClient,
         IMediator                                mediator,
+        IOptionsMonitor<DomuWaveSettings>        settings,
         ILogger<ConfirmRegistrationCommandConsumer> logger) : base(sessionFactoryProvider)
     {
         _authClient              = authClient;
@@ -57,6 +61,7 @@ public class ConfirmRegistrationCommandConsumer
         _coaTemplateSeed         = coaTemplateSeed;
         _licenseClient           = licenseClient;
         _mediator                = mediator;
+        _settings                = settings.CurrentValue;
         _logger                  = logger;
     }
 
@@ -141,8 +146,16 @@ public class ConfirmRegistrationCommandConsumer
             createdNewAuthUser = true;
         }
 
-        var domainUser = await _userService.GetByIdAsync(authUser.Id, cancellationToken)
-            .ConfigureAwait(false);
+        // Autore delle creazioni DomuWave in fase di attivazione: l'utente di SISTEMA,
+        // recuperato tramite il Code configurato in DomuWaveSettings.SystemUserCode.
+        // L'utente appena creato in Auth non è un autore valido lato DomuWave (CreatedById=0,
+        // Code=null, e potrebbe non essere ancora materializzato sul DB DomuWave).
+        if (string.IsNullOrWhiteSpace(_settings.SystemUserCode))
+            throw new ValidatorException("SystemUserCode non configurato: impossibile completare la registrazione.");
+
+        var domainUser = await _userService.GetByCodeAsync(_settings.SystemUserCode, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new NotFoundException($"Utente di sistema '{_settings.SystemUserCode}' non trovato.");
 
         // Da qui in poi tutte le operazioni DomuWave devono essere atomiche: se una fallisce,
         // il commit del NHibernateMiddleware fa rollback di tenant/condominio/pending.
@@ -237,7 +250,7 @@ public class ConfirmRegistrationCommandConsumer
                 },
             };
             await _mediator.GetResponse(
-                new DomuWave.Services.Command.Condominium.CreateCondominiumCommand(authUser.Id, createdTenant.Id, condoDto),
+                new DomuWave.Services.Command.Condominium.CreateCondominiumCommand(domainUser.Id, createdTenant.Id, condoDto),
                 cancellationToken).ConfigureAwait(false);
         }
 

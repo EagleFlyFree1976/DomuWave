@@ -18,6 +18,8 @@ public  class DomuWaveSettings
 
     /// <summary>URL base della pagina di verifica registrazione (il token viene aggiunto come query).</summary>
     public string RegistrationVerifyUrl { get; set; }
+
+    public string SystemUserCode { get; set; }
 }
 
 public class PlatformSmtpSettings

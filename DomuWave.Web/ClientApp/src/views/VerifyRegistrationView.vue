@@ -34,7 +34,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { authApi, licenseApi } from '@/services/api'
+import { authApi } from '@/services/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useMenuStore } from '@/stores/menuStore'
 
@@ -73,15 +73,9 @@ onMounted(async () => {
     localStorage.setItem('tenantId',   data.tenantId)
     localStorage.setItem('tenantName', data.tenantName)
 
-    // Attiva il piano trial su LicenseManager (non bloccante)
-    try {
-      await licenseApi.register({
-        firstName: '', lastName: '',
-        email:      data.email,
-        password:   '',
-        tenantName: data.tenantName,
-      })
-    } catch { /* trial non critico */ }
+    // Nessuna registrazione su LicenseManager qui: il tenant viene già registrato
+    // lato backend durante la conferma (ConfirmRegistration → NotifyTenantCreatedAsync).
+    // Rifarla qui causava un 400 "email già registrata" mostrato come toast globale.
 
     state.value = 'success'
   } catch (err) {

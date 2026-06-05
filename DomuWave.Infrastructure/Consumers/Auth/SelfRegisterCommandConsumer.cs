@@ -1,7 +1,6 @@
 using CPQ.Core;
 using CPQ.Core.Consumers;
 using CPQ.Core.Exceptions;
-using CPQ.Core.Extensions;
 using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Security;
 using CPQ.Core.Services;
@@ -67,13 +66,14 @@ public class SelfRegisterCommandConsumer
         }
 
         // 3. Salva il record di staging
-        //    La password viene cifrata con lo stesso algoritmo di base_users (EncryptString)
-        //    così ConfirmRegistration può passarla direttamente a CreateUserAsync
+        //    La password viene salvata IN CHIARO: sarà l'endpoint Auth (AuthUserService.CreateUser)
+        //    a cifrarla una sola volta con EncryptString al momento della conferma. Cifrarla qui
+        //    causerebbe una doppia cifratura (Encrypt(Encrypt(pwd))) e il login fallirebbe.
         var pending = new PendingRegistration
         {
             Id           = Guid.NewGuid(),
             Email        = command.Email.Trim().ToLowerInvariant(),
-            PasswordHash = command.Password.EncryptString(),
+            PasswordHash = command.Password,
             TenantName   = command.TenantName.Trim(),
             Status       = PendingRegistrationStatus.Pending,
             CreatedAt    = DateTime.UtcNow,
