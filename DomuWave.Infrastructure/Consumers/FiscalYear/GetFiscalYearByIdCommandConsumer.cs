@@ -74,6 +74,7 @@ public class GetFiscalYearByIdCommandConsumer : InMemoryConsumerBase<GetFiscalYe
 
         dto.Summary = new FiscalYearSummaryDto
         {
+            TotalOpeningBalance      = totalOpeningBalance,
             TotalExpenses            = expenses.Sum(e => e.GrossAmount),
             TotalExpensesPaid        = expenses.Where(e => e.PaymentStatus?.Id == ExpensePaymentStatus.Pagata).Sum(e => e.GrossAmount),
             TotalInstallmentsBilled  = installments.Sum(i => i.TotalAmount),

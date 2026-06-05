@@ -23,6 +23,7 @@
     <property name="FirstName" column="FirstName" type="String" length="100" />
     <property name="LastName" column="LastName" type="String" length="100" />
     <property name="Email" column="Email" type="String" length="200" />
+    <property name="Phone" column="Phone" type="String" length="20" />
     <property name="OwnerType" column="OwnerType" type="String" length="50" not-null="true" insert="false" update="false" />
     <property name="OwnershipQuota" column="OwnershipQuota" type="Decimal" not-null="true" />
     <property name="StartDate" column="StartDate" type="DateTime" not-null="true" />

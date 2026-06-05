@@ -149,9 +149,13 @@
               <label class="form-label">Cognome</label>
               <input class="form-input" v-model="ownerModal.form.lastName" placeholder="Es. Rossi" />
             </div>
-            <div class="form-group" style="grid-column:span 2">
+            <div class="form-group">
               <label class="form-label">Email</label>
               <input class="form-input" type="email" v-model="ownerModal.form.email" placeholder="Es. mario.rossi@email.it" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Telefono</label>
+              <input class="form-input" type="tel" v-model="ownerModal.form.phone" placeholder="Es. +39 333 1234567" />
             </div>
           </div>
         </fieldset>
@@ -461,6 +465,7 @@ function selectAnagr(person, target) {
     ownerModal.form.firstName = person.firstName ?? ''
     ownerModal.form.lastName  = person.lastName ?? ''
     ownerModal.form.email     = person.email ?? ''
+    ownerModal.form.phone     = person.phone ?? ''
     if (person._userId) ownerModal.form.userId = person._userId
   } else {
     tenantModal.form.firstName = person.firstName ?? ''
@@ -493,6 +498,7 @@ const ownerModal = reactive({
     firstName:      '',
     lastName:       '',
     email:          '',
+    phone:          '',
     ownerType:      '',
     ownershipQuota: 100,
     startDate:      '',
@@ -578,6 +584,7 @@ function openAddOwner() {
   ownerModal.form.firstName      = ''
   ownerModal.form.lastName       = ''
   ownerModal.form.email          = ''
+  ownerModal.form.phone          = ''
   ownerModal.form.ownerType      = ''
   ownerModal.form.ownershipQuota = 100
   ownerModal.form.startDate      = todayIso()
@@ -601,6 +608,7 @@ function openEditOwner(owner) {
   ownerModal.form.firstName      = owner.firstName ?? ''
   ownerModal.form.lastName       = owner.lastName ?? ''
   ownerModal.form.email          = owner.email ?? ''
+  ownerModal.form.phone          = owner.phone ?? ''
   ownerModal.form.ownerType      = owner.ownerType ?? ''
   ownerModal.form.ownershipQuota = owner.ownershipQuota
   ownerModal.form.startDate      = owner.startDate?.split('T')[0] ?? ''
@@ -658,6 +666,7 @@ async function saveOwner() {
         firstName:       ownerModal.form.firstName || null,
         lastName:        ownerModal.form.lastName || null,
         email:           ownerModal.form.email || null,
+        phone:           ownerModal.form.phone || null,
         ownerType:       ownerModal.form.ownerType || null,
         ownershipQuota:  ownerModal.form.ownershipQuota,
         startDate:       ownerModal.form.startDate,
@@ -676,6 +685,7 @@ async function saveOwner() {
         firstName:      ownerModal.form.firstName || null,
         lastName:       ownerModal.form.lastName || null,
         email:          ownerModal.form.email || null,
+        phone:          ownerModal.form.phone || null,
         ownerType:      ownerModal.form.ownerType || null,
         ownershipQuota: ownerModal.form.ownershipQuota,
         startDate:      ownerModal.form.startDate,

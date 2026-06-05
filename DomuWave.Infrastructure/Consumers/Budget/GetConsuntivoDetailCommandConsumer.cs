@@ -103,11 +103,19 @@ public class GetConsuntivoDetailCommandConsumer
             .GroupBy(a => a.ExpenseId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        // ── 3. ConsumptionCharge approvate SENZA Expense collegata ───────────
-        // Ripartizioni create prima dell'introduzione del campo Account su ConsumptionType:
-        // non hanno una Expense e non possono averne una (Account mancante).
-        // Le includiamo direttamente come voci sintetiche nel dettaglio.
-        var chargesWithoutExpense = await session.Query<ConsumptionCharge>()
+        // ── 3. ConsumptionCharge approvate SENZA spese sul conto ─────────────
+        // Voci sintetiche SOLO per le ripartizioni "vecchio stile" che non hanno
+        // bollette (Expense) sul conto del tipo consumo: in tal caso le quote non
+        // sono rappresentate da alcuna ExpenseAllocation e vanno aggiunte qui.
+        // Quando invece esistono bollette sul conto (nuovo flusso), le loro
+        // ExpenseAllocation riflettono già i consumi → niente da aggiungere
+        // (altrimenti si conterebbe due volte).
+        var accountsWithExpenses = expenses
+            .Select(e => e.AccountId)
+            .Distinct()
+            .ToHashSet();
+
+        var chargesAll = await session.Query<ConsumptionCharge>()
             .Where(c => c.FiscalYear.Id == fiscalYearId
                      && c.Status.Id     == ConsumptionChargeStatus.Approved
                      && c.Expense       == null
@@ -119,9 +127,15 @@ public class GetConsuntivoDetailCommandConsumer
                 TotalAmount     = c.TotalAmount,
                 DocumentDate    = c.CreationDate,
                 TypeName        = c.ConsumptionType.Name,
+                AccountId       = c.ConsumptionType.Account != null ? (int?)c.ConsumptionType.Account.Id : null,
             })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        // Escludi le charge il cui conto ha già bollette (già coperte dalle ExpenseAllocation)
+        var chargesWithoutExpense = chargesAll
+            .Where(c => !(c.AccountId.HasValue && accountsWithExpenses.Contains(c.AccountId.Value)))
+            .ToList();
 
         // Recupera gli item per queste charge
         var chargeIds = chargesWithoutExpense.Select(c => c.ChargeId).ToList();
@@ -181,7 +195,7 @@ public class GetConsuntivoDetailCommandConsumer
                             Name         = e.ExpenseName,
                             GrossAmount  = e.GrossAmount,
                             SupplierName = e.SupplierName,
-                            DocumentDate = e.DocumentDate,
+                            DocumentDate = e.DocumentDate ?? default,
                             Allocations  = allocs,
                         };
                     })

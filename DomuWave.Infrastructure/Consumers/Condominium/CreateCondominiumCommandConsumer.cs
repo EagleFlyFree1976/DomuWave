@@ -81,7 +81,7 @@ public class CreateCondominiumCommandConsumer : InMemoryConsumerBase<CreateCondo
             Tenant          = tenant,
             Condominium     = created,
             Code            = "DEF",
-            Name            = "Default",
+            Name            = "Generale",
             TotalMillesimal = 1000,
             IsActive        = false,
             IsDraft         = true,

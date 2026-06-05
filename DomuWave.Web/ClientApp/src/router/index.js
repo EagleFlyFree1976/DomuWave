@@ -81,6 +81,8 @@ const routes = [
       { path: 'tabelle-millesimali', component: () => import('@/views/TabelleMillesimaliView.vue'), meta: { title: 'Tabelle Millesimali', requiresTenant: true } },
       { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget', requiresTenant: true } },
       { path: 'consuntivo', component: () => import('@/views/ConsuntivoView.vue'), meta: { title: 'Consuntivo', requiresTenant: true } },
+      { path: 'report-spese-millesimali', component: () => import('@/views/ReportSpesePerMillesimaleView.vue'), meta: { title: 'Report spese per tabella millesimale', requiresTenant: true } },
+      { path: 'report-bilancio-ripartizione', component: () => import('@/views/ReportBilancioRipartizioneView.vue'), meta: { title: 'Bilancio di ripartizione', requiresTenant: true } },
       { path: 'spese',  component: () => import('@/views/ExpenseView.vue'), meta: { title: 'Spese', requiresTenant: true } },
       { path: 'consumi', component: () => import('@/views/ConsumiView.vue'), meta: { title: 'Consumi', requiresTenant: true } },
       { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
@@ -92,6 +94,7 @@ const routes = [
       { path: 'centro-comunicazioni', component: () => import('@/views/CentroComunicazioniView.vue'), meta: { title: 'Bacheca & Messaggi', requiresTenant: true } },
       { path: 'template-notifiche', component: () => import('@/views/NotificationTemplatesView.vue'), meta: { title: 'Template Notifiche', requiresTenant: true } },
       { path: 'impostazioni-smtp', component: () => import('@/views/SmtpSettingsView.vue'), meta: { title: 'Configurazione Email', requiresTenant: true } },
+      { path: 'impostazioni-visualizzazione', component: () => import('@/views/DisplaySettingsView.vue'), meta: { title: 'Impostazioni visualizzazione', requiresTenant: true } },
 
       { path: 'tenants', name:'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
       {

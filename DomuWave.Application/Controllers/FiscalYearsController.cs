@@ -167,4 +167,27 @@ public class FiscalYearsController(
         if (result == null) return NotFound();
         return Ok(result);
     }
+
+    /// <summary>Report: elenco spese dell'esercizio raggruppate per tabella millesimale.</summary>
+    [HttpGet("{id:int}/report/expenses-by-millesimal")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(ExpensesByMillesimalReportDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetExpensesByMillesimalReport(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetExpensesByMillesimalReportCommand(CurrentUser.Id, id), ct);
+        return Ok(result);
+    }
+
+    /// <summary>Report: bilancio di ripartizione per unità (proprietari/inquilini), con
+    /// colonne dinamiche per tipo consumo e tabella millesimale, spese dirette e accrediti.</summary>
+    [HttpGet("{id:int}/report/bilancio-ripartizione")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(BilancioRipartizioneReportDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetBilancioRipartizioneReport(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetBilancioRipartizioneReportCommand(CurrentUser.Id, id), ct);
+        return Ok(result);
+    }
 }

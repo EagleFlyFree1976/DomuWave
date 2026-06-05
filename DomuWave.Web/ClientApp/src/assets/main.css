@@ -641,3 +641,22 @@ tbody tr:hover td {
   padding: 1.5rem;
   flex: 1;
 }
+
+/* ── Stampa: mostra solo il contenuto, nasconde chrome dell'app ──── */
+@media print {
+  .app-sidebar,
+  .condo-breadcrumb,
+  .app-footer,
+  .no-print { display: none !important; }
+
+  .app-layout, .app-main {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .app-content {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  html, body { background: #fff !important; }
+}

@@ -224,12 +224,20 @@ export const fiscalYearApi = {
   propagateOpeningBalances: (id) => api.post(`/fiscal-years/${id}/propagate-opening-balances`),
   delete:                   (id) => api.delete(`/fiscal-years/${id}`),
   getConguaglio:      (id)            => api.get(`/fiscal-years/${id}/conguaglio`),
+  getExpensesByMillesimalReport: (id) => api.get(`/fiscal-years/${id}/report/expenses-by-millesimal`),
+  getBilancioRipartizione:       (id) => api.get(`/fiscal-years/${id}/report/bilancio-ripartizione`),
 }
 
 // ─── Saldi contabili (AccountBalance) ─────────────────────────
 export const accountBalanceApi = {
   getByFiscalYear: (fiscalYearId)      => api.get(`/account-balances/by-fiscal-year/${fiscalYearId}`),
   updateOpening:   (id, data)          => api.put(`/account-balances/${id}`, data),
+}
+
+// ─── Impostazioni di visualizzazione per tenant ───────────────
+export const tenantDisplaySettingsApi = {
+  get:    ()     => api.get('/tenant-display'),
+  update: (data) => api.put('/tenant-display', data),
 }
 
 // ─── Piano dei conti ──────────────────────────────────────────

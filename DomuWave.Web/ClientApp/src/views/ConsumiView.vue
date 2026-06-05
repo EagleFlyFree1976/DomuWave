@@ -480,10 +480,12 @@
           </select>
           <span v-if="chargeErrors.consumptionTypeId" class="field-error">{{ chargeErrors.consumptionTypeId }}</span>
         </div>
-        <div class="form-group form-group--full" :class="{ 'has-error': chargeErrors.totalAmount }">
-          <label class="form-label">Importo totale spesa (€) *</label>
-          <input class="form-input" type="number" step="0.01" v-model.number="chargeForm.totalAmount" @input="delete chargeErrors.totalAmount" />
-          <span v-if="chargeErrors.totalAmount" class="field-error">{{ chargeErrors.totalAmount }}</span>
+        <div class="form-group form-group--full">
+          <p class="charge-info-note">
+            ℹ️ L'importo da ripartire è calcolato automaticamente come somma delle spese
+            (bollette) registrate sul conto di questo tipo di consumo per l'esercizio.
+            La ripartizione richiede che <strong>tutte le unità</strong> abbiano un consumo registrato.
+          </p>
         </div>
         <div class="form-group form-group--full">
           <label class="form-label">Note</label>
@@ -597,6 +599,15 @@ const loadingReadings      = ref(false)
 const savingReadings       = ref(false)
 const showDeletedReadings  = ref(false)
 
+// Range di date dell'esercizio fiscale selezionato (per precompilare le letture)
+const selectedFiscalYearRange = computed(() => {
+  const fy = fiscalYears.value.find(f => f.id === selectedFiscalYearId.value)
+  return {
+    start: fy?.startDate ? fy.startDate.slice(0, 10) : '',
+    end:   fy?.endDate   ? fy.endDate.slice(0, 10)   : '',
+  }
+})
+
 const visibleGroups = computed(() =>
   showDeletedReadings.value
     ? meterGroups.value
@@ -605,6 +616,15 @@ const visibleGroups = computed(() =>
 
 function makeEmptyRow(meterId, meterIsDeleted = false) {
   return { id: 0, meterId, initialValue: 0, initialDate: '', finalValue: 0, finalDate: '', notes: '', meterIsDeleted, modified: true, saving: false, saved: false, prevFinalValue: null, prevFinalDate: null }
+}
+
+// Prima lettura di un contatore: date precompilate col range dell'esercizio selezionato
+function makeFirstRow(meterId, meterIsDeleted = false) {
+  const row = makeEmptyRow(meterId, meterIsDeleted)
+  const range = selectedFiscalYearRange.value
+  row.initialDate = range.start
+  row.finalDate   = range.end
+  return row
 }
 
 function dayAfter(dateStr) {
@@ -638,11 +658,18 @@ function onRowInput(row) {
 function addRow(group) {
   const prev = group.rows.at(-1)
   const newRow = makeEmptyRow(group.meterId)
+  const range = selectedFiscalYearRange.value
   if (prev) {
     newRow.initialValue  = prev.finalValue
     newRow.initialDate   = dayAfter(prev.finalDate)
     newRow.prevFinalValue = prev.finalValue
     newRow.prevFinalDate  = prev.finalDate
+    // La data fine la proponiamo comunque alla fine dell'esercizio
+    newRow.finalDate     = range.end
+  } else {
+    // Prima lettura del contatore: precompila con il range dell'esercizio selezionato
+    newRow.initialDate = range.start
+    newRow.finalDate   = range.end
   }
   group.rows.push(newRow)
 }
@@ -717,7 +744,7 @@ async function onTypeOrFyChange() {
               prevFinalValue: idx > 0 ? existing[idx - 1].finalValue : null,
               prevFinalDate:  idx > 0 ? existing[idx - 1].finalDate?.slice(0, 10) ?? null : null,
             }))
-          : [makeEmptyRow(m.id)]
+          : [makeFirstRow(m.id)]
         return { meterId: m.id, unitName: m.unitName, meterCode: m.code, meterIsDeleted: m.isDeleted ?? false, rows }
       })
   } catch { meterGroups.value = [] } finally { loadingReadings.value = false }
@@ -836,7 +863,9 @@ async function recalculate(id) {
     if (idx !== -1) charges.value[idx] = data
     store.toast('Ripartizione ricalcolata', 'success')
   } catch (err) {
-    if (!err?.response) store.toast('Errore di rete', 'error')
+    const msg = extractError(err)
+    if (msg) store.toast(msg, 'error')
+    else if (!err?.response) store.toast('Errore di rete', 'error')
   } finally {
     recalculatingId.value = null
   }
@@ -850,8 +879,9 @@ async function approveCharge(id) {
     if (idx !== -1) charges.value[idx] = data
     store.toast('Ripartizione approvata — rate generate', 'success')
   } catch (err) {
-    if (!err?.response) store.toast('Errore di rete', 'error')
-    // altrimenti l'errore HTTP viene mostrato dal gestore globale api:error
+    const msg = extractError(err)
+    if (msg) store.toast(msg, 'error')
+    else if (!err?.response) store.toast('Errore di rete', 'error')
   }
 }
 
@@ -964,22 +994,28 @@ const chargeForm       = ref({ consumptionTypeId: null, totalAmount: 0, notes: '
 function openChargeModal(c = null) {
   editingChargeId.value = c?.id ?? null
   chargeForm.value = c
-    ? { consumptionTypeId: c.consumptionTypeId, totalAmount: c.totalAmount, notes: c.notes ?? '' }
-    : { consumptionTypeId: null, totalAmount: 0, notes: '' }
+    ? { consumptionTypeId: c.consumptionTypeId, notes: c.notes ?? '' }
+    : { consumptionTypeId: null, notes: '' }
   chargeErrors.value = {}
   showChargeModal.value = true
+}
+
+// Estrae il messaggio d'errore dal backend ({Errors:[...]} / message / title)
+function extractError(err) {
+  const d = err?.response?.data
+  const errs = d?.Errors ?? d?.errors
+  if (Array.isArray(errs) && errs.length) return errs.join('\n')
+  return d?.message ?? d?.title ?? (typeof d === 'string' ? d : null)
 }
 
 async function saveCharge() {
   chargeErrors.value = {}
   if (!editingChargeId.value && !chargeForm.value.consumptionTypeId) chargeErrors.value.consumptionTypeId = 'Obbligatorio'
-  if (!chargeForm.value.totalAmount || chargeForm.value.totalAmount <= 0) chargeErrors.value.totalAmount = 'Deve essere maggiore di zero'
   if (Object.keys(chargeErrors.value).length) return
   savingCharge.value = true
   try {
     if (editingChargeId.value) {
       const { data } = await consumptionChargeApi.update(editingChargeId.value, {
-        totalAmount: chargeForm.value.totalAmount,
         notes: chargeForm.value.notes,
       })
       const idx = charges.value.findIndex(c => c.id === editingChargeId.value)
@@ -988,14 +1024,17 @@ async function saveCharge() {
       await consumptionChargeApi.create({
         consumptionTypeId: chargeForm.value.consumptionTypeId,
         fiscalYearId:      chargesFiscalYearId.value,
-        totalAmount:       chargeForm.value.totalAmount,
         notes:             chargeForm.value.notes,
       })
       await loadCharges()
     }
     store.toast(editingChargeId.value ? 'Ripartizione aggiornata' : 'Ripartizione creata', 'success')
     showChargeModal.value = false
-  } catch (err) { if (!err?.response) store.toast('Errore di rete', 'error') } finally { savingCharge.value = false }
+  } catch (err) {
+    const msg = extractError(err)
+    if (msg) store.toast(msg, 'error')
+    else if (!err?.response) store.toast('Errore di rete', 'error')
+  } finally { savingCharge.value = false }
 }
 
 // ── Formatters ─────────────────────────────────────────────────────────────
@@ -1134,6 +1173,12 @@ input[type="date"].inline-input { color-scheme: dark; }
 .charge-title { display: flex; align-items: center; gap: 0.5rem; flex: 1; flex-wrap: wrap; }
 .charge-type  { font-weight: 600; }
 .charge-amount { font-weight: 600; font-size: 1.05rem; white-space: nowrap; }
+.charge-info-note {
+  font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);
+  background: var(--accent-glow, rgba(99,102,241,0.08));
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 0.6rem 0.75rem; margin: 0;
+}
 .charge-items { padding: 0.75rem 1rem; }
 
 .items-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }

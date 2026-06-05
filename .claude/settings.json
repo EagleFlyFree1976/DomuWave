@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(git reset *)"
       "Bash(sqlcmd -S eaglefly -d Eagle_Auth -U Cashflow -P 'XiBw$2aun.J!2vt' -Q \"SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME LIKE '%User%'\")",
       "Bash(sqlcmd -S eaglefly -d MSSql217693 -U Cashflow -P 'XiBw$2aun.J!2vt' -Q \"SELECT COUNT\\(*\\) AS Pendings FROM PendingRegistration\")",
       "Bash(sqlcmd -S eaglefly -d MSSql217693 -U Cashflow -P 'XiBw$2aun.J!2vt' -Q \"SELECT TOP 3 Id, Name, Code FROM Tenant WHERE IsDeleted=0 ORDER BY CreationDate DESC\")",

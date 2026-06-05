@@ -120,25 +120,32 @@
                       <!-- Riepilogo finanziario -->
                       <div class="detail-grid">
                         <div class="detail-card">
+                          <div class="detail-label">{{ fy.previousFiscalYearCode ? 'Saldo anno precedente' : 'Saldo iniziale' }}</div>
+                          <div class="detail-value"
+                               :class="(detail.summary?.totalOpeningBalance ?? 0) >= 0 ? 'text-green' : 'text-red'">
+                            {{ fmtAccounting(detail.summary?.totalOpeningBalance, 'balance') }}
+                          </div>
+                        </div>
+                        <div class="detail-card">
                           <div class="detail-label">Spese totali</div>
-                          <div class="detail-value text-red">{{ fmt(detail.summary?.totalExpenses) }}</div>
+                          <div class="detail-value text-red">{{ fmtAccounting(detail.summary?.totalExpenses, 'expense') }}</div>
                         </div>
                         <div class="detail-card">
                           <div class="detail-label">Spese pagate</div>
-                          <div class="detail-value">{{ fmt(detail.summary?.totalExpensesPaid) }}</div>
+                          <div class="detail-value text-red">{{ fmtAccounting(detail.summary?.totalExpensesPaid, 'expense') }}</div>
                         </div>
                         <div class="detail-card">
                           <div class="detail-label">Rate emesse</div>
-                          <div class="detail-value">{{ fmt(detail.summary?.totalInstallmentsBilled) }}</div>
+                          <div class="detail-value">{{ fmtAccounting(detail.summary?.totalInstallmentsBilled, 'income') }}</div>
                         </div>
                         <div class="detail-card">
                           <div class="detail-label">Incassi ricevuti</div>
-                          <div class="detail-value text-green">{{ fmt(detail.summary?.totalPaymentsReceived) }}</div>
+                          <div class="detail-value text-green">{{ fmtAccounting(detail.summary?.totalPaymentsReceived, 'income') }}</div>
                         </div>
                         <div class="detail-card detail-card--balance"
                              :class="(detail.summary?.balance ?? 0) >= 0 ? 'balance-pos' : 'balance-neg'">
                           <div class="detail-label">Saldo</div>
-                          <div class="detail-value">{{ fmt(detail.summary?.balance) }}</div>
+                          <div class="detail-value">{{ fmtAccounting(detail.summary?.balance, 'balance') }}</div>
                         </div>
                       </div>
                       <div class="detail-meta" v-if="detail.closingNotes">
@@ -257,6 +264,19 @@
                                 </td>
                               </tr>
                             </tbody>
+                            <tfoot>
+                              <tr class="balances-total-row">
+                                <td>Totale</td>
+                                <td class="col-num mono">{{ fmt(unitOpeningBalancesTotals.openingBalance) }}</td>
+                                <td class="col-num mono">{{ fmt(unitOpeningBalancesTotals.rateAddebitate) }}</td>
+                                <td class="col-num mono">{{ fmt(unitOpeningBalancesTotals.rateIncassate) }}</td>
+                                <td class="col-num mono">{{ fmt(unitOpeningBalancesTotals.quotaConsuntiva) }}</td>
+                                <td class="col-num mono">{{ fmt(unitOpeningBalancesTotals.saldoConguaglio) }}</td>
+                                <td class="col-num mono" :class="unitOpeningBalancesTotals.closingBalance >= 0 ? 'text-green' : 'text-red'">
+                                  {{ fmt(unitOpeningBalancesTotals.closingBalance) }}
+                                </td>
+                              </tr>
+                            </tfoot>
                           </table>
                         </div>
                       </div>
@@ -491,10 +511,12 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { fiscalYearApi, accountBalanceApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import { useAccountingFormat } from '@/composables/useAccountingFormat'
 import BaseModal from '@/components/BaseModal.vue'
 
 const store = useAppStore()
 const { canCreate, canEdit, canDelete } = usePermissions()
+const { load: loadAccountingFormat, fmtAccounting } = useAccountingFormat()
 
 // ── Lista ──────────────────────────────────────────────────────────────────
 const fiscalYears = ref([])
@@ -524,6 +546,19 @@ const savingBalance    = ref(false)
 // Saldi iniziali per unità
 const unitOpeningBalances        = ref([])
 const loadingUnitOpeningBalances = ref(false)
+
+// Totali della tabella saldi iniziali per unità
+const unitOpeningBalancesTotals = computed(() =>
+  unitOpeningBalances.value.reduce((acc, ub) => {
+    acc.openingBalance  += Number(ub.openingBalance)  || 0
+    acc.rateAddebitate  += Number(ub.rateAddebitate)  || 0
+    acc.rateIncassate   += Number(ub.rateIncassate)   || 0
+    acc.quotaConsuntiva += Number(ub.quotaConsuntiva) || 0
+    acc.saldoConguaglio += Number(ub.saldoConguaglio) || 0
+    acc.closingBalance  += Number(ub.closingBalance)  || 0
+    return acc
+  }, { openingBalance: 0, rateAddebitate: 0, rateIncassate: 0, quotaConsuntiva: 0, saldoConguaglio: 0, closingBalance: 0 })
+)
 
 async function toggleDetail(fy) {
   if (expandedId.value === fy.id) {
@@ -922,7 +957,7 @@ watch(() => store.selectedCondominioId, () => {
   editingBalanceId.value = null
   loadFiscalYears()
 })
-onMounted(loadFiscalYears)
+onMounted(() => { loadFiscalYears(); loadAccountingFormat() })
 onUnmounted(() => window.removeEventListener('app:refresh', loadFiscalYears))
 window.addEventListener('app:refresh', loadFiscalYears)
 </script>
@@ -1017,6 +1052,8 @@ window.addEventListener('app:refresh', loadFiscalYears)
 .balances-table td    { padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .balances-table tbody tr:last-child td { border-bottom: none; }
 .balances-table tbody tr:hover         { background: var(--bg); }
+.balances-table tfoot td               { padding: 0.5rem 0.75rem; border-top: 2px solid var(--border); font-weight: 700; background: var(--bg); }
+.balances-total-row td:first-child     { color: var(--text-muted); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.03em; }
 .col-num    { text-align: right; font-family: monospace; }
 .col-action { width: 32px; text-align: center; }
 

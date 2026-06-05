@@ -9,6 +9,7 @@ public class UnitOwnerReadDto : TraceEntityDTO<int>
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public string? Email { get; set; }
+    public string? Phone { get; set; }
     public string? OwnerType { get; set; }
     public decimal OwnershipQuota { get; set; }
     public DateTime StartDate { get; set; }

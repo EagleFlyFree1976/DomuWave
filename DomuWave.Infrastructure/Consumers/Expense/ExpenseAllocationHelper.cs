@@ -40,28 +40,91 @@ internal static class ExpenseAllocationHelper
         IUser             currentUser,
         CancellationToken cancellationToken)
     {
-        // Verifica se la spesa proviene da una ripartizione consumi.
-        // In tal caso le quote per unità sono già calcolate sui consumi reali
-        // (ConsumptionChargeItem.Amount) e non devono essere sovrascritte con i millesimi.
-        var chargeItems = await session.Query<ConsumptionChargeItem>()
-            .Where(ci => ci.Charge.Expense.Id == expense.Id && !ci.IsDeleted)
-            .Select(ci => new { UnitId = ci.Unit.Id, ci.Amount, ci.Percentage })
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        if (chargeItems.Any())
+        // ── Conti "a consumo" ──────────────────────────────────────────────────
+        // Se il conto della spesa è associato a un tipo di consumo, la bolletta NON
+        // va MAI ripartita a millesimi:
+        //   - se esiste una ripartizione consumi APPROVATA → quote per consumo
+        //   - altrimenti → nessuna allocazione (in attesa dell'approvazione)
+        if (expense.Account != null && expense.FiscalYear != null)
         {
-            // Fonte: ConsumptionChargeItem — ripartizione basata sui consumi reali
+            var isConsumptionAccount = await session.Query<ConsumptionType>()
+                .AnyAsync(t => !t.IsDeleted
+                            && t.Account != null
+                            && t.Account.Id == expense.Account.Id
+                            && t.Condominium.Id == expense.Condominium.Id,
+                          cancellationToken)
+                .ConfigureAwait(false);
+
+            if (isConsumptionAccount)
+            {
+                var consumptionPerc = await session.Query<ConsumptionChargeItem>()
+                    .Where(ci => !ci.IsDeleted
+                              && !ci.Charge.IsDeleted
+                              && ci.Charge.Status.Id == ConsumptionChargeStatus.Approved
+                              && ci.Charge.FiscalYear.Id == expense.FiscalYear.Id
+                              && ci.Charge.ConsumptionType.Account.Id == expense.Account.Id)
+                    .Select(ci => new { UnitId = ci.Unit.Id, ci.Percentage })
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (!consumptionPerc.Any())
+                {
+                    // Conto a consumo ma ripartizione non ancora approvata:
+                    // azzera eventuali allocazioni (niente ripartizione a millesimi).
+                    await DeleteAllocationsAsync(session, expense.Id, currentUser, cancellationToken)
+                        .ConfigureAwait(false);
+                    return;
+                }
+
+                // Ripartisci l'importo di QUESTA bolletta secondo le percentuali di consumo,
+                // assegnando il residuo da arrotondamento all'unità con percentuale maggiore.
+                var gross   = expense.GrossAmount;
+                var ordered = consumptionPerc.OrderByDescending(p => p.Percentage).ToList();
+                decimal allocatedSum = 0m;
+                var rows = new List<AllocationRow>();
+                for (int i = 0; i < ordered.Count; i++)
+                {
+                    var p       = ordered[i];
+                    decimal amount = Math.Round(gross * p.Percentage, 2, MidpointRounding.AwayFromZero);
+                    rows.Add(new AllocationRow
+                    {
+                        UnitId          = p.UnitId,
+                        Millesimal      = 0m,
+                        AllocatedAmount = amount,
+                        Percentage      = p.Percentage * 100m,
+                        Notes           = "Ripartito per consumi",
+                    });
+                    allocatedSum += amount;
+                }
+                // Aggiusta il residuo sull'unità con percentuale maggiore
+                var consumptionRemainder = Math.Round(gross - allocatedSum, 2, MidpointRounding.AwayFromZero);
+                if (consumptionRemainder != 0m && rows.Count > 0)
+                {
+                    rows[0].AllocatedAmount += consumptionRemainder;
+                    rows[0].Rounding         = consumptionRemainder;
+                }
+
+                await UpsertAllocationsAsync(session, expense, currentUser, cancellationToken, rows);
+                return;
+            }
+        }
+
+        // Fonte: imputazione a un singolo immobile — intera spesa sull'unità (100%)
+        if (expense.Unit != null)
+        {
             await UpsertAllocationsAsync(
                 session, expense, currentUser, cancellationToken,
-                rows: chargeItems.Select(ci => new AllocationRow
+                rows: new List<AllocationRow>
                 {
-                    UnitId          = ci.UnitId,
-                    Millesimal      = 0m,
-                    AllocatedAmount = ci.Amount,
-                    Percentage      = ci.Percentage,
-                    Notes           = "Generato da ripartizione consumi",
-                }).ToList());
+                    new AllocationRow
+                    {
+                        UnitId          = expense.Unit.Id,
+                        Millesimal      = 0m,
+                        AllocatedAmount = expense.GrossAmount,
+                        Percentage      = 100m,
+                        Notes           = "Imputazione diretta a singolo immobile",
+                    }
+                });
             return;
         }
 
@@ -126,9 +189,9 @@ internal static class ExpenseAllocationHelper
     {
         public int     UnitId          { get; init; }
         public decimal Millesimal      { get; init; }
-        public decimal AllocatedAmount { get; init; }
+        public decimal AllocatedAmount { get; set; }
         public decimal Percentage      { get; init; }
-        public decimal Rounding        { get; init; }
+        public decimal Rounding        { get; set; }
         public string? Notes           { get; init; }
     }
 

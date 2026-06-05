@@ -52,10 +52,15 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
             throw new ValidatorException("La descrizione della spesa è obbligatoria.");
         if (dto.ExpenseTypeId <= 0)
             throw new ValidatorException("Il tipo spesa è obbligatorio.");
-        if (dto.DocumentDate == default)
-            throw new ValidatorException("La data documento è obbligatoria.");
-        if (dto.RegistrationDate == default)
-            throw new ValidatorException("La data di registrazione è obbligatoria.");
+
+        // Imputazione: o tabella millesimale o singolo immobile (mutuamente esclusivi, uno obbligatorio)
+        bool hasTable = dto.MillesimalTableId.HasValue && dto.MillesimalTableId.Value > 0;
+        bool hasUnit  = dto.UnitId.HasValue && dto.UnitId.Value > 0;
+        if (hasTable && hasUnit)
+            throw new ValidatorException("Specificare la tabella millesimale oppure un immobile, non entrambi.");
+        if (!hasTable && !hasUnit)
+            throw new ValidatorException("Specificare la tabella millesimale oppure un immobile.");
+
         var calcGross = dto.TaxableAmount + dto.TaxableAmountVatExempt + dto.VatAmount + dto.PensionFund + dto.StampDuty - dto.WithholdingTax;
         if (calcGross <= 0)
             throw new ValidatorException("L'importo lordo calcolato deve essere maggiore di zero.");
@@ -70,13 +75,29 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
         if (account == null)
             throw new NotFoundException("Conto del piano dei conti non trovato.");
 
-        var millesimalTable = await session.Query<MillesimalTable>()
-            .FirstOrDefaultAsync(x => x.Id == dto.MillesimalTableId && !x.IsDeleted, cancellationToken)
-            .ConfigureAwait(false);
-        if (millesimalTable == null)
-            throw new NotFoundException("Tabella millesimale non trovata.");
-        if (!millesimalTable.IsEnabled && millesimalTable.Id != entity.MillesimalTable?.Id)
-            throw new ValidatorException("La tabella millesimale selezionata è disabilitata.");
+        MillesimalTable? millesimalTable = null;
+        if (hasTable)
+        {
+            millesimalTable = await session.Query<MillesimalTable>()
+                .FirstOrDefaultAsync(x => x.Id == dto.MillesimalTableId!.Value && !x.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (millesimalTable == null)
+                throw new NotFoundException("Tabella millesimale non trovata.");
+            if (!millesimalTable.IsEnabled && millesimalTable.Id != entity.MillesimalTable?.Id)
+                throw new ValidatorException("La tabella millesimale selezionata è disabilitata.");
+        }
+
+        RealEstateUnit? unit = null;
+        if (hasUnit)
+        {
+            unit = await session.Query<RealEstateUnit>()
+                .FirstOrDefaultAsync(x => x.Id == dto.UnitId!.Value && !x.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+            if (unit == null)
+                throw new NotFoundException("Immobile non trovato.");
+            if (unit.Condominium?.Id != entity.Condominium?.Id)
+                throw new ValidatorException("L'immobile selezionato non appartiene a questo condominio.");
+        }
 
         Supplier? supplier = null;
         if (dto.SupplierId.HasValue)
@@ -98,7 +119,7 @@ public class UpdateExpenseCommandConsumer : InMemoryConsumerBase<UpdateExpenseCo
         var condominiumId = entity.Condominium?.Id ?? 0;
         var fiscalYearId  = entity.FiscalYear?.Id  ?? 0;
 
-        entity.ApplyUpdate(dto, account, millesimalTable, supplier, expenseType, paymentStatus, paymentMethod, chargeabilityType);
+        entity.ApplyUpdate(dto, account, millesimalTable, unit, supplier, expenseType, paymentStatus, paymentMethod, chargeabilityType);
         var updated = await _expenseService
             .UpdateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);

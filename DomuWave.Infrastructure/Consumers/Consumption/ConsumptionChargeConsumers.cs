@@ -108,7 +108,7 @@ public class CreateConsumptionChargeCommandConsumer
             FiscalYear      = fiscalYear,
             Budget          = budget,
             Expense         = expense,
-            TotalAmount     = command.Dto.TotalAmount,
+            TotalAmount     = 0m,   // calcolato in RecalculateItems come somma delle bollette
             Status          = draftStatus,
             Notes           = command.Dto.Notes,
             Tenant          = consumptionType.Tenant,
@@ -151,7 +151,7 @@ public class UpdateConsumptionChargeCommandConsumer
             entity.Expense = null;
         }
 
-        entity.TotalAmount = command.Dto.TotalAmount;
+        // TotalAmount è ricalcolato come somma delle bollette in RecalculateItems
         entity.Notes       = command.Dto.Notes;
         entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
@@ -217,109 +217,47 @@ public class ApproveConsumptionChargeCommandConsumer
                 "Non è possibile approvare la ripartizione: il budget consuntivo di questo esercizio è già stato approvato. " +
                 "Riapri il consuntivo oppure sposta la ripartizione su un altro esercizio.");
 
-        if (!entity.Items.Any(i => !i.IsDeleted && i.Consumption > 0))
-            throw new ValidatorException("Non è possibile approvare una ripartizione senza letture. Inserisci almeno una lettura e ricalcola prima di approvare.");
+        // Ricalcola prima di approvare: garantisce che l'importo (somma bollette) e i
+        // consumi siano aggiornati e che TUTTE le unità abbiano un consumo (altrimenti
+        // RecalculateItems lancia ValidatorException con l'elenco delle mancanti).
+        await ConsumptionChargeHelper.RecalculateItems(entity, currentUser, ct, session).ConfigureAwait(false);
 
-        // Recupera l'installment del budget disponibile (Draft o Open), il più recente per scadenza
-        var installment = await session.Query<CondominiumInstallment>()
-            .Where(x => x.Budget.Id == entity.Budget.Id
-                     && (x.Status.Id == CondominiumInstallmentStatus.Draft
-                      || x.Status.Id == CondominiumInstallmentStatus.Open)
-                     && !x.IsDeleted)
-            .OrderByDescending(x => x.DueDate)
-            .FirstOrDefaultAsync(ct).ConfigureAwait(false);
-
-        if (installment == null)
+        if (entity.TotalAmount <= 0)
             throw new ValidatorException(
-                "Non esiste una rata (aperta o in bozza) nel budget selezionato su cui addebitare i consumi. " +
-                "Verifica che il budget preventivo abbia rate generate.");
+                "Non ci sono spese (bollette) registrate sul conto di questo tipo di consumo per l'esercizio: niente da ripartire.");
 
-        var openStatus = await session.Query<CondominiumInstallmentStatus>()
-            .FirstOrDefaultAsync(x => x.Id == CondominiumInstallmentStatus.Open, ct).ConfigureAwait(false);
+        if (!entity.Items.Any(i => !i.IsDeleted && i.Amount > 0))
+            throw new ValidatorException("La ripartizione non produce quote: verifica consumi e spese registrate.");
 
-        foreach (var item in entity.Items.Where(i => !i.IsDeleted && i.Amount > 0))
-        {
-            var owner = await session.Query<UnitOwner>()
-                .FirstOrDefaultAsync(x => x.Unit.Id == item.Unit.Id && x.IsActive && !x.IsDeleted, ct)
-                .ConfigureAwait(false);
-
-            var fee = new CondominiumFee
-            {
-                Installment   = installment,
-                Unit          = item.Unit,
-                UserId        = owner?.UserId ?? 0,
-                Tenant        = entity.Tenant,
-                AmountDue     = item.Amount,
-                AmountPaid    = 0m,
-                Balance       = item.Amount,
-                PaymentStatus = "ToPay",
-                Notes         = $"[Ripartizione consumi #{entity.Id}] {entity.ConsumptionType?.Name} – {entity.FiscalYear?.Code}",
-                PaymentCode   = PaymentCodeGenerator.Generate(),
-            };
-            if (user != null) fee.Trace(user);
-            await session.SaveAsync(fee, ct).ConfigureAwait(false);
-        }
-
-        // Aggiorna TotalAmount dell'installment sommando tutte le fee (incluse quelle appena aggiunte)
-        await session.FlushAsync(ct).ConfigureAwait(false);
-        var allFees = await session.Query<CondominiumFee>()
-            .Where(f => f.Installment.Id == installment.Id && !f.IsDeleted)
-            .ToListAsync(ct).ConfigureAwait(false);
-        installment.TotalAmount = allFees.Sum(f => f.AmountDue);
-        await session.SaveOrUpdateAsync(installment, ct).ConfigureAwait(false);
-
-        // ── Crea Expense sul conto del tipo consumo (se configurato) ──────────
-        if (entity.ConsumptionType?.Account != null)
-        {
-            var condominium = await session.GetAsync<Models.Condominium>(
-                entity.ConsumptionType.Condominium.Id, ct).ConfigureAwait(false);
-
-            // Tabella millesimale di default del condominio (prima attiva trovata)
-            var millesimalTable = await session.Query<MillesimalTable>()
-                .Where(m => m.Condominium.Id == condominium.Id && m.IsEnabled && !m.IsDeleted)
-                .OrderBy(m => m.Id)
-                .FirstOrDefaultAsync(ct).ConfigureAwait(false);
-            if (millesimalTable == null)
-                throw new ValidatorException(
-                    "Nessuna tabella millesimale attiva trovata per il condominio. " +
-                    "Impossibile creare la spesa associata alla ripartizione.");
-
-            var expenseType       = session.Load<ExpenseType>(ExpenseType.Altro);
-            var paymentStatus     = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
-            var chargeabilityType = session.Load<ChargeabilityType>(ChargeabilityType.Owner);
-
-            var expense = new Expense
-            {
-                Condominium      = condominium,
-                Tenant           = entity.Tenant,
-                Account          = entity.ConsumptionType.Account,
-                FiscalYear       = entity.FiscalYear,
-                MillesimalTable  = millesimalTable,
-                ExpenseType      = expenseType,
-                PaymentStatus    = paymentStatus,
-                ChargeabilityType = chargeabilityType,
-                Name             = $"Consumi {entity.ConsumptionType.Name} – {entity.FiscalYear?.Code}",
-                DocumentDate     = DateTime.Today,
-                RegistrationDate = DateTime.Today,
-                GrossAmount      = entity.TotalAmount,
-                VatAmount        = 0m,
-                NetAmount        = entity.TotalAmount,
-                Notes            = $"[Ripartizione consumi #{entity.Id}] generata automaticamente",
-            };
-            if (user != null) expense.Trace(user);
-            await session.SaveAsync(expense, ct).ConfigureAwait(false);
-            await session.FlushAsync(ct).ConfigureAwait(false);
-
-            entity.Expense = expense;
-        }
-
-        // Cambia stato → Approved
+        // ── Cambia stato → Approved ───────────────────────────────────────────
+        // L'approvazione della ripartizione consumi NON genera rate né quote
+        // (CondominiumFee): le quote per unità (ConsumptionChargeItem) sono già
+        // salvate e confluiscono nel CONSUNTIVO tramite le allocazioni delle bollette
+        // (rigenerate per consumo qui sotto). L'addebito effettivo avviene quando si
+        // approva il budget consuntivo, che genera le rate.
+        // Le bollette sono già registrate durante l'anno sul conto del tipo consumo:
+        // non si crea alcuna Expense "riepilogo".
         var approvedStatus = await session.Query<ConsumptionChargeStatus>()
             .FirstOrDefaultAsync(x => x.Id == ConsumptionChargeStatus.Approved, ct).ConfigureAwait(false);
         entity.Status = approvedStatus;
         entity.Trace(currentUser);
         await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
+
+        // ── Rigenera le allocazioni delle bollette del conto secondo i consumi ──
+        if (entity.ConsumptionType?.Account != null)
+        {
+            var bollette = await session.Query<Expense>()
+                .Where(e => e.FiscalYear.Id == entity.FiscalYear.Id
+                         && e.Account.Id    == entity.ConsumptionType.Account.Id
+                         && !e.IsDeleted)
+                .ToListAsync(ct).ConfigureAwait(false);
+
+            foreach (var bolletta in bollette)
+                await ExpenseAllocationHelper
+                    .RegenerateAllocationsAsync(session, bolletta, currentUser, ct)
+                    .ConfigureAwait(false);
+        }
 
         return entity.ToReadDto();
     }
@@ -364,8 +302,9 @@ internal static class ConsumptionChargeHelper
 {
     /// <summary>
     /// Calcola o ricalcola gli item della ripartizione in base ai consumi registrati.
-    /// Logica: proporzionale al consumo totale di tutte le unità del tipo di consumo.
-    /// Le unità senza letture ricevono quota 0 con HasWarning=true.
+    /// L'importo da ripartire NON è inserito manualmente: è la somma delle spese (bollette)
+    /// registrate durante l'anno sul conto del tipo di consumo per quell'esercizio.
+    /// La ripartizione è consentita solo se TUTTE le unità attive hanno un consumo (non null).
     /// </summary>
     internal static async Task RecalculateItems(ConsumptionCharge entity,
         IUser currentUser,
@@ -373,6 +312,13 @@ internal static class ConsumptionChargeHelper
         ISession session)
     {
         var user = currentUser as CPQ.Core.Memberships.IUser;
+
+        // Il tipo di consumo deve avere un conto associato: è quello su cui sono
+        // registrate le bollette da ripartire.
+        if (entity.ConsumptionType?.Account == null)
+            throw new ValidatorException(
+                "Il tipo di consumo non ha un conto del piano dei conti associato: " +
+                "impossibile determinare le spese da ripartire. Configura il conto sul tipo di consumo.");
 
         // De-marca le letture precedentemente assegnate a questa ripartizione
         // (vengono rimesse nel pool "non ancora ripartite")
@@ -384,6 +330,15 @@ internal static class ConsumptionChargeHelper
             r.Charge = null;
             await session.SaveOrUpdateAsync(r, ct).ConfigureAwait(false);
         }
+
+        // ── Importo da ripartire = somma delle bollette sul conto del tipo consumo ──
+        var accountId = entity.ConsumptionType.Account.Id;
+        var totalAmount = await session.Query<Expense>()
+            .Where(e => e.FiscalYear.Id == entity.FiscalYear.Id
+                     && e.Account.Id    == accountId
+                     && !e.IsDeleted)
+            .SumAsync(e => (decimal?)e.GrossAmount, ct)
+            .ConfigureAwait(false) ?? 0m;
 
         // Tutti i contatori attivi del tipo di consumo
         var meters = await session.Query<Meter>()
@@ -405,15 +360,34 @@ internal static class ConsumptionChargeHelper
             .GroupBy(r => r.Meter.Unit.Id)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Consumption));
 
-        // Unità attive del condominio
+        // Unità DA RIPARTIRE = solo quelle con un contatore attivo del tipo di consumo.
+        // Le unità senza contatore (es. box senza acqua) non rientrano nella ripartizione
+        // e non bloccano il vincolo.
+        var meteredUnitIds = meters
+            .Select(m => m.Unit.Id)
+            .Distinct()
+            .ToList();
+
         var units = await session.Query<RealEstateUnit>()
-            .Where(u => u.Condominium.Id == entity.ConsumptionType.Condominium.Id
+            .Where(u => meteredUnitIds.Contains(u.Id)
                      && u.IsActive && !u.IsDeleted)
             .ToListAsync(ct).ConfigureAwait(false);
 
+        // ── Vincolo: tutte le unità CON CONTATORE ATTIVO devono avere un consumo ────
+        var missing = units
+            .Where(u => !consumptionByUnit.ContainsKey(u.Id))
+            .Select(u => u.DisplayName ?? u.Name ?? u.InternalNumber ?? $"Unità #{u.Id}")
+            .ToList();
+        if (missing.Any())
+            throw new ValidatorException(
+                "Impossibile ripartire: le seguenti unità (con contatore attivo) non hanno una lettura registrata per questo esercizio:\n- "
+                + string.Join("\n- ", missing));
+
         var totalConsumption = consumptionByUnit.Values.Sum();
 
-        // Soft-delete degli item esistenti per ricrearli
+        // Storicizza sull'entità l'importo effettivamente ripartito (somma bollette)
+        entity.TotalAmount = totalAmount;
+
         var existingItems = await session.Query<ConsumptionChargeItem>()
             .Where(i => i.Charge.Id == entity.Id && !i.IsDeleted)
             .ToListAsync(ct).ConfigureAwait(false);
@@ -427,18 +401,17 @@ internal static class ConsumptionChargeHelper
         {
             var unit       = unitList[idx];
             var isLastUnit = idx == unitList.Count - 1;
-            var consumption = consumptionByUnit.TryGetValue(unit.Id, out var c) ? c : 0m;
-            var hasWarning  = !consumptionByUnit.ContainsKey(unit.Id);
+            var consumption = consumptionByUnit[unit.Id];   // garantito presente dal vincolo sopra
 
             decimal amount;
             decimal percentage;
 
-            if (totalConsumption > 0 && !hasWarning)
+            if (totalConsumption > 0)
             {
                 percentage = consumption / totalConsumption;
                 amount = isLastUnit
-                    ? entity.TotalAmount - allocated
-                    : Math.Round(entity.TotalAmount * percentage, 2);
+                    ? totalAmount - allocated
+                    : Math.Round(totalAmount * percentage, 2);
                 if (!isLastUnit) allocated += amount;
             }
             else
@@ -453,7 +426,7 @@ internal static class ConsumptionChargeHelper
                 existing.TotalConsumption = totalConsumption;
                 existing.Percentage       = percentage;
                 existing.Amount           = amount;
-                existing.HasWarning       = hasWarning;
+                existing.HasWarning       = false;
                 existing.Trace(currentUser);
                 await session.SaveOrUpdateAsync(existing, ct).ConfigureAwait(false);
             }
@@ -468,7 +441,7 @@ internal static class ConsumptionChargeHelper
                     TotalConsumption = totalConsumption,
                     Percentage       = percentage,
                     Amount           = amount,
-                    HasWarning       = hasWarning,
+                    HasWarning       = false,
                     IsDeleted        = false,
                 };
                 if (user != null) item.Trace(user);
@@ -483,6 +456,7 @@ internal static class ConsumptionChargeHelper
             await session.SaveOrUpdateAsync(r, ct).ConfigureAwait(false);
         }
 
+        await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
         await session.FlushAsync(ct).ConfigureAwait(false);
 
         // Aggiorna la collezione in memoria
