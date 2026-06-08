@@ -48,7 +48,7 @@ public class GetExpensesByMillesimalReportCommandConsumer
                 MillesimalTableCode = e.MillesimalTable != null ? e.MillesimalTable.Code : null,
                 UnitId              = e.Unit != null ? (int?)e.Unit.Id : null,
                 UnitName            = e.Unit != null ? (e.Unit.DisplayName ?? e.Unit.Name ?? e.Unit.InternalNumber) : null,
-                e.GrossAmount,
+                GrossAmount = e.GrossAmount + e.WithholdingTax,
             })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

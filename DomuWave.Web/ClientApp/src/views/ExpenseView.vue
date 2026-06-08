@@ -627,7 +627,6 @@ async function loadExpenses() {
   syncUrl()
   loadingExp.value = true
   try {
-    const fy = fiscalYears.value.find(f => f.id === selectedFiscalYearId.value)
     const { data } = await expenseApi.getByCondominium(store.selectedCondominioId, {
       page:            currentPage.value,
       pageSize:        pageSize.value,
@@ -636,8 +635,8 @@ async function loadExpenses() {
       search:          search.value || undefined,
       expenseTypeId:   expTypeFilter.value  || undefined,
       paymentStatusId: paymentStatusFilter.value || undefined,
-      dateFrom:        fy?.startDate ? fy.startDate.slice(0, 10) : undefined,
-      dateTo:          fy?.endDate   ? fy.endDate.slice(0, 10)   : undefined,
+      // Filtro per esercizio fiscale tramite l'assegnazione della spesa, non per range di date.
+      fiscalYearId:    selectedFiscalYearId.value || undefined,
     })
     expenses.value   = data?.items      ?? []
     totalCount.value = data?.totalCount ?? 0
