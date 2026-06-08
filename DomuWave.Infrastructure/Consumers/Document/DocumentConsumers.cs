@@ -9,6 +9,7 @@ using DomuWave.Services.Dto.Document;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using LicenseManager.Client.Context;
 using NHibernate.Linq;
 using SimpleMediator.Core;
 
@@ -136,14 +137,17 @@ public class UploadDocumentCommandConsumer
 {
     private readonly IUserService          _userService;
     private readonly ICondominiumService   _condominiumService;
+    private readonly ILicenseContext       _licenseContext;
 
     public UploadDocumentCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUserService            userService,
-        ICondominiumService     condominiumService) : base(sessionFactoryProvider)
+        ICondominiumService     condominiumService,
+        ILicenseContext         licenseContext) : base(sessionFactoryProvider)
     {
         _userService        = userService;
         _condominiumService = condominiumService;
+        _licenseContext     = licenseContext;
     }
 
     protected override async Task<DocumentReadDto> Consume(
@@ -162,6 +166,13 @@ public class UploadDocumentCommandConsumer
         if (string.IsNullOrWhiteSpace(command.Dto.FileContent))
             throw new ValidatorException("Il file è obbligatorio.");
 
+        // Pre-verifica del plafond ATTACHMENTS (feature a consumo / Resource): se esaurito, blocca
+        // prima di salvare. Il consumo effettivo avviene solo a upload riuscito (in fondo).
+        var attachUsage = _licenseContext.GetUsageSnapshot(FeatureKeys.ATTACHMENTS);
+        if (attachUsage is { Remaining: <= 0 })
+            throw new ValidatorException(
+                "Hai raggiunto il numero massimo di allegati della tua licenza. Acquista altre licenze per caricarne altri.");
+
         var fileBytes = Convert.FromBase64String(command.Dto.FileContent);
 
         var entity = command.Dto.ToEntity(condominium, condominium.Tenant);
@@ -178,6 +189,12 @@ public class UploadDocumentCommandConsumer
         await session.SaveAsync(contentEntity, cancellationToken).ConfigureAwait(false);
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        // Upload riuscito → consuma 1 utilizzo della feature ATTACHMENTS + sync immediato.
+        var consumeResult = _licenseContext.Consume(FeatureKeys.ATTACHMENTS, 1);
+        if (consumeResult.Allowed)
+            _ = _licenseContext.SyncNowAsync(FeatureKeys.ATTACHMENTS);
+
         return entity.ToReadDto();
     }
 }
@@ -249,12 +266,17 @@ public class GetDocumentsByEntityCommandConsumer
 public class DeleteDocumentCommandConsumer
     : InMemoryConsumerBase<DeleteDocumentCommand, bool>
 {
-    private readonly IUserService _userService;
+    private readonly IUserService    _userService;
+    private readonly ILicenseContext _licenseContext;
 
     public DeleteDocumentCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
-        IUserService            userService) : base(sessionFactoryProvider)
-        => _userService = userService;
+        IUserService            userService,
+        ILicenseContext         licenseContext) : base(sessionFactoryProvider)
+    {
+        _userService    = userService;
+        _licenseContext = licenseContext;
+    }
 
     protected override async Task<bool> Consume(
         DeleteDocumentCommand command,
@@ -283,6 +305,12 @@ public class DeleteDocumentCommandConsumer
         }
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        // ATTACHMENTS è una feature "Resource": cancellando un allegato lo slot va liberato.
+        // Comunichiamo il refund a LM, che lo applica (per le Resource è sempre eseguito).
+        await _licenseContext.RefundAsync(FeatureKeys.ATTACHMENTS, 1, ct: cancellationToken)
+            .ConfigureAwait(false);
+
         return true;
     }
 }

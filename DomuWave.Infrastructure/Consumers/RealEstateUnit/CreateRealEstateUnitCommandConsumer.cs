@@ -7,6 +7,7 @@ using DomuWave.Services.Dto.RealEstateUnit;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using LicenseManager.Client.Context;
 using NHibernate.Linq;
 using SimpleMediator.Core;
 
@@ -19,6 +20,7 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
     private readonly IBuildingService       _buildingService;
     private readonly IStaircaseService      _staircaseService;
     private readonly IUserService           _userService;
+    private readonly ILicenseContext        _licenseContext;
 
     public CreateRealEstateUnitCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
@@ -26,13 +28,15 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
         ICondominiumService condominiumService,
         IBuildingService buildingService,
         IStaircaseService staircaseService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        ILicenseContext licenseContext) : base(sessionFactoryProvider)
     {
         _realEstateUnitService = realEstateUnitService;
         _condominiumService    = condominiumService;
         _buildingService       = buildingService;
         _staircaseService      = staircaseService;
         _userService           = userService;
+        _licenseContext        = licenseContext;
     }
 
     protected override async Task<RealEstateUnitReadDto> Consume(
@@ -49,6 +53,13 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
             .ConfigureAwait(false);
         if (condominium == null)
             throw new NotFoundException("Condominio non trovato");
+
+        // Pre-verifica del plafond UNITS (feature a consumo / Resource): se esaurito, blocca
+        // PRIMA di creare. Il consumo effettivo avviene solo a creazione riuscita (in fondo).
+        var unitsUsage = _licenseContext.GetUsageSnapshot(FeatureKeys.UNITS);
+        if (unitsUsage is { Remaining: <= 0 })
+            throw new ValidatorException(
+                "Hai raggiunto il numero massimo di unità immobiliari della tua licenza. Acquista altre licenze per aggiungerne.");
 
         /* validazioni */
         if (!string.IsNullOrWhiteSpace(command.Dto.InternalNumber))
@@ -81,6 +92,11 @@ public class CreateRealEstateUnitCommandConsumer : InMemoryConsumerBase<CreateRe
         var created = await _realEstateUnitService
             .CreateAsync(entity, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        // Creazione riuscita → consuma 1 utilizzo della feature UNITS + sync immediato verso LM.
+        var consumeResult = _licenseContext.Consume(FeatureKeys.UNITS, 1);
+        if (consumeResult.Allowed)
+            _ = _licenseContext.SyncNowAsync(FeatureKeys.UNITS);
 
         return created.ToReadDto();
     }

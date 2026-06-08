@@ -8,6 +8,7 @@ using DomuWave.Services.Dto.Assembly;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using LicenseManager.Client.Context;
 using NHibernate.Linq;
 using SimpleMediator.Core;
 
@@ -17,14 +18,17 @@ public class CreateAssemblyCommandConsumer : InMemoryConsumerBase<CreateAssembly
 {
     private readonly IAssemblyService _assemblyService;
     private readonly IUserService     _userService;
+    private readonly ILicenseContext  _licenseContext;
 
     public CreateAssemblyCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IAssemblyService assemblyService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        ILicenseContext licenseContext) : base(sessionFactoryProvider)
     {
         _assemblyService = assemblyService;
         _userService     = userService;
+        _licenseContext  = licenseContext;
     }
 
     protected override async Task<AssemblyReadDto> Consume(
@@ -36,6 +40,13 @@ public class CreateAssemblyCommandConsumer : InMemoryConsumerBase<CreateAssembly
 
         if (string.IsNullOrWhiteSpace(command.Dto.Title))
             throw new ValidatorException("Il titolo è obbligatorio.");
+
+        // Pre-verifica del plafond ASSEMBLY (feature a consumo): se è esaurito, blocca PRIMA
+        // di salvare nulla. Il consumo effettivo avviene solo a creazione riuscita (in fondo).
+        var assemblyUsage = _licenseContext.GetUsageSnapshot(FeatureKeys.ASSEMBLY);
+        if (assemblyUsage is { Remaining: <= 0 })
+            throw new ValidatorException(
+                "Hai esaurito le assemblee disponibili per la tua licenza. Acquista altre licenze per crearne di nuove.");
 
         var condominium = await session.GetAsync<Models.Condominium>(command.Dto.CondominiumId, cancellationToken).ConfigureAwait(false)
                           ?? throw new NotFoundException("Condominio non trovato.");
@@ -109,6 +120,15 @@ public class CreateAssemblyCommandConsumer : InMemoryConsumerBase<CreateAssembly
 
         if (owners.Count > 0)
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        // Creazione riuscita → consuma 1 utilizzo della feature ASSEMBLY (decremento locale).
+        var consumeResult = _licenseContext.Consume(FeatureKeys.ASSEMBLY, 1);
+
+        // Sync immediato verso LicenseManager (fire-and-forget) così UsedCount si aggiorna subito,
+        // senza attendere il ciclo periodico. Non blocca la risposta; in caso di errore il
+        // contatore locale resta pendente e verrà sincronizzato al prossimo ciclo.
+        if (consumeResult.Allowed)
+            _ = _licenseContext.SyncNowAsync(FeatureKeys.ASSEMBLY);
 
         return entity.ToReadDto();
     }

@@ -392,10 +392,12 @@ const toolbarStaircaseOptions = computed(() =>
   staircases.value
 )
 
-// Scale filtrate per l'edificio selezionato nella modale
+// Scale filtrate per l'edificio selezionato nella modale.
+// Le scale senza edificio (buildingId null) appartengono all'intero condominio e
+// vengono sempre mostrate, anche quando un edificio è selezionato.
 const modalStaircases = computed(() => {
   if (!form.value.buildingId) return staircases.value
-  return staircases.value.filter(s => s.buildingId === form.value.buildingId)
+  return staircases.value.filter(s => !s.buildingId || s.buildingId === form.value.buildingId)
 })
 
 const floorOptions = computed(() =>
@@ -451,8 +453,23 @@ function openModal(item = null) {
   editing.value  = item?.id ?? null
   isCloning.value = false
   form.value = item ? { ...item, condominiumId: condominiumId.value } : defaultForm()
+  if (!item) preselectSingleOptions()
   errors.value = {}
   showModal.value = true
+}
+
+// In creazione, se esiste un solo edificio lo preseleziona; idem per la scala
+// (filtrata per l'edificio selezionato). Comodità per i condomini con un'unica struttura.
+function preselectSingleOptions() {
+  if (!form.value.buildingId && buildings.value.length === 1) {
+    form.value.buildingId = buildings.value[0].id
+  }
+  if (!form.value.staircaseId) {
+    const candidates = form.value.buildingId
+      ? staircases.value.filter(s => s.buildingId === form.value.buildingId)
+      : staircases.value
+    if (candidates.length === 1) form.value.staircaseId = candidates[0].id
+  }
 }
 
 function cloneUnit(item) {
@@ -576,11 +593,12 @@ window.addEventListener('app:refresh', loadData)
 watch(condominiumId, loadData)
 watch(filterBuilding, () => { filterStaircase.value = '' })
 
-// Quando si cambia edificio nella modale, resetta la scala se non appartiene al nuovo edificio
+// Quando si cambia edificio nella modale, resetta la scala solo se è legata a un ALTRO
+// edificio. Le scale senza edificio (buildingId null) sono valide ovunque → non si resettano.
 watch(() => form.value.buildingId, (newBuildingId) => {
   if (!form.value.staircaseId) return
   const currentStaircase = staircases.value.find(s => s.id === form.value.staircaseId)
-  if (currentStaircase && currentStaircase.buildingId !== newBuildingId) {
+  if (currentStaircase && currentStaircase.buildingId && currentStaircase.buildingId !== newBuildingId) {
     form.value.staircaseId = null
   }
 })

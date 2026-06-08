@@ -3,10 +3,16 @@
 
     <div class="page-header">
       <h1>La mia licenza</h1>
-      <button class="btn btn-ghost" :disabled="redirecting" @click="goToPortale">
-        <span v-if="redirecting" class="spinner" style="width:14px;height:14px"></span>
-        🔗 Gestisci su LicenseManager
-      </button>
+      <div class="page-header-actions">
+        <button class="btn btn-primary" :disabled="redirecting" @click="goToPortale">
+          <span v-if="redirecting" class="spinner" style="width:14px;height:14px"></span>
+          🛒 Acquista licenze o pacchetti
+        </button>
+        <button class="btn btn-ghost" :disabled="redirecting" @click="goToPortale">
+          <span v-if="redirecting" class="spinner" style="width:14px;height:14px"></span>
+          🔗 Gestisci su LicenseManager
+        </button>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -107,6 +113,18 @@
         </div>
       </div>
 
+      <!-- ── CTA acquisto ───────────────────────────────────────── -->
+      <div class="card purchase-cta">
+        <div class="purchase-cta-text">
+          <div class="card-title" style="margin-bottom:6px">Hai bisogno di più licenze?</div>
+          <div class="text-muted">Acquista nuove licenze o pacchetti di feature dal portale LicenseManager.</div>
+        </div>
+        <button class="btn btn-primary" :disabled="redirecting" @click="goToPortale">
+          <span v-if="redirecting" class="spinner" style="width:14px;height:14px"></span>
+          🛒 Acquista licenze o pacchetti
+        </button>
+      </div>
+
     </template>
   </div>
 </template>
@@ -166,6 +184,11 @@ function formatPeriod(bp) {
 
 <style scoped>
 .licenze-page { display: flex; flex-direction: column; gap: 24px; max-width: 960px; }
+
+.page-header-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+.purchase-cta { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.purchase-cta-text { min-width: 240px; }
 
 .card         { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
 .card-title   { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 20px; }

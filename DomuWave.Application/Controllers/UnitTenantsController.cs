@@ -48,7 +48,6 @@ public class UnitTenantsController(
     [HttpPost]
     [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.UnitTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(UnitTenantReadDto), 201)]
-    [ConsumeFeature(FeatureKeys.UNITS)]
     public async Task<IActionResult> Create([FromBody] CreateUnitTenantDto dto, CancellationToken ct)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);

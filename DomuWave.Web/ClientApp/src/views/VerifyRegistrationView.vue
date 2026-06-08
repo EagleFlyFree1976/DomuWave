@@ -15,7 +15,7 @@
         <p class="muted">Il tuo account è attivo e la prova gratuita è iniziata.</p>
         <button class="btn-primary" :disabled="loading" @click="goToDashboard">
           <span v-if="loading" class="spinner"></span>
-          <span v-else>Vai alla dashboard →</span>
+          <span v-else>Vai al login →</span>
         </button>
       </template>
 
@@ -35,13 +35,9 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authApi } from '@/services/api'
-import { useAuthStore } from '@/stores/authStore'
-import { useMenuStore } from '@/stores/menuStore'
 
 const route     = useRoute()
 const router    = useRouter()
-const authStore = useAuthStore()
-const menuStore = useMenuStore()
 
 const state    = ref('verifying')   // verifying | success | error
 const errorMsg = ref('')
@@ -68,10 +64,9 @@ onMounted(async () => {
     const data = res.data
     userEmail.value = data.email
 
-    localStorage.setItem('domuwave_token', data.token ?? '')
-    localStorage.setItem('domuwave_user', JSON.stringify({ id: data.userId, username: data.email }))
-    localStorage.setItem('tenantId',   data.tenantId)
-    localStorage.setItem('tenantName', data.tenantName)
+    // NON creiamo qui una sessione: la risposta di conferma non contiene il `profile`,
+    // quindi un domuwave_user parziale (senza profile) farebbe vedere l'app in sola lettura.
+    // L'utente completa l'accesso dal login, dove il profilo viene popolato correttamente.
 
     // Nessuna registrazione su LicenseManager qui: il tenant viene già registrato
     // lato backend durante la conferma (ConfirmRegistration → NotifyTenantCreatedAsync).
@@ -99,16 +94,9 @@ onMounted(async () => {
 })
 
 async function goToDashboard() {
+  // L'accesso si completa dal login (così il profilo utente viene caricato correttamente).
   loading.value = true
-  try {
-    // Il token è già in localStorage dalla conferma; vai alla dashboard
-    await menuStore.fetchMenu().catch(() => {})
-    router.push('/dashboard')
-  } catch {
-    router.push({ path: '/login', query: { email: userEmail.value, registered: '1' } })
-  } finally {
-    loading.value = false
-  }
+  router.push({ path: '/login', query: { email: userEmail.value, registered: '1' } })
 }
 </script>
 

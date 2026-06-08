@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "a31GCDirCZA=",
+  "dgSpecHash": "pa7ialqEHeI=",
   "success": true,
   "projectFilePath": "C:\\Projects\\Works\\DomuWave\\DomuWave.UnitTest\\DomuWave.Tests.csproj",
   "expectedPackageFiles": [
@@ -30,7 +30,7 @@
     "C:\\Users\\orazi\\.nuget\\packages\\hangfire.netcore\\1.8.18\\hangfire.netcore.1.8.18.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\hangfire.sqlserver\\1.8.18\\hangfire.sqlserver.1.8.18.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\iesi.collections\\4.0.4\\iesi.collections.4.0.4.nupkg.sha512",
-    "C:\\Users\\orazi\\.nuget\\packages\\licensemanager.client\\1.1.15\\licensemanager.client.1.1.15.nupkg.sha512",
+    "C:\\Users\\orazi\\.nuget\\packages\\licensemanager.client\\1.1.17\\licensemanager.client.1.1.17.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\masstransit\\8.3.7\\masstransit.8.3.7.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\masstransit.abstractions\\8.3.7\\masstransit.abstractions.8.3.7.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\masstransit.newtonsoft\\8.3.7\\masstransit.newtonsoft.8.3.7.nupkg.sha512",

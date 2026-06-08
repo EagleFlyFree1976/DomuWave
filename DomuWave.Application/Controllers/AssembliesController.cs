@@ -48,6 +48,8 @@ public class AssembliesController(
 
     [HttpPost]
     [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Assembly, Modules.DomuWaveModule)]
+    // Il consumo della feature ASSEMBLY avviene nel consumer SOLO a creazione riuscita
+    // (vedi CreateAssemblyCommandConsumer), così un fallimento non scala il plafond.
     [ProducesResponseType(typeof(AssemblyReadDto), 201)]
     public async Task<IActionResult> Create([FromBody] CreateAssemblyDto dto, CancellationToken ct)
     {
