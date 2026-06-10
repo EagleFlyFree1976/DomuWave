@@ -40,6 +40,21 @@ public class RecalculateConsumptionChargeCommand : BaseCommand, IQuery<Consumpti
     public RecalculateConsumptionChargeCommand(int currentUserId, int id) : base(currentUserId) => Id = id;
 }
 
+public class SaveManualConsumptionChargeItemsCommand : BaseCommand, IQuery<ConsumptionChargeReadDto>
+{
+    public int Id { get; set; }
+    public SaveManualConsumptionChargeItemsDto Dto { get; set; }
+    public SaveManualConsumptionChargeItemsCommand() { }
+    public SaveManualConsumptionChargeItemsCommand(int currentUserId, int id, SaveManualConsumptionChargeItemsDto dto) : base(currentUserId) { Id = id; Dto = dto; }
+}
+
+public class ResetConsumptionChargeToAutoCommand : BaseCommand, IQuery<ConsumptionChargeReadDto>
+{
+    public int Id { get; set; }
+    public ResetConsumptionChargeToAutoCommand() { }
+    public ResetConsumptionChargeToAutoCommand(int currentUserId, int id) : base(currentUserId) => Id = id;
+}
+
 public class ApproveConsumptionChargeCommand : BaseCommand, IQuery<ConsumptionChargeReadDto>
 {
     public int Id { get; set; }

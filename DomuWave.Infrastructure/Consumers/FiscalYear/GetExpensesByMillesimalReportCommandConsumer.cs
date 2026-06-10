@@ -33,7 +33,17 @@ public class GetExpensesByMillesimalReportCommandConsumer
         if (fiscalYear == null)
             throw new NotFoundException("Esercizio fiscale non trovato.");
 
-        var rows = await session.Query<Expense>()
+        // Conti associati a un tipo di consumo: le relative spese sono ripartite per
+        // consumi (non a millesimi) e vanno in una sezione dedicata del report.
+        var condominiumId = fiscalYear.Condominium?.Id ?? 0;
+        var consumoAccountIds = (await session.Query<ConsumptionType>()
+                .Where(t => t.Condominium.Id == condominiumId && !t.IsDeleted && t.Account != null)
+                .Select(t => t.Account.Id)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .ToHashSet();
+
+        var rows = (await session.Query<Expense>()
             .Where(e => e.FiscalYear.Id == command.FiscalYearId && !e.IsDeleted)
             .Select(e => new
             {
@@ -42,6 +52,7 @@ public class GetExpensesByMillesimalReportCommandConsumer
                 e.DocumentNumber,
                 e.Name,
                 SupplierName        = e.Supplier != null ? e.Supplier.Name : null,
+                AccountId           = e.Account  != null ? (int?)e.Account.Id : null,
                 AccountName         = e.Account  != null ? e.Account.Name  : null,
                 MillesimalTableId   = e.MillesimalTable != null ? (int?)e.MillesimalTable.Id : null,
                 MillesimalTableName = e.MillesimalTable != null ? e.MillesimalTable.Name : null,
@@ -51,13 +62,21 @@ public class GetExpensesByMillesimalReportCommandConsumer
                 GrossAmount = e.GrossAmount + e.WithholdingTax,
             })
             .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
+            .ConfigureAwait(false))
+            .Select(e => new
+            {
+                e.Id, e.DocumentDate, e.DocumentNumber, e.Name, e.SupplierName,
+                e.AccountId, e.AccountName, e.MillesimalTableId, e.MillesimalTableName,
+                e.MillesimalTableCode, e.UnitId, e.UnitName, e.GrossAmount,
+                IsConsumption = e.AccountId.HasValue && consumoAccountIds.Contains(e.AccountId.Value),
+            })
+            .ToList();
 
         var groups = new List<ExpensesByMillesimalGroupDto>();
 
-        // ── Gruppi per tabella millesimale ──────────────────────────────────
+        // ── Gruppi per tabella millesimale (escluse le spese a consumo) ─────
         var byTable = rows
-            .Where(r => r.MillesimalTableId.HasValue)
+            .Where(r => !r.IsConsumption && r.MillesimalTableId.HasValue)
             .GroupBy(r => r.MillesimalTableId!.Value)
             .OrderBy(g => g.First().MillesimalTableCode ?? g.First().MillesimalTableName);
 
@@ -89,8 +108,8 @@ public class GetExpensesByMillesimalReportCommandConsumer
             });
         }
 
-        // ── Gruppo spese imputate direttamente a un immobile ────────────────
-        var directRows = rows.Where(r => !r.MillesimalTableId.HasValue && r.UnitId.HasValue).ToList();
+        // ── Gruppo spese imputate direttamente a un immobile (escluse a consumo) ─
+        var directRows = rows.Where(r => !r.IsConsumption && !r.MillesimalTableId.HasValue && r.UnitId.HasValue).ToList();
         if (directRows.Any())
         {
             groups.Add(new ExpensesByMillesimalGroupDto
@@ -113,6 +132,32 @@ public class GetExpensesByMillesimalReportCommandConsumer
                         GrossAmount    = r.GrossAmount,
                     }).ToList(),
                 GroupTotal        = directRows.Sum(r => r.GrossAmount),
+            });
+        }
+
+        // ── Gruppo spese ripartite per consumi (conti a consumo) ────────────
+        var consumptionRows = rows.Where(r => r.IsConsumption).ToList();
+        if (consumptionRows.Any())
+        {
+            groups.Add(new ExpensesByMillesimalGroupDto
+            {
+                MillesimalTableId = null,
+                GroupName         = "Spese ripartite per consumi",
+                IsConsumption     = true,
+                Expenses          = consumptionRows
+                    .OrderBy(r => r.AccountName)
+                    .ThenBy(r => r.DocumentDate ?? DateTime.MaxValue)
+                    .Select(r => new ExpenseReportRowDto
+                    {
+                        ExpenseId      = r.Id,
+                        DocumentDate   = r.DocumentDate,
+                        DocumentNumber = r.DocumentNumber,
+                        Name           = r.Name ?? string.Empty,
+                        SupplierName   = r.SupplierName,
+                        AccountName    = r.AccountName,
+                        GrossAmount    = r.GrossAmount,
+                    }).ToList(),
+                GroupTotal        = consumptionRows.Sum(r => r.GrossAmount),
             });
         }
 

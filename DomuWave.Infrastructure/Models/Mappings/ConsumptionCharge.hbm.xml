@@ -23,6 +23,7 @@
 
     <property name="TotalAmount" column="TotalAmount" type="Decimal" not-null="true" />
     <property name="Notes"       column="Notes"       type="String"  length="1000" />
+    <property name="IsManual"    column="IsManual"    type="Boolean" not-null="true" />
 
     <property name="CreatedBy"             column="CreatedById"           type="Int32"     not-null="true" />
     <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"    length="200" />

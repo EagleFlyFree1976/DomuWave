@@ -10,6 +10,13 @@ public class ConsumptionCharge : TenantEntity<int>
     public virtual ConsumptionChargeStatus Status          { get; set; }
     public virtual string?                 Notes           { get; set; }
 
+    /// <summary>
+    /// True se gli importi delle quote sono stati modificati manualmente.
+    /// In tal caso il ricalcolo automatico aggiorna consumi e percentuali ma
+    /// NON sovrascrive gli importi: vanno reimpostati con "Ripristina automatico".
+    /// </summary>
+    public virtual bool                     IsManual        { get; set; } = false;
+
     public virtual IList<ConsumptionChargeItem> Items { get; set; } = new List<ConsumptionChargeItem>();
 
     public override int GetHashCode() => Id.GetHashCode();

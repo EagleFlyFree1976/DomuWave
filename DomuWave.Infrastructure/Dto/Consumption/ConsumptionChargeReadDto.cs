@@ -17,6 +17,7 @@ public class ConsumptionChargeReadDto : TraceEntityDTO<int>
     public int     StatusId            { get; set; }
     public string  StatusName          { get; set; }
     public string  Notes               { get; set; }
+    public bool    IsManual            { get; set; }
     public bool    HasWarnings         { get; set; }
     public bool    HasNoReadings       { get; set; }
 
@@ -49,4 +50,16 @@ public class UpdateConsumptionChargeDto
     public int?    ExpenseId   { get; set; }
     public decimal TotalAmount { get; set; }
     public string? Notes       { get; set; }
+}
+
+/// <summary>Salvataggio manuale degli importi delle quote: marca la ripartizione come manuale.</summary>
+public class SaveManualConsumptionChargeItemsDto
+{
+    public IList<ManualConsumptionChargeItemDto> Items { get; set; } = [];
+}
+
+public class ManualConsumptionChargeItemDto
+{
+    public int     UnitId { get; set; }
+    public decimal Amount { get; set; }
 }

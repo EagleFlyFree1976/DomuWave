@@ -59,7 +59,9 @@ public class GetConsuntivoDetailCommandConsumer
             {
                 ExpenseId       = e.Id,
                 ExpenseName     = e.Name,
-                GrossAmount     = e.GrossAmount,
+                // Costo a carico condòmini = totale fattura = GrossAmount (già al netto
+                // della ritenuta) + ritenuta d'acconto. Coerente con bilancio e report.
+                GrossAmount     = e.GrossAmount + e.WithholdingTax,
                 DocumentDate    = e.DocumentDate,
                 SupplierName    = e.Supplier != null ? e.Supplier.Name : null,
                 AccountId       = e.Account.Id,

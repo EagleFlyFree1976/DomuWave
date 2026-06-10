@@ -34,6 +34,16 @@ internal static class ExpenseAllocationHelper
             await session.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Importo della spesa a carico dei condòmini, da ripartire alle unità.
+    /// In DomuWave GrossAmount è già al netto della ritenuta d'acconto
+    /// (imponibile + IVA + cassa + bollo − ritenuta), ma la ritenuta resta un costo
+    /// a carico del condominio (versata all'Erario per conto del fornitore): va quindi
+    /// reintegrata. Coincide con il totale fattura usato dal report spese per millesimale.
+    /// </summary>
+    private static decimal ChargeableAmount(Expense expense)
+        => expense.GrossAmount + expense.WithholdingTax;
+
     public static async Task RegenerateAllocationsAsync(
         ISession          session,
         Expense           expense,
@@ -78,7 +88,7 @@ internal static class ExpenseAllocationHelper
 
                 // Ripartisci l'importo di QUESTA bolletta secondo le percentuali di consumo,
                 // assegnando il residuo da arrotondamento all'unità con percentuale maggiore.
-                var gross   = expense.GrossAmount;
+                var gross   = ChargeableAmount(expense);
                 var ordered = consumptionPerc.OrderByDescending(p => p.Percentage).ToList();
                 decimal allocatedSum = 0m;
                 var rows = new List<AllocationRow>();
@@ -120,7 +130,7 @@ internal static class ExpenseAllocationHelper
                     {
                         UnitId          = expense.Unit.Id,
                         Millesimal      = 0m,
-                        AllocatedAmount = expense.GrossAmount,
+                        AllocatedAmount = ChargeableAmount(expense),
                         Percentage      = 100m,
                         Notes           = "Imputazione diretta a singolo immobile",
                     }
@@ -133,7 +143,7 @@ internal static class ExpenseAllocationHelper
             return;
 
         var millesimalTableId = expense.MillesimalTable.Id;
-        var grossAmount       = expense.GrossAmount;
+        var grossAmount       = ChargeableAmount(expense);
 
         var unitMillesimals = await session.Query<UnitMillesimal>()
             .Where(um => um.MillesimalTable.Id == millesimalTableId && !um.IsDeleted)
@@ -202,6 +212,23 @@ internal static class ExpenseAllocationHelper
         CancellationToken  cancellationToken,
         List<AllocationRow> rows)
     {
+        // Consolida eventuali righe duplicate per la stessa unità in un'unica allocazione.
+        // Dati millesimali sporchi (più voci UnitMillesimal non eliminate per la stessa
+        // (tabella, unità)) produrrebbero altrimenti due insert con la stessa coppia
+        // (ExpenseId, UnitId) → violazione di IX_ExpenseAllocation_Unique.
+        rows = rows
+            .GroupBy(r => r.UnitId)
+            .Select(g => new AllocationRow
+            {
+                UnitId          = g.Key,
+                Millesimal      = g.Sum(x => x.Millesimal),
+                AllocatedAmount = g.Sum(x => x.AllocatedAmount),
+                Percentage      = g.Sum(x => x.Percentage),
+                Rounding        = g.Sum(x => x.Rounding),
+                Notes           = g.First().Notes,
+            })
+            .ToList();
+
         // Carica TUTTI i record esistenti (inclusi IsDeleted) per evitare violazioni
         // dell'indice univoco (ExpenseId, UnitId)
         var existing = await session.Query<ExpenseAllocation>()
@@ -209,11 +236,25 @@ internal static class ExpenseAllocationHelper
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var existingByUnit = existing.ToDictionary(a => a.Unit.Id);
+        // Possono esistere più righe soft-deleted per la stessa unità (l'indice univoco
+        // filtra IsDeleted = 0): per ogni unità tieni quella attiva, se c'è, altrimenti la
+        // prima, e soft-cancella le altre per evitare future violazioni dell'indice.
+        var existingByUnit = new Dictionary<int, ExpenseAllocation>();
+        foreach (var grp in existing.GroupBy(a => a.Unit.Id))
+        {
+            var keep = grp.FirstOrDefault(a => !a.IsDeleted) ?? grp.First();
+            existingByUnit[grp.Key] = keep;
+            foreach (var dup in grp.Where(a => a != keep && !a.IsDeleted))
+            {
+                dup.IsDeleted = true;
+                dup.Trace(currentUser);
+                await session.SaveOrUpdateAsync(dup, cancellationToken).ConfigureAwait(false);
+            }
+        }
 
         // Soft-delete unità non più presenti
         var activeUnitIds = rows.Select(r => r.UnitId).ToHashSet();
-        foreach (var old in existing.Where(a => !a.IsDeleted && !activeUnitIds.Contains(a.Unit.Id)))
+        foreach (var old in existingByUnit.Values.Where(a => !a.IsDeleted && !activeUnitIds.Contains(a.Unit.Id)))
         {
             old.IsDeleted = true;
             old.Trace(currentUser);

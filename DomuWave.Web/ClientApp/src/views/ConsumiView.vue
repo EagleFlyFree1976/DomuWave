@@ -309,6 +309,7 @@
                 <span v-if="charge.consumptionTypeIsDeleted" class="badge badge-muted type-deleted-badge" title="Il tipo consumo è stato eliminato">Cancellato</span>
                 <span class="text-secondary mono">{{ charge.unitOfMeasure }}</span>
                 <span class="badge" :class="charge.statusId === 2 ? 'badge-green' : 'badge-draft'">{{ charge.statusName }}</span>
+                <span v-if="charge.isManual" class="badge badge-muted" title="Importi modificati manualmente">✎ manuale</span>
                 <span v-if="charge.hasWarnings" class="badge badge-amber" title="Alcune unità non hanno letture">⚠ warning</span>
                 <span v-if="charge.hasNoReadings && charge.statusId === 1"
                       class="badge badge-amber"
@@ -319,10 +320,18 @@
               <div class="charge-amount">{{ fmt(charge.totalAmount) }}</div>
               <div class="row-actions" v-if="charge.statusId === 1" @click.stop>
                 <button v-if="canEdit" class="btn btn-sm btn-ghost" @click="recalculate(charge.id)"
-                        :disabled="recalculatingId === charge.id">
+                        :disabled="recalculatingId === charge.id"
+                        :title="charge.isManual ? 'Aggiorna consumi e percentuali (gli importi manuali non vengono toccati)' : ''">
                   <span v-if="recalculatingId === charge.id" class="spinner" style="width:13px;height:13px;margin-right:4px"></span>
                   <span v-else>↺</span>
                   {{ recalculatingId === charge.id ? 'Ricalcolo…' : 'Ricalcola' }}
+                </button>
+                <button v-if="canEdit && charge.isManual" class="btn btn-sm btn-ghost"
+                        @click="resetToAuto(charge.id)" :disabled="resettingId === charge.id"
+                        title="Ricalcola gli importi dai consumi, scartando le modifiche manuali">
+                  <span v-if="resettingId === charge.id" class="spinner" style="width:13px;height:13px;margin-right:4px"></span>
+                  <span v-else>⟲</span>
+                  Auto
                 </button>
                 <button v-if="canEdit" class="btn btn-sm btn-ghost btn-green"
                         :disabled="charge.hasNoReadings"
@@ -335,6 +344,29 @@
 
             <!-- Dettaglio unità (collassabile) -->
             <div v-if="expandedChargeId === charge.id && charge.items?.length" class="charge-items">
+              <!-- Barra azioni editing manuale (solo Draft) -->
+              <div v-if="charge.statusId === 1 && canEdit" class="items-edit-bar">
+                <template v-if="editingItemsChargeId !== charge.id">
+                  <button class="btn btn-sm btn-ghost" @click="startEditItems(charge)">✎ Modifica importi</button>
+                  <span class="text-muted" style="font-size:.8rem">
+                    Puoi correggere i singoli importi; la somma deve restare uguale al totale delle bollette.
+                  </span>
+                </template>
+                <template v-else>
+                  <span class="items-edit-sum" :class="{ 'items-edit-sum--ok': manualDelta(charge) === 0 }">
+                    Somma {{ fmt(manualSum()) }} / {{ fmt(charge.totalAmount) }}
+                    <template v-if="manualDelta(charge) !== 0">— scarto <strong>{{ fmt(manualDelta(charge)) }}</strong></template>
+                    <template v-else>✓</template>
+                  </span>
+                  <button class="btn btn-sm btn-ghost" @click="cancelEditItems">Annulla</button>
+                  <button class="btn btn-sm btn-primary" @click="saveItems(charge)"
+                          :disabled="savingItems || manualDelta(charge) !== 0">
+                    <span v-if="savingItems" class="spinner" style="width:13px;height:13px;margin-right:4px"></span>
+                    Salva importi
+                  </button>
+                </template>
+              </div>
+
               <table class="items-table">
                 <thead>
                   <tr>
@@ -350,7 +382,12 @@
                     <td>{{ item.unitName }}</td>
                     <td class="col-num mono">{{ fmtNum(item.consumption) }}</td>
                     <td class="col-num">{{ fmtPct(item.percentage) }}</td>
-                    <td class="col-num" :class="item.amount > 0 ? '' : 'text-muted'">{{ fmt(item.amount) }}</td>
+                    <td class="col-num" :class="item.amount > 0 ? '' : 'text-muted'">
+                      <input v-if="editingItemsChargeId === charge.id"
+                             class="form-input items-amount-input" type="number" step="0.01" min="0"
+                             v-model.number="manualAmounts[item.unitId]" />
+                      <template v-else>{{ fmt(item.amount) }}</template>
+                    </td>
                     <td>
                       <span v-if="item.hasWarning" class="warn-icon" title="Nessuna lettura per questa unità">⚠</span>
                     </td>
@@ -361,7 +398,9 @@
                     <td>Totale</td>
                     <td class="col-num mono">{{ fmtNum(charge.items.reduce((s,i) => s + i.consumption, 0)) }}</td>
                     <td class="col-num">{{ fmtPct(charge.items.reduce((s,i) => s + i.percentage, 0)) }}</td>
-                    <td class="col-num">{{ fmt(charge.items.reduce((s,i) => s + i.amount, 0)) }}</td>
+                    <td class="col-num" :class="{ 'text-error': editingItemsChargeId === charge.id && manualDelta(charge) !== 0 }">
+                      {{ editingItemsChargeId === charge.id ? fmt(manualSum()) : fmt(charge.items.reduce((s,i) => s + i.amount, 0)) }}
+                    </td>
                     <td></td>
                   </tr>
                 </tfoot>
@@ -894,6 +933,81 @@ async function deleteCharge(id) {
   } catch (err) { if (!err?.response) store.toast('Errore di rete', 'error') }
 }
 
+// ── Modifica manuale importi ────────────────────────────────────────────────
+const editingItemsChargeId = ref(null)   // id della charge in editing manuale
+const manualAmounts        = ref({})     // { [unitId]: amount }
+const savingItems          = ref(false)
+const resettingId          = ref(null)
+
+function startEditItems(charge) {
+  editingItemsChargeId.value = charge.id
+  manualAmounts.value = Object.fromEntries(
+    (charge.items ?? []).map(i => [i.unitId, Number(i.amount) || 0])
+  )
+}
+
+function cancelEditItems() {
+  editingItemsChargeId.value = null
+  manualAmounts.value = {}
+}
+
+// Somma corrente degli importi inseriti a mano (arrotondata a 2 decimali)
+function manualSum() {
+  const s = Object.values(manualAmounts.value).reduce((a, v) => a + (Number(v) || 0), 0)
+  return Math.round(s * 100) / 100
+}
+
+// Scarto rispetto al totale bollette della charge in editing
+function manualDelta(charge) {
+  return Math.round((Number(charge.totalAmount) - manualSum()) * 100) / 100
+}
+
+async function saveItems(charge) {
+  const delta = manualDelta(charge)
+  if (delta !== 0) {
+    store.toast(`La somma deve essere uguale a ${fmt(charge.totalAmount)} (scarto ${fmt(delta)})`, 'error')
+    return
+  }
+  savingItems.value = true
+  try {
+    const payload = {
+      items: Object.entries(manualAmounts.value).map(([unitId, amount]) => ({
+        unitId: Number(unitId),
+        amount: Number(amount) || 0,
+      })),
+    }
+    const { data } = await consumptionChargeApi.saveItems(charge.id, payload)
+    const idx = charges.value.findIndex(c => c.id === charge.id)
+    if (idx !== -1) charges.value[idx] = data
+    cancelEditItems()
+    store.toast('Importi aggiornati', 'success')
+  } catch (err) {
+    const msg = extractError(err)
+    if (msg) store.toast(msg, 'error')
+    else if (!err?.response) store.toast('Errore di rete', 'error')
+  } finally {
+    savingItems.value = false
+  }
+}
+
+async function resetToAuto(id) {
+  if (!confirm('Ripristinare la ripartizione automatica? Gli importi modificati a mano verranno ricalcolati dai consumi.')) return
+  resettingId.value = id
+  try {
+    const { data } = await consumptionChargeApi.resetAuto(id)
+    const idx = charges.value.findIndex(c => c.id === id)
+    if (idx !== -1) charges.value[idx] = data
+    if (editingItemsChargeId.value === id) cancelEditItems()
+    store.toast('Ripartizione automatica ripristinata', 'success')
+  } catch (err) {
+    const msg = extractError(err)
+    if (msg) store.toast(msg, 'error')
+    else if (!err?.response) store.toast('Errore di rete', 'error')
+  } finally {
+    resettingId.value = null
+  }
+}
+
 // ── Modal tipo consumo ────────────────────────────────────────────────────
 const showTypeModal  = ref(false)
 const editingTypeId  = ref(null)
@@ -1187,6 +1301,20 @@ input[type="date"].inline-input { color-scheme: dark; }
 .items-table tbody tr:hover td { background: var(--bg-surface); }
 .items-table tfoot .totals-row td { border-top: 1px solid var(--border); font-weight: 600; }
 .items-table .col-num { text-align: right; }
+.items-table .text-error { color: var(--accent-red); }
+
+.items-edit-bar {
+  display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+  padding: 0.5rem 0.5rem 0.6rem; border-bottom: 1px dashed var(--border);
+  margin-bottom: 0.25rem;
+}
+.items-edit-sum { font-size: 0.85rem; color: var(--accent-red); margin-right: auto; }
+.items-edit-sum--ok { color: var(--accent-green); }
+.items-amount-input {
+  width: 110px; text-align: right; padding: 0.2rem 0.4rem; font-size: 0.85rem;
+}
+.items-amount-input::-webkit-outer-spin-button,
+.items-amount-input::-webkit-inner-spin-button { margin: 0; }
 
 .link-btn { background: none; border: none; color: var(--accent); cursor: pointer; padding: 0; text-decoration: underline; font-size: inherit; }
 

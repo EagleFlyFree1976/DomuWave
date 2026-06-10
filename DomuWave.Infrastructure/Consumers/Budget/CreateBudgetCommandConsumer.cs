@@ -222,13 +222,14 @@ public class CreateBudgetCommandConsumer
             .ToListAsync(ct)
             .ConfigureAwait(false);
 
-        // 2. Totale spese (GrossAmount) per conto nell'esercizio
+        // 2. Totale spese per conto nell'esercizio (costo a carico condòmini =
+        //    GrossAmount, già al netto della ritenuta, + ritenuta d'acconto)
         var expensesByAccount = await session.Query<Expense>()
             .Where(e => e.FiscalYear.Id  == fiscalYear.Id
                      && e.Condominium.Id == condominium.Id
                      && !e.IsDeleted)
             .GroupBy(e => e.Account.Id)
-            .Select(g => new { AccountId = g.Key, Total = g.Sum(e => e.GrossAmount) })
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(e => e.GrossAmount + e.WithholdingTax) })
             .ToListAsync(ct)
             .ConfigureAwait(false);
 

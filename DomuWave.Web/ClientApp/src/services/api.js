@@ -539,6 +539,8 @@ export const consumptionChargeApi = {
   create:          (data)         => api.post('/consumption/charges', data),
   update:          (id, data)     => api.put(`/consumption/charges/${id}`, data),
   recalculate:     (id)           => api.post(`/consumption/charges/${id}/recalculate`),
+  saveItems:       (id, data)     => api.put(`/consumption/charges/${id}/items`, data),
+  resetAuto:       (id)           => api.post(`/consumption/charges/${id}/reset-auto`),
   approve:         (id)           => api.post(`/consumption/charges/${id}/approve`),
   delete:          (id)           => api.delete(`/consumption/charges/${id}`),
 }

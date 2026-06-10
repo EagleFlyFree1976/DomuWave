@@ -25,6 +25,8 @@ public class ExpensesByMillesimalGroupDto
     public string   GroupName           { get; set; } = string.Empty;
     /// <summary>True se è il gruppo delle spese imputate a singolo immobile.</summary>
     public bool     IsDirectUnit        { get; set; }
+    /// <summary>True se è il gruppo delle spese ripartite per consumi (conti a consumo).</summary>
+    public bool     IsConsumption       { get; set; }
 
     public List<ExpenseReportRowDto> Expenses { get; set; } = new();
 

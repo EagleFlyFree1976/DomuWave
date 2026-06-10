@@ -166,8 +166,11 @@ public static class ConsumptionMappingExtensions
             StatusId            = entity.Status?.Id ?? 0,
             StatusName          = entity.Status?.Name ?? string.Empty,
             Notes               = entity.Notes,
+            IsManual            = entity.IsManual,
+            // Per le ripartizioni manuali mostriamo tutte le righe (anche a 0, se azzerate a mano);
+            // per quelle automatiche nascondiamo le quote nulle.
             Items               = entity.Items?
-                .Where(i => !i.IsDeleted && i.Amount > 0)
+                .Where(i => !i.IsDeleted && (entity.IsManual || i.Amount > 0))
                 .Select(i => i.ToItemReadDto())
                 .ToList() ?? [],
         };
