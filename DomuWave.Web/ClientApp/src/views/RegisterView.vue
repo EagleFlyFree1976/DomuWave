@@ -1,203 +1,225 @@
 <template>
-  <div class="reg-wrapper">
-    <div class="med-wave">
-      <svg viewBox="0 0 1200 140" preserveAspectRatio="none" style="width:100%;height:100%">
-        <path d="M0,80 C200,30 400,110 600,70 C800,30 1000,90 1200,60 L1200,140 L0,140 Z" fill="#cce4f7" opacity="0.5" />
-        <path d="M0,110 C200,80 400,130 600,100 C800,70 1000,110 1200,90 L1200,140 L0,140 Z" fill="#82b8df" opacity="0.4" />
-      </svg>
-    </div>
+  <div class="reg-shell">
+    <div class="grain"></div>
 
-    <div class="reg-card slide-up">
-      <!-- Brand -->
-      <div class="med-brand">
-        <div class="med-brand-mark">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="position:relative;z-index:1">
-            <path d="M2 12 Q6 7 10 12 T18 12 T24 12" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round"/>
-            <path d="M2 16.5 Q6 11.5 10 16.5 T18 16.5 T24 16.5" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" opacity="0.55"/>
+    <!-- ── Colonna sinistra: brand + marketing ── -->
+    <aside class="reg-aside">
+      <div class="aurora"><i></i><i></i></div>
+
+      <RouterLink class="logo" to="/">
+        <span class="logo-mark">
+          <svg viewBox="0 0 40 40" fill="none">
+            <rect x="4" y="14" width="14" height="22" rx="2" fill="#2e9c6c" />
+            <rect x="22" y="6" width="14" height="30" rx="2" fill="#c9a55c" />
+            <rect x="8" y="19" width="6" height="3" rx="1" fill="#f6f2e9" opacity="0.85" />
+            <rect x="8" y="26" width="6" height="3" rx="1" fill="#f6f2e9" opacity="0.85" />
+            <rect x="26" y="11" width="6" height="3" rx="1" fill="#0c1f17" opacity="0.5" />
+            <rect x="26" y="18" width="6" height="3" rx="1" fill="#0c1f17" opacity="0.5" />
+            <rect x="26" y="25" width="6" height="3" rx="1" fill="#0c1f17" opacity="0.5" />
           </svg>
-        </div>
-        <span>Domu<em>Wave</em></span>
-      </div>
+        </span>
+        DomuWave
+      </RouterLink>
 
-      <!-- Step indicator (steps 1-3) -->
-      <div class="step-indicator" v-if="step < 4">
-        <div v-for="s in 3" :key="s" class="step-dot" :class="{ active: step === s, done: step > s }">
-          <span v-if="step > s">✓</span>
-          <span v-else>{{ s }}</span>
-        </div>
-        <div class="step-line"></div>
-      </div>
-
-      <!-- ── STEP 1: Credenziali ── -->
-      <template v-if="step === 1">
-        <div class="med-tag"><span style="font-size:12px">✦</span> Gratis · senza carta di credito</div>
-        <h1 class="med-headline">Amministrare,<br>sotto un <span class="sun-word">altro sole</span>.</h1>
-        <p class="med-subtitle">Bastano 30 secondi per iniziare la prova gratuita.</p>
-
-        <!-- Fase 1a: inserimento email + nuova password -->
-        <form v-if="!awaitingCondominoVerify && !existingAdmin" @submit.prevent="handleStep1" novalidate>
-          <div class="field-group">
-            <label class="med-label">Email</label>
-            <input class="med-input" :class="{ 'med-input--error': errors.email }"
-              v-model="form.email" type="email" placeholder="marco.rossi@studio.it" autocomplete="email" />
-            <span class="error-msg" v-if="errors.email">{{ errors.email }}</span>
-          </div>
-          <div class="field-group">
-            <label class="med-label">Password</label>
-            <input class="med-input" :class="{ 'med-input--error': errors.password }"
-              v-model="form.password" type="password" placeholder="min. 8 caratteri" autocomplete="new-password" />
-            <span class="error-msg" v-if="errors.password">{{ errors.password }}</span>
-          </div>
-          <div class="field-group">
-            <label class="med-label">Conferma password</label>
-            <input class="med-input" :class="{ 'med-input--error': errors.confirmPassword }"
-              v-model="form.confirmPassword" type="password" placeholder="Ripeti la password" autocomplete="new-password" />
-            <span class="error-msg" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</span>
-          </div>
-          <label class="check-label">
-            <input type="checkbox" v-model="form.acceptTerms" />
-            <span>Accetto i <a href="#" class="link">Termini di servizio</a> e la <a href="#" class="link">Privacy Policy</a></span>
-          </label>
-          <span class="error-msg" v-if="errors.acceptTerms">{{ errors.acceptTerms }}</span>
-          <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
-          <button type="submit" class="med-btn" :disabled="loading">
-            <span v-if="loading" class="btn-spinner"></span>
-            <span v-else>Continua</span>
-            <span v-if="!loading" style="font-size:16px">→</span>
-          </button>
-        </form>
-
-        <!-- Fase 1c: account amministratore già esistente → invito al login -->
-        <template v-else-if="existingAdmin">
-          <div class="condomino-banner">
-            <div class="condomino-banner__icon">👤</div>
-            <div>
-              <strong>Account già esistente</strong>
-              <p>L'email <em>{{ form.email }}</em> è già associata a un account amministratore. Accedi alla piattaforma con le tue credenziali.</p>
-            </div>
-          </div>
-          <RouterLink
-            :to="{ path: '/login', query: { email: form.email.trim() } }"
-            class="med-btn"
-            style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;margin-top:16px">
-            Vai al login <span style="font-size:16px">→</span>
-          </RouterLink>
-          <button type="button" class="med-btn med-btn--ghost" style="margin-top:10px" @click="resetStep1">
-            ← Usa un'altra email
-          </button>
-        </template>
-
-        <!-- Fase 1b: verifica identità Condomino -->
-        <template v-else-if="awaitingCondominoVerify">
-          <div class="condomino-banner">
-            <div class="condomino-banner__icon">🏠</div>
-            <div>
-              <strong>Account già registrato come Condomino</strong>
-              <p>L'email <em>{{ form.email }}</em> è già presente come Condomino. Inserisci la tua password attuale per procedere con la registrazione come Amministratore.</p>
-            </div>
-          </div>
-          <form @submit.prevent="handleCondominoVerify" novalidate style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
-            <div class="field-group">
-              <label class="med-label">Password attuale</label>
-              <input class="med-input" :class="{ 'med-input--error': errors.currentPassword }"
-                v-model="form.currentPassword" type="password" placeholder="La tua password di accesso attuale"
-                autocomplete="current-password" autofocus />
-              <span class="error-msg" v-if="errors.currentPassword">{{ errors.currentPassword }}</span>
-            </div>
-            <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
-            <button type="submit" class="med-btn" :disabled="loading">
-              <span v-if="loading" class="btn-spinner"></span>
-              <span v-else>Verifica identità</span>
-              <span v-if="!loading" style="font-size:16px">→</span>
-            </button>
-            <button type="button" class="med-btn med-btn--ghost" @click="resetStep1">
-              ← Cambia email
-            </button>
-          </form>
-        </template>
-
-        <p class="signin-link">
-          Hai già un account? <RouterLink to="/login" class="signin-link__a">Accedi</RouterLink>
+      <div class="aside-body">
+        <div class="eyebrow">Inizia gratis</div>
+        <h2 class="aside-title">Amministrare,<br>finalmente <em>sotto controllo.</em></h2>
+        <p class="aside-lead">
+          Bastano due minuti per attivare il tuo primo condominio.
+          Contabilità, millesimi, assemblee e comunicazioni in un unico posto.
         </p>
-      </template>
 
-      <!-- ── STEP 2: Studio ── -->
-      <template v-if="step === 2">
-        <h2 class="step-title">Il tuo studio</h2>
-        <p class="med-subtitle">Come si chiama il tuo studio o la tua società di amministrazione?</p>
+        <ul class="aside-list">
+          <li><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg></span>1 condominio completo, gratis per sempre</li>
+          <li><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg></span>Contabilità e tabelle millesimali incluse</li>
+          <li><span class="ck"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5" /></svg></span>Nessuna carta di credito richiesta</li>
+        </ul>
+      </div>
 
-        <form @submit.prevent="handleStep2" novalidate>
-          <div class="field-group">
-            <label class="med-label">Nome studio / azienda</label>
-            <input class="med-input" :class="{ 'med-input--error': errors.tenantName }"
-              v-model="form.tenantName" placeholder="Es. Studio Rossi Amministrazioni" />
-            <span class="error-msg" v-if="errors.tenantName">{{ errors.tenantName }}</span>
+      <p class="aside-foot">© {{ new Date().getFullYear() }} VizaSoft S.r.l. — Tutti i diritti riservati</p>
+    </aside>
+
+    <!-- ── Colonna destra: form ── -->
+    <main class="reg-main">
+      <div class="reg-card slide-up">
+        <!-- Step indicator (steps 1-3) -->
+        <div class="step-indicator" v-if="step < 4">
+          <div v-for="s in 3" :key="s" class="step-dot" :class="{ active: step === s, done: step > s }">
+            <span v-if="step > s">✓</span>
+            <span v-else>{{ s }}</span>
           </div>
-          <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
-          <button type="submit" class="med-btn" :disabled="loading">
-            <span v-if="loading" class="btn-spinner"></span>
-            <span v-else>Continua</span>
-            <span v-if="!loading" style="font-size:16px">→</span>
-          </button>
-        </form>
-      </template>
+          <div class="step-line"></div>
+        </div>
 
-      <!-- ── STEP 3: Primo condominio ── -->
-      <template v-if="step === 3">
-        <h2 class="step-title">Il primo condominio</h2>
-        <p class="med-subtitle">Aggiungi il tuo primo condominio. Potrai aggiungerne altri in seguito.</p>
+        <!-- ── STEP 1: Credenziali ── -->
+        <template v-if="step === 1">
+          <div class="med-tag"><span style="font-size:12px">✦</span> Gratis · senza carta di credito</div>
+          <h1 class="med-headline">Crea il tuo account</h1>
+          <p class="med-subtitle">Bastano 30 secondi per iniziare la prova gratuita.</p>
 
-        <form @submit.prevent="handleStep3" novalidate>
-          <div class="field-group">
-            <label class="med-label">Denominazione condominio</label>
-            <input class="med-input" :class="{ 'med-input--error': errors.condominiumName }"
-              v-model="form.condominiumName" placeholder="Es. Condominio Primavera" />
-            <span class="error-msg" v-if="errors.condominiumName">{{ errors.condominiumName }}</span>
-          </div>
-          <div class="field-group">
-            <label class="med-label">Codice (opzionale)</label>
-            <input class="med-input" v-model="form.condominiumCode" placeholder="Es. COND-001" />
-          </div>
-          <div class="two-col">
+          <!-- Fase 1a: inserimento email + nuova password -->
+          <form v-if="!awaitingCondominoVerify && !existingAdmin" @submit.prevent="handleStep1" novalidate>
             <div class="field-group">
-              <label class="med-label">Città</label>
-              <input class="med-input" v-model="form.condominiumCity" placeholder="Milano" />
+              <label class="med-label">Email</label>
+              <input class="med-input" :class="{ 'med-input--error': errors.email }"
+                v-model="form.email" type="email" placeholder="marco.rossi@studio.it" autocomplete="email" />
+              <span class="error-msg" v-if="errors.email">{{ errors.email }}</span>
             </div>
             <div class="field-group">
-              <label class="med-label">CAP</label>
-              <input class="med-input" v-model="form.condominiumZip" placeholder="20100" />
+              <label class="med-label">Password</label>
+              <input class="med-input" :class="{ 'med-input--error': errors.password }"
+                v-model="form.password" type="password" placeholder="min. 8 caratteri" autocomplete="new-password" />
+              <span class="error-msg" v-if="errors.password">{{ errors.password }}</span>
             </div>
-          </div>
-          <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
-          <div class="btn-group">
-            <button type="button" class="med-btn med-btn--ghost" @click="skipStep3" :disabled="loading">Salta per ora</button>
+            <div class="field-group">
+              <label class="med-label">Conferma password</label>
+              <input class="med-input" :class="{ 'med-input--error': errors.confirmPassword }"
+                v-model="form.confirmPassword" type="password" placeholder="Ripeti la password" autocomplete="new-password" />
+              <span class="error-msg" v-if="errors.confirmPassword">{{ errors.confirmPassword }}</span>
+            </div>
+            <label class="check-label">
+              <input type="checkbox" v-model="form.acceptTerms" />
+              <span>Accetto i <a href="#" class="link">Termini di servizio</a> e la <a href="#" class="link">Privacy Policy</a></span>
+            </label>
+            <span class="error-msg" v-if="errors.acceptTerms">{{ errors.acceptTerms }}</span>
+            <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
             <button type="submit" class="med-btn" :disabled="loading">
               <span v-if="loading" class="btn-spinner"></span>
               <span v-else>Continua</span>
               <span v-if="!loading" style="font-size:16px">→</span>
             </button>
-          </div>
-        </form>
-      </template>
+          </form>
 
-      <!-- ── STEP 4: Controlla la posta ── -->
-      <template v-if="step === 4">
-        <div class="welcome-icon">📧</div>
-        <h2 class="step-title">Controlla la tua casella</h2>
-        <p class="med-subtitle">
-          Abbiamo inviato un'email di conferma a <strong>{{ sentEmail || form.email }}</strong>.
-          Clicca il link nell'email per completare la registrazione e attivare il tuo account.
-        </p>
-        <p class="med-subtitle" style="font-size:13px;color:#888;margin-top:16px">
-          Non hai ricevuto l'email? Controlla la cartella spam, oppure
-          <a href="#" class="link" @click.prevent="resendVerification">invia di nuovo</a>.
-        </p>
-        <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
-        <div v-if="resendOk" class="api-ok">✓ Email inviata di nuovo.</div>
-      </template>
-    </div>
+          <!-- Fase 1c: account amministratore già esistente → invito al login -->
+          <template v-else-if="existingAdmin">
+            <div class="condomino-banner">
+              <div class="condomino-banner__icon">👤</div>
+              <div>
+                <strong>Account già esistente</strong>
+                <p>L'email <em>{{ form.email }}</em> è già associata a un account amministratore. Accedi alla piattaforma con le tue credenziali.</p>
+              </div>
+            </div>
+            <RouterLink
+              :to="{ path: '/login', query: { email: form.email.trim() } }"
+              class="med-btn"
+              style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;margin-top:16px">
+              Vai al login <span style="font-size:16px">→</span>
+            </RouterLink>
+            <button type="button" class="med-btn med-btn--ghost" style="margin-top:10px" @click="resetStep1">
+              ← Usa un'altra email
+            </button>
+          </template>
 
-    <p class="reg-footer">© {{ new Date().getFullYear() }} VizaSoft S.r.l. — Tutti i diritti riservati</p>
+          <!-- Fase 1b: verifica identità Condomino -->
+          <template v-else-if="awaitingCondominoVerify">
+            <div class="condomino-banner">
+              <div class="condomino-banner__icon">🏠</div>
+              <div>
+                <strong>Account già registrato come Condomino</strong>
+                <p>L'email <em>{{ form.email }}</em> è già presente come Condomino. Inserisci la tua password attuale per procedere con la registrazione come Amministratore.</p>
+              </div>
+            </div>
+            <form @submit.prevent="handleCondominoVerify" novalidate style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+              <div class="field-group">
+                <label class="med-label">Password attuale</label>
+                <input class="med-input" :class="{ 'med-input--error': errors.currentPassword }"
+                  v-model="form.currentPassword" type="password" placeholder="La tua password di accesso attuale"
+                  autocomplete="current-password" autofocus />
+                <span class="error-msg" v-if="errors.currentPassword">{{ errors.currentPassword }}</span>
+              </div>
+              <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
+              <button type="submit" class="med-btn" :disabled="loading">
+                <span v-if="loading" class="btn-spinner"></span>
+                <span v-else>Verifica identità</span>
+                <span v-if="!loading" style="font-size:16px">→</span>
+              </button>
+              <button type="button" class="med-btn med-btn--ghost" @click="resetStep1">
+                ← Cambia email
+              </button>
+            </form>
+          </template>
+
+          <p class="signin-link">
+            Hai già un account? <RouterLink to="/login" class="signin-link__a">Accedi</RouterLink>
+          </p>
+        </template>
+
+        <!-- ── STEP 2: Studio ── -->
+        <template v-if="step === 2">
+          <h2 class="step-title">Il tuo studio</h2>
+          <p class="med-subtitle">Come si chiama il tuo studio o la tua società di amministrazione?</p>
+
+          <form @submit.prevent="handleStep2" novalidate>
+            <div class="field-group">
+              <label class="med-label">Nome studio / azienda</label>
+              <input class="med-input" :class="{ 'med-input--error': errors.tenantName }"
+                v-model="form.tenantName" placeholder="Es. Studio Rossi Amministrazioni" />
+              <span class="error-msg" v-if="errors.tenantName">{{ errors.tenantName }}</span>
+            </div>
+            <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
+            <button type="submit" class="med-btn" :disabled="loading">
+              <span v-if="loading" class="btn-spinner"></span>
+              <span v-else>Continua</span>
+              <span v-if="!loading" style="font-size:16px">→</span>
+            </button>
+          </form>
+        </template>
+
+        <!-- ── STEP 3: Primo condominio ── -->
+        <template v-if="step === 3">
+          <h2 class="step-title">Il primo condominio</h2>
+          <p class="med-subtitle">Aggiungi il tuo primo condominio. Potrai aggiungerne altri in seguito.</p>
+
+          <form @submit.prevent="handleStep3" novalidate>
+            <div class="field-group">
+              <label class="med-label">Denominazione condominio</label>
+              <input class="med-input" :class="{ 'med-input--error': errors.condominiumName }"
+                v-model="form.condominiumName" placeholder="Es. Condominio Primavera" />
+              <span class="error-msg" v-if="errors.condominiumName">{{ errors.condominiumName }}</span>
+            </div>
+            <div class="field-group">
+              <label class="med-label">Codice (opzionale)</label>
+              <input class="med-input" v-model="form.condominiumCode" placeholder="Es. COND-001" />
+            </div>
+            <div class="two-col">
+              <div class="field-group">
+                <label class="med-label">Città</label>
+                <input class="med-input" v-model="form.condominiumCity" placeholder="Milano" />
+              </div>
+              <div class="field-group">
+                <label class="med-label">CAP</label>
+                <input class="med-input" v-model="form.condominiumZip" placeholder="20100" />
+              </div>
+            </div>
+            <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
+            <div class="btn-group">
+              <button type="button" class="med-btn med-btn--ghost" @click="skipStep3" :disabled="loading">Salta per ora</button>
+              <button type="submit" class="med-btn" :disabled="loading">
+                <span v-if="loading" class="btn-spinner"></span>
+                <span v-else>Continua</span>
+                <span v-if="!loading" style="font-size:16px">→</span>
+              </button>
+            </div>
+          </form>
+        </template>
+
+        <!-- ── STEP 4: Controlla la posta ── -->
+        <template v-if="step === 4">
+          <div class="welcome-icon">📧</div>
+          <h2 class="step-title">Controlla la tua casella</h2>
+          <p class="med-subtitle">
+            Abbiamo inviato un'email di conferma a <strong>{{ sentEmail || form.email }}</strong>.
+            Clicca il link nell'email per completare la registrazione e attivare il tuo account.
+          </p>
+          <p class="med-subtitle" style="font-size:13px;color:var(--ink-mute);margin-top:16px">
+            Non hai ricevuto l'email? Controlla la cartella spam, oppure
+            <a href="#" class="link" @click.prevent="resendVerification">invia di nuovo</a>.
+          </p>
+          <div v-if="apiError" class="api-error">⚠ {{ apiError }}</div>
+          <div v-if="resendOk" class="api-ok">✓ Email inviata di nuovo.</div>
+        </template>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -357,221 +379,183 @@ async function resendVerification() {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap');
 
-.reg-wrapper {
+.reg-shell {
+  --night: #0c1f17;
+  --pine: #1b4a35;
+  --emerald: #2e9c6c;
+  --mint: #8fd6b4;
+  --cream: #f6f2e9;
+  --cream-2: #ece6d8;
+  --ink: #14201a;
+  --ink-soft: #4d5c54;
+  --ink-mute: #8a978f;
+  --brass: #c9a55c;
+  --brass-soft: #e3cf9e;
+  --line-light: rgba(20, 32, 26, 0.1);
+
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 40px 16px 60px;
-  background: linear-gradient(180deg, #fdfaf2 0%, #f6efe0 100%);
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  font-family: 'Outfit', sans-serif;
+  background: var(--cream);
+  color: var(--ink);
   position: relative;
   overflow: hidden;
-  font-family: 'Inter', sans-serif;
 }
 
-.med-wave {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 140px;
-  pointer-events: none;
-  opacity: 0.55;
+/* grain overlay */
+.grain {
+  position: fixed; inset: -50%; width: 200%; height: 200%; pointer-events: none; z-index: 100; opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-.reg-card {
-  width: 100%;
-  max-width: 460px;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.9);
-  border-radius: 22px;
-  box-shadow:
-    0 30px 70px -20px rgba(14,39,64,0.18),
-    0 8px 20px -8px rgba(82,156,210,0.15),
-    inset 0 1px 0 rgba(255,255,255,0.95);
-  padding: 44px 44px 38px;
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.slide-up { animation: slideUp 0.6s cubic-bezier(0.4,0,0.2,1) forwards; }
-
-.med-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-family: 'Instrument Serif', serif;
-  font-weight: 400;
-  font-size: 26px;
-  color: #0e2740;
-  letter-spacing: -0.025em;
-  margin-bottom: 24px;
-}
-.med-brand em { font-style: italic; color: #1e6db8; }
-.med-brand-mark {
-  width: 42px; height: 42px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #1e6db8 0%, #2a8bc7 50%, #f4c842 130%);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 8px 18px -4px rgba(30,109,184,0.4);
-  position: relative; overflow: hidden; flex-shrink: 0;
-}
-.med-brand-mark::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.3), transparent 60%);
-}
-
-.step-indicator {
+/* ── Aside (brand) ── */
+.reg-aside {
+  background: var(--night);
+  color: var(--cream);
+  padding: 44px 52px;
   display: flex;
-  align-items: center;
-  margin-bottom: 28px;
+  flex-direction: column;
   position: relative;
+  overflow: hidden;
 }
-.step-line {
-  position: absolute;
-  top: 50%; left: 16px; right: 16px;
-  height: 2px;
-  background: rgba(82,156,210,0.2);
-  z-index: 0;
+.aurora { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.aurora i { position: absolute; border-radius: 50%; filter: blur(90px); mix-blend-mode: screen; }
+.aurora i:nth-child(1) { width: 420px; height: 420px; background: #2e9c6c; top: -140px; right: -100px; opacity: .4; animation: drift 16s ease-in-out infinite alternate; }
+.aurora i:nth-child(2) { width: 340px; height: 340px; background: #c9a55c; bottom: -140px; left: -90px; opacity: .22; animation: drift 20s ease-in-out infinite alternate-reverse; }
+@keyframes drift { from { transform: translate(0, 0) scale(1); } to { transform: translate(-40px, 40px) scale(1.12); } }
+
+.logo {
+  display: inline-flex; align-items: center; gap: 11px;
+  font-family: 'Clash Display', 'Outfit', sans-serif; font-weight: 500; font-size: 23px;
+  color: var(--cream); letter-spacing: -0.01em; text-decoration: none;
+  position: relative; z-index: 1;
 }
-.step-dot {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  border: 2px solid rgba(82,156,210,0.3);
+.logo-mark { width: 34px; height: 34px; flex-shrink: 0; }
+.logo-mark svg { width: 100%; height: 100%; }
+
+.aside-body { margin: auto 0; position: relative; z-index: 1; }
+.eyebrow {
+  display: inline-flex; align-items: center; gap: 10px; font-size: 12.5px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--brass-soft); margin-bottom: 22px;
+}
+.eyebrow::before { content: ""; width: 36px; height: 1px; background: var(--brass); }
+.aside-title {
+  font-family: 'Clash Display', 'Outfit', sans-serif; font-weight: 500;
+  font-size: clamp(30px, 3.4vw, 44px); line-height: 1.1; letter-spacing: -0.015em; margin-bottom: 18px;
+}
+.aside-title em { font-style: normal; color: var(--mint); }
+.aside-lead { font-size: 16.5px; font-weight: 300; color: rgba(246, 242, 233, 0.74); max-width: 420px; margin-bottom: 32px; }
+
+.aside-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.aside-list li { display: flex; gap: 13px; align-items: center; font-size: 15px; font-weight: 300; color: rgba(246, 242, 233, 0.9); }
+.aside-list .ck {
+  width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0;
+  background: rgba(46, 156, 108, 0.18); border: 1px solid rgba(143, 214, 180, 0.3);
+  display: flex; align-items: center; justify-content: center; color: var(--mint);
+}
+.aside-foot { font-size: 12px; color: rgba(246, 242, 233, 0.4); position: relative; z-index: 1; margin-top: 24px; }
+
+/* ── Main (form) ── */
+.reg-main {
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 600;
-  color: #a0b3c7;
-  background: #fff;
-  position: relative; z-index: 1; flex-shrink: 0;
+  padding: 48px 32px; position: relative; z-index: 1;
+}
+.reg-card { width: 100%; max-width: 440px; }
+
+@keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.slide-up { animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+/* step indicator */
+.step-indicator { display: flex; align-items: center; margin-bottom: 30px; position: relative; }
+.step-line { position: absolute; top: 50%; left: 16px; right: 16px; height: 2px; background: rgba(27, 74, 53, 0.15); z-index: 0; }
+.step-dot {
+  width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(27, 74, 53, 0.22);
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600;
+  color: var(--ink-mute); background: var(--cream); position: relative; z-index: 1; flex-shrink: 0;
 }
 .step-dot + .step-dot { margin-left: auto; }
-.step-dot.active { border-color: #1e6db8; color: #1e6db8; background: rgba(30,109,184,0.08); }
-.step-dot.done   { border-color: #22c55e; color: #fff; background: #22c55e; }
+.step-dot.active { border-color: var(--emerald); color: var(--pine); background: rgba(46, 156, 108, 0.1); }
+.step-dot.done   { border-color: var(--emerald); color: var(--cream); background: var(--emerald); }
 
 .med-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 13px;
-  border-radius: 100px;
-  background: linear-gradient(135deg, rgba(244,200,66,0.2), rgba(244,200,66,0.08));
-  color: #b08a1a; font-size: 11.5px; font-weight: 600;
-  border: 1px solid rgba(244,200,66,0.4);
-  margin-bottom: 20px;
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 13px; border-radius: 100px;
+  background: linear-gradient(135deg, rgba(201, 165, 92, 0.2), rgba(201, 165, 92, 0.08));
+  color: #9a7a32; font-size: 11.5px; font-weight: 600; border: 1px solid rgba(201, 165, 92, 0.4); margin-bottom: 20px;
 }
 
 .med-headline {
-  font-family: 'Instrument Serif', serif;
-  font-weight: 400; font-size: 36px;
-  line-height: 1.08; letter-spacing: -0.025em;
-  color: #0e2740; margin-bottom: 14px;
-}
-.sun-word {
-  background: linear-gradient(135deg, #f4c842, #f29e3a);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  font-style: italic;
+  font-family: 'Clash Display', 'Outfit', sans-serif; font-weight: 500; font-size: 34px;
+  line-height: 1.1; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 12px;
 }
 .step-title {
-  font-family: 'Instrument Serif', serif;
-  font-weight: 400; font-size: 28px; line-height: 1.1;
-  color: #0e2740; margin-bottom: 10px;
+  font-family: 'Clash Display', 'Outfit', sans-serif; font-weight: 500; font-size: 28px; line-height: 1.12;
+  color: var(--ink); margin-bottom: 10px;
 }
-.med-subtitle { font-size: 14.5px; color: #56739a; line-height: 1.6; margin-bottom: 28px; }
+.med-subtitle { font-size: 14.5px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 28px; font-weight: 300; }
 
 form { display: flex; flex-direction: column; gap: 14px; }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field-group { display: flex; flex-direction: column; gap: 6px; }
 
-.med-label { font-size: 11.5px; font-weight: 500; color: #56739a; text-transform: uppercase; letter-spacing: 0.08em; }
+.med-label { font-size: 11.5px; font-weight: 600; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.08em; }
 .med-input {
-  width: 100%;
-  background: rgba(255,255,255,0.65);
-  border: 1.5px solid rgba(82,156,210,0.18);
-  border-radius: 14px; padding: 13px 16px;
-  color: #0e2740; font-family: 'Inter', sans-serif; font-size: 14.5px;
-  outline: none; transition: all 0.25s; box-sizing: border-box;
+  width: 100%; background: #fff; border: 1.5px solid rgba(27, 74, 53, 0.14);
+  border-radius: 13px; padding: 13px 16px; color: var(--ink);
+  font-family: 'Outfit', sans-serif; font-size: 14.5px; outline: none; transition: all 0.25s; box-sizing: border-box;
 }
-.med-input:focus { border-color: #1e6db8; background: #fff; box-shadow: 0 0 0 4px rgba(30,109,184,0.1); }
-.med-input::placeholder { color: #a0b3c7; }
-.med-input--error { border-color: #e05252; }
-.error-msg { font-size: 12px; color: #e05252; }
+.med-input:focus { border-color: var(--emerald); box-shadow: 0 0 0 4px rgba(46, 156, 108, 0.12); }
+.med-input::placeholder { color: var(--ink-mute); }
+.med-input--error { border-color: #d65a4a; }
+.error-msg { font-size: 12px; color: #c44634; }
 
-.check-label {
-  display: flex; align-items: flex-start; gap: 10px;
-  font-size: 13px; color: #56739a; cursor: pointer; line-height: 1.5;
-}
-.check-label input[type=checkbox] { margin-top: 2px; flex-shrink: 0; }
-.link { color: #1e6db8; }
+.check-label { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--ink-soft); cursor: pointer; line-height: 1.5; }
+.check-label input[type=checkbox] { margin-top: 2px; flex-shrink: 0; accent-color: var(--emerald); }
+.link { color: var(--pine); font-weight: 500; }
 
-.api-error {
-  background: rgba(224,82,82,0.08); border: 1px solid rgba(224,82,82,0.25);
-  border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #b33a3a;
-}
-.api-ok {
-  background: rgba(34,197,94,0.10); border: 1px solid rgba(34,197,94,0.30);
-  border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #16a34a; margin-top: 10px;
-}
+.api-error { background: rgba(214, 90, 74, 0.08); border: 1px solid rgba(214, 90, 74, 0.25); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: #a73c2c; }
+.api-ok { background: rgba(46, 156, 108, 0.1); border: 1px solid rgba(46, 156, 108, 0.3); border-radius: 12px; padding: 12px 16px; font-size: 13.5px; color: var(--pine); margin-top: 10px; }
 
 .med-btn {
-  width: 100%;
-  background: linear-gradient(135deg, #1e6db8, #2a8bc7);
-  color: #fff; border: none; padding: 15px;
-  font-family: 'Inter', sans-serif; font-size: 14.5px; font-weight: 600;
-  cursor: pointer; border-radius: 14px; transition: all 0.25s;
-  box-shadow: 0 8px 22px -4px rgba(30,109,184,0.4), inset 0 1px 0 rgba(255,255,255,0.2);
+  width: 100%; background: var(--emerald); color: var(--cream); border: none; padding: 15px;
+  font-family: 'Outfit', sans-serif; font-size: 14.5px; font-weight: 600; cursor: pointer;
+  border-radius: 13px; transition: all 0.25s;
+  box-shadow: 0 10px 28px -10px rgba(46, 156, 108, 0.6);
   display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 4px;
 }
-.med-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 30px -4px rgba(30,109,184,0.5); }
+.med-btn:hover:not(:disabled) { transform: translateY(-1px); background: #2a8e62; box-shadow: 0 14px 34px -10px rgba(46, 156, 108, 0.7); }
 .med-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-.med-btn--ghost {
-  background: transparent; color: #56739a;
-  border: 1.5px solid rgba(82,156,210,0.3); box-shadow: none;
-}
-.med-btn--ghost:hover:not(:disabled) { background: rgba(82,156,210,0.06); transform: none; box-shadow: none; }
+.med-btn--ghost { background: transparent; color: var(--ink-soft); border: 1.5px solid rgba(27, 74, 53, 0.22); box-shadow: none; }
+.med-btn--ghost:hover:not(:disabled) { background: rgba(27, 74, 53, 0.05); transform: none; box-shadow: none; }
 .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-.btn-spinner {
-  width: 18px; height: 18px;
-  border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff;
-  border-radius: 50%; animation: spin .7s linear infinite;
-}
+.btn-spinner { width: 18px; height: 18px; border: 2px solid rgba(246, 242, 233, 0.4); border-top-color: var(--cream); border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-.signin-link { margin-top: 24px; font-size: 13px; color: #56739a; text-align: center; }
-.signin-link__a {
-  color: #1e6db8; font-family: 'Instrument Serif', serif;
-  font-style: italic; font-size: 15px; text-decoration: none;
-}
+.signin-link { margin-top: 24px; font-size: 13px; color: var(--ink-soft); text-align: center; }
+.signin-link__a { color: var(--pine); font-weight: 600; text-decoration: none; }
 .signin-link__a:hover { text-decoration: underline; }
 
 .welcome-icon { font-size: 48px; margin-bottom: 12px; }
-.checklist { list-style: none; padding: 0; margin: 0 0 28px; display: flex; flex-direction: column; gap: 10px; }
-.checklist__item { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #56739a; }
-.checklist__item::before { content: '○'; font-size: 16px; color: #a0b3c7; }
-.checklist__item--done { color: #0e2740; font-weight: 500; }
-.checklist__item--done::before { content: '✓'; color: #22c55e; font-weight: 700; }
-.checklist__item--skip::before { content: '—'; color: #a0b3c7; }
-
-.reg-footer { font-size: 12px; color: #a0b3c7; text-align: center; position: relative; z-index: 1; }
 
 .condomino-banner {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  background: rgba(30,109,184,0.07);
-  border: 1.5px solid rgba(30,109,184,0.22);
-  border-radius: 14px;
-  padding: 16px 18px;
-  margin-bottom: 4px;
+  display: flex; gap: 14px; align-items: flex-start;
+  background: rgba(46, 156, 108, 0.07); border: 1.5px solid rgba(46, 156, 108, 0.22);
+  border-radius: 14px; padding: 16px 18px; margin-bottom: 4px;
 }
 .condomino-banner__icon { font-size: 26px; flex-shrink: 0; line-height: 1; }
-.condomino-banner strong { font-size: 14px; color: #0e2740; display: block; margin-bottom: 6px; }
-.condomino-banner p { font-size: 13px; color: #56739a; margin: 0; line-height: 1.55; }
-.condomino-banner em { font-style: normal; font-weight: 600; color: #1e6db8; }
+.condomino-banner strong { font-size: 14px; color: var(--ink); display: block; margin-bottom: 6px; }
+.condomino-banner p { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.55; }
+.condomino-banner em { font-style: normal; font-weight: 600; color: var(--pine); }
+
+/* ── Responsive: collassa a una colonna ── */
+@media (max-width: 880px) {
+  .reg-shell { grid-template-columns: 1fr; }
+  .reg-aside { padding: 32px 28px; }
+  .reg-aside .aside-body { margin: 28px 0; }
+  .aside-list { display: none; }
+  .reg-main { padding: 36px 24px 56px; }
+}
 </style>

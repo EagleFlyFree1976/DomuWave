@@ -5,6 +5,11 @@ import { useSessionStore } from '@/stores/sessionStore'
 const routes = [
   // ── Pubblica ────────────────────────────────────────────────────────────
   {
+    path: '/',
+    component: () => import('@/views/HomeView.vue'),
+    meta: { title: 'DomuWave — Il gestionale condominiale' },
+  },
+  {
     path: '/login',
     component: () => import('@/views/LoginView.vue'),
     meta: { title: 'Accedi' },
@@ -31,16 +36,18 @@ const routes = [
   },
 
   // ── Protette (con AppLayout come wrapper) ────────────────────────────────
+  // NB: il layout non occupa più il path '/' (riservato alla HomeView pubblica);
+  // i figli usano path ASSOLUTI per preservare gli URL esistenti (/dashboard, /condomini, ...).
   {
-    path: '/',
+    path: '/app',
     component: () => import('@/components/layout/AppLayout.vue'),
     meta: { requiresAuth: true },
     redirect: '/dashboard',
     children: [
-      { path: 'dashboard', component: () => import('@/views/DashboardView.vue'), meta: { title: 'Dashboard' } },
-      { path: 'condomini', component: () => import('@/views/CondominiView.vue'), meta: { title: 'Condomini', requiresTenant: true } },
+      { path: '/dashboard', component: () => import('@/views/DashboardView.vue'), meta: { title: 'Dashboard' } },
+      { path: '/condomini', component: () => import('@/views/CondominiView.vue'), meta: { title: 'Condomini', requiresTenant: true } },
       {
-        path: 'condomini/:id',
+        path: '/condomini/:id',
         component: () => import('@/components/layout/CondominioLayout.vue'),
         meta: { requiresTenant: true },
         children: [
@@ -64,48 +71,48 @@ const routes = [
           { path: 'assemblee/:assemblyId', component: () => import('@/views/AssemblyDetailView.vue'), meta: { title: 'Dettaglio Assemblea' } },
         ],
       },
-      { path: 'esercizi-fiscali', component: () => import('@/views/EserciziFiscaliView.vue'), meta: { title: 'Esercizi Fiscali', requiresTenant: true } },
-      { path: 'piano-dei-conti',  component: () => import('@/views/PianoDeiContiView.vue'),  meta: { title: 'Piano dei Conti',  requiresTenant: true } },
-      { path: 'categorie-piano-dei-conti', component: () => import('@/views/CategoriePianoDeiContiView.vue'), meta: { title: 'Categorie Piano dei Conti', requiresTenant: true } },
-      { path: 'template-categorie-piano-dei-conti', component: () => import('@/views/TemplateCategoriePianoDeiContiView.vue'), meta: { title: 'Template Categorie Piano dei Conti', requiresAuth: true, requiredRole: 'SuperAdmin' } },
-      { path: 'template-piano-dei-conti', component: () => import('@/views/TemplateContiView.vue'), meta: { title: 'Template Piano dei Conti', requiresTenant: true } },
-      { path: 'edifici', component: () => import('@/views/EdificiView.vue'), meta: { title: 'Edifici', requiresTenant: true } },
-      { path: 'scale',     component: () => import('@/views/ScaleView.vue'),          meta: { title: 'Scale',              requiresTenant: true } },
-      { path: 'assemblee', component: () => import('@/views/AssembleeView.vue'),       meta: { title: 'Assemblee',          requiresTenant: true } },
-      { path: 'assemblee/:assemblyId', component: () => import('@/views/AssemblyDetailView.vue'), meta: { title: 'Dettaglio Assemblea', requiresTenant: true } },
-      { path: 'unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari', requiresTenant: true } },
-      { path: 'panoramica', component: () => import('@/views/PanoramicaView.vue'), meta: { title: 'Panoramica Occupanti', requiresTenant: true } },
-      { path: 'gruppi-fatturazione', component: () => import('@/views/BillingGroupsView.vue'), meta: { title: 'Gruppi di Fatturazione', requiresTenant: true } },
-      { path: 'rendiconto', component: () => import('@/views/RendicontoView.vue'), meta: { title: 'Rendiconto', requiresTenant: true } },
-      { path: 'setup', component: () => import('@/views/SetupCondominioView.vue'), meta: { title: 'Setup Condominio', requiresTenant: true } },
-      { path: 'tabelle-millesimali', component: () => import('@/views/TabelleMillesimaliView.vue'), meta: { title: 'Tabelle Millesimali', requiresTenant: true } },
-      { path: 'budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget', requiresTenant: true } },
-      { path: 'consuntivo', component: () => import('@/views/ConsuntivoView.vue'), meta: { title: 'Consuntivo', requiresTenant: true } },
-      { path: 'report-spese-millesimali', component: () => import('@/views/ReportSpesePerMillesimaleView.vue'), meta: { title: 'Report spese per tabella millesimale', requiresTenant: true } },
-      { path: 'report-bilancio-ripartizione', component: () => import('@/views/ReportBilancioRipartizioneView.vue'), meta: { title: 'Bilancio di ripartizione', requiresTenant: true } },
-      { path: 'spese',  component: () => import('@/views/ExpenseView.vue'), meta: { title: 'Spese', requiresTenant: true } },
-      { path: 'consumi', component: () => import('@/views/ConsumiView.vue'), meta: { title: 'Consumi', requiresTenant: true } },
-      { path: 'rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
-      { path: 'fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori', requiresTenant: true } },
-      { path: 'manutenzioni', component: () => import('@/views/ManutenzioniView.vue'), meta: { title: 'Manutenzioni', requiresTenant: true } },
-      { path: 'lavori-straordinari', component: () => import('@/views/LavoriStraordinariView.vue'), meta: { title: 'Lavori Straordinari', requiresTenant: true } },
-      { path: 'documenti', component: () => import('@/views/DocumentiView.vue'), meta: { title: 'Documenti', requiresTenant: true } },
-      { path: 'comunicazioni', component: () => import('@/views/ComunicazioniView.vue'), meta: { title: 'Comunicazioni', requiresTenant: true } },
-      { path: 'centro-comunicazioni', component: () => import('@/views/CentroComunicazioniView.vue'), meta: { title: 'Bacheca & Messaggi', requiresTenant: true } },
-      { path: 'template-notifiche', component: () => import('@/views/NotificationTemplatesView.vue'), meta: { title: 'Template Notifiche', requiresTenant: true } },
-      { path: 'impostazioni-smtp', component: () => import('@/views/SmtpSettingsView.vue'), meta: { title: 'Configurazione Email', requiresTenant: true } },
-      { path: 'impostazioni-visualizzazione', component: () => import('@/views/DisplaySettingsView.vue'), meta: { title: 'Impostazioni visualizzazione', requiresTenant: true } },
+      { path: '/esercizi-fiscali', component: () => import('@/views/EserciziFiscaliView.vue'), meta: { title: 'Esercizi Fiscali', requiresTenant: true } },
+      { path: '/piano-dei-conti',  component: () => import('@/views/PianoDeiContiView.vue'),  meta: { title: 'Piano dei Conti',  requiresTenant: true } },
+      { path: '/categorie-piano-dei-conti', component: () => import('@/views/CategoriePianoDeiContiView.vue'), meta: { title: 'Categorie Piano dei Conti', requiresTenant: true } },
+      { path: '/template-categorie-piano-dei-conti', component: () => import('@/views/TemplateCategoriePianoDeiContiView.vue'), meta: { title: 'Template Categorie Piano dei Conti', requiresAuth: true, requiredRole: 'SuperAdmin' } },
+      { path: '/template-piano-dei-conti', component: () => import('@/views/TemplateContiView.vue'), meta: { title: 'Template Piano dei Conti', requiresTenant: true } },
+      { path: '/edifici', component: () => import('@/views/EdificiView.vue'), meta: { title: 'Edifici', requiresTenant: true } },
+      { path: '/scale',     component: () => import('@/views/ScaleView.vue'),          meta: { title: 'Scale',              requiresTenant: true } },
+      { path: '/assemblee', component: () => import('@/views/AssembleeView.vue'),       meta: { title: 'Assemblee',          requiresTenant: true } },
+      { path: '/assemblee/:assemblyId', component: () => import('@/views/AssemblyDetailView.vue'), meta: { title: 'Dettaglio Assemblea', requiresTenant: true } },
+      { path: '/unita', component: () => import('@/views/UnitaView.vue'), meta: { title: 'Unità Immobiliari', requiresTenant: true } },
+      { path: '/panoramica', component: () => import('@/views/PanoramicaView.vue'), meta: { title: 'Panoramica Occupanti', requiresTenant: true } },
+      { path: '/gruppi-fatturazione', component: () => import('@/views/BillingGroupsView.vue'), meta: { title: 'Gruppi di Fatturazione', requiresTenant: true } },
+      { path: '/rendiconto', component: () => import('@/views/RendicontoView.vue'), meta: { title: 'Rendiconto', requiresTenant: true } },
+      { path: '/setup', component: () => import('@/views/SetupCondominioView.vue'), meta: { title: 'Setup Condominio', requiresTenant: true } },
+      { path: '/tabelle-millesimali', component: () => import('@/views/TabelleMillesimaliView.vue'), meta: { title: 'Tabelle Millesimali', requiresTenant: true } },
+      { path: '/budget', component: () => import('@/views/BudgetView.vue'), meta: { title: 'Budget', requiresTenant: true } },
+      { path: '/consuntivo', component: () => import('@/views/ConsuntivoView.vue'), meta: { title: 'Consuntivo', requiresTenant: true } },
+      { path: '/report-spese-millesimali', component: () => import('@/views/ReportSpesePerMillesimaleView.vue'), meta: { title: 'Report spese per tabella millesimale', requiresTenant: true } },
+      { path: '/report-bilancio-ripartizione', component: () => import('@/views/ReportBilancioRipartizioneView.vue'), meta: { title: 'Bilancio di ripartizione', requiresTenant: true } },
+      { path: '/spese',  component: () => import('@/views/ExpenseView.vue'), meta: { title: 'Spese', requiresTenant: true } },
+      { path: '/consumi', component: () => import('@/views/ConsumiView.vue'), meta: { title: 'Consumi', requiresTenant: true } },
+      { path: '/rate', component: () => import('@/views/RateView.vue'), meta: { title: 'Rate & Quote', requiresTenant: true } },
+      { path: '/fornitori', component: () => import('@/views/FornitoriView.vue'), meta: { title: 'Fornitori', requiresTenant: true } },
+      { path: '/manutenzioni', component: () => import('@/views/ManutenzioniView.vue'), meta: { title: 'Manutenzioni', requiresTenant: true } },
+      { path: '/lavori-straordinari', component: () => import('@/views/LavoriStraordinariView.vue'), meta: { title: 'Lavori Straordinari', requiresTenant: true } },
+      { path: '/documenti', component: () => import('@/views/DocumentiView.vue'), meta: { title: 'Documenti', requiresTenant: true } },
+      { path: '/comunicazioni', component: () => import('@/views/ComunicazioniView.vue'), meta: { title: 'Comunicazioni', requiresTenant: true } },
+      { path: '/centro-comunicazioni', component: () => import('@/views/CentroComunicazioniView.vue'), meta: { title: 'Bacheca & Messaggi', requiresTenant: true } },
+      { path: '/template-notifiche', component: () => import('@/views/NotificationTemplatesView.vue'), meta: { title: 'Template Notifiche', requiresTenant: true } },
+      { path: '/impostazioni-smtp', component: () => import('@/views/SmtpSettingsView.vue'), meta: { title: 'Configurazione Email', requiresTenant: true } },
+      { path: '/impostazioni-visualizzazione', component: () => import('@/views/DisplaySettingsView.vue'), meta: { title: 'Impostazioni visualizzazione', requiresTenant: true } },
 
-      { path: 'tenants', name:'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
+      { path: '/tenants', name:'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
       {
-        path: 'tenants/new', name: 'tenant-new', component: () => import('@/views/tenants/TenantDetail.vue'), meta: {
+        path: '/tenants/new', name: 'tenant-new', component: () => import('@/views/tenants/TenantDetail.vue'), meta: {
           title: 'Nuovo Tenant',
           requiresAuth: true,
           requiredRole: 'SuperAdmin',
         }
       },
       {
-        path: 'tenants/:id', name: 'tenant-detail', component: () => import('@/views/tenants/TenantDetail.vue'), props: true,
+        path: '/tenants/:id', name: 'tenant-detail', component: () => import('@/views/tenants/TenantDetail.vue'), props: true,
         meta: {
           title: 'Modifica Tenant',
           requiresAuth: true,
@@ -115,34 +122,34 @@ const routes = [
 
       // ── Autorizzazioni (SuperAdmin) ───────────────────────────────────────
       {
-        path: 'autorizzazioni', name: 'autorizzazioni',
+        path: '/autorizzazioni', name: 'autorizzazioni',
         component: () => import('@/views/authorizations/AuthorizationsView.vue'),
         meta: { title: 'Autorizzazioni', requiresAuth: true, requiredRole: 'SuperAdmin' },
       },
 
       // ── Utenti (SuperAdmin) ────────────────────────────────────────────────
       {
-        path: 'users', name: 'users',
+        path: '/users', name: 'users',
         component: () => import('@/views/users/UserList.vue'),
         meta: { title: 'Gestione Utenti', requiresAuth: true, requiredRole: 'SuperAdmin' },
       },
       {
-        path: 'users/new', name: 'user-new',
+        path: '/users/new', name: 'user-new',
         component: () => import('@/views/users/UserDetail.vue'),
         meta: { title: 'Nuovo Utente', requiresAuth: true, requiredRole: 'SuperAdmin' },
       },
       {
-        path: 'servizio-non-attivato', name: 'servizio-non-attivato',
+        path: '/servizio-non-attivato', name: 'servizio-non-attivato',
         component: () => import('@/views/ServizioNonAttivatoView.vue'),
         meta: { title: 'Servizio non attivato', requiresAuth: true },
       },
       {
-        path: 'licenze', name: 'licenze',
+        path: '/licenze', name: 'licenze',
         component: () => import('@/views/LicenzeView.vue'),
         meta: { title: 'La mia licenza', requiresAuth: true },
       },
       {
-        path: 'users/:id', name: 'user-detail',
+        path: '/users/:id', name: 'user-detail',
         component: () => import('@/views/users/UserDetail.vue'),
         props: true,
         meta: { title: 'Modifica Utente', requiresAuth: true, requiredRole: 'SuperAdmin' },
@@ -164,7 +171,8 @@ router.beforeEach((to, _from, next) => {
   const requiresAuth = to.matched.some((r) => r.meta?.requiresAuth)
   const requiresTenant = to.matched.some((r) => r.meta?.requiresTenant)
 
-  if (to.path === '/login' && authStore.isAuthenticated) {
+  // Utente già autenticato: la home pubblica e il login lo portano alla dashboard
+  if ((to.path === '/login' || to.path === '/') && authStore.isAuthenticated) {
     return next('/dashboard')
   }
 
