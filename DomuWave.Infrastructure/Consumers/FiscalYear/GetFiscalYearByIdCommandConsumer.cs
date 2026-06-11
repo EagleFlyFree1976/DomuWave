@@ -72,14 +72,19 @@ public class GetFiscalYearByIdCommandConsumer : InMemoryConsumerBase<GetFiscalYe
             .SumAsync(b => (decimal?)b.OpeningBalance, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
+        // Costo a carico dei condòmini = totale fattura = GrossAmount (già al netto
+        // della ritenuta) + ritenuta d'acconto. Coerente con report spese per millesimale,
+        // bilancio di ripartizione e allocazioni.
+        decimal Chargeable(Expense e) => e.GrossAmount + e.WithholdingTax;
+
         dto.Summary = new FiscalYearSummaryDto
         {
             TotalOpeningBalance      = totalOpeningBalance,
-            TotalExpenses            = expenses.Sum(e => e.GrossAmount),
-            TotalExpensesPaid        = expenses.Where(e => e.PaymentStatus?.Id == ExpensePaymentStatus.Pagata).Sum(e => e.GrossAmount),
+            TotalExpenses            = expenses.Sum(Chargeable),
+            TotalExpensesPaid        = expenses.Where(e => e.PaymentStatus?.Id == ExpensePaymentStatus.Pagata).Sum(Chargeable),
             TotalInstallmentsBilled  = installments.Sum(i => i.TotalAmount),
             TotalPaymentsReceived    = fees.Sum(f => f.AmountPaid),
-            Balance                  = totalOpeningBalance + fees.Sum(f => f.AmountPaid) - expenses.Sum(e => e.GrossAmount),
+            Balance                  = totalOpeningBalance + fees.Sum(f => f.AmountPaid) - expenses.Sum(Chargeable),
             ExpenseCount             = expenses.Count,
             InstallmentCount         = installments.Count,
             BudgetCount              = budgetCount,

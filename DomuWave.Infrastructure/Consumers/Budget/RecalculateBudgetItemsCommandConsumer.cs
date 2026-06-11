@@ -82,7 +82,7 @@ public class RecalculateBudgetItemsCommandConsumer
                      && x.FiscalYear.Id  == fiscalYearId
                      && !x.IsDeleted)
             .GroupBy(x => x.Account.Id)
-            .Select(g => new { AccountId = g.Key, Total = g.Sum(x => x.GrossAmount), Count = g.Count() })
+            .Select(g => new { AccountId = g.Key, Total = g.Sum(x => x.GrossAmount + x.WithholdingTax), Count = g.Count() })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -93,7 +93,7 @@ public class RecalculateBudgetItemsCommandConsumer
                      && x.PaymentStatus.Id  == ExpensePaymentStatus.Pagata
                      && !x.IsDeleted)
             .GroupBy(x => x.Account.Id)
-            .Select(g => new { AccountId = g.Key, TotalPaid = g.Sum(x => x.GrossAmount) })
+            .Select(g => new { AccountId = g.Key, TotalPaid = g.Sum(x => x.GrossAmount + x.WithholdingTax) })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

@@ -186,6 +186,109 @@ public class RecalculateConsumptionChargeCommandConsumer
 }
 
 /// <summary>
+/// Salva gli importi modificati manualmente sulle quote. Marca la ripartizione come
+/// manuale (IsManual = true) così che i ricalcoli successivi non sovrascrivano gli importi.
+/// Vincolo: la somma degli importi deve essere uguale al TotalAmount (somma delle bollette).
+/// </summary>
+public class SaveManualConsumptionChargeItemsCommandConsumer
+    : InMemoryConsumerBase<SaveManualConsumptionChargeItemsCommand, ConsumptionChargeReadDto>
+{
+    private readonly IUserService _userService;
+    public SaveManualConsumptionChargeItemsCommandConsumer(ISessionFactoryProvider sp, IUserService us) : base(sp) => _userService = us;
+
+    protected override async Task<ConsumptionChargeReadDto> Consume(SaveManualConsumptionChargeItemsCommand command, IMediationContext ctx, CancellationToken ct)
+    {
+        var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, ct).ConfigureAwait(false);
+
+        var entity = await session.Query<ConsumptionCharge>()
+            .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
+        if (entity == null) throw new NotFoundException("Ripartizione non trovata.");
+        if (entity.Status?.Id == ConsumptionChargeStatus.Approved)
+            throw new ValidatorException("Non è possibile modificare una ripartizione già approvata.");
+
+        var inputItems = command.Dto?.Items ?? [];
+        if (!inputItems.Any())
+            throw new ValidatorException("Nessun importo da salvare.");
+
+        // Importi negativi non ammessi
+        if (inputItems.Any(i => i.Amount < 0))
+            throw new ValidatorException("Gli importi non possono essere negativi.");
+
+        // ── Vincolo: somma importi == TotalAmount (somma bollette) ─────────────
+        var sum = inputItems.Sum(i => Math.Round(i.Amount, 2));
+        var total = Math.Round(entity.TotalAmount, 2);
+        if (sum != total)
+        {
+            var diff = total - sum;
+            throw new ValidatorException(
+                $"La somma degli importi ({sum:N2}) deve essere uguale al totale delle bollette ({total:N2}). " +
+                $"Differenza: {diff:N2}.");
+        }
+
+        var existingItems = await session.Query<ConsumptionChargeItem>()
+            .Where(i => i.Charge.Id == entity.Id && !i.IsDeleted)
+            .ToListAsync(ct).ConfigureAwait(false);
+        var existingByUnit = existingItems.ToDictionary(i => i.Unit.Id);
+
+        // Gli importi manuali devono riferirsi a quote esistenti della ripartizione
+        var unknown = inputItems.Where(i => !existingByUnit.ContainsKey(i.UnitId)).ToList();
+        if (unknown.Any())
+            throw new ValidatorException("Alcune unità indicate non fanno parte di questa ripartizione. Ricalcola e riprova.");
+
+        foreach (var input in inputItems)
+        {
+            var item   = existingByUnit[input.UnitId];
+            var amount = Math.Round(input.Amount, 2);
+            item.Amount = amount;
+            // Allinea la percentuale all'importo manuale: è usata in fase di approvazione
+            // per ripartire le singole bollette (ExpenseAllocationHelper).
+            item.Percentage = total > 0 ? amount / total : 0m;
+            item.HasWarning = false;
+            item.Trace(currentUser);
+            await session.SaveOrUpdateAsync(item, ct).ConfigureAwait(false);
+        }
+
+        entity.IsManual = true;
+        entity.Trace(currentUser);
+        await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
+        await session.FlushAsync(ct).ConfigureAwait(false);
+        await session.RefreshAsync(entity, ct).ConfigureAwait(false);
+
+        return entity.ToReadDto();
+    }
+}
+
+/// <summary>
+/// Ripristina la ripartizione automatica: azzera il flag manuale e ricalcola gli importi
+/// dai consumi registrati.
+/// </summary>
+public class ResetConsumptionChargeToAutoCommandConsumer
+    : InMemoryConsumerBase<ResetConsumptionChargeToAutoCommand, ConsumptionChargeReadDto>
+{
+    private readonly IUserService _userService;
+    public ResetConsumptionChargeToAutoCommandConsumer(ISessionFactoryProvider sp, IUserService us) : base(sp) => _userService = us;
+
+    protected override async Task<ConsumptionChargeReadDto> Consume(ResetConsumptionChargeToAutoCommand command, IMediationContext ctx, CancellationToken ct)
+    {
+        var currentUser = await _userService.GetByIdAsync(command.CurrentUserId, ct).ConfigureAwait(false);
+
+        var entity = await session.Query<ConsumptionCharge>()
+            .FirstOrDefaultAsync(x => x.Id == command.Id && !x.IsDeleted, ct).ConfigureAwait(false);
+        if (entity == null) throw new NotFoundException("Ripartizione non trovata.");
+        if (entity.Status?.Id == ConsumptionChargeStatus.Approved)
+            throw new ValidatorException("Non è possibile modificare una ripartizione già approvata.");
+
+        entity.IsManual = false;
+        entity.Trace(currentUser);
+        await session.SaveOrUpdateAsync(entity, ct).ConfigureAwait(false);
+        await session.FlushAsync(ct).ConfigureAwait(false);
+
+        await ConsumptionChargeHelper.RecalculateItems(entity, currentUser, ct, session).ConfigureAwait(false);
+        return entity.ToReadDto();
+    }
+}
+
+/// <summary>
 /// Approva la ripartizione: genera una CondominiumFee per ogni unità
 /// sull'installment del budget preventivo indicato.
 /// </summary>
@@ -228,6 +331,17 @@ public class ApproveConsumptionChargeCommandConsumer
 
         if (!entity.Items.Any(i => !i.IsDeleted && i.Amount > 0))
             throw new ValidatorException("La ripartizione non produce quote: verifica consumi e spese registrate.");
+
+        // Ripartizione manuale: il ricalcolo ha potuto aggiornare il totale bollette senza
+        // toccare gli importi manuali. Verifica che la somma quadri ancora col nuovo totale.
+        if (entity.IsManual)
+        {
+            var manualSum = Math.Round(entity.Items.Where(i => !i.IsDeleted).Sum(i => i.Amount), 2);
+            if (manualSum != Math.Round(entity.TotalAmount, 2))
+                throw new ValidatorException(
+                    $"Gli importi manuali ({manualSum:N2}) non corrispondono più al totale delle bollette ({entity.TotalAmount:N2}): " +
+                    "le spese sono cambiate dopo la modifica manuale. Aggiorna gli importi o ripristina la ripartizione automatica prima di approvare.");
+        }
 
         // ── Cambia stato → Approved ───────────────────────────────────────────
         // L'approvazione della ripartizione consumi NON genera rate né quote
@@ -332,12 +446,14 @@ internal static class ConsumptionChargeHelper
         }
 
         // ── Importo da ripartire = somma delle bollette sul conto del tipo consumo ──
+        // Come per le allocazioni, l'importo a carico dei condòmini è il totale fattura:
+        // GrossAmount (già al netto della ritenuta) + ritenuta d'acconto.
         var accountId = entity.ConsumptionType.Account.Id;
         var totalAmount = await session.Query<Expense>()
             .Where(e => e.FiscalYear.Id == entity.FiscalYear.Id
                      && e.Account.Id    == accountId
                      && !e.IsDeleted)
-            .SumAsync(e => (decimal?)e.GrossAmount, ct)
+            .SumAsync(e => (decimal?)(e.GrossAmount + e.WithholdingTax), ct)
             .ConfigureAwait(false) ?? 0m;
 
         // Tutti i contatori attivi del tipo di consumo
@@ -424,8 +540,13 @@ internal static class ConsumptionChargeHelper
             {
                 existing.Consumption      = consumption;
                 existing.TotalConsumption = totalConsumption;
-                existing.Percentage       = percentage;
-                existing.Amount           = amount;
+                // Ripartizione manuale: non sovrascrivere importo e percentuale (allineata
+                // all'importo manuale e usata in fase di approvazione per ripartire le bollette).
+                if (!entity.IsManual)
+                {
+                    existing.Percentage = percentage;
+                    existing.Amount     = amount;
+                }
                 existing.HasWarning       = false;
                 existing.Trace(currentUser);
                 await session.SaveOrUpdateAsync(existing, ct).ConfigureAwait(false);
@@ -440,7 +561,9 @@ internal static class ConsumptionChargeHelper
                     Consumption      = consumption,
                     TotalConsumption = totalConsumption,
                     Percentage       = percentage,
-                    Amount           = amount,
+                    // Una nuova unità su una ripartizione manuale parte con quota 0:
+                    // l'utente la imposterà a mano (il vincolo somma è validato al salvataggio).
+                    Amount           = entity.IsManual ? 0m : amount,
                     HasWarning       = false,
                     IsDeleted        = false,
                 };

@@ -13,6 +13,7 @@ public class GetPagedExpensesCommand : BasePagedCommand, IQuery<PagedResult<Expe
     public int?      ExpenseTypeId   { get; set; }
     public int?      PaymentStatusId { get; set; }
     public int?      SupplierId      { get; set; }
+    public int?      FiscalYearId    { get; set; }
     public DateTime? DateFrom        { get; set; }
     public DateTime? DateTo          { get; set; }
     public string?   Search          { get; set; }

@@ -132,6 +132,23 @@ public class GetBilancioRipartizioneReportCommandConsumer
             .GroupBy(x => x.UnitId)
             .ToDictionary(g => g.Key, g => g.Sum(x => x.AmountPaid));
 
+        // ── Override manuali delle celle del bilancio ──────────────────────────
+        // Sostituiscono il valore calcolato per la cella (unità, riga, tipo, colonna).
+        var overrideMap = (await session.Query<BilancioRipartizioneOverride>()
+                .Where(o => o.FiscalYear.Id == fy.Id && !o.IsDeleted)
+                .Select(o => new { o.Unit.Id, o.RowType, o.CellType, o.ColumnRefId, o.Amount })
+                .ToListAsync(ct).ConfigureAwait(false))
+            .GroupBy(o => (o.Id, o.RowType, o.CellType, o.ColumnRefId))
+            .ToDictionary(g => g.Key, g => g.Last().Amount);
+
+        // Modificabile solo se l'esercizio non è Closed/Locked.
+        bool isEditable = fy.Status?.Id != FiscalYearStatus.Closed
+                       && fy.Status?.Id != FiscalYearStatus.Locked;
+
+        // Cerca l'override per una cella; ritorna true e l'importo se presente.
+        bool TryOverride(int unitId, int rowType, int cellType, int columnRefId, out decimal amount)
+            => overrideMap.TryGetValue((unitId, rowType, cellType, columnRefId), out amount);
+
         // ── Determina colonne USATE ─────────────────────────────────────────────
         var usedConsumoTypeIds = consumoByTypeUnit.Keys.Select(k => k.TypeId).ToHashSet();
         var consumoColumns = consumptionTypes
@@ -170,7 +187,18 @@ public class GetBilancioRipartizioneReportCommandConsumer
             MillesimaleColumns = usedTables,
         };
 
-        foreach (var u in units.OrderBy(x => x.InternalNumber))
+        // Ordine alfabetico per nominativo proprietario (A→Z); fallback al nome unità
+        // per le unità senza proprietario, tie-breaker su InternalNumber.
+        string OwnerKey(int unitId, string? displayName, string? internalNumber) =>
+            ownersByUnit.TryGetValue(unitId, out var on) && !string.IsNullOrWhiteSpace(on)
+                ? on
+                : FallbackUnitName(displayName, internalNumber);
+
+        var orderedUnits = units
+            .OrderBy(x => OwnerKey(x.Id, x.DisplayName, x.InternalNumber), StringComparer.CurrentCultureIgnoreCase)
+            .ThenBy(x => x.InternalNumber, StringComparer.CurrentCultureIgnoreCase);
+
+        foreach (var u in orderedUnits)
         {
             bool hasTenant = tenantsByUnit.ContainsKey(u.Id);
 
@@ -182,6 +210,8 @@ public class GetBilancioRipartizioneReportCommandConsumer
             // Costruisci la riga per un dato "destinatario" (proprietari/inquilini)
             BilancioRowDto BuildRow(bool tenantRow)
             {
+                int rowType = tenantRow ? BilancioRowType.Inquilini : BilancioRowType.Proprietari;
+
                 var row = new BilancioRowDto
                 {
                     UnitId     = u.Id,
@@ -190,6 +220,9 @@ public class GetBilancioRipartizioneReportCommandConsumer
                         : (ownersByUnit.TryGetValue(u.Id, out var on) ? on : FallbackUnitName(u.DisplayName, u.InternalNumber)),
                     RowType    = tenantRow ? "Inquilini" : "Proprietari",
                 };
+
+                // Totale "Totale speso" calcolato (senza override), per lo scostamento.
+                decimal totaleCalcolato = 0m;
 
                 // Consumi → riga in base al ChargeabilityType del conto del tipo consumo
                 foreach (var col in consumoColumns)
@@ -204,7 +237,10 @@ public class GetBilancioRipartizioneReportCommandConsumer
                     {
                         qta = cv.Qta; imp = cv.Imp;
                     }
-                    row.Consumi.Add(new ConsumoCellDto { ConsumptionTypeId = col.ConsumptionTypeId, Quantita = qta, Importo = imp });
+                    totaleCalcolato += imp;
+                    bool ov = TryOverride(u.Id, rowType, BilancioCellType.Consumo, col.ConsumptionTypeId, out var ovImp);
+                    if (ov) imp = ovImp;
+                    row.Consumi.Add(new ConsumoCellDto { ConsumptionTypeId = col.ConsumptionTypeId, Quantita = qta, Importo = imp, IsOverridden = ov });
                 }
 
                 decimal accrediti = 0m;
@@ -225,8 +261,11 @@ public class GetBilancioRipartizioneReportCommandConsumer
                         if (e.AccountType == (int)ChartOfAccountsType.Entrata) { accrediti += a.AllocatedAmount; continue; }
                         imp += a.AllocatedAmount;
                     }
+                    totaleCalcolato += imp;
                     var mill = (!tenantRow && millesimalByTableUnit.TryGetValue((col.MillesimalTableId, u.Id), out var mv)) ? mv : 0m;
-                    row.Millesimali.Add(new MillesimaleCellDto { MillesimalTableId = col.MillesimalTableId, Millesimal = mill, Importo = imp });
+                    bool ovM = TryOverride(u.Id, rowType, BilancioCellType.Millesimale, col.MillesimalTableId, out var ovImpM);
+                    if (ovM) imp = ovImpM;
+                    row.Millesimali.Add(new MillesimaleCellDto { MillesimalTableId = col.MillesimalTableId, Millesimal = mill, Importo = imp, IsOverridden = ovM });
                 }
 
                 // Entrate ripartite (millesimali) su conti a consumo o tabelle non in colonna → comunque accrediti
@@ -254,8 +293,19 @@ public class GetBilancioRipartizioneReportCommandConsumer
                     if (e.AccountType == (int)ChartOfAccountsType.Entrata) accrediti += amt;
                     else                                                   dirette   += amt;
                 }
-                row.Dirette   = dirette;
-                row.Accrediti = accrediti;
+                // Dirette/Accrediti calcolati confluiscono nel totale calcolato.
+                totaleCalcolato += dirette - accrediti;
+
+                // Override su Dirette / Accrediti (ColumnRefId = 0).
+                bool ovD = TryOverride(u.Id, rowType, BilancioCellType.Dirette, 0, out var ovDir);
+                if (ovD) dirette = ovDir;
+                bool ovA = TryOverride(u.Id, rowType, BilancioCellType.Accrediti, 0, out var ovAcc);
+                if (ovA) accrediti = ovAcc;
+
+                row.Dirette            = dirette;
+                row.DiretteOverridden  = ovD;
+                row.Accrediti          = accrediti;
+                row.AccreditiOverridden = ovA;
 
                 row.Totale = row.Consumi.Sum(c => c.Importo)
                            + row.Millesimali.Sum(m => m.Importo)
@@ -263,8 +313,18 @@ public class GetBilancioRipartizioneReportCommandConsumer
                            - row.Accrediti;
 
                 // Versato (quote incassate) attribuito alla riga proprietari per non duplicare
-                row.Versato = (!tenantRow && versatoByUnit.TryGetValue(u.Id, out var v)) ? v : 0m;
+                decimal versatoCalc = (!tenantRow && versatoByUnit.TryGetValue(u.Id, out var v)) ? v : 0m;
+                bool ovV = TryOverride(u.Id, rowType, BilancioCellType.Versato, 0, out var ovVer);
+                row.Versato          = ovV ? ovVer : versatoCalc;
+                row.VersatoOverridden = ovV;
                 row.Saldo   = row.Versato - row.Totale;
+
+                // Accumula i totali "Totale speso" calcolato/effettivo per lo scostamento.
+                report.TotaleCalcolato += totaleCalcolato;
+                report.TotaleEffettivo += row.Totale;
+                if (row.Consumi.Any(c => c.IsOverridden) || row.Millesimali.Any(m => m.IsOverridden)
+                    || ovD || ovA || ovV)
+                    report.HasOverrides = true;
                 return row;
             }
 
@@ -291,6 +351,8 @@ public class GetBilancioRipartizioneReportCommandConsumer
         report.Totals.Totale    = report.Rows.Sum(r => r.Totale);
         report.Totals.Versato   = report.Rows.Sum(r => r.Versato);
         report.Totals.Saldo     = report.Rows.Sum(r => r.Saldo);
+
+        report.IsEditable = isEditable;
 
         return report;
     }

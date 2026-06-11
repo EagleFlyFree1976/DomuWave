@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.BilancioRipartizioneOverride, DomuWave.Services" table="BilancioRipartizioneOverride" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='BilancioRipartizioneOverride'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant"     class="DomuWave.Services.Models.Tenant, DomuWave.Services"         column="TenantId"         not-null="true" />
+    <many-to-one name="FiscalYear" class="DomuWave.Services.Models.FiscalYear, DomuWave.Services"     column="FiscalYearId"     not-null="true" />
+    <many-to-one name="Unit"       class="DomuWave.Services.Models.RealEstateUnit, DomuWave.Services" column="RealEstateUnitId" not-null="true" />
+
+    <property name="RowType"     column="RowType"     type="Int32"   not-null="true" />
+    <property name="CellType"    column="CellType"    type="Int32"   not-null="true" />
+    <property name="ColumnRefId" column="ColumnRefId" type="Int32"   not-null="true" />
+    <property name="Amount"      column="Amount"      type="Decimal" not-null="true" />
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"     not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"    length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"    length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean"   not-null="true" />
+    <property name="IsEnabled"             column="IsDeleted"             type="Boolean"   insert="false" update="false" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+  </class>
+
+</hibernate-mapping>

@@ -78,6 +78,7 @@
     <None Remove="Models\Mappings\FaultMessage.hbm.xml" />
     <None Remove="Models\Mappings\PrivateThread.hbm.xml" />
     <None Remove="Models\Mappings\PrivateMessage.hbm.xml" />
+    <None Remove="Models\Mappings\BilancioRipartizioneOverride.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -159,6 +160,7 @@
     <EmbeddedResource Include="Models\Mappings\FaultMessage.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\PrivateThread.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\PrivateMessage.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BilancioRipartizioneOverride.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>

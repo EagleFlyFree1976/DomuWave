@@ -226,6 +226,8 @@ export const fiscalYearApi = {
   getConguaglio:      (id)            => api.get(`/fiscal-years/${id}/conguaglio`),
   getExpensesByMillesimalReport: (id) => api.get(`/fiscal-years/${id}/report/expenses-by-millesimal`),
   getBilancioRipartizione:       (id) => api.get(`/fiscal-years/${id}/report/bilancio-ripartizione`),
+  saveBilancioOverrides:  (id, cells) => api.put(`/fiscal-years/${id}/report/bilancio-ripartizione/overrides`, cells),
+  resetBilancioOverrides:        (id) => api.delete(`/fiscal-years/${id}/report/bilancio-ripartizione/overrides`),
 }
 
 // ─── Saldi contabili (AccountBalance) ─────────────────────────
@@ -561,6 +563,8 @@ export const consumptionChargeApi = {
   create:          (data)         => api.post('/consumption/charges', data),
   update:          (id, data)     => api.put(`/consumption/charges/${id}`, data),
   recalculate:     (id)           => api.post(`/consumption/charges/${id}/recalculate`),
+  saveItems:       (id, data)     => api.put(`/consumption/charges/${id}/items`, data),
+  resetAuto:       (id)           => api.post(`/consumption/charges/${id}/reset-auto`),
   approve:         (id)           => api.post(`/consumption/charges/${id}/approve`),
   delete:          (id)           => api.delete(`/consumption/charges/${id}`),
 }

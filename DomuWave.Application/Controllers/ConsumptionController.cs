@@ -206,6 +206,27 @@ public class ConsumptionController(
         return Ok(result);
     }
 
+    [HttpPut("charges/{id:int}/items")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(ConsumptionChargeReadDto), 200)]
+    public async Task<IActionResult> SaveManualItems(int id, [FromBody] SaveManualConsumptionChargeItemsDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(new SaveManualConsumptionChargeItemsCommand(CurrentUser.Id, id, dto), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    [HttpPost("charges/{id:int}/reset-auto")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(ConsumptionChargeReadDto), 200)]
+    public async Task<IActionResult> ResetToAuto(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new ResetConsumptionChargeToAutoCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpPost("charges/{id:int}/approve")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(ConsumptionChargeReadDto), 200)]

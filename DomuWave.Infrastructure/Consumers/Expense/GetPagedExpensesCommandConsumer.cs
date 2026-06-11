@@ -43,6 +43,12 @@ public class GetPagedExpensesCommandConsumer
         if (command.SupplierId.HasValue)
             query = query.Where(e => e.Supplier.Id == command.SupplierId.Value);
 
+        // Filtro per esercizio fiscale: si basa sull'ASSEGNAZIONE della spesa all'esercizio
+        // (Expense.FiscalYear), non sull'intervallo di date dell'esercizio. Così le spese con
+        // data di registrazione fuori dall'intervallo ma assegnate all'esercizio sono incluse.
+        if (command.FiscalYearId.HasValue)
+            query = query.Where(e => e.FiscalYear.Id == command.FiscalYearId.Value);
+
         if (command.DateFrom.HasValue)
             query = query.Where(e => e.DocumentDate >= command.DateFrom.Value);
 

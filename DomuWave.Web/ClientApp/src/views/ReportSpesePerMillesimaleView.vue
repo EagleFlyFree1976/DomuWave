@@ -37,8 +37,9 @@
 
       <!-- Un blocco per ogni gruppo (tabella millesimale / immobile) -->
       <div v-for="(g, gi) in report.groups" :key="gi" class="report-group">
-        <h3 class="group-title" :class="{ 'group-direct': g.isDirectUnit }">
+        <h3 class="group-title" :class="{ 'group-direct': g.isDirectUnit, 'group-consumption': g.isConsumption }">
           {{ g.groupName }}
+          <span v-if="g.isConsumption" class="group-hint">ripartite in base ai consumi, non a millesimi</span>
         </h3>
         <table class="report-table">
           <thead>
@@ -147,6 +148,11 @@ const today   = new Date().toLocaleDateString('it-IT')
   border-left: 3px solid var(--accent); border-radius: 3px;
 }
 .group-title.group-direct { border-left-color: var(--accent-green, #22c55e); }
+.group-title.group-consumption { border-left-color: var(--accent-amber, #f59e0b); }
+.group-hint {
+  font-size: 0.72rem; font-weight: 500; color: var(--text-muted);
+  margin-left: 0.5rem; text-transform: none; letter-spacing: 0;
+}
 
 .report-table { width: 100%; border-collapse: collapse; font-size: 0.825rem; }
 .report-table th {

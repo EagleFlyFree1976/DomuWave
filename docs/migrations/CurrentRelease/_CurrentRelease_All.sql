@@ -9,6 +9,7 @@
 --   3) Expense.Send770        — nuovo flag "Invia 770"
 --   4) Expense                — date opzionali, tabella millesimale opzionale, UnitId
 --   5) Voci di menu           — impostazioni, report spese, bilancio ripartizione
+--   6) ConsumptionCharge.IsManual — modifica manuale importi ripartizione consumi
 -- ############################################################################
 
 -- Richiesto per la creazione/uso di indici filtrati e computed.
@@ -179,5 +180,19 @@ BEGIN
 
     INSERT INTO base_menues (MenuId, ParentMenuId, Icon, Description, Action, AuthorizationCode, PopulateEvent, IsEnabled, OrderKey, Tags)
     VALUES (@NewMenuId, 3, 'pi-table', 'Bilancio di ripartizione', '/report-bilancio-ripartizione', NULL, NULL, 1, 42, NULL);
+END
+GO
+
+-- ============================================================================
+-- 6) ConsumptionCharge: aggiunta colonna IsManual.
+-- Indica che gli importi delle quote sono stati modificati manualmente:
+-- il ricalcolo automatico non sovrascrive piu' gli importi (solo consumi/percentuali).
+-- ============================================================================
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID('ConsumptionCharge') AND name = 'IsManual'
+)
+BEGIN
+    ALTER TABLE ConsumptionCharge ADD IsManual BIT NOT NULL CONSTRAINT DF_ConsumptionCharge_IsManual DEFAULT 0;
 END
 GO
