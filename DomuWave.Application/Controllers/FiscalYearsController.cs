@@ -190,4 +190,29 @@ public class FiscalYearsController(
             new GetBilancioRipartizioneReportCommand(CurrentUser.Id, id), ct);
         return Ok(result);
     }
+
+    /// <summary>Salva in blocco gli override manuali delle celle del bilancio di ripartizione.
+    /// Sostituisce il set precedente e ritorna il report ricalcolato.</summary>
+    [HttpPut("{id:int}/report/bilancio-ripartizione/overrides")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(BilancioRipartizioneReportDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SaveBilancioRipartizioneOverrides(
+        int id, [FromBody] List<BilancioCellOverrideDto> cells, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new SaveBilancioRipartizioneOverridesCommand(CurrentUser.Id, id, cells), ct);
+        return Ok(result);
+    }
+
+    /// <summary>"Ripristina automatico": cancella tutti gli override del bilancio di
+    /// ripartizione dell'esercizio e ritorna il report ricalcolato.</summary>
+    [HttpDelete("{id:int}/report/bilancio-ripartizione/overrides")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(BilancioRipartizioneReportDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResetBilancioRipartizioneOverrides(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new ResetBilancioRipartizioneOverridesCommand(CurrentUser.Id, id), ct);
+        return Ok(result);
+    }
 }

@@ -204,6 +204,8 @@ export const fiscalYearApi = {
   getConguaglio:      (id)            => api.get(`/fiscal-years/${id}/conguaglio`),
   getExpensesByMillesimalReport: (id) => api.get(`/fiscal-years/${id}/report/expenses-by-millesimal`),
   getBilancioRipartizione:       (id) => api.get(`/fiscal-years/${id}/report/bilancio-ripartizione`),
+  saveBilancioOverrides:  (id, cells) => api.put(`/fiscal-years/${id}/report/bilancio-ripartizione/overrides`, cells),
+  resetBilancioOverrides:        (id) => api.delete(`/fiscal-years/${id}/report/bilancio-ripartizione/overrides`),
 }
 
 // ─── Saldi contabili (AccountBalance) ─────────────────────────

@@ -105,18 +105,68 @@ public class GetConsuntivoDetailCommandConsumer
             .GroupBy(a => a.ExpenseId)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        // ── 3. ConsumptionCharge approvate SENZA spese sul conto ─────────────
-        // Voci sintetiche SOLO per le ripartizioni "vecchio stile" che non hanno
-        // bollette (Expense) sul conto del tipo consumo: in tal caso le quote non
-        // sono rappresentate da alcuna ExpenseAllocation e vanno aggiunte qui.
-        // Quando invece esistono bollette sul conto (nuovo flusso), le loro
-        // ExpenseAllocation riflettono già i consumi → niente da aggiungere
-        // (altrimenti si conterebbe due volte).
+        // ── 2b. Conti a consumo + quote consumi autoritative (ConsumptionChargeItem) ─
+        // Per i conti a consumo CON bollette l'importo per unità è quello memorizzato
+        // sulla ripartizione consumi approvata (fonte autoritativa), non il
+        // redistribuito dalle ExpenseAllocation delle bollette: così il pivot per unità
+        // coincide al centesimo col Bilancio di ripartizione.
+        // NB: ci limitiamo ai conti che hanno effettivamente bollette (Expense): le
+        // ripartizioni "vecchio stile" senza bollette sono già gestite come voci
+        // sintetiche nella sezione 3 (evita doppio conteggio).
         var accountsWithExpenses = expenses
             .Select(e => e.AccountId)
             .Distinct()
             .ToHashSet();
 
+        var consumptionAccountIds = (await session.Query<ConsumptionType>()
+                .Where(t => t.Condominium.Id == condominiumId && !t.IsDeleted
+                         && t.Account != null)
+                .Select(t => t.Account.Id)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .Where(id => id > 0 && accountsWithExpenses.Contains(id))
+            .ToHashSet();
+
+        // Quote consumi approvate dell'esercizio, aggregate per (conto consumo, unità).
+        var consumptionItemRows = (await session.Query<ConsumptionChargeItem>()
+                .Where(ci => !ci.IsDeleted
+                          && !ci.Charge.IsDeleted
+                          && ci.Charge.Status.Id     == ConsumptionChargeStatus.Approved
+                          && ci.Charge.FiscalYear.Id == fiscalYearId
+                          && ci.Charge.ConsumptionType.Account != null)
+                .Select(ci => new
+                {
+                    AccountId      = ci.Charge.ConsumptionType.Account.Id,
+                    UnitId         = ci.Unit.Id,
+                    InternalNumber = ci.Unit.InternalNumber,
+                    DisplayName    = ci.Unit.DisplayName,
+                    ci.Amount,
+                })
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .Where(ci => consumptionAccountIds.Contains(ci.AccountId))
+            .Select(ci => new
+            {
+                ci.AccountId,
+                ci.UnitId,
+                UnitName = RealEstateUnitMappingExtensions.FormatUnitName(ci.InternalNumber, ci.DisplayName),
+                ci.Amount,
+            })
+            .ToList();
+
+        // Aggregato per (conto, unità) — usato sia per i totali-conto sia per il pivot.
+        var consumptionByAccountUnit = consumptionItemRows
+            .GroupBy(x => (x.AccountId, x.UnitId))
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Amount));
+
+        // ── 3. ConsumptionCharge approvate SENZA spese sul conto ─────────────
+        // Voci sintetiche SOLO per le ripartizioni "vecchio stile" che non hanno
+        // bollette (Expense) sul conto del tipo consumo: in tal caso le quote non
+        // sono rappresentate da alcuna ExpenseAllocation e vanno aggiunte qui.
+        // Quando invece esistono bollette sul conto (nuovo flusso), le loro quote
+        // (ConsumptionChargeItem) sono già conteggiate tramite consumptionItemRows
+        // → niente da aggiungere qui (altrimenti si conterebbe due volte).
+        // (accountsWithExpenses è già calcolato nella sezione 2b.)
         var chargesAll = await session.Query<ConsumptionCharge>()
             .Where(c => c.FiscalYear.Id == fiscalYearId
                      && c.Status.Id     == ConsumptionChargeStatus.Approved
@@ -204,6 +254,12 @@ public class GetConsuntivoDetailCommandConsumer
                     .OrderBy(e => e.DocumentDate)
                     .ToList();
 
+                // Per i conti a consumo il totale è la somma delle quote consumi
+                // approvate (fonte autoritativa), non la somma delle bollette.
+                decimal totalAmount = consumptionAccountIds.Contains(ag.Key)
+                    ? consumptionByAccountUnit.Where(kv => kv.Key.AccountId == ag.Key).Sum(kv => kv.Value)
+                    : ag.Sum(e => e.GrossAmount);
+
                 return new ConsuntivoAccountRowDto
                 {
                     AccountId   = ag.Key,
@@ -211,7 +267,7 @@ public class GetConsuntivoDetailCommandConsumer
                     AccountName = first.AccountName,
                     Level       = first.AccountLevel,
                     ParentId    = first.ParentAccountId,
-                    TotalAmount = ag.Sum(e => e.GrossAmount),
+                    TotalAmount = totalAmount,
                     Expenses    = expenseRows,
                 };
             })
@@ -266,6 +322,15 @@ public class GetConsuntivoDetailCommandConsumer
             });
         }
 
+        // ── 5b. Proprietari per unità (per l'ordinamento alfabetico per nominativo) ─
+        var ownersByUnit = (await session.Query<UnitOwner>()
+                .Where(o => o.Unit.Condominium.Id == condominiumId && o.IsActive && !o.IsDeleted)
+                .Select(o => new { UnitId = o.Unit.Id, o.LastName, o.FirstName })
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false))
+            .GroupBy(o => o.UnitId)
+            .ToDictionary(g => g.Key, g => string.Join("-", g.Select(x => Surname(x.LastName, x.FirstName))));
+
         // ── 6. Billing groups del condominio ─────────────────────────────────────
         var billingGroups = await session.Query<BillingGroup>()
             .Where(bg => bg.Condominium.Id == condominiumId && !bg.IsDeleted)
@@ -298,10 +363,20 @@ public class GetConsuntivoDetailCommandConsumer
             );
 
         // ── 8. Vista per unità (pivot) ────────────────────────────────────────
-        // Combina allocazioni da ExpenseAllocation e da ConsumptionChargeItem
+        // Allocazioni da ExpenseAllocation per i conti NON a consumo. Per i conti a
+        // consumo gli importi per unità arrivano invece dalle ConsumptionChargeItem
+        // (fonte autoritativa) → riconciliazione al centesimo col Bilancio.
         var allAllocRows = allocations
             .Select(a => new { a.UnitId, a.UnitName, a.AllocatedAmount,
                 AccountId = expenses.First(e => e.ExpenseId == a.ExpenseId).AccountId })
+            .Where(a => !consumptionAccountIds.Contains(a.AccountId))
+            .Concat(consumptionItemRows.Select(ci => new
+            {
+                ci.UnitId,
+                ci.UnitName,
+                AllocatedAmount = ci.Amount,
+                AccountId       = ci.AccountId,
+            }))
             .ToList();
 
         // Aggiungi allocazioni dalle charge senza expense (AccountId = 0)
@@ -375,9 +450,21 @@ public class GetConsuntivoDetailCommandConsumer
             }
         }
 
+        // Chiave di ordinamento alfabetico: nominativo proprietario (A→Z),
+        // fallback al nome unità per le unità senza proprietario.
+        string UnitSortKey(ConsuntivoUnitRowDto r) =>
+            r.IsGroup
+                ? (r.BillingGroupName ?? string.Empty)
+                : (ownersByUnit.TryGetValue(r.UnitId, out var on) && !string.IsNullOrWhiteSpace(on)
+                    ? on
+                    : (r.UnitName ?? string.Empty));
+
         foreach (var (groupId, subRows) in groupedUnits)
         {
             var grp = billingGroups.First(bg => bg.Id == groupId);
+            var orderedSubRows = subRows
+                .OrderBy(UnitSortKey, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
             allUnitRows.Add(new ConsuntivoUnitRowDto
             {
                 UnitId           = 0,
@@ -385,11 +472,11 @@ public class GetConsuntivoDetailCommandConsumer
                 IsGroup          = true,
                 BillingGroupId   = grp.Id,
                 BillingGroupName = grp.Name,
-                Total            = subRows.Sum(r => r.Total),
-                AmountDue        = subRows.Sum(r => r.AmountDue),
-                AmountPaid       = subRows.Sum(r => r.AmountPaid),
-                Balance          = subRows.Sum(r => r.Balance),
-                Entries          = subRows
+                Total            = orderedSubRows.Sum(r => r.Total),
+                AmountDue        = orderedSubRows.Sum(r => r.AmountDue),
+                AmountPaid       = orderedSubRows.Sum(r => r.AmountPaid),
+                Balance          = orderedSubRows.Sum(r => r.Balance),
+                Entries          = orderedSubRows
                     .SelectMany(r => r.Entries)
                     .GroupBy(e => e.AccountId)
                     .Select(g =>
@@ -405,11 +492,13 @@ public class GetConsuntivoDetailCommandConsumer
                     })
                     .OrderBy(e => e.AccountCode)
                     .ToList(),
-                Units = subRows,
+                Units = orderedSubRows,
             });
         }
 
-        allUnitRows = allUnitRows.OrderBy(u => u.IsGroup ? u.BillingGroupName : u.UnitName).ToList();
+        allUnitRows = allUnitRows
+            .OrderBy(UnitSortKey, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
 
         return new ConsuntivoDetailDto
         {
@@ -419,5 +508,12 @@ public class GetConsuntivoDetailCommandConsumer
             Accounts       = accountGroups,
             Units          = allUnitRows,
         };
+    }
+
+    private static string Surname(string? lastName, string? firstName)
+    {
+        var ln = (lastName ?? "").Trim();
+        if (ln.Length > 0) return ln;
+        return (firstName ?? "").Trim();
     }
 }
