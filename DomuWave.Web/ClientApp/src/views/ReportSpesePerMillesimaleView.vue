@@ -9,6 +9,12 @@
           {{ fy.code }}{{ fy.description ? ' – ' + fy.description : '' }}
         </option>
       </select>
+      <div class="group-toggle" role="group" aria-label="Raggruppa per">
+        <button type="button" class="group-toggle__btn" :class="{ active: groupBy === 'table' }"
+          @click="groupBy = 'table'">Tabella millesimale</button>
+        <button type="button" class="group-toggle__btn" :class="{ active: groupBy === 'supplier' }"
+          @click="groupBy = 'supplier'">Fornitore</button>
+      </div>
       <button class="btn btn-ghost" :disabled="!report || loading" @click="printReport">
         🖨️ Stampa / PDF
       </button>
@@ -23,7 +29,7 @@
     <div v-else-if="report" class="report-sheet">
       <!-- Intestazione report (visibile anche in stampa) -->
       <div class="report-header">
-        <h2>Elenco spese per tabella millesimale</h2>
+        <h2>Elenco spese per {{ groupBy === 'supplier' ? 'fornitore' : 'tabella millesimale' }}</h2>
         <div class="report-meta">
           <span><strong>Condominio:</strong> {{ report.condominiumName || '—' }}</span>
           <span><strong>Esercizio:</strong> {{ report.fiscalYearCode || '—' }}</span>
@@ -31,13 +37,13 @@
         </div>
       </div>
 
-      <div v-if="!report.groups.length" class="empty-state">
+      <div v-if="!displayGroups.length" class="empty-state">
         Nessuna spesa registrata per questo esercizio.
       </div>
 
-      <!-- Un blocco per ogni gruppo (tabella millesimale / immobile) -->
-      <div v-for="(g, gi) in report.groups" :key="gi" class="report-group">
-        <h3 class="group-title" :class="{ 'group-direct': g.isDirectUnit, 'group-consumption': g.isConsumption }">
+      <!-- Un blocco per ogni gruppo (tabella millesimale / immobile / fornitore) -->
+      <div v-for="(g, gi) in displayGroups" :key="gi" class="report-group">
+        <h3 class="group-title" :class="{ 'group-direct': g.isDirectUnit, 'group-consumption': g.isConsumption, 'group-supplier': groupBy === 'supplier' }">
           {{ g.groupName }}
           <span v-if="g.isConsumption" class="group-hint">ripartite in base ai consumi, non a millesimi</span>
         </h3>
@@ -47,18 +53,20 @@
               <th style="width:90px">Data</th>
               <th style="width:90px">N° doc.</th>
               <th>Descrizione</th>
-              <th>Fornitore</th>
+              <th v-if="groupBy === 'supplier'">Tabella / Immobile</th>
+              <th v-else>Fornitore</th>
               <th>Conto</th>
               <th v-if="g.isDirectUnit">Immobile</th>
               <th class="text-right" style="width:120px">Importo</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="e in g.expenses" :key="e.expenseId">
+            <tr v-for="(e, ei) in g.expenses" :key="e.expenseId + '-' + ei">
               <td class="mono text-secondary">{{ fmtDate(e.documentDate) }}</td>
               <td class="text-secondary">{{ e.documentNumber || '—' }}</td>
               <td>{{ e.name }}</td>
-              <td class="text-secondary">{{ e.supplierName || '—' }}</td>
+              <td v-if="groupBy === 'supplier'" class="text-secondary">{{ e.tableName || '—' }}</td>
+              <td v-else class="text-secondary">{{ e.supplierName || '—' }}</td>
               <td class="text-secondary">{{ e.accountName || '—' }}</td>
               <td v-if="g.isDirectUnit">{{ e.unitName || '—' }}</td>
               <td class="mono text-right">{{ fmt(e.grossAmount) }}</td>
@@ -74,7 +82,7 @@
       </div>
 
       <!-- Totale complessivo -->
-      <div v-if="report.groups.length" class="grand-total">
+      <div v-if="displayGroups.length" class="grand-total">
         <span>TOTALE COMPLESSIVO</span>
         <span class="mono">{{ fmt(report.grandTotal) }}</span>
       </div>
@@ -93,6 +101,34 @@ const fiscalYears          = computed(() => store.fiscalYears ?? [])
 const selectedFiscalYearId = ref(null)
 const report               = ref(null)
 const loading              = ref(false)
+const groupBy              = ref('table')   // 'table' | 'supplier'
+
+// I gruppi da mostrare dipendono dalla modalità selezionata.
+// In modalità 'table' usiamo direttamente i gruppi del backend (per tabella millesimale);
+// in modalità 'supplier' ricostruiamo i gruppi lato client raggruppando le spese per fornitore.
+const displayGroups = computed(() => {
+  if (!report.value) return []
+  const groups = report.value.groups ?? []
+  if (groupBy.value !== 'supplier') return groups
+
+  // Raccogli tutte le spese di tutti i gruppi, annotando la tabella d'origine.
+  const bySupplier = new Map()
+  for (const g of groups) {
+    for (const e of (g.expenses ?? [])) {
+      const key  = e.supplierName?.trim() || '— Senza fornitore —'
+      let bucket = bySupplier.get(key)
+      if (!bucket) {
+        bucket = { groupName: key, isDirectUnit: false, isConsumption: false, expenses: [], groupTotal: 0 }
+        bySupplier.set(key, bucket)
+      }
+      // conserva il nome della tabella/gruppo d'origine per la colonna dedicata
+      bucket.expenses.push({ ...e, tableName: g.groupName })
+      bucket.groupTotal += Number(e.grossAmount ?? 0)
+    }
+  }
+  // ordina alfabeticamente per nome fornitore (it-IT)
+  return [...bySupplier.values()].sort((a, b) => a.groupName.localeCompare(b.groupName, 'it'))
+})
 
 async function load() {
   if (!selectedFiscalYearId.value) { report.value = null; return }
@@ -134,6 +170,15 @@ const today   = new Date().toLocaleDateString('it-IT')
 .toolbar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .toolbar h1 { margin: 0; margin-right: auto; }
 
+.group-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.group-toggle__btn {
+  border: none; background: var(--bg-surface); color: var(--text-secondary);
+  padding: 0.4rem 0.8rem; font-size: 0.82rem; cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.group-toggle__btn + .group-toggle__btn { border-left: 1px solid var(--border); }
+.group-toggle__btn:hover { background: var(--accent-glow, rgba(99,102,241,0.08)); }
+.group-toggle__btn.active { background: var(--accent); color: #fff; }
+
 .report-sheet { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem 1.75rem; }
 
 .report-header { border-bottom: 2px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.25rem; }
@@ -149,6 +194,7 @@ const today   = new Date().toLocaleDateString('it-IT')
 }
 .group-title.group-direct { border-left-color: var(--accent-green, #22c55e); }
 .group-title.group-consumption { border-left-color: var(--accent-amber, #f59e0b); }
+.group-title.group-supplier { border-left-color: var(--accent-teal, #14b8a6); }
 .group-hint {
   font-size: 0.72rem; font-weight: 500; color: var(--text-muted);
   margin-left: 0.5rem; text-transform: none; letter-spacing: 0;
