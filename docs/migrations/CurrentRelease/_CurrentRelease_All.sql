@@ -147,16 +147,32 @@ GO
 -- 5) Voci di menu
 -- ============================================================================
 
--- Voce di menu "Impostazioni visualizzazione"
+-- Voce di menu "Impostazioni" (pagina generica: branding + contabilità)
 -- Inserita sotto "Amministrazione" (MenuId = 6), accanto a "Configurazione Email".
--- Idempotente: non duplica se l'Action è già presente.
-IF NOT EXISTS (SELECT 1 FROM base_menues WHERE Action = '/impostazioni-visualizzazione')
+-- Idempotente: non duplica se una delle Action (nuova o vecchia) è già presente.
+IF NOT EXISTS (SELECT 1 FROM base_menues WHERE Action IN ('/impostazioni', '/impostazioni-visualizzazione'))
 BEGIN
     DECLARE @NewMenuId INT = (SELECT ISNULL(MAX(MenuId), 0) + 1 FROM base_menues);
 
     INSERT INTO base_menues (MenuId, ParentMenuId, Icon, Description, Action, AuthorizationCode, PopulateEvent, IsEnabled, OrderKey, Tags)
-    VALUES (@NewMenuId, 6, 'pi-sort-alt', 'Impostazioni visualizzazione', '/impostazioni-visualizzazione', NULL, NULL, 1, 22, NULL);
+    VALUES (@NewMenuId, 6, 'pi-cog', 'Impostazioni', '/impostazioni', NULL, NULL, 1, 22, NULL);
 END
+GO
+
+-- Rinomina la vecchia voce "Impostazioni visualizzazione" → "Impostazioni" (/impostazioni)
+UPDATE base_menues
+   SET Description = 'Impostazioni', Icon = 'pi-cog', Action = '/impostazioni'
+ WHERE Action = '/impostazioni-visualizzazione';
+GO
+
+-- TenantDisplaySettings — colonne logo (branding)
+IF COL_LENGTH('TenantDisplaySettings', 'LogoContent')     IS NULL ALTER TABLE TenantDisplaySettings ADD LogoContent     VARBINARY(MAX) NULL;
+GO
+IF COL_LENGTH('TenantDisplaySettings', 'LogoContentType') IS NULL ALTER TABLE TenantDisplaySettings ADD LogoContentType NVARCHAR(100)  NULL;
+GO
+IF COL_LENGTH('TenantDisplaySettings', 'LogoFileName')    IS NULL ALTER TABLE TenantDisplaySettings ADD LogoFileName    NVARCHAR(260)  NULL;
+GO
+IF COL_LENGTH('TenantDisplaySettings', 'LogoUpdatedDate') IS NULL ALTER TABLE TenantDisplaySettings ADD LogoUpdatedDate DATETIME2      NULL;
 GO
 
 -- Voce di menu "Report spese per tabella millesimale"

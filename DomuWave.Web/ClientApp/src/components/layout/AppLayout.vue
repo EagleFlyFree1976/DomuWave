@@ -12,19 +12,27 @@
 </template>
 
 <script setup>
-  import { onMounted } from 'vue'
+  import { onMounted, watch } from 'vue'
   import AppSidebar from '@/components/layout/AppSidebar.vue'
   import CondominiBreadcrumb from '@/components/layout/CondominiBreadcrumb.vue'
   import { useSessionStore } from '@/stores/sessionStore'
   import { useAppStore } from '@/stores/app'
+  import { useTenantBranding } from '@/composables/useTenantBranding'
 
   const session = useSessionStore()
   const appStore = useAppStore()
+  const { load: loadBranding, reload: reloadBranding } = useTenantBranding()
 
   onMounted(async () => {
+    loadBranding()   // carica il logo del tenant (fail-safe → logo di default)
     if (!appStore.condomini.length) {
       await appStore.loadCondomini()
     }
+  })
+
+  // Al cambio di tenant (superadmin) ricarica il logo corretto
+  watch(() => session.activeTenant?.id, (id, prev) => {
+    if (id && id !== prev) reloadBranding()
   })
 </script>
 

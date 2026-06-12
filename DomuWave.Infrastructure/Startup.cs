@@ -54,8 +54,8 @@ public static class Startup
 
         // ─── Services (repository layer) ──────────────────────────────────────
 
-    
- 
+        // ─── Guida (content provider Markdown; base per il RAG in Fase 2) ─────
+        services.AddSingleton<Guide.IGuideContentProvider, Guide.MarkdownGuideContentProvider>();
 
         // External clients
         services.AddScoped<IExchangeRateClient, ExchangeRateApiClient>();

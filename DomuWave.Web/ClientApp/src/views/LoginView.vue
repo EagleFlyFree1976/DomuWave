@@ -23,7 +23,7 @@
       <!-- Card -->
       <div class="login-card">
         <div class="card-logo">
-          <img src="../assets/logostudiogalli.png" alt="Studio Amministrativo Galli" />
+          <img :src="domuwaveLogo" alt="DomuWave" />
         </div>
         <div class="card-divider"></div>
         <div class="card-header">
@@ -112,6 +112,8 @@
   import { required, helpers, minLength } from '@vuelidate/validators'
   import { useAuthStore } from '@/stores/authStore'
   import { useMenuStore } from '@/stores/menuStore'
+  // Variante per fondo chiaro (la card di login è chiara)
+  import domuwaveLogo from '@/assets/domuwave-logo-dark.svg'
   import InputText from 'primevue/inputtext'
   import Password from 'primevue/password'
   import Button from 'primevue/button'
@@ -332,10 +334,9 @@
   }
 
   .card-logo img {
-    max-width: 220px;
+    width: 200px;
+    max-width: 80%;
     height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   }
 
   .card-divider {

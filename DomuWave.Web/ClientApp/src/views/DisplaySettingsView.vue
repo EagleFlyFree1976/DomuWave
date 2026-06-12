@@ -2,20 +2,67 @@
   <div>
     <div class="page-header">
       <div>
-        <h1>Impostazioni visualizzazione</h1>
+        <h1>Impostazioni</h1>
         <p class="text-muted" style="font-size:0.85rem;margin-top:2px">
-          Come mostrare i valori contabili (spese, incassi, saldi) nelle pagine del condominio
+          Configurazione dello studio: aspetto e visualizzazione dei dati
         </p>
       </div>
     </div>
 
     <div v-if="loading" class="loading-state">Caricamento…</div>
 
-    <div v-else class="display-layout">
+    <div v-else class="settings-shell">
+      <!-- ── Navigazione sezioni ── -->
+      <nav class="settings-nav">
+        <button
+          v-for="s in sections" :key="s.key"
+          class="settings-nav-item"
+          :class="{ active: activeSection === s.key }"
+          @click="activeSection = s.key">
+          <i class="pi" :class="s.icon"></i>
+          <span>{{ s.label }}</span>
+        </button>
+      </nav>
 
-      <!-- Colonna principale: scelta convenzione -->
-      <div class="display-main">
-        <div class="settings-card">
+      <!-- ── Pannello sezione ── -->
+      <div class="settings-panel">
+
+        <!-- ===== Aspetto / Branding ===== -->
+        <div v-show="activeSection === 'branding'" class="settings-card">
+          <div class="settings-card-header">
+            <i class="pi pi-image"></i>
+            <span>Logo dello studio</span>
+          </div>
+          <p class="settings-hint">
+            Il logo appare nella barra laterale dell'applicazione. Formati ammessi: PNG, JPG, WebP, SVG · max 512 KB.
+          </p>
+
+          <div class="logo-row">
+            <div class="logo-preview">
+              <img :src="logoUrl || DEFAULT_LOGO" alt="Logo studio" />
+            </div>
+            <div class="logo-actions">
+              <input
+                ref="fileInput" type="file" class="hidden-file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                @change="onFileChange" />
+              <button class="btn btn-primary" :disabled="uploading" @click="fileInput?.click()">
+                <span v-if="uploading" class="spinner" style="width:14px;height:14px"></span>
+                <span v-else><i class="pi pi-upload"></i></span>
+                {{ logoUrl ? 'Sostituisci logo' : 'Carica logo' }}
+              </button>
+              <button class="btn btn-ghost" :disabled="uploading || !hasLogo" @click="removeLogo">
+                <i class="pi pi-trash"></i> Rimuovi logo
+              </button>
+              <p v-if="!hasLogo" class="settings-hint" style="margin:0">
+                Nessun logo personalizzato: viene mostrato il logo predefinito.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Contabilità ===== -->
+        <div v-show="activeSection === 'accounting'" class="settings-card">
           <div class="settings-card-header">
             <i class="pi pi-sort-alt"></i>
             <span>Convenzione segno valori contabili</span>
@@ -37,23 +84,8 @@
             </span>
           </label>
 
-          <button class="btn btn-primary btn-block" style="margin-top:18px" @click="save" :disabled="saving">
-            <span v-if="saving" class="spinner" style="width:14px;height:14px"></span>
-            <span v-else><i class="pi pi-save"></i></span>
-            Salva impostazioni
-          </button>
-        </div>
-      </div>
-
-      <!-- Colonna laterale: anteprima -->
-      <div class="display-sidebar">
-        <div class="settings-card">
-          <div class="settings-card-header">
-            <i class="pi pi-eye"></i>
-            <span>Anteprima</span>
-          </div>
-          <p class="settings-hint">Esempio di come appariranno i box dell'esercizio fiscale.</p>
-          <div class="preview-grid">
+          <!-- Anteprima -->
+          <div class="preview-grid" style="margin-top:16px">
             <div class="preview-box">
               <div class="preview-label">Spese totali</div>
               <div class="preview-value text-red">{{ previewFmt(26972.23, 'expense') }}</div>
@@ -69,9 +101,15 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
+          <button class="btn btn-primary btn-block" style="margin-top:18px" @click="save" :disabled="saving">
+            <span v-if="saving" class="spinner" style="width:14px;height:14px"></span>
+            <span v-else><i class="pi pi-save"></i></span>
+            Salva impostazioni
+          </button>
+        </div>
+
+      </div>
     </div>
   </div>
 </template>
@@ -81,14 +119,28 @@ import { ref, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { tenantDisplaySettingsApi } from '@/services/api'
 import { useAccountingFormat, SIGN_CONVENTION } from '@/composables/useAccountingFormat'
+import { useTenantBranding } from '@/composables/useTenantBranding'
 
 const store   = useAppStore()
 const loading = ref(false)
 const saving  = ref(false)
+const uploading = ref(false)
 
-const { load: reloadAccountingFormat, fmtAccounting } = useAccountingFormat()
+const { load: reloadAccountingFormat } = useAccountingFormat()
+const { logoUrl, reload: reloadBranding, DEFAULT_LOGO } = useTenantBranding()
 
-const form = ref({ accountingSignConvention: SIGN_CONVENTION.SOLO_COLORE })
+const sections = [
+  { key: 'branding',   label: 'Aspetto',     icon: 'pi-image' },
+  { key: 'accounting', label: 'Contabilità', icon: 'pi-sort-alt' },
+]
+const activeSection = ref('branding')
+
+const form    = ref({ accountingSignConvention: SIGN_CONVENTION.SOLO_COLORE })
+const hasLogo = ref(false)
+const fileInput = ref(null)
+
+const MAX_LOGO_BYTES = 512 * 1024
+const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
 
 // Anteprima locale: usa il valore selezionato nel form, non quello globale salvato.
 const nf = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -108,6 +160,7 @@ async function load() {
   try {
     const { data } = await tenantDisplaySettingsApi.get()
     form.value.accountingSignConvention = data?.accountingSignConvention ?? SIGN_CONVENTION.SOLO_COLORE
+    hasLogo.value = !!data?.hasLogo
   } catch {
     // default già impostato
   } finally {
@@ -120,12 +173,69 @@ async function save() {
   try {
     await tenantDisplaySettingsApi.update({ accountingSignConvention: form.value.accountingSignConvention })
     store.toast('Impostazioni salvate', 'success')
-    // Ricarica il singleton globale così le altre pagine usano subito la nuova convenzione
     await reloadAccountingFormat(true)
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally {
     saving.value = false
+  }
+}
+
+// ── Branding: upload / rimozione logo ──────────────────────────────────────
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload  = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function onFileChange(e) {
+  const file = e.target.files?.[0]
+  e.target.value = '' // consente di ricaricare lo stesso file
+  if (!file) return
+
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    store.toast('Formato non supportato. Usa PNG, JPG, WebP o SVG.', 'error')
+    return
+  }
+  if (file.size > MAX_LOGO_BYTES) {
+    store.toast('Il logo non può superare 512 KB.', 'error')
+    return
+  }
+
+  uploading.value = true
+  try {
+    const base64 = await fileToBase64(file)
+    await tenantDisplaySettingsApi.uploadLogo({
+      fileName: file.name,
+      contentType: file.type,
+      base64Data: base64,
+    })
+    hasLogo.value = true
+    await reloadBranding()
+    store.toast('Logo aggiornato', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+    else store.toast('Caricamento del logo non riuscito', 'error')
+  } finally {
+    uploading.value = false
+  }
+}
+
+async function removeLogo() {
+  if (!confirm('Rimuovere il logo dello studio?')) return
+  uploading.value = true
+  try {
+    await tenantDisplaySettingsApi.deleteLogo()
+    hasLogo.value = false
+    await reloadBranding()
+    store.toast('Logo rimosso', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    uploading.value = false
   }
 }
 
@@ -135,17 +245,39 @@ onMounted(load)
 <style scoped>
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 
-.display-layout {
+.settings-shell {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 220px 1fr;
   gap: 16px;
   align-items: start;
 }
 @media (max-width: 860px) {
-  .display-layout { grid-template-columns: 1fr; }
+  .settings-shell { grid-template-columns: 1fr; }
 }
 
-.display-main, .display-sidebar { display: flex; flex-direction: column; gap: 16px; }
+/* Navigazione sezioni */
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md, 8px);
+  padding: 8px;
+}
+.settings-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 7px;
+  border: none; background: transparent; cursor: pointer;
+  color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;
+  text-align: left; width: 100%;
+  transition: background 0.12s, color 0.12s;
+}
+.settings-nav-item:hover { background: var(--accent-glow, rgba(99,102,241,0.06)); color: var(--text-primary); }
+.settings-nav-item.active { background: var(--accent-glow, rgba(99,102,241,0.1)); color: var(--accent); font-weight: 600; }
+.settings-nav-item .pi { font-size: 0.9rem; width: 18px; text-align: center; }
+
+.settings-panel { min-width: 0; }
 
 .settings-card {
   background: var(--bg-surface);
@@ -161,6 +293,18 @@ onMounted(load)
   border-bottom: 1px solid var(--border);
 }
 .settings-card-header .pi { font-size: 0.85rem; }
+
+/* Logo */
+.logo-row { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.logo-preview {
+  width: 200px; min-height: 90px;
+  border: 1px dashed var(--border); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px; background: var(--bg-base, transparent); flex-shrink: 0;
+}
+.logo-preview img { max-width: 100%; max-height: 120px; object-fit: contain; }
+.logo-actions { display: flex; flex-direction: column; gap: 10px; }
+.hidden-file { display: none; }
 
 .option-row {
   display: flex; align-items: flex-start; gap: 12px;

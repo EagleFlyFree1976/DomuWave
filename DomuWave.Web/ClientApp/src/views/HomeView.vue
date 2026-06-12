@@ -307,7 +307,10 @@ onMounted(() => {
   }
   window.addEventListener('scroll', onScroll, { passive: true })
 
-  // reveals
+  // reveals — abilita la modalità "animata" (di default i .reveal sono visibili, vedi CSS)
+  const root = document.querySelector('.dw-landing')
+  if (root) root.classList.add('js-reveal')
+
   revealObserver = new IntersectionObserver((es) => {
     es.forEach(e => {
       if (e.isIntersecting) {
@@ -316,7 +319,17 @@ onMounted(() => {
       }
     })
   }, { threshold: 0.14 })
-  document.querySelectorAll('.dw-landing .reveal').forEach(el => revealObserver.observe(el))
+
+  document.querySelectorAll('.dw-landing .reveal').forEach(el => {
+    // Elementi già (anche solo parzialmente) nel viewport al mount: mostrali subito,
+    // così non restano bloccati a opacity:0 se l'observer non scatta per loro.
+    const r = el.getBoundingClientRect()
+    if (r.top < window.innerHeight && r.bottom > 0) {
+      el.classList.add('in')
+    } else {
+      revealObserver.observe(el)
+    }
+  })
 
   // animated bars when visible
   barsObserver = new IntersectionObserver((es) => {
@@ -368,6 +381,9 @@ onBeforeUnmount(() => {
 .dw-landing h1, .dw-landing h2, .dw-landing h3 {
   font-family: 'Clash Display', 'Outfit', sans-serif;
   font-weight: 500; line-height: 1.08; letter-spacing: -0.015em;
+  /* segue il colore del contenitore (--ink su sezioni chiare, --cream sulle band scure),
+     sovrascrivendo il var(--text-primary) bianco impostato globalmente in main.css */
+  color: inherit;
 }
 .wrap { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
 .dw-landing a { text-decoration: none; color: inherit; }
@@ -598,8 +614,10 @@ onBeforeUnmount(() => {
 .foot-links a { transition: color .2s; }
 .foot-links a:hover { color: var(--cream); }
 
-/* reveal */
-.reveal { opacity: 0; transform: translateY(30px); transition: opacity .8s cubic-bezier(.22, 1, .36, 1), transform .8s cubic-bezier(.22, 1, .36, 1); }
-.reveal.in { opacity: 1; transform: none; }
+/* reveal — visibili di default; nascosti SOLO se il JS ha attivato .js-reveal,
+   così non restano mai bloccati a opacity:0 per timing dell'observer o assenza di JS */
+.reveal { transition: opacity .8s cubic-bezier(.22, 1, .36, 1), transform .8s cubic-bezier(.22, 1, .36, 1); }
+.dw-landing.js-reveal .reveal { opacity: 0; transform: translateY(30px); }
+.dw-landing.js-reveal .reveal.in { opacity: 1; transform: none; }
 .reveal-d1 { transition-delay: .1s; } .reveal-d2 { transition-delay: .2s; } .reveal-d3 { transition-delay: .3s; }
 </style>

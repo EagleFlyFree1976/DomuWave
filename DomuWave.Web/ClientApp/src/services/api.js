@@ -238,8 +238,13 @@ export const accountBalanceApi = {
 
 // ─── Impostazioni di visualizzazione per tenant ───────────────
 export const tenantDisplaySettingsApi = {
-  get:    ()     => api.get('/tenant-display'),
-  update: (data) => api.put('/tenant-display', data),
+  get:        ()        => api.get('/tenant-display'),
+  update:     (data)    => api.put('/tenant-display', data),
+  // Branding logo: { fileName, contentType, base64Data }
+  uploadLogo: (payload) => api.post('/tenant-display/logo', payload),
+  deleteLogo: ()        => api.delete('/tenant-display/logo'),
+  // Scarica il logo come blob (endpoint autenticato → l'interceptor aggiunge i token)
+  getLogoBlob: ()       => api.get('/tenant-display/logo', { responseType: 'blob' }),
 }
 
 // ─── Piano dei conti ──────────────────────────────────────────

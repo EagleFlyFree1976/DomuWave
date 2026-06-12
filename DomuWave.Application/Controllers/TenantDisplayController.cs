@@ -40,4 +40,43 @@ public class TenantDisplayController(
             new UpsertTenantDisplaySettingsCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
         return Ok(result);
     }
+
+    // ── Branding: logo ─────────────────────────────────────────────────────────
+
+    /// <summary>Carica (o sostituisce) il logo del tenant corrente.</summary>
+    [HttpPost("logo")]
+    [ProducesResponseType(typeof(TenantDisplaySettingsReadDto), 200)]
+    public async Task<IActionResult> UploadLogo([FromBody] UploadTenantLogoDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(
+            new UploadTenantLogoCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), dto), ct);
+        return Ok(result);
+    }
+
+    /// <summary>Rimuove il logo del tenant corrente.</summary>
+    [HttpDelete("logo")]
+    [ProducesResponseType(typeof(TenantDisplaySettingsReadDto), 200)]
+    public async Task<IActionResult> DeleteLogo(CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new DeleteTenantLogoCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Restituisce l'immagine del logo del tenant corrente.
+    /// Servita come immagine: l'uso è sempre via &lt;img src&gt; lato client, quindi un eventuale
+    /// SVG non esegue script (il rischio si avrebbe solo con inclusione inline nel DOM).
+    /// </summary>
+    [HttpGet("logo")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetLogo(CancellationToken ct)
+    {
+        var logo = await _mediator.GetResponse(
+            new GetTenantLogoCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
+        if (logo == null) return NotFound();
+        return File(logo.Content, logo.ContentType);
+    }
 }

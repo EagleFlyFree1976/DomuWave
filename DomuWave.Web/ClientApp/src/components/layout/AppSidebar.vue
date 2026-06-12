@@ -7,7 +7,7 @@
         <div class="logo-icon" v-show="collapsed">
           <i class="pi pi-building"></i>
         </div>
-        <img v-show="!collapsed" src="@/assets/logostudiogalli.png" alt="Studio Amministrativo Galli" class="sidebar-logo-img" />
+        <img v-show="!collapsed" :src="logoUrl || DEFAULT_LOGO" alt="Logo studio" class="sidebar-logo-img" />
       </div>
       <button class="icon-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Espandi' : 'Comprimi'">
         <i class="pi" :class="collapsed ? 'pi-angle-right' : 'pi-angle-left'"></i>
@@ -107,6 +107,7 @@
   import { useSessionStore } from '@/stores/sessionStore'
   import { useAppStore } from '@/stores/app'
   import { useFeatureStatus } from '@/composables/useFeatureStatus'
+  import { useTenantBranding } from '@/composables/useTenantBranding'
   import TenantSelectorWidget from '@/components/layout/TenantSelectorWidget.vue'
   import CondominioSelectorWidget from '@/components/layout/CondominioSelectorWidget.vue'
 
@@ -117,6 +118,7 @@
   const session   = useSessionStore()
   const appStore  = useAppStore()
   const { load: loadFeatureStatus, reset: resetFeatureStatus } = useFeatureStatus()
+  const { logoUrl, DEFAULT_LOGO } = useTenantBranding()
 
   const collapsed   = ref(false)
   const openGroups  = ref([])
@@ -149,10 +151,22 @@
     ].filter(item => !existing.some(m => m.path === item.path))
   })
 
+  /**
+   * Voci statiche visibili a TUTTI gli utenti loggati (role-agnostiche),
+   * iniettate solo se non già presenti nel menu dell'API.
+   * `tags: []` → sempre visibile (passa isAlwaysVisible anche senza tenant selezionato).
+   */
+  const staticItems = computed(() => {
+    const existing = menuStore.menuItems
+    return [
+      { key: 'guida', label: 'Guida', path: '/guida', icon: 'pi-question-circle', order: 999, tags: [] },
+    ].filter(item => !existing.some(m => m.path === item.path))
+  })
+
   /** Tutti i menu items disponibili (API o vuoto se non ancora caricato) */
   const allMenuItems = computed(() => {
     const base = menuStore.menuItems.length > 0 ? menuStore.menuItems : []
-    return [...base, ...superAdminItems.value]
+    return [...base, ...superAdminItems.value, ...staticItems.value]
   })
 
   /**
@@ -276,10 +290,8 @@
     max-width: 180px;
     height: auto;
     display: block;
-    border-radius: 6px;
-    background: #fff;
-    padding: 4px 8px;
     margin: 0 auto;
+    border-radius: 8px;
   }
 
   .logo-icon {

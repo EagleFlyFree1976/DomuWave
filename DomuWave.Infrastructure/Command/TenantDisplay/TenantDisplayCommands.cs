@@ -22,3 +22,33 @@ public class UpsertTenantDisplaySettingsCommand : BaseCommand, IQuery<TenantDisp
         Dto      = dto;
     }
 }
+
+// ── Branding: logo ─────────────────────────────────────────────────────────────
+
+public class UploadTenantLogoCommand : BaseCommand, IQuery<TenantDisplaySettingsReadDto>
+{
+    public Guid               TenantId { get; set; }
+    public UploadTenantLogoDto Dto     { get; set; } = null!;
+    public UploadTenantLogoCommand() { }
+    public UploadTenantLogoCommand(int currentUserId, Guid tenantId, UploadTenantLogoDto dto) : base(currentUserId)
+    {
+        TenantId = tenantId;
+        Dto      = dto;
+    }
+}
+
+public class DeleteTenantLogoCommand : BaseCommand, IQuery<TenantDisplaySettingsReadDto>
+{
+    public Guid TenantId { get; set; }
+    public DeleteTenantLogoCommand() { }
+    public DeleteTenantLogoCommand(int currentUserId, Guid tenantId) : base(currentUserId)
+        => TenantId = tenantId;
+}
+
+public class GetTenantLogoCommand : BaseCommand, IQuery<TenantLogoContentDto?>
+{
+    public Guid TenantId { get; set; }
+    public GetTenantLogoCommand() { }
+    public GetTenantLogoCommand(int currentUserId, Guid tenantId) : base(currentUserId)
+        => TenantId = tenantId;
+}

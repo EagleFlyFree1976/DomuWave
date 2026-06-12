@@ -21,6 +21,12 @@ namespace DomuWave.Services.Models
         public virtual AccountingSignConvention AccountingSignConvention { get; set; }
             = AccountingSignConvention.SoloColore;
 
+        // ── Branding: logo del tenant (salvato come BLOB) ──────────────────────
+        public virtual byte[]?  LogoContent     { get; set; }
+        public virtual string?  LogoContentType { get; set; }
+        public virtual string?  LogoFileName    { get; set; }
+        public virtual DateTime? LogoUpdatedDate { get; set; }
+
         public override int GetHashCode() => Id.GetHashCode();
     }
 }

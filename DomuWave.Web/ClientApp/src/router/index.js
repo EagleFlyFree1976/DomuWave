@@ -24,6 +24,17 @@ const routes = [
     component: () => import('@/views/RegisterView.vue'),
     meta: { title: 'Inizia la prova gratuita' },
   },
+  // Guida: pubblica e accessibile anche ai loggati (route top-level, senza requiresAuth)
+  {
+    path: '/guida',
+    component: () => import('@/views/GuidaView.vue'),
+    meta: { title: 'Guida all’utilizzo' },
+  },
+  {
+    path: '/guida/:slug',
+    component: () => import('@/views/GuidaView.vue'),
+    meta: { title: 'Guida all’utilizzo' },
+  },
   {
     path: '/register/verify',
     component: () => import('@/views/VerifyRegistrationView.vue'),
@@ -101,7 +112,9 @@ const routes = [
       { path: '/centro-comunicazioni', component: () => import('@/views/CentroComunicazioniView.vue'), meta: { title: 'Bacheca & Messaggi', requiresTenant: true } },
       { path: '/template-notifiche', component: () => import('@/views/NotificationTemplatesView.vue'), meta: { title: 'Template Notifiche', requiresTenant: true } },
       { path: '/impostazioni-smtp', component: () => import('@/views/SmtpSettingsView.vue'), meta: { title: 'Configurazione Email', requiresTenant: true } },
-      { path: '/impostazioni-visualizzazione', component: () => import('@/views/DisplaySettingsView.vue'), meta: { title: 'Impostazioni visualizzazione', requiresTenant: true } },
+      { path: '/impostazioni', component: () => import('@/views/DisplaySettingsView.vue'), meta: { title: 'Impostazioni', requiresTenant: true } },
+      // Compat: vecchio URL → redirect al nuovo
+      { path: '/impostazioni-visualizzazione', redirect: '/impostazioni' },
 
       { path: '/tenants', name:'tenants', component: () => import('@/views/tenants/TenantList.vue'), meta: { title: 'Gestione Tenant' } },
       {

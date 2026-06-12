@@ -144,6 +144,7 @@ try
     #endregion
 
     builder.Services.Configure<DomuWaveSettings>(builder.Configuration.GetSection("DomuWave"));
+    builder.Services.Configure<DomuWave.Services.Settings.GuideSettings>(builder.Configuration.GetSection("Guide"));
 
     builder.Services
         .AddLicenseManager(builder.Configuration.GetSection("LicenseManager"))
