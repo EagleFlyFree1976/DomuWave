@@ -23,6 +23,7 @@ public static class ExpenseMappingExtensions
             SupplierName            = entity.Supplier?.Name,
             AccountId               = entity.Account?.Id ?? 0,
             AccountName             = entity.Account?.Name ?? string.Empty,
+            AccountType             = entity.Account?.Type ?? ChartOfAccountsType.Uscita,
             MillesimalTableId       = entity.MillesimalTable?.Id,
             MillesimalTableName     = entity.MillesimalTable?.Name ?? string.Empty,
             UnitId                  = entity.Unit?.Id,

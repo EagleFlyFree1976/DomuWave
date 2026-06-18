@@ -2,8 +2,12 @@
   <div>
     <!-- ── Header ──────────────────────────────────────── -->
     <div class="page-header">
-      <h1>Spese</h1>
-      <button v-if="canCreate" class="btn btn-primary" @click="openExpenseModal()">+ Nuova spesa</button>
+      <h1>Movimenti</h1>
+      <div v-if="canCreate" class="header-actions">
+        <button class="btn btn-primary" @click="openExpenseModal(null, 'Uscita')">+ Inserisci spesa</button>
+        <button class="btn btn-primary" @click="openExpenseModal(null, 'Entrata')">+ Inserisci entrata</button>
+        <button class="btn btn-primary" @click="openExpenseModal(null, 'Patrimoniale')">+ Inserisci patrimoniale</button>
+      </div>
     </div>
 
 
@@ -19,6 +23,13 @@
         </option>
       </select>
 
+      <select class="form-select" v-model.number="movementTypeFilter" style="width:160px" @change="resetAndLoad">
+        <option :value="null">Tutti i movimenti</option>
+        <option :value="1">Entrata</option>
+        <option :value="2">Spesa</option>
+        <option :value="3">Patrimoniale</option>
+      </select>
+
       <select class="form-select" v-model.number="expTypeFilter" style="width:150px" @change="resetAndLoad">
         <option :value="null">Tutti i tipi</option>
         <option :value="1">Manutenzione</option>
@@ -31,8 +42,8 @@
 
       <select class="form-select" v-model.number="paymentStatusFilter" style="width:140px" @change="resetAndLoad">
         <option :value="null">Tutti gli stati</option>
-        <option :value="1">Da pagare</option>
-        <option :value="2">Pagata</option>
+        <option :value="1">Non evasa</option>
+        <option :value="2">Evasa</option>
       </select>
     </div>
 
@@ -50,6 +61,7 @@
               <th class="sortable" @click="setSort('documentdate')">
                 Data <span class="sort-icon">{{ sortIcon('documentdate') }}</span>
               </th>
+              <th>Tipo</th>
               <th>Descrizione</th>
               <th class="sortable" @click="setSort('suppliername')">
                 Fornitore <span class="sort-icon">{{ sortIcon('suppliername') }}</span>
@@ -67,32 +79,41 @@
           <tbody>
             <tr v-for="e in expenses" :key="e.id">
               <td class="mono text-secondary">{{ fmtDate(e.documentDate) }}</td>
+              <td><span class="badge" :class="movementBadge(e.accountType)">{{ movementLabel(e.accountType) }}</span></td>
               <td>{{ e.name }}</td>
               <td>{{ e.supplierName || '—' }}</td>
               <td class="text-secondary">{{ e.fiscalYearCode || '—' }}</td>
               <td class="mono text-right">{{ fmt(e.grossAmount) }}</td>
               <td class="mono text-right text-secondary">{{ fmt(e.vatAmount) }}</td>
               <td class="text-secondary">{{ e.paymentMethodName || '—' }}</td>
-              <td><span class="badge" :class="payBadge(e.paymentStatusId)">{{ e.paymentStatusName }}</span></td>
+              <td><span class="badge" :class="payBadge(e.paymentStatusId)">{{ paymentStatusLabel(e) }}</span></td>
               <td>
                 <div class="row-actions">
-                  <button v-if="canEdit && e.paymentStatusId !== 2" class="btn btn-sm btn-ghost"
+                  <button v-if="canEdit && e.paymentStatusId !== 2" class="action-pill action-pill--pay"
                           :disabled="actionInProgress[`pay-${e.id}`]"
+                          :title="isIncome(e) ? 'Incassa' : 'Paga'"
                           @click="markPaid(e.id)">
                     <span v-if="actionInProgress[`pay-${e.id}`]" class="spinner" style="width:12px;height:12px"></span>
-                    <span v-else>Paga</span>
+                    <template v-else>
+                      <span class="action-pill__icon">€</span>
+                      <span class="action-pill__label">{{ isIncome(e) ? 'Incassa' : 'Paga' }}</span>
+                    </template>
                   </button>
-                  <button v-if="canEdit && e.paymentStatusId === 2" class="btn btn-sm btn-ghost"
+                  <button v-if="canEdit && e.paymentStatusId === 2" class="action-pill action-pill--undo"
                           :disabled="actionInProgress[`pay-${e.id}`]"
+                          :title="isIncome(e) ? 'Segna non incassata' : 'Segna non pagata'"
                           @click="markUnpaid(e.id)">
                     <span v-if="actionInProgress[`pay-${e.id}`]" class="spinner" style="width:12px;height:12px"></span>
-                    <span v-else>Segna non pagata</span>
+                    <span v-else class="action-pill__icon">↺</span>
                   </button>
-                  <button v-if="canEdit" class="btn-icon"
+                  <span class="action-sep"></span>
+                  <button v-if="canEdit" class="action-icon-btn"
                           :disabled="actionInProgress[`pay-${e.id}`] || actionInProgress[`del-${e.id}`]"
+                          title="Modifica"
                           @click="openExpenseModal(e)">✎</button>
-                  <button v-if="canDelete" class="btn-icon" style="color:var(--accent-red)"
+                  <button v-if="canDelete" class="action-icon-btn action-icon-btn--danger"
                           :disabled="actionInProgress[`del-${e.id}`]"
+                          title="Elimina"
                           @click="deleteExpense(e.id)">
                     <span v-if="actionInProgress[`del-${e.id}`]" class="spinner" style="width:12px;height:12px"></span>
                     <span v-else>✕</span>
@@ -112,7 +133,7 @@
     <BaseModal
       :show="showExpenseModal"
       @close="showExpenseModal = false"
-      :title="editingExp ? 'Modifica spesa' : 'Nuova spesa'"
+      :title="modalTitle"
       :subtitle="store.selectedCondominio?.name"
       size="lg"
     >
@@ -155,7 +176,7 @@
           <label class="form-label">N° documento</label>
           <input class="form-input" v-model="expForm.documentNumber" />
         </div>
-        <div class="form-group" :class="{ 'has-error': expErrors.expenseTypeId }">
+        <div class="form-group" v-if="expForm.movementType === 'Uscita'" :class="{ 'has-error': expErrors.expenseTypeId }">
           <label class="form-label">Tipo spesa *</label>
           <select class="form-select" v-model.number="expForm.expenseTypeId" @change="clearExpError('expenseTypeId')">
             <option :value="0" disabled>Seleziona tipo…</option>
@@ -176,6 +197,9 @@
           <label class="form-label">Data registrazione</label>
           <input class="form-input" type="date" v-model="expForm.registrationDate" />
         </div>
+
+        <!-- ── Spesa: dettaglio fiscale completo ──────────────────── -->
+        <template v-if="expForm.movementType === 'Uscita'">
         <!-- Errore base imponibile -->
         <div v-if="expErrors.taxableBase" class="field-error" style="grid-column:span 2;margin-bottom:0.25rem">
           ⚠ {{ expErrors.taxableBase }}
@@ -235,11 +259,22 @@
                  v-model.number="expForm.grossAmount" readonly
                  style="background:var(--bg-base);cursor:default" />
         </div>
+        </template>
+
+        <!-- ── Entrata / Patrimoniale: solo importo ───────────────── -->
+        <div v-else class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.taxableAmount }">
+          <label class="form-label">Importo (€) *</label>
+          <input class="form-input" type="number" step="0.01" min="0"
+                 v-model.number="expForm.taxableAmount"
+                 @input="clearExpError('taxableAmount'); autoCalcGross()" />
+          <span v-if="expErrors.taxableAmount" class="field-error">{{ expErrors.taxableAmount }}</span>
+        </div>
+
         <div class="form-group" style="grid-column: span 2" :class="{ 'has-error': expErrors.accountId }">
           <label class="form-label">Conto *</label>
           <select class="form-select" v-model.number="expForm.accountId" @change="clearExpError('accountId')">
             <option :value="null" disabled>Seleziona conto…</option>
-            <optgroup v-for="grp in expenseAccountGroups" :key="grp.typeLabel" :label="grp.typeLabel">
+            <optgroup v-for="grp in filteredAccountGroups" :key="grp.typeLabel" :label="grp.typeLabel">
               <option v-for="r in grp.rows" :key="r.accountId" :value="r.accountId">{{ r.label }}</option>
             </optgroup>
           </select>
@@ -397,6 +432,7 @@ const totalCount          = ref(0)
 const search              = ref(qStr('search'))
 const expTypeFilter       = ref(qInt('type'))
 const paymentStatusFilter = ref(qInt('status'))
+const movementTypeFilter  = ref(qInt('movementType'))
 const sortField           = ref(qStr('sortField', 'documentdate'))
 const sortAsc             = ref(route.query.sortAsc === 'true')
 
@@ -411,6 +447,7 @@ function syncUrl() {
   if (search.value)                            q.search    = search.value
   if (expTypeFilter.value)                     q.type      = expTypeFilter.value
   if (paymentStatusFilter.value)               q.status    = paymentStatusFilter.value
+  if (movementTypeFilter.value)                q.movementType = movementTypeFilter.value
   if (selectedFiscalYearId.value)              q.fy        = selectedFiscalYearId.value
   if (sortField.value !== 'documentdate')      q.sortField = sortField.value
   if (sortAsc.value)                           q.sortAsc   = 'true'
@@ -559,18 +596,39 @@ function onAllocationModeChange() {
   clearExpError('allocation')
 }
 
+// Cambio tipo movimento: azzera conto (non più valido per il nuovo tipo) e campi fiscali non pertinenti
+function onMovementTypeChange() {
+  expForm.value.accountId = null
+  if (expForm.value.movementType !== 'Uscita') {
+    expForm.value.taxableAmountVatExempt = 0
+    expForm.value.vatAmount      = 0
+    expForm.value.pensionFund    = 0
+    expForm.value.withholdingTax = 0
+    expForm.value.stampDuty      = 0
+    expForm.value.expenseTypeId  = 6   // Altro — non mostrato in UI per Entrata/Patrimoniale
+  }
+  clearExpError('accountId')
+  clearExpError('expenseTypeId')
+  autoCalcGross()
+}
+
 function validateExpForm() {
   const e = {}
   const f = expForm.value
+  const isUscita = f.movementType === 'Uscita'
   if (!f.fiscalYearId)          e.fiscalYearId     = 'Selezionare un esercizio fiscale'
   if (!f.name?.trim())          e.name             = 'Campo obbligatorio'
-  if (!f.expenseTypeId)         e.expenseTypeId    = 'Selezionare un tipo spesa'
-  const hasTaxable    = f.taxableAmount          > 0
-  const hasTaxExempt  = f.taxableAmountVatExempt > 0
-  if (!hasTaxable && !hasTaxExempt)
-    e.taxableBase = 'Inserire almeno un importo tra Imponibile e Imponibile esente IVA'
-  if (hasTaxable && !(f.vatAmount > 0))
-    e.vatAmount = "L'IVA è obbligatoria quando è presente l'imponibile"
+  if (isUscita && !f.expenseTypeId) e.expenseTypeId = 'Selezionare un tipo spesa'
+  if (isUscita) {
+    const hasTaxable    = f.taxableAmount          > 0
+    const hasTaxExempt  = f.taxableAmountVatExempt > 0
+    if (!hasTaxable && !hasTaxExempt)
+      e.taxableBase = 'Inserire almeno un importo tra Imponibile e Imponibile esente IVA'
+    if (hasTaxable && !(f.vatAmount > 0))
+      e.vatAmount = "L'IVA è obbligatoria quando è presente l'imponibile"
+  } else {
+    if (!(f.taxableAmount > 0)) e.taxableAmount = "Inserire l'importo"
+  }
   if (!f.accountId)             e.accountId        = 'Selezionare un conto'
   if (f.allocationMode === 'unit') {
     if (!f.unitId)              e.allocation = 'Selezionare un immobile'
@@ -592,6 +650,7 @@ const enabledMillesimalTables = computed(() => {
 })
 
 const emptyExpForm = () => ({
+  movementType: 'Uscita',   // 'Uscita' | 'Entrata' | 'Patrimoniale'
   fiscalYearId: null,
   name: '', documentNumber: '', documentDate: today, registrationDate: today,
   taxableAmount: 0, taxableAmountVatExempt: 0,
@@ -606,6 +665,10 @@ const emptyExpForm = () => ({
 
 function autoCalcGross() {
   const f = expForm.value
+  if (f.movementType !== 'Uscita') {
+    f.grossAmount = Math.round((Number(f.taxableAmount) || 0) * 100) / 100
+    return
+  }
   const taxable    = Number(f.taxableAmount)          || 0
   const taxExempt  = Number(f.taxableAmountVatExempt) || 0
   const vat        = Number(f.vatAmount)              || 0
@@ -622,6 +685,17 @@ const chartOfAccounts      = ref([])
 const expenseAccountGroups = ref([])
 let accountsLoaded = false
 
+// Conti filtrati in base al tipo movimento selezionato (Spesa→Uscita, Entrata→Entrata, Patrimoniale→Patrimoniale)
+const filteredAccountGroups = computed(() =>
+  expenseAccountGroups.value.filter(g => g.typeId === expForm.value.movementType)
+)
+
+const MOVEMENT_LABELS = { Uscita: 'spesa', Entrata: 'entrata', Patrimoniale: 'movimento patrimoniale' }
+const modalTitle = computed(() => {
+  if (editingExp.value) return `Modifica ${MOVEMENT_LABELS[expForm.value.movementType] ?? 'spesa'}`
+  return `Nuova ${MOVEMENT_LABELS[expForm.value.movementType] ?? 'spesa'}`
+})
+
 async function loadExpenses() {
   if (!store.selectedCondominioId) return
   syncUrl()
@@ -637,13 +711,14 @@ async function loadExpenses() {
       paymentStatusId: paymentStatusFilter.value || undefined,
       // Filtro per esercizio fiscale tramite l'assegnazione della spesa, non per range di date.
       fiscalYearId:    selectedFiscalYearId.value || undefined,
+      accountType:     movementTypeFilter.value || undefined,
     })
     expenses.value   = data?.items      ?? []
     totalCount.value = data?.totalCount ?? 0
   } catch { expenses.value = []; totalCount.value = 0 } finally { loadingExp.value = false }
 }
 
-async function openExpenseModal(e = null) {
+async function openExpenseModal(e = null, movementType = 'Uscita') {
   expErrors.value  = {}
 editingExp.value = e?.id ?? null
   savedExpenseId.value = null
@@ -655,6 +730,7 @@ editingExp.value = e?.id ?? null
     ?? null
 
   expForm.value = e ? {
+    movementType:       'Uscita',   // corretto sotto, dopo il caricamento dei conti
     fiscalYearId:       e.fiscalYearId ?? defaultFyId,
     name:               e.name ?? '',
     documentNumber:     e.documentNumber ?? '',
@@ -679,7 +755,7 @@ editingExp.value = e?.id ?? null
     description:        e.description ?? '',
     chargeabilityTypeId: e.chargeabilityTypeId ?? 1,
     send770:            e.send770 ?? false,
-  } : { ...emptyExpForm(), fiscalYearId: defaultFyId }
+  } : { ...emptyExpForm(), fiscalYearId: defaultFyId, movementType, expenseTypeId: movementType === 'Uscita' ? 0 : 6 }
 
   if (!store.fiscalYears.length) await store.loadFiscalYears()
 
@@ -691,6 +767,12 @@ editingExp.value = e?.id ?? null
     } catch { chartOfAccounts.value = [] }
   }
   buildExpenseAccountGroups()
+
+  if (e) {
+    const account = chartOfAccounts.value.find(a => a.id === e.accountId)
+    const TYPE_MAP = { 1: 'Entrata', 2: 'Uscita', 3: 'Patrimoniale' }
+    expForm.value.movementType = TYPE_MAP[account?.type] ?? 'Uscita'
+  }
 
   if (store.selectedCondominioId) {
     try {
@@ -736,18 +818,19 @@ async function saveExpense() {
   if (!validateExpForm()) return
   savingExp.value = true
   try {
+    const isUscita = expForm.value.movementType === 'Uscita'
     const payload = {
       name:               expForm.value.name,
       documentNumber:     expForm.value.documentNumber || null,
       documentDate:       expForm.value.documentDate || null,
       registrationDate:   expForm.value.registrationDate || null,
       taxableAmount:          expForm.value.taxableAmount          || 0,
-      taxableAmountVatExempt: expForm.value.taxableAmountVatExempt || 0,
-      vatAmount:              expForm.value.vatAmount              || 0,
-      pensionFund:            expForm.value.pensionFund            || 0,
-      withholdingTax:         expForm.value.withholdingTax         || 0,
-      stampDuty:              expForm.value.stampDuty              || 0,
-      expenseTypeId:      expForm.value.expenseTypeId,
+      taxableAmountVatExempt: isUscita ? (expForm.value.taxableAmountVatExempt || 0) : 0,
+      vatAmount:              isUscita ? (expForm.value.vatAmount              || 0) : 0,
+      pensionFund:            isUscita ? (expForm.value.pensionFund            || 0) : 0,
+      withholdingTax:         isUscita ? (expForm.value.withholdingTax         || 0) : 0,
+      stampDuty:              isUscita ? (expForm.value.stampDuty              || 0) : 0,
+      expenseTypeId:      isUscita ? expForm.value.expenseTypeId : 6,
       paymentStatusId:    expForm.value.paymentStatusId || 1,
       paymentMethodId:    expForm.value.paymentMethodId || null,
       description:        expForm.value.description || null,
@@ -813,6 +896,16 @@ const fmt     = (v) => v != null ? '€ ' + Number(v).toLocaleString('it-IT', { 
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
 const payBadge = (id) => ({ 1: 'badge-amber', 2: 'badge-green', 3: 'badge-red' }[id] ?? 'badge-muted')
 
+// accountType arriva dal backend come enum ChartOfAccountsType (1=Entrata, 2=Uscita, 3=Patrimoniale)
+const ACCOUNT_TYPE_LABELS = { 1: 'Entrata', 2: 'Spesa', 3: 'Patrimoniale' }
+const ACCOUNT_TYPE_BADGES = { 1: 'badge-green', 2: 'badge-red', 3: 'badge-muted' }
+function movementLabel(accountType) { return ACCOUNT_TYPE_LABELS[accountType] ?? 'Spesa' }
+function movementBadge(accountType) { return ACCOUNT_TYPE_BADGES[accountType] ?? 'badge-muted' }
+function isIncome(e) { return e.accountType === 1 }
+function paymentStatusLabel(e) {
+  return e.paymentStatusId === 2 ? 'Evasa' : 'Non evasa'
+}
+
 // ─── Watchers / Init ──────────────────────────────────────────
 watch(() => store.selectedCondominioId, () => {
   accountsLoaded = false
@@ -820,6 +913,7 @@ watch(() => store.selectedCondominioId, () => {
   search.value              = ''
   expTypeFilter.value       = null
   paymentStatusFilter.value = null
+  movementTypeFilter.value  = null
   selectedFiscalYearId.value = null
   currentPage.value         = 1
   loadExpenses()
@@ -842,6 +936,60 @@ window.addEventListener('app:refresh', loadExpenses)
 
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ── Azioni riga tabella movimenti ─────────────────────────────── */
+.row-actions { display: flex; align-items: center; gap: 0.35rem; justify-content: flex-end; }
+
+.action-pill {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--bg-surface); color: var(--text-secondary);
+  padding: 0.3rem 0.65rem; font-size: 0.78rem; font-weight: 600;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+  line-height: 1;
+}
+.action-pill:disabled { opacity: 0.5; cursor: not-allowed; }
+.action-pill__icon { font-size: 0.85rem; line-height: 1; }
+.action-pill__label { white-space: nowrap; }
+
+.action-pill--pay {
+  border-color: var(--accent-green); color: var(--accent-green);
+}
+.action-pill--pay:hover:not(:disabled) {
+  background: var(--accent-green); color: #fff; transform: translateY(-1px);
+}
+
+.action-pill--undo {
+  width: 1.85rem; height: 1.85rem; padding: 0; justify-content: center;
+  border-color: var(--border-active); color: var(--text-muted);
+}
+.action-pill--undo:hover:not(:disabled) {
+  background: var(--accent-glow, rgba(99,102,241,0.1)); color: var(--accent); border-color: var(--accent);
+}
+.action-pill--undo .action-pill__icon { font-size: 1rem; }
+
+.action-sep {
+  width: 1px; height: 1.1rem; background: var(--border); margin: 0 0.15rem;
+}
+
+.action-icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.85rem; height: 1.85rem; border-radius: 6px;
+  border: 1px solid transparent; background: transparent; color: var(--text-secondary);
+  cursor: pointer; font-size: 0.85rem; transition: background 0.15s, color 0.15s;
+}
+.action-icon-btn:hover:not(:disabled) { background: var(--accent-glow, rgba(99,102,241,0.1)); color: var(--accent); }
+.action-icon-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.action-icon-btn--danger:hover:not(:disabled) { background: rgba(239,68,68,0.12); color: var(--accent-red); }
+
+.radio-group { display: flex; gap: 1.25rem; flex-wrap: wrap; padding: .35rem 0; }
+.radio-label {
+  display: flex; align-items: center; gap: .4rem;
+  font-size: .875rem; cursor: pointer; user-select: none;
+}
+.radio-label input[type="radio"] { cursor: pointer; }
+.radio-label input[type="radio"]:disabled { cursor: not-allowed; }
 
 /* Riga "A carico di" + flag 770: tutto in linea, va a capo solo se manca spazio */
 .charge-row {

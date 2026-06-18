@@ -40,6 +40,9 @@ public class GetPagedExpensesCommandConsumer
         if (command.PaymentStatusId.HasValue)
             query = query.Where(e => e.PaymentStatus.Id == command.PaymentStatusId.Value);
 
+        if (command.AccountType.HasValue)
+            query = query.Where(e => e.Account.Type == command.AccountType.Value);
+
         if (command.SupplierId.HasValue)
             query = query.Where(e => e.Supplier.Id == command.SupplierId.Value);
 

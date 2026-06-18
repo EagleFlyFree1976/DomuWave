@@ -41,6 +41,7 @@ public class ExpensesController(
         [FromQuery] string? dateFrom      = null,
         [FromQuery] string? dateTo        = null,
         [FromQuery] string? search        = null,
+        [FromQuery] ChartOfAccountsType? accountType = null,
         CancellationToken ct = default)
     {
         var result = await _mediator.GetResponse(
@@ -57,6 +58,7 @@ public class ExpensesController(
                 DateFrom        = dateFrom  != null ? DateTime.Parse(dateFrom)  : null,
                 DateTo          = dateTo    != null ? DateTime.Parse(dateTo)    : null,
                 Search          = search,
+                AccountType     = accountType,
             }, ct);
         return Ok(result);
     }

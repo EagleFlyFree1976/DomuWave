@@ -1,5 +1,6 @@
 using DomuWave.Services.Dto.Expense;
 using DomuWave.Services.Helper;
+using DomuWave.Services.Models;
 using SimpleMediator.Queries;
 
 namespace DomuWave.Services.Command.Expense;
@@ -17,6 +18,7 @@ public class GetPagedExpensesCommand : BasePagedCommand, IQuery<PagedResult<Expe
     public DateTime? DateFrom        { get; set; }
     public DateTime? DateTo          { get; set; }
     public string?   Search          { get; set; }
+    public ChartOfAccountsType? AccountType { get; set; }
 
     public GetPagedExpensesCommand() { }
     public GetPagedExpensesCommand(int currentUserId, int condominiumId, Guid tenantId)

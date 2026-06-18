@@ -1,4 +1,5 @@
 using CPQ.Core.DTO;
+using DomuWave.Services.Models;
 
 namespace DomuWave.Services.Dto.Expense;
 
@@ -12,6 +13,7 @@ public class ExpenseReadDto : TraceEntityDTO<long>
     public string?  SupplierName       { get; set; }
     public int      AccountId          { get; set; }
     public string   AccountName        { get; set; } = string.Empty;
+    public ChartOfAccountsType AccountType { get; set; }
     public int?     MillesimalTableId  { get; set; }
     public string   MillesimalTableName { get; set; } = string.Empty;
     public int?     UnitId             { get; set; }
