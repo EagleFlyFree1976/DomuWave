@@ -145,6 +145,7 @@ try
 
     builder.Services.Configure<DomuWaveSettings>(builder.Configuration.GetSection("DomuWave"));
     builder.Services.Configure<DomuWave.Services.Settings.GuideSettings>(builder.Configuration.GetSection("Guide"));
+    builder.Services.Configure<DomuWave.Services.Settings.AnthropicAiSettings>(builder.Configuration.GetSection("AnthropicAI"));
 
     builder.Services
         .AddLicenseManager(builder.Configuration.GetSection("LicenseManager"))

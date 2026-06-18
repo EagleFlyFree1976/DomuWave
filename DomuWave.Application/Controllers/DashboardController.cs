@@ -29,4 +29,15 @@ public class DashboardController(
             new GetDashboardSummaryCommand(CurrentUser.Id, TenantId.GetValueOrDefault()), ct);
         return Ok(result);
     }
+
+    /// <summary>Prossime scadenze del tenant (attività + rate + assemblee).</summary>
+    [HttpGet("deadlines")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Dashboard, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DashboardDeadlinesDto))]
+    public async Task<IActionResult> GetDeadlines([FromQuery] int days = 30, CancellationToken ct = default)
+    {
+        var result = await _mediator.GetResponse(
+            new GetDashboardDeadlinesCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), days), ct);
+        return Ok(result);
+    }
 }

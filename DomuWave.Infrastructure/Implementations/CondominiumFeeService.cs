@@ -203,6 +203,59 @@ namespace DomuWave.Services.Implementations
                 .SumAsync(x => x.Balance, cancellationToken);
         }
 
+        // ─── AI Assistant (function calling) ──────────────────────────────────
+
+        // Risolve gli UserId dei condomini il cui nome/cognome contiene il testo cercato,
+        // limitando opzionalmente al condominio indicato.
+        private async Task<IList<long>> ResolveOwnerUserIdsAsync(Guid tenantId, string ownerName, int? condominiumId, CancellationToken cancellationToken)
+        {
+            var term = (ownerName ?? string.Empty).Trim().ToLower();
+            if (term.Length == 0)
+                return new List<long>();
+
+            var query = session.Query<UnitOwner>()
+                .Where(o => o.Tenant.Id == tenantId && !o.IsDeleted
+                    && (o.FirstName.ToLower().Contains(term) || o.LastName.ToLower().Contains(term)));
+
+            if (condominiumId.HasValue)
+                query = query.Where(o => o.Unit.Condominium.Id == condominiumId.Value);
+
+            return await query
+                .Select(o => o.UserId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<IList<CondominiumFee>> GetFeesByOwnerNameAsync(Guid tenantId, string ownerName, int? condominiumId, int year,
+            IUser currentUser, CancellationToken cancellationToken)
+        {
+            var userIds = await ResolveOwnerUserIdsAsync(tenantId, ownerName, condominiumId, cancellationToken);
+            if (userIds.Count == 0)
+                return new List<CondominiumFee>();
+
+            return await session.Query<CondominiumFee>()
+                .Where(x => x.Tenant.Id == tenantId
+                    && userIds.Contains(x.UserId)
+                    && x.Installment.FiscalYear.StartDate.Year == year
+                    && !x.IsDeleted)
+                .OrderBy(x => x.Installment.InstallmentNumber)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<decimal> GetTotalBalanceByOwnerAsync(Guid tenantId, string ownerName, int? condominiumId,
+            IUser currentUser, CancellationToken cancellationToken)
+        {
+            var userIds = await ResolveOwnerUserIdsAsync(tenantId, ownerName, condominiumId, cancellationToken);
+            if (userIds.Count == 0)
+                return 0m;
+
+            return await session.Query<CondominiumFee>()
+                .Where(x => x.Tenant.Id == tenantId
+                    && userIds.Contains(x.UserId)
+                    && !x.IsDeleted)
+                .SumAsync(x => x.Balance, cancellationToken);
+        }
+
         public async Task<bool> RecordPaymentAsync(long feeId, decimal amount, DateTime paymentDate, string paymentMethod, long userId,
             IUser currentUser, CancellationToken cancellationToken)
         {

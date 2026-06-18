@@ -1,9 +1,21 @@
 import authApiClient from './authApiClient'
 
-// ─── Autorizzazioni (codici disponibili) ─────────────────────────────────────
+// ─── Autorizzazioni (risorse autorizzabili) ──────────────────────────────────
 export const authorizationsApi = {
-  /** Lista tutti i codici di autorizzazione: [{ code, description }] */
+  /** Lista tutte le risorse: [{ id, code, description, areaId, areaCode, areaDescription, moduleCode }] */
   getAll: () => authApiClient.get('/authorization/authorizations'),
+
+  /** Lista delle aree attive (per la select): [{ id, code, description, moduleCode }] */
+  getAreas: () => authApiClient.get('/authorization/authorizations/areas'),
+
+  /** Crea una nuova risorsa. Body: { code, description, areaId } */
+  create: (data) => authApiClient.post('/authorization/authorization', data),
+
+  /** Aggiorna una risorsa esistente (code immutabile). Body: { description, areaId } */
+  update: (id, data) => authApiClient.put(`/authorization/authorizations/${id}`, data),
+
+  /** Elimina una risorsa (fallisce se assegnata a ruoli/gruppi/utenti). */
+  remove: (id) => authApiClient.delete(`/authorization/authorizations/${id}`),
 }
 
 // ─── Ruoli ───────────────────────────────────────────────────────────────────
@@ -15,6 +27,26 @@ export const rolesAuthApi = {
   /** Lista tutti i ruoli: [{ id, code, description }] */
   getAll: (params) =>
     authApiClient.get('/authorization/roles', { params }),
+
+  /** Lista dei moduli disponibili: [{ id, code, description }] */
+  getModules: () =>
+    authApiClient.get('/authorization/modules'),
+
+  /** Crea un nuovo ruolo (vuoto). Body: { code, description, moduleCode } */
+  create: (data) =>
+    authApiClient.post('/authorization/roles/new', data),
+
+  /** Aggiorna codice/descrizione di un ruolo esistente. Body: { code, description } */
+  updateDetails: (id, data) =>
+    authApiClient.put(`/authorization/roles/${id}/details`, data),
+
+  /** Clona un ruolo (con i permessi) con codice/descrizione nuovi. Body: { code, description, moduleCode } */
+  clone: (id, data) =>
+    authApiClient.post(`/authorization/roles/${id}/clone`, data),
+
+  /** Copia (merge) i permessi dal ruolo sorgente in questo ruolo. Body: { sourceId } */
+  copyPermissions: (id, sourceId) =>
+    authApiClient.post(`/authorization/roles/${id}/copy-permissions`, { sourceId }),
 
   /**
    * Crea un'assegnazione permesso sul ruolo.

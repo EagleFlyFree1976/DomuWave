@@ -159,6 +159,7 @@
   const staticItems = computed(() => {
     const existing = menuStore.menuItems
     return [
+      { key: 'attivita', label: 'Attività', path: '/attivita', icon: 'pi-check-square', order: 5, tags: [] },
       { key: 'guida', label: 'Guida', path: '/guida', icon: 'pi-question-circle', order: 999, tags: [] },
     ].filter(item => !existing.some(m => m.path === item.path))
   })

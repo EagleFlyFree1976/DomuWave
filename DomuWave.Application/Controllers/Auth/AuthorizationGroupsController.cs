@@ -37,10 +37,88 @@ public class AuthorizationGroupsController : AuthorizationBaseController
             id              = a.Id,
             code            = a.Code,
             description     = a.Description,
+            areaId          = a.Area?.Id,
             areaCode        = a.Area?.Code,
             areaDescription = a.Area?.Description,
             moduleCode      = a.Area?.Module?.Code,
         }));
+    }
+
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpGet("authorizations/areas")]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK)]
+    public IActionResult GetAuthorizationAreas()
+    {
+        var areas = AuthorizationManager.GetAreas(true, null);
+        return new EnumerableOkObjectResult(areas.Select(a => new
+        {
+            id          = a.Id,
+            code        = a.Code,
+            description = a.Description,
+            moduleCode  = a.Module?.Code,
+        }));
+    }
+
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpPost("authorization")]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK)]
+    public async Task<IActionResult> PostAuthorization([FromBody] AuthorizationResourceRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Code))
+            return BadRequest("Il codice è obbligatorio.");
+        if (string.IsNullOrWhiteSpace(request.Description))
+            return BadRequest("La descrizione è obbligatoria.");
+
+        if (!await AuthorizationManager.IsAuthorizationCodeUnique(request.Code.Trim(), 0))
+            return BadRequest($"Esiste già una risorsa con il codice '{request.Code.Trim()}'.");
+
+        var area = AuthorizationManager.GetAreas(null, null).FirstOrDefault(a => a.Id == request.AreaId);
+        if (area == null)
+            return BadRequest("Area non valida.");
+
+        var authorization = new Authorization
+        {
+            Code        = request.Code.Trim(),
+            Description = request.Description.Trim(),
+            Area        = area,
+        };
+
+        var saved = await AuthorizationManager.SaveAuthorization(authorization, cancellationToken);
+        return new OkObjectResult(new { id = saved.Id, code = saved.Code });
+    }
+
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpPut("authorizations/{id:int}")]
+    public async Task<IActionResult> PutAuthorization(int id, [FromBody] AuthorizationResourceRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Description))
+            return BadRequest("La descrizione è obbligatoria.");
+
+        var authorization = await AuthorizationManager.GetAuthorizationById(id);
+        if (authorization == null)
+            return NotFound();
+
+        var area = AuthorizationManager.GetAreas(null, null).FirstOrDefault(a => a.Id == request.AreaId);
+        if (area == null)
+            return BadRequest("Area non valida.");
+
+        authorization.Description = request.Description.Trim();
+        authorization.Area        = area;
+
+        await AuthorizationManager.SaveAuthorization(authorization, cancellationToken);
+        return NoContent();
+    }
+
+    [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpDelete("authorizations/{id:int}")]
+    public async Task<IActionResult> DeleteAuthorization(int id, CancellationToken cancellationToken)
+    {
+        var authorization = await AuthorizationManager.GetAuthorizationById(id);
+        if (authorization == null)
+            return NotFound();
+
+        await AuthorizationManager.DeleteAuthorization(authorization, cancellationToken);
+        return NoContent();
     }
 
     [HttpPut]
@@ -164,4 +242,11 @@ public class AuthorizationGroupsController : AuthorizationBaseController
 
         return new EnumerableOkObjectResult(null);
     }
+}
+
+public class AuthorizationResourceRequest
+{
+    public string Code { get; set; }
+    public string Description { get; set; }
+    public int AreaId { get; set; }
 }

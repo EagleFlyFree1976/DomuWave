@@ -212,3 +212,74 @@ BEGIN
     ALTER TABLE ConsumptionCharge ADD IsManual BIT NOT NULL CONSTRAINT DF_ConsumptionCharge_IsManual DEFAULT 0;
 END
 GO
+
+-- ============================================================================
+-- 7) AdminTask: attività pianificabili (priorità, stato, scadenza, assegnatario,
+--    collegamento opzionale a 0/1/N condomìni). Vedi AdminTask.sql.
+-- ============================================================================
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AdminTaskPriorityLookup')
+    CREATE TABLE AdminTaskPriorityLookup (Id INT NOT NULL PRIMARY KEY, Name NVARCHAR(50) NOT NULL);
+GO
+INSERT INTO AdminTaskPriorityLookup (Id, Name)
+SELECT v.Id, v.Name FROM (VALUES (1,'Bassa'),(2,'Media'),(3,'Alta'),(4,'Urgente')) AS v(Id, Name)
+WHERE NOT EXISTS (SELECT 1 FROM AdminTaskPriorityLookup t WHERE t.Id = v.Id);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AdminTaskStatusLookup')
+    CREATE TABLE AdminTaskStatusLookup (Id INT NOT NULL PRIMARY KEY, Name NVARCHAR(50) NOT NULL);
+GO
+INSERT INTO AdminTaskStatusLookup (Id, Name)
+SELECT v.Id, v.Name FROM (VALUES (1,'Da fare'),(2,'In corso'),(3,'Completata'),(4,'Annullata')) AS v(Id, Name)
+WHERE NOT EXISTS (SELECT 1 FROM AdminTaskStatusLookup t WHERE t.Id = v.Id);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AdminTask')
+BEGIN
+    CREATE TABLE AdminTask (
+        Id INT NOT NULL PRIMARY KEY, TenantId UNIQUEIDENTIFIER NOT NULL,
+        Title NVARCHAR(200) NOT NULL, Description NVARCHAR(2000) NULL,
+        PriorityId INT NOT NULL DEFAULT 2, StatusId INT NOT NULL DEFAULT 1,
+        DueDate DATETIME2 NULL, AssignedToUserId INT NULL, AssignedToFullName NVARCHAR(200) NULL,
+        CreatedById INT NOT NULL, CreatedByFullName NVARCHAR(200) NULL,
+        LastUpdatedById INT NULL, LastUpdatedByFullName NVARCHAR(200) NULL,
+        IsDeleted BIT NOT NULL DEFAULT 0, CreationDate DATETIME2 NOT NULL, LastUpdateDate DATETIME2 NULL,
+        CONSTRAINT FK_AdminTask_Tenant FOREIGN KEY (TenantId) REFERENCES Tenant(Id),
+        CONSTRAINT FK_AdminTask_Priority FOREIGN KEY (PriorityId) REFERENCES AdminTaskPriorityLookup(Id),
+        CONSTRAINT FK_AdminTask_Status FOREIGN KEY (StatusId) REFERENCES AdminTaskStatusLookup(Id)
+    );
+    CREATE INDEX IX_AdminTask_TenantId ON AdminTask (TenantId) WHERE IsDeleted = 0;
+END
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AdminTaskCondominium')
+BEGIN
+    CREATE TABLE AdminTaskCondominium (
+        Id INT NOT NULL PRIMARY KEY, TenantId UNIQUEIDENTIFIER NOT NULL,
+        TaskId INT NOT NULL, CondominiumId INT NOT NULL,
+        CreatedById INT NOT NULL, CreatedByFullName NVARCHAR(200) NULL,
+        LastUpdatedById INT NULL, LastUpdatedByFullName NVARCHAR(200) NULL,
+        IsDeleted BIT NOT NULL DEFAULT 0, CreationDate DATETIME2 NOT NULL, LastUpdateDate DATETIME2 NULL,
+        CONSTRAINT FK_AdminTaskCondominium_Task FOREIGN KEY (TaskId) REFERENCES AdminTask(Id),
+        CONSTRAINT FK_AdminTaskCondominium_Condominium FOREIGN KEY (CondominiumId) REFERENCES Condominium(Id)
+    );
+    CREATE INDEX IX_AdminTaskCondominium_TaskId ON AdminTaskCondominium (TaskId) WHERE IsDeleted = 0;
+END
+GO
+INSERT INTO hibernate_unique_key (entity_type, next_hi)
+SELECT 'AdminTask', 1 WHERE NOT EXISTS (SELECT 1 FROM hibernate_unique_key WHERE entity_type = 'AdminTask');
+GO
+INSERT INTO hibernate_unique_key (entity_type, next_hi)
+SELECT 'AdminTaskCondominium', 1 WHERE NOT EXISTS (SELECT 1 FROM hibernate_unique_key WHERE entity_type = 'AdminTaskCondominium');
+GO
+-- ── AiUsageLog (rate limiting modulo AI Assistant) ──────────────────────────
+IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'AiUsageLog')
+BEGIN
+    CREATE TABLE dbo.AiUsageLog (
+        AiUsageLogId BIGINT           IDENTITY(1,1) NOT NULL PRIMARY KEY,
+        TenantId     UNIQUEIDENTIFIER NOT NULL,
+        UserId       BIGINT           NOT NULL,
+        QueryDate    DATE             NOT NULL,
+        QueryCount   INT              NOT NULL DEFAULT 1,
+        IsDeleted    BIT              NOT NULL DEFAULT 0,
+        CreationDate DATETIME2(3)     NOT NULL,
+        CONSTRAINT UQ_AiUsage UNIQUE (TenantId, UserId, QueryDate)
+    );
+END
+GO

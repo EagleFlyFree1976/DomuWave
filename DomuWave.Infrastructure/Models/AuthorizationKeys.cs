@@ -40,6 +40,7 @@ public class AuthorizationKeys
     public const string Buildings           = "Building";
     public const string Staircases          = "Staircase";
     public const string Maintenance         = "Maintenance";
+    public const string AdminTask           = "AdminTask";
     public const string ExtraordinaryWorks  = "ExtraordinaryWork";
     public const string Consumption         = "Consumption";
     public const string AccountBalances     = "AccountBalance";

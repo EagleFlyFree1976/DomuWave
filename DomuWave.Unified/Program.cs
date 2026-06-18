@@ -153,6 +153,7 @@ try
     #endregion
 
     builder.Services.Configure<DomuWaveSettings>(builder.Configuration.GetSection("DomuWave"));
+    builder.Services.Configure<DomuWave.Services.Settings.AnthropicAiSettings>(builder.Configuration.GetSection("AnthropicAI"));
     builder.Services
         .AddLicenseManager(builder.Configuration.GetSection("LicenseManager"))
         .WithHttpHeaderTenantResolver();

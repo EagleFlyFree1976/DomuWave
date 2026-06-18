@@ -8,6 +8,7 @@
       </div>
       <footer class="app-footer">Powered by VizaSoft S.r.l — 2026</footer>
     </div>
+    <AiAssistantPanel />
   </div>
 </template>
 
@@ -15,6 +16,7 @@
   import { onMounted, watch } from 'vue'
   import AppSidebar from '@/components/layout/AppSidebar.vue'
   import CondominiBreadcrumb from '@/components/layout/CondominiBreadcrumb.vue'
+  import AiAssistantPanel from '@/components/ai/AiAssistantPanel.vue'
   import { useSessionStore } from '@/stores/sessionStore'
   import { useAppStore } from '@/stores/app'
   import { useTenantBranding } from '@/composables/useTenantBranding'

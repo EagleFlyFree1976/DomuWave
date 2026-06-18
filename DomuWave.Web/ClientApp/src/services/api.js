@@ -142,7 +142,18 @@ api.interceptors.response.use(
 
 // ─── Dashboard ────────────────────────────────────────────────
 export const dashboardApi = {
-  getSummary: () => api.get('/dashboard/summary'),
+  getSummary:   ()           => api.get('/dashboard/summary'),
+  getDeadlines: (days = 30)  => api.get('/dashboard/deadlines', { params: { days } }),
+}
+
+// ─── Attività (Task) ──────────────────────────────────────────
+export const taskApi = {
+  getAll:   (params)      => api.get('/tasks', { params }),
+  getById:  (id)          => api.get(`/tasks/${id}`),
+  create:   (data)        => api.post('/tasks', data),
+  update:   (id, data)    => api.put(`/tasks/${id}`, data),
+  complete: (id)          => api.post(`/tasks/${id}/complete`),
+  delete:   (id)          => api.delete(`/tasks/${id}`),
 }
 
 // ─── Condomini ────────────────────────────────────────────────

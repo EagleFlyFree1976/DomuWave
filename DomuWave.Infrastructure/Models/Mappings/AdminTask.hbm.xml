@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="DomuWave.Services"
+                   namespace="DomuWave.Services.Models">
+
+  <class name="DomuWave.Services.Models.AdminTask, DomuWave.Services" table="AdminTask" lazy="true">
+
+    <id name="Id" column="Id" type="Int32">
+      <generator class="hilo">
+        <param name="table">hibernate_unique_key</param>
+        <param name="column">next_hi</param>
+        <param name="max_lo">10</param>
+        <param name="where">entity_type='AdminTask'</param>
+      </generator>
+    </id>
+
+    <many-to-one name="Tenant" class="DomuWave.Services.Models.Tenant, DomuWave.Services" column="TenantId" not-null="true" />
+
+    <!-- Name (base) mappato su Title; Title è la copia read-only -->
+    <property name="Name"        column="Title"       type="String" length="200" not-null="true" />
+    <property name="Title"       column="Title"       type="String" length="200" not-null="true" insert="false" update="false" />
+    <property name="Description"  column="Description" type="String" length="2000" />
+
+    <!-- Lookup priorità / stato (eager) -->
+    <many-to-one name="Priority" class="DomuWave.Services.Models.AdminTaskPriorityLookup, DomuWave.Services" column="PriorityId" not-null="true" lazy="false" fetch="join" />
+    <many-to-one name="Status"   class="DomuWave.Services.Models.AdminTaskStatusLookup, DomuWave.Services"   column="StatusId"   not-null="true" lazy="false" fetch="join" />
+
+    <property name="DueDate"            column="DueDate"            type="datetime2" />
+    <property name="AssignedToUserId"   column="AssignedToUserId"   type="Int32" />
+    <property name="AssignedToFullName" column="AssignedToFullName" type="String" length="200" />
+
+    <!-- Collegamento ai condomìni (owned children) -->
+    <bag name="Condominiums" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="TaskId" />
+      <one-to-many class="DomuWave.Services.Models.AdminTaskCondominium, DomuWave.Services" />
+    </bag>
+
+    <property name="CreatedBy"             column="CreatedById"           type="Int32"    not-null="true" />
+    <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"   length="200" />
+    <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
+    <property name="LastUpdatedByFullName" column="LastUpdatedByFullName" type="String"   length="200" />
+    <property name="IsDeleted"             column="IsDeleted"             type="Boolean"  not-null="true" />
+    <property name="CreationDate"          column="CreationDate"          type="datetime2" not-null="true" />
+    <property name="LastUpdateDate"        column="LastUpdateDate"        type="datetime2" />
+
+  </class>
+
+</hibernate-mapping>

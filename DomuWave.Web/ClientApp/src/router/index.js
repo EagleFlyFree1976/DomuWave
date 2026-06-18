@@ -56,6 +56,7 @@ const routes = [
     redirect: '/dashboard',
     children: [
       { path: '/dashboard', component: () => import('@/views/DashboardView.vue'), meta: { title: 'Dashboard' } },
+      { path: '/attivita', component: () => import('@/views/TasksView.vue'), meta: { title: 'Attività', requiresTenant: true } },
       { path: '/condomini', component: () => import('@/views/CondominiView.vue'), meta: { title: 'Condomini', requiresTenant: true } },
       {
         path: '/condomini/:id',

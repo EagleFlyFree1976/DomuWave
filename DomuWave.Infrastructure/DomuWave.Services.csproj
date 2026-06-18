@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <None Remove="Models\Mappings\AdminTask.hbm.xml" />
+    <None Remove="Models\Mappings\AdminTaskCondominium.hbm.xml" />
+    <None Remove="Models\Mappings\AdminTaskPriorityLookup.hbm.xml" />
+    <None Remove="Models\Mappings\AdminTaskStatusLookup.hbm.xml" />
     <None Remove="Models\Mappings\AgendaItemVoteResultLookup.hbm.xml" />
     <None Remove="Models\Mappings\Assembly.hbm.xml" />
     <None Remove="Models\Mappings\AssemblyAgendaItem.hbm.xml" />
@@ -83,6 +87,10 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Models\Mappings\AccountBalance.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\AdminTask.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\AdminTaskCondominium.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\AdminTaskPriorityLookup.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\AdminTaskStatusLookup.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\AgendaItemVoteResultLookup.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Assembly.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\AssemblyAgendaItem.hbm.xml" />

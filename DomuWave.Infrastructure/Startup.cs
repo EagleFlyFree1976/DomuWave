@@ -57,6 +57,16 @@ public static class Startup
         // ─── Guida (content provider Markdown; base per il RAG in Fase 2) ─────
         services.AddSingleton<Guide.IGuideContentProvider, Guide.MarkdownGuideContentProvider>();
 
+        // ─── AI Assistant (function calling Anthropic) ────────────────────────
+        services.AddScoped<AI.IAiOrchestratorService, AI.AiOrchestratorService>();
+        services.AddScoped<AI.AiToolDispatcher>();
+        services.AddHttpClient("AnthropicClient", client =>
+        {
+            client.BaseAddress = new Uri("https://api.anthropic.com");
+            client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+            // La API key viene iniettata per-richiesta da AiOrchestratorService.
+        });
+
         // External clients
         services.AddScoped<IExchangeRateClient, ExchangeRateApiClient>();
         
@@ -86,6 +96,7 @@ public static class Startup
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<IFiscalYearService, FiscalYearService>();
         services.AddScoped<IMaintenanceService, MaintenanceService>();
+        services.AddScoped<IAdminTaskService, AdminTaskService>();
         services.AddScoped<IBuildingService, BuildingService>();
         services.AddScoped<IMenuService, MenuService>();
         services.AddScoped<IMessageService, MessageService>();

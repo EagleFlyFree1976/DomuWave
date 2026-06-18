@@ -46,6 +46,55 @@
         </div>
       </div>
 
+      <!-- Prossime attività + scadenze -->
+      <div class="dash-cols">
+        <!-- Prossime attività (task) -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Prossime attività</h2>
+            <router-link to="/attivita" class="btn btn-ghost btn-sm">Tutte</router-link>
+          </div>
+          <div v-if="deadlines.upcomingTasks.length" class="table-wrap">
+            <table>
+              <thead><tr><th>Attività</th><th>Assegnatario</th><th>Scadenza</th><th>Priorità</th></tr></thead>
+              <tbody>
+                <tr v-for="t in deadlines.upcomingTasks" :key="t.id">
+                  <td>{{ t.title }}</td>
+                  <td class="text-muted">{{ t.assignedToFullName || '—' }}</td>
+                  <td class="mono" :class="t.urgency === 'Overdue' ? 'text-red' : ''">{{ fmtDate(t.dueDate) }}</td>
+                  <td><span class="badge badge-muted">{{ t.priority || '—' }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else class="empty-mini">Nessuna attività in scadenza.</div>
+        </div>
+
+        <!-- Prossime scadenze (aggregato) -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Prossime scadenze</h2>
+          </div>
+          <div v-if="deadlines.items.length" class="table-wrap">
+            <table>
+              <thead><tr><th>Tipo</th><th>Descrizione</th><th>Condominio</th><th>Scadenza</th></tr></thead>
+              <tbody>
+                <tr v-for="(d, i) in deadlines.items" :key="d.type + d.id + i">
+                  <td><span class="badge" :class="typeBadge(d.type)">{{ typeLabel(d.type) }}</span></td>
+                  <td>
+                    <router-link :to="d.frontendLink" class="text-accent">{{ d.title }}</router-link>
+                    <div v-if="d.description" class="text-muted" style="font-size:0.78rem">{{ d.description }}</div>
+                  </td>
+                  <td class="text-muted">{{ d.condominiumName || '—' }}</td>
+                  <td class="mono" :class="d.urgency === 'Overdue' ? 'text-red' : ''">{{ fmtDate(d.dueDate) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-else class="empty-mini">Nessuna scadenza nei prossimi 30 giorni.</div>
+        </div>
+      </div>
+
       <!-- Quick links -->
       <div class="quick-section">
         <h2 style="margin-bottom:1rem">Accesso rapido</h2>
@@ -118,6 +167,12 @@ const summary = ref({
   unpaidExpensesCount: 0,
 })
 
+const deadlines = ref({ upcomingTasks: [], items: [] })
+
+const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
+const typeLabel = (t) => ({ Task: 'Attività', Installment: 'Rata', Assembly: 'Assemblea' }[t] || t)
+const typeBadge = (t) => ({ Task: 'badge-blue', Installment: 'badge-amber', Assembly: 'badge-green' }[t] || 'badge-muted')
+
 const quickLinks = [
   { to: '/condomini',  icon: '⬡', label: 'Gestisci Condomini' },
   { to: '/unita',      icon: '⊞', label: 'Unità Immobiliari' },
@@ -133,8 +188,12 @@ onMounted(async () => {
     const { data } = await dashboardApi.getSummary()
     summary.value = data
 
-    if (!session.isSuperAdmin && !store.condomini.length) {
-      await store.loadCondomini()
+    if (!session.isSuperAdmin) {
+      if (!store.condomini.length) await store.loadCondomini()
+      try {
+        const { data: dl } = await dashboardApi.getDeadlines(30)
+        deadlines.value = { upcomingTasks: dl?.upcomingTasks ?? [], items: dl?.items ?? [] }
+      } catch { /* gestito dal global error handler */ }
     }
   } finally {
     loading.value = false
@@ -149,6 +208,17 @@ onMounted(async () => {
   gap: 1rem;
   margin-bottom: 1.75rem;
 }
+
+.dash-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+}
+@media (max-width: 1000px) { .dash-cols { grid-template-columns: 1fr; } }
+.empty-mini { padding: 1.25rem; color: var(--text-muted); font-size: 0.875rem; }
+.text-red { color: var(--accent-red, #ef4444); }
+.mono { font-family: monospace; }
 
 .quick-section { margin-bottom: 0.5rem; }
 .quick-grid {

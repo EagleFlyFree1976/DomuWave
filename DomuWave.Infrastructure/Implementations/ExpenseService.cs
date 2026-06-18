@@ -10,6 +10,7 @@ using CPQ.Core.Persistence.SessionFactories;
 using DomuWave.Services.Models;
 using NHibernate.Linq;
 using DomuWave.Services.Interfaces;
+using DomuWave.Services.Dto.Expense;
 
 namespace DomuWave.Services.Implementations
 {
@@ -53,6 +54,37 @@ namespace DomuWave.Services.Implementations
                 .Where(x => !x.IsDeleted)
                 .Where(predicate)
                 .ToListAsync(cancellationToken);
+        }
+
+        // ─── AI Assistant (function calling) ──────────────────────────────────
+        public async Task<ExpenseSummaryDto> GetExpenseSummaryAsync(Guid tenantId, int condominiumId, int year,
+            IUser currentUser, CancellationToken cancellationToken)
+        {
+            // Anno determinato dall'anno fiscale se presente, altrimenti dalla data documento.
+            var query = session.Query<Expense>()
+                .Where(x => x.Tenant.Id == tenantId
+                    && x.Condominium.Id == condominiumId
+                    && !x.IsDeleted
+                    && ((x.FiscalYear != null && x.FiscalYear.StartDate.Year == year)
+                        || (x.FiscalYear == null && x.DocumentDate != null && x.DocumentDate.Value.Year == year)));
+
+            var documentCount = await query.CountAsync(cancellationToken);
+            var totalGross = documentCount == 0 ? 0m : await query.SumAsync(x => x.GrossAmount, cancellationToken);
+
+            // Non pagate: stato diverso da "Pagata".
+            var unpaidQuery = query.Where(x => x.PaymentStatus == null || x.PaymentStatus.Id != ExpensePaymentStatus.Pagata);
+            var unpaidCount = await unpaidQuery.CountAsync(cancellationToken);
+            var unpaidGross = unpaidCount == 0 ? 0m : await unpaidQuery.SumAsync(x => x.GrossAmount, cancellationToken);
+
+            return new ExpenseSummaryDto
+            {
+                CondominiumId = condominiumId,
+                Year = year,
+                DocumentCount = documentCount,
+                TotalGrossAmount = totalGross,
+                UnpaidGrossAmount = unpaidGross,
+                UnpaidCount = unpaidCount,
+            };
         }
 
         public async Task<Expense> CreateAsync(Expense entity, IUser currentUser, CancellationToken cancellationToken)

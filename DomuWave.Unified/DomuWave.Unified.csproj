@@ -58,6 +58,8 @@
     <!-- Controllers API -->
     <Compile Include="..\DomuWave.Application\Controllers\AccountBalancesController.cs" Link="Controllers\AccountBalancesController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\AdminController.cs" Link="Controllers\AdminController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\AiQueryController.cs" Link="Controllers\AiQueryController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\AdminTasksController.cs" Link="Controllers\AdminTasksController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\AssembliesController.cs" Link="Controllers\AssembliesController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\BuildingsController.cs" Link="Controllers\BuildingsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\BillingGroupsController.cs" Link="Controllers\BillingGroupsController.cs" />
@@ -67,6 +69,7 @@
     <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsCategoryTemplateController.cs" Link="Controllers\ChartOfAccountsCategoryTemplateController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsController.cs" Link="Controllers\ChartOfAccountsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\ChartOfAccountsTemplatesController.cs" Link="Controllers\ChartOfAccountsTemplatesController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\CommunicationCenterController.cs" Link="Controllers\CommunicationCenterController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\CommunicationsAndMessagesController.cs" Link="Controllers\CommunicationsAndMessagesController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\CondominiumsController.cs" Link="Controllers\CondominiumsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\ConsumptionController.cs" Link="Controllers\ConsumptionController.cs" />
@@ -84,6 +87,7 @@
     <Compile Include="..\DomuWave.Application\Controllers\NotificationSystemController.cs" Link="Controllers\NotificationSystemController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\PublicUserController.cs" Link="Controllers\PublicUserController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\RealEstateUnitsController.cs" Link="Controllers\RealEstateUnitsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\StaircasesController.cs" Link="Controllers\StaircasesController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\SupplierContractsController.cs" Link="Controllers\SupplierContractsController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\SuppliersAndMillesimalController.cs" Link="Controllers\SuppliersAndMillesimalController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\TenantsController.cs" Link="Controllers\TenantsController.cs" />

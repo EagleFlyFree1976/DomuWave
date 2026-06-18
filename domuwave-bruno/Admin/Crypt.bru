@@ -1,0 +1,23 @@
+meta {
+  name: Crypt
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/api/Admin/crypt?v=sk-ant-REPLACE_WITH_YOUR_KEY
+  body: none
+  auth: bearer
+}
+
+params:query {
+  v: sk-ant-REPLACE_WITH_YOUR_KEY
+}
+
+headers {
+  X-Auth-Token: {{token}}
+}
+
+auth:bearer {
+  token: {{token}}
+}

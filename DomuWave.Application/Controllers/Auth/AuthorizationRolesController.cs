@@ -1,3 +1,4 @@
+using Auth.Services.Exceptions;
 using Auth.Services.Extensions;
 using Auth.Services.Interfaces;
 using Auth.Services.Models;
@@ -118,4 +119,109 @@ public class AuthorizationRolesController : AuthorizationBaseController
         await AuthorizationManager.RemoveAuthorizationFromGroup(id, cancellationToken);
         return NoContent();
     }
+
+    // ── Moduli disponibili (per la creazione/clonazione di un ruolo) ──────────
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpGet("modules")]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK)]
+    public IActionResult GetModules()
+    {
+        var modules = AuthorizationManager.GetModules(true);
+        return new EnumerableOkObjectResult(modules
+            .OrderBy(m => m.SortIndex)
+            .Select(m => new { id = m.Id, code = m.Code, description = m.Description }));
+    }
+
+    // ── Crea un nuovo ruolo (vuoto) legato a un modulo ───────────────────────
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpPost("roles/new")]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK)]
+    public async Task<IActionResult> CreateRole([FromBody] CreateRoleRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Code))
+            return BadRequest("Il codice del ruolo è obbligatorio.");
+
+        try
+        {
+            var role = await AuthorizationManager.CreateRole(
+                request.Code.Trim(), request.Description?.Trim(), request.ModuleCode, cancellationToken);
+            return new OkObjectResult(new { id = role.Id, code = role.Code, description = role.Description });
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // ── Modifica codice/descrizione di un ruolo esistente ───────────────────
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpPut("roles/{id:int}/details")]
+    public async Task<IActionResult> UpdateRoleDetails(int id, [FromBody] CreateRoleRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Code))
+            return BadRequest("Il codice del ruolo è obbligatorio.");
+
+        try
+        {
+            var role = await AuthorizationManager.UpdateGroupBase(
+                id, request.Code.Trim(), request.Description?.Trim(), cancellationToken);
+            return new OkObjectResult(new { id = role.Id, code = role.Code, description = role.Description });
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // ── Clona un ruolo (con i permessi) con codice/descrizione nuovi ─────────
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpPost("roles/{id:int}/clone")]
+    [ProducesResponseType(statusCode: StatusCodes.Status200OK)]
+    public async Task<IActionResult> CloneRole(int id, [FromBody] CreateRoleRequest request, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request?.Code))
+            return BadRequest("Il codice del nuovo ruolo è obbligatorio.");
+
+        try
+        {
+            var clone = await AuthorizationManager.CloneGroupAs(
+                id, request.Code.Trim(), request.Description?.Trim(), request.ModuleCode, cancellationToken);
+            return new OkObjectResult(new { id = clone.Id, code = clone.Code, description = clone.Description });
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // ── Copia (merge) i permessi da un ruolo sorgente in questo ruolo ────────
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Authorizations, AuthorizationKeys.Module)]
+    [HttpPost("roles/{id:int}/copy-permissions")]
+    public async Task<IActionResult> CopyPermissions(int id, [FromBody] CopyPermissionsRequest request, CancellationToken cancellationToken)
+    {
+        if (request == null || request.SourceId <= 0)
+            return BadRequest("Ruolo di origine non valido.");
+
+        try
+        {
+            await AuthorizationManager.CopyPermissions(request.SourceId, id, cancellationToken);
+            return NoContent();
+        }
+        catch (AuthException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+}
+
+public class CreateRoleRequest
+{
+    public string Code { get; set; }
+    public string Description { get; set; }
+    public string ModuleCode { get; set; }
+}
+
+public class CopyPermissionsRequest
+{
+    public int SourceId { get; set; }
 }

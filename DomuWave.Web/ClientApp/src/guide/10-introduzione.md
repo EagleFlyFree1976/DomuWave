@@ -15,7 +15,7 @@ Questa guida è rivolta a **amministratori, operatori e condòmini** e spiega, p
 - Hai una domanda specifica sul funzionamento? Usa l'**assistente**: risponde basandosi sui contenuti di questa guida.
 
 ## Come è organizzata
-- **Per iniziare** — accesso, navigazione e messa in esercizio di un condominio.
+- **Per iniziare** — accesso, navigazione, attività e scadenze, e messa in esercizio di un condominio.
 - **Anagrafiche** — condomìni, unità, occupanti, gruppi di fatturazione.
 - **Contabilità** — esercizi fiscali, piano dei conti, millesimi, budget, spese, rate, consuntivo, consumi e report.
 - **Gestione** — fornitori, documenti, comunicazioni, assemblee, manutenzioni e impostazioni dello studio (logo, email).
