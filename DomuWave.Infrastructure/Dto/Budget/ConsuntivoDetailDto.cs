@@ -1,3 +1,5 @@
+using DomuWave.Services.Models;
+
 namespace DomuWave.Services.Dto.Budget;
 
 // ── Vista per conto ───────────────────────────────────────────────────────
@@ -20,6 +22,7 @@ public class ConsuntivoAccountRowDto
     public int                              Level        { get; set; }
     public int?                             ParentId     { get; set; }
     public decimal                          TotalAmount  { get; set; }
+    public ChartOfAccountsType              Type         { get; set; }
     public List<ConsuntivoExpenseRowDto>    Expenses     { get; set; } = [];
 }
 

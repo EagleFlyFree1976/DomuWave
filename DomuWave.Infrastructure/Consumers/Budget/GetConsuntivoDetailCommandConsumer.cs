@@ -68,6 +68,7 @@ public class GetConsuntivoDetailCommandConsumer
                 AccountCode     = e.Account.Code,
                 AccountName     = e.Account.Name,
                 AccountLevel    = e.Account.Level,
+                AccountType     = e.Account.Type,
                 ParentAccountId = e.Account.ParentAccount != null ? (int?)e.Account.ParentAccount.Id : null,
             })
             .ToListAsync(cancellationToken)
@@ -268,6 +269,7 @@ public class GetConsuntivoDetailCommandConsumer
                     Level       = first.AccountLevel,
                     ParentId    = first.ParentAccountId,
                     TotalAmount = totalAmount,
+                    Type        = first.AccountType,
                     Expenses    = expenseRows,
                 };
             })
@@ -318,6 +320,7 @@ public class GetConsuntivoDetailCommandConsumer
                 Level       = 1,
                 ParentId    = null,
                 TotalAmount = chargesWithoutExpense.Sum(c => c.TotalAmount),
+                Type        = ChartOfAccountsType.Uscita,
                 Expenses    = virtualExpenseRows,
             });
         }
@@ -397,6 +400,14 @@ public class GetConsuntivoDetailCommandConsumer
             .GroupBy(x => x.UnitId)
             .ToDictionary(g => g.Key, g => g.First().UnitName);
 
+        // I conti di tipo Entrata (es. rimborsi assicurativi) sono accrediti al
+        // condomino: vanno sottratti dal totale spese ripartite, non sommati.
+        bool IsIncomeAccount(int accountId) =>
+            accountGroups.FirstOrDefault(a => a.AccountId == accountId)?.Type == ChartOfAccountsType.Entrata;
+
+        decimal SignedAmount(int accountId, decimal amount) =>
+            IsIncomeAccount(accountId) ? -amount : amount;
+
         ConsuntivoUnitRowDto BuildUnitRow(int unitId)
         {
             var allocsForUnit = allAllocRows.Where(a => a.UnitId == unitId)
@@ -413,7 +424,7 @@ public class GetConsuntivoDetailCommandConsumer
                         AccountId       = cg.Key,
                         AccountCode     = acct?.AccountCode,
                         AccountName     = acct?.AccountName,
-                        AllocatedAmount = cg.Sum(x => x.AllocatedAmount),
+                        AllocatedAmount = SignedAmount(cg.Key, cg.Sum(x => x.AllocatedAmount)),
                     };
                 })
                 .OrderBy(e => e.AccountCode)
@@ -425,7 +436,7 @@ public class GetConsuntivoDetailCommandConsumer
             {
                 UnitId     = unitId,
                 UnitName   = unitNameMap.TryGetValue(unitId, out var n) ? n : $"Unità {unitId}",
-                Total      = allocsForUnit.Sum(a => a.AllocatedAmount),
+                Total      = allocsForUnit.Sum(a => SignedAmount(a.AccountId, a.AllocatedAmount)),
                 AmountDue  = fees.Due,
                 AmountPaid = fees.Paid,
                 Balance    = fees.Balance,
