@@ -122,9 +122,11 @@ public class GetBilancioRipartizioneReportCommandConsumer
             : new();
 
         // ── Versato per unità = quote condominiali incassate (CondominiumFee) ────
+        // NB: filtrare tramite l'Installment (non tramite il Budget) perché le rate
+        // manuali hanno Budget == null: passando per Budget si escluderebbero le loro quote.
         var versatoRows = await session.Query<CondominiumFee>()
-            .Where(f => f.Installment.Budget.FiscalYear.Id == fy.Id
-                     && f.Installment.Budget.Condominium.Id == condId
+            .Where(f => f.Installment.FiscalYear.Id == fy.Id
+                     && f.Installment.Condominium.Id == condId
                      && !f.IsDeleted)
             .Select(f => new { UnitId = f.Unit.Id, f.AmountPaid })
             .ToListAsync(ct).ConfigureAwait(false);

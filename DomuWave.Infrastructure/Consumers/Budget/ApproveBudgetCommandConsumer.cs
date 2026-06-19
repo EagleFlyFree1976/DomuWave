@@ -256,11 +256,14 @@ public class ApproveBudgetCommandConsumer
 
         var user = currentUser as CPQ.Core.Memberships.IUser;
 
-        // Rate addebitate per unità dal Preventivo dell'esercizio (fonte: CondominiumFee.AmountDue)
+        // Rate addebitate per unità dal Preventivo dell'esercizio (fonte: CondominiumFee.AmountDue).
+        // Filtra tramite l'Installment (non tramite il Budget): le rate manuali hanno
+        // Budget == null e vanno conteggiate come rate del preventivo.
         var rateAddebitatByUnit = await session.Query<CondominiumFee>()
-            .Where(f => f.Installment.Budget.Condominium.Id == budget.Condominium.Id
-                     && f.Installment.Budget.FiscalYear.Id  == budget.FiscalYear.Id
-                     && f.Installment.Budget.Type           == BudgetType.Preventivo
+            .Where(f => f.Installment.Condominium.Id == budget.Condominium.Id
+                     && f.Installment.FiscalYear.Id  == budget.FiscalYear.Id
+                     && (f.Installment.Budget == null
+                         || f.Installment.Budget.Type == BudgetType.Preventivo)
                      && !f.IsDeleted)
             .GroupBy(f => f.Unit.Id)
             .Select(g => new { UnitId = g.Key, TotalDue = g.Sum(f => f.AmountDue) })

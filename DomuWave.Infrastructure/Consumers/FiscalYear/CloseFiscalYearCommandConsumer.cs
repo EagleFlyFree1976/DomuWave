@@ -93,11 +93,13 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
     {
         var user = currentUser as CPQ.Core.Memberships.IUser;
 
-        // ── 1. Rate addebitate e incassate per unità (solo Preventivo) ──────────
-        // CondominiumFee → Installment (Budget.Type == Preventivo) → FiscalYear
+        // ── 1. Rate addebitate e incassate per unità (Preventivo + rate manuali) ─
+        // CondominiumFee → Installment → FiscalYear (NON tramite Budget: le rate
+        // manuali hanno Budget == null e vanno trattate come rate del preventivo).
         var feesByUnit = await session.Query<CondominiumFee>()
-            .Where(f => f.Installment.FiscalYear.Id  == fiscalYearId
-                     && f.Installment.Budget.Type    == BudgetType.Preventivo
+            .Where(f => f.Installment.FiscalYear.Id == fiscalYearId
+                     && (f.Installment.Budget == null
+                         || f.Installment.Budget.Type == BudgetType.Preventivo)
                      && !f.IsDeleted)
             .GroupBy(f => f.Unit.Id)
             .Select(g => new

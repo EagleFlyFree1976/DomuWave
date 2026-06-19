@@ -241,8 +241,8 @@ Per ogni unità immobiliare e ogni esercizio fiscale esiste un record `UnitOpeni
 | Campo | Descrizione | Quando viene scritto |
 |---|---|---|
 | `OpeningBalance` | Saldo riportato dall'esercizio precedente (morosità o credito pregresso) | Apertura nuovo esercizio (Draft → Open) |
-| `RateAddebitate` | Σ `CondominiumFee.AmountDue` del Preventivo | Chiusura esercizio (Closing → Closed) |
-| `RateIncassate` | Σ `CondominiumFee.AmountPaid` del Preventivo | Chiusura esercizio (Closing → Closed) |
+| `RateAddebitate` | Σ `CondominiumFee.AmountDue` del Preventivo **e delle rate manuali** | Chiusura esercizio (Closing → Closed) |
+| `RateIncassate` | Σ `CondominiumFee.AmountPaid` del Preventivo **e delle rate manuali** | Chiusura esercizio (Closing → Closed) |
 | `QuotaConsuntiva` | Quota reale dell'unità = TotaleSpese × (Millesimi / TotMillesimi) | Approvazione budget Consuntivo |
 | `SaldoConguaglio` | `QuotaConsuntiva − RateAddebitate` (+debito / −credito da conguaglio) | Approvazione budget Consuntivo |
 | `TotalMovements` | `(RateAddebitate − RateIncassate) + SaldoConguaglio` | Chiusura esercizio (fonte di verità definitiva) |
@@ -293,6 +293,13 @@ nuovo.RateAddebitate = RateIncassate = QuotaConsuntiva = SaldoConguaglio = Total
 - La generazione ripartisce il totale del budget tra le unità in proporzione ai **millesimi** della tabella millesimale abilitata del condominio.
 - Il residuo di arrotondamento viene assegnato all'**ultima** rata / ultima unità.
 - Se le rate sono già state generate per un budget, la rigenerazione viene **ignorata** (idempotente).
+
+### Rate manuali (Budget == null)
+
+- Una rata può essere creata **manualmente**, senza essere collegata ad alcun budget: in tal caso `CondominiumInstallment.Budget` è `null` (badge **MAN** in interfaccia).
+- L'`Installment` mantiene sempre valorizzati `Condominium` e `FiscalYear`, quindi resta correttamente associato all'esercizio anche senza budget.
+- **Le rate manuali sono trattate come rate del Preventivo** ai fini di tutti i calcoli contabili: Versato del Bilancio di ripartizione, Rate addebitate/incassate, conguaglio e saldi per unità.
+- ⚠️ Conseguenza tecnica: ogni query su `CondominiumFee` che deve includere le quote dell'esercizio **non** deve filtrare attraverso `Installment.Budget` (un JOIN su `Budget` escluderebbe le rate manuali). Filtrare sempre tramite `Installment.FiscalYear` / `Installment.Condominium`, con la condizione `Installment.Budget == null || Installment.Budget.Type == Preventivo` quando serve restringere al solo preventivo.
 
 ---
 

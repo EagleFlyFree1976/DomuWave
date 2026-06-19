@@ -91,11 +91,14 @@ public class GetConguaglioCommandConsumer
 
         var totalMillesimal = unitMillesimals.Sum(x => x.Millesimal);
 
-        // Recupera il totale già pagato per unità tramite le CondominiumFee del preventivo
+        // Recupera il totale già pagato per unità tramite le CondominiumFee del preventivo.
+        // Filtra tramite l'Installment (non tramite il Budget): le rate manuali hanno
+        // Budget == null e vanno conteggiate come rate del preventivo.
         var paidByUnit = await session.Query<CondominiumFee>()
-            .Where(f => f.Installment.Budget.Condominium.Id == fiscalYear.Condominium.Id
-                     && f.Installment.Budget.FiscalYear.Id  == fiscalYear.Id
-                     && f.Installment.Budget.Type           == BudgetType.Preventivo
+            .Where(f => f.Installment.Condominium.Id == fiscalYear.Condominium.Id
+                     && f.Installment.FiscalYear.Id  == fiscalYear.Id
+                     && (f.Installment.Budget == null
+                         || f.Installment.Budget.Type == BudgetType.Preventivo)
                      && !f.IsDeleted)
             .GroupBy(f => f.Unit.Id)
             .Select(g => new { UnitId = g.Key, TotalPaid = g.Sum(f => f.AmountPaid) })
