@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DomuWave.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4d92a0d1a9f9ac2472be6ed951ff85c19820724c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f585e7c20db7acbffb5d758dd3b64cea524358f8")]
 [assembly: System.Reflection.AssemblyProductAttribute("DomuWave.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DomuWave.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

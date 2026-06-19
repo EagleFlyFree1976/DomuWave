@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "PowerShell(dotnet build DomuWave.Infrastructure\\\\DomuWave.Services.csproj -c Debug --nologo -v q 2>&1)",
+      "PowerShell(git checkout -b fix/rate-manuali-conteggio)",
+      "PowerShell(git add -A)",
+      "PowerShell(git reset)",
+      "PowerShell(git add DomuWave.Infrastructure/Consumers/Budget/ApproveBudgetCommandConsumer.cs DomuWave.Infrastructure/Consumers/FiscalYear/CloseFiscalYearCommandConsumer.cs DomuWave.Infrastructure/Consumers/FiscalYear/GetBilancioRipartizioneReportCommandConsumer.cs DomuWave.Infrastructure/Consumers/FiscalYear/GetConguaglioCommandConsumer.cs docs/business-rules.md)"
     ]
   }
 }
