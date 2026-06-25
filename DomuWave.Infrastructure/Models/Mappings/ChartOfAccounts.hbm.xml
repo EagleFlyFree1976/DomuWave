@@ -26,6 +26,7 @@
     <many-to-one name="DefaultMillesimalTable" class="DomuWave.Services.Models.MillesimalTable, DomuWave.Services" column="DefaultMillesimalTableId" />
     <property name="Level" column="Level" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
+    <property name="IsLiquidity" column="IsLiquidity" type="Boolean" not-null="true" />
 
     <property name="AllocationMethod"    column="AllocationMethod"    type="Int32"   not-null="true" />
     <property name="MillesimalPercentage" column="MillesimalPercentage" type="Decimal" />

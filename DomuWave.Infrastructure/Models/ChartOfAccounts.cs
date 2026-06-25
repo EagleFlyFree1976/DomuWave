@@ -14,6 +14,12 @@ namespace DomuWave.Services.Models
         public virtual int Level { get; set; }
         public virtual bool IsActive { get; set; }
 
+        /// <summary>
+        /// Solo per conti di tipo Patrimoniale: true = disponibilità liquida (banca/cassa, va in Attività),
+        /// false = fondo (riserva/posti auto, va in Passività) nella Situazione Patrimoniale.
+        /// </summary>
+        public virtual bool IsLiquidity { get; set; }
+
         public virtual MillesimalTable? DefaultMillesimalTable { get; set; }
 
         public virtual AllocationMethod   AllocationMethod    { get; set; } = AllocationMethod.Standard;

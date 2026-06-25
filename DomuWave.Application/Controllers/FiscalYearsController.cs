@@ -1,7 +1,9 @@
 using CPQ.Core.ActionFilters;
 using CPQ.Core.Settings;
 using DomuWave.Application.Code;
+using DomuWave.Services.Command.Contabilita.Bilancio;
 using DomuWave.Services.Command.FiscalYear;
+using DomuWave.Services.Dto.Contabilita.Bilancio;
 using DomuWave.Services.Dto.Contabilita.FiscalYear;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -164,6 +166,42 @@ public class FiscalYearsController(
     {
         var result = await _mediator.GetResponse(
             new GetConguaglioCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    /// <summary>Bilancio: conto economico dell'esercizio (criterio di competenza).</summary>
+    [HttpGet("{id:int}/conto-economico")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(ContoEconomicoDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetContoEconomico(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetContoEconomicoCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    /// <summary>Bilancio: flussi di cassa dell'esercizio (criterio di cassa).</summary>
+    [HttpGet("{id:int}/flussi-cassa")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(FlussiCassaDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetFlussiCassa(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetFlussiCassaCommand(CurrentUser.Id, id), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
+    /// <summary>Bilancio: situazione patrimoniale alla data di fine esercizio (criterio di cassa).</summary>
+    [HttpGet("{id:int}/situazione-patrimoniale")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.FiscalYear, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(SituazionePatrimonialeDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSituazionePatrimoniale(int id, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(
+            new GetSituazionePatrimonialeCommand(CurrentUser.Id, id), ct);
         if (result == null) return NotFound();
         return Ok(result);
     }

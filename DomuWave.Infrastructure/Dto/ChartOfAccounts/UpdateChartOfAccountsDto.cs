@@ -11,6 +11,7 @@ public class UpdateChartOfAccountsDto
     public int?                CategoryId       { get; set; }
     public string?             Description      { get; set; }
     public bool                IsActive                  { get; set; } = true;
+    public bool                IsLiquidity               { get; set; }
     public int?                DefaultMillesimalTableId  { get; set; }
     public AllocationMethod    AllocationMethod          { get; set; } = AllocationMethod.Standard;
     public decimal?            MillesimalPercentage      { get; set; }

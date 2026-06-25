@@ -14,6 +14,7 @@ public class ChartOfAccountsReadDto
     public string?              CategoryName    { get; set; }
     public int                  Level           { get; set; }
     public bool                 IsActive        { get; set; }
+    public bool                 IsLiquidity     { get; set; }
     public int?                 ParentAccountId             { get; set; }
     public int?                 DefaultMillesimalTableId    { get; set; }
     public string?              DefaultMillesimalTableName  { get; set; }

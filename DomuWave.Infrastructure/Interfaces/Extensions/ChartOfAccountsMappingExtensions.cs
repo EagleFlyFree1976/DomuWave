@@ -22,6 +22,7 @@ public static class ChartOfAccountsMappingExtensions
             CategoryName                = account.Category?.Name,
             Level                       = account.Level,
             IsActive                    = account.IsActive,
+            IsLiquidity                 = account.IsLiquidity,
             ParentAccountId             = account.ParentAccount?.Id,
             DefaultMillesimalTableId    = account.DefaultMillesimalTable?.Id,
             DefaultMillesimalTableName  = account.DefaultMillesimalTable?.Name,
@@ -54,6 +55,8 @@ public static class ChartOfAccountsMappingExtensions
             Category               = category,
             Level                  = parentAccount != null ? parentAccount.Level + 1 : 1,
             IsActive               = dto.IsActive,
+            // Solo i conti Patrimoniali possono essere marcati come liquidità.
+            IsLiquidity            = dto.Type == ChartOfAccountsType.Patrimoniale && dto.IsLiquidity,
             IsDeleted              = false,
             DefaultMillesimalTable = defaultMillesimalTable,
             AllocationMethod       = dto.AllocationMethod,
@@ -78,6 +81,8 @@ public static class ChartOfAccountsMappingExtensions
         entity.Category               = category;
         entity.Description            = dto.Description;
         entity.IsActive               = dto.IsActive;
+        // Solo i conti Patrimoniali possono essere marcati come liquidità.
+        entity.IsLiquidity            = dto.Type == ChartOfAccountsType.Patrimoniale && dto.IsLiquidity;
         entity.DefaultMillesimalTable = defaultMillesimalTable;
         entity.AllocationMethod       = dto.AllocationMethod;
         entity.MillesimalPercentage   = dto.AllocationMethod == AllocationMethod.Mixed ? dto.MillesimalPercentage : null;

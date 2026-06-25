@@ -216,6 +216,18 @@
                 </label>
               </div>
 
+              <!-- Solo per conti Patrimoniali: distingue liquidità (banca/cassa) dai fondi -->
+              <div v-if="form.type === 3" class="form-group" style="grid-column: 1 / -1">
+                <label class="form-label checkbox-label">
+                  <input type="checkbox" v-model="form.isLiquidity" />
+                  Disponibilità liquida (banca / cassa)
+                </label>
+                <span class="text-muted" style="font-size:.85em">
+                  Se attivo, il conto figura tra le <strong>Attività</strong> della situazione patrimoniale;
+                  altrimenti è trattato come <strong>Fondo</strong> (Passività).
+                </span>
+              </div>
+
               <div class="form-group" style="grid-column: 1 / -1">
                 <label class="form-label">A carico di</label>
                 <div class="radio-group">
@@ -445,7 +457,7 @@ const typeLabel = (v) => typeOptions.find(o => o.value === v)?.label ?? v
 
 const emptyForm = () => ({
   code: '', name: '', type: 2, categoryId: null, description: '',
-  parentAccountId: null, isActive: true, defaultMillesimalTableId: null,
+  parentAccountId: null, isActive: true, isLiquidity: false, defaultMillesimalTableId: null,
   allocationMethod: 0, millesimalPercentage: null, floorWeight: null, inhabitantsWeight: null,
   chargeabilityTypeId: 1,
 })
@@ -551,6 +563,7 @@ function openModal(a = null) {
       description: a.description ?? '',
       parentAccountId: a.parentAccountId ?? null,
       isActive: a.isActive,
+      isLiquidity: a.isLiquidity ?? false,
       defaultMillesimalTableId: a.defaultMillesimalTableId ?? null,
       allocationMethod: a.allocationMethod ?? 0,
       millesimalPercentage: a.millesimalPercentage ?? null,
@@ -576,6 +589,7 @@ function cloneAccount(a) {
     description:              a.description ?? '',
     parentAccountId:          a.parentAccountId ?? null,
     isActive:                 a.isActive,
+    isLiquidity:              a.isLiquidity ?? false,
     allocationMethod:         a.allocationMethod ?? 0,
     millesimalPercentage:     a.millesimalPercentage ?? null,
     floorWeight:              a.floorWeight ?? null,
@@ -598,6 +612,7 @@ async function save() {
         categoryId:               form.value.categoryId,
         description:              form.value.description || null,
         isActive:                 form.value.isActive,
+        isLiquidity:              form.value.type === 3 ? form.value.isLiquidity : false,
         defaultMillesimalTableId: form.value.defaultMillesimalTableId,
         allocationMethod:         form.value.allocationMethod,
         millesimalPercentage:     form.value.allocationMethod === 1 ? form.value.millesimalPercentage : null,
@@ -615,6 +630,7 @@ async function save() {
         categoryId:               form.value.categoryId,
         description:              form.value.description || null,
         isActive:                 form.value.isActive,
+        isLiquidity:              form.value.type === 3 ? form.value.isLiquidity : false,
         defaultMillesimalTableId: form.value.defaultMillesimalTableId,
         allocationMethod:         form.value.allocationMethod,
         millesimalPercentage:     form.value.allocationMethod === 1 ? form.value.millesimalPercentage : null,

@@ -58,7 +58,21 @@ Di seguito l'elenco degli interventi e delle nuove funzionalità rilasciate nell
 
 ---
 
-## 7. Altre migliorie
+## 7. Bilancio condominiale (Rendiconto)
+
+Nella pagina **Rendiconto**, dopo aver selezionato un esercizio, sono disponibili tre nuovi prospetti di bilancio, oltre alle viste già esistenti (Conguaglio per unità, Dettaglio per conto):
+
+- **Conto economico** (criterio di competenza): Entrate e Uscite contabilizzate nell'esercizio (a prescindere dal pagamento), con il **saldo dell'esercizio precedente** e il calcolo automatico di **avanzo** o **disavanzo**.
+- **Flussi di cassa** (criterio di cassa): Incassi e Pagamenti effettivamente avvenuti nel periodo, partendo dall'**avanzo di cassa iniziale** fino all'**avanzo finale**. I pagamenti sono distinti tra **esercizio corrente**, **esercizi precedenti** e **uscite individuali**.
+- **Situazione patrimoniale** (criterio di cassa): fotografia di **Attività** (crediti verso condòmini, disponibilità liquide) e **Passività** (debiti verso condòmini e verso terzi, fondi) alla data di fine esercizio. Il prospetto segnala un eventuale **sbilancio** se le attività non pareggiano le passività.
+
+Ogni prospetto può essere **salvato in PDF** o **scaricato in Excel** tramite i pulsanti dedicati.
+
+**Piano dei Conti — flag "Disponibilità liquida"**: per i conti di tipo *Patrimoniale* è stata aggiunta l'opzione **"Disponibilità liquida (banca / cassa)"**. Se attiva, il conto figura tra le **Attività** della situazione patrimoniale (banca, cassa); altrimenti è trattato come **Fondo** (Passività). Va impostata sui conti liquidi affinché la situazione patrimoniale risulti completa.
+
+---
+
+## 8. Altre migliorie
 
 - **Tabella millesimale predefinita**: la tabella creata automaticamente alla creazione di un nuovo condominio si chiama ora **"Generale"** (in precedenza "Default").
 
