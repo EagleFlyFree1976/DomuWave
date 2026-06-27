@@ -158,6 +158,32 @@ internal static class ExpenseAllocationHelper
         if (totalMillesimal == 0)
             return;
 
+        // ── Criterio misto valore/altezza (art. 1124 c.c.: scale e ascensori) ──────
+        // Una parte (MillesimalPercentage%) si ripartisce per valore (tabella millesimale),
+        // la restante parte per altezza/uso, in proporzione al fattore:
+        //   FloorWeight * Piano  +  InhabitantsWeight * NumeroAbitanti
+        // Il piano terra (Floor = 0) NON paga la quota per altezza, ma paga comunque la
+        // quota per valore (millesimi) — conforme alla giurisprudenza costante.
+        var account = expense.Account;
+        if (account != null
+            && account.AllocationMethod == AllocationMethod.Mixed
+            && account.MillesimalPercentage.HasValue
+            && account.FloorWeight.HasValue
+            && account.InhabitantsWeight.HasValue)
+        {
+            var rows = await BuildMixedAllocationRowsAsync(
+                session, expense, grossAmount, unitMillesimals.ToDictionary(um => um.UnitId, um => um.Millesimal),
+                totalMillesimal, account, cancellationToken).ConfigureAwait(false);
+
+            if (rows != null)
+            {
+                await UpsertAllocationsAsync(session, expense, currentUser, cancellationToken, rows);
+                return;
+            }
+            // rows == null → fattore totale nullo (es. tutte unità al piano terra senza
+            // abitanti): si ricade sulla ripartizione 100% millesimale qui sotto.
+        }
+
         // Prima passata — arrotonda a 2 decimali
         var rawRows = unitMillesimals
             .Select(um =>
@@ -194,6 +220,87 @@ internal static class ExpenseAllocationHelper
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Costruisce le righe di ripartizione per il criterio misto valore/altezza
+    /// (art. 1124 c.c.). Restituisce null se il fattore altezza/uso complessivo è 0
+    /// (in quel caso il chiamante ricade sulla ripartizione 100% millesimale).
+    /// </summary>
+    private static async Task<List<AllocationRow>?> BuildMixedAllocationRowsAsync(
+        ISession                 session,
+        Expense                  expense,
+        decimal                  grossAmount,
+        IReadOnlyDictionary<int, decimal> millesimalByUnit,
+        decimal                  totalMillesimal,
+        ChartOfAccounts          account,
+        CancellationToken        cancellationToken)
+    {
+        // Solo le unità presenti nella tabella millesimale partecipano alla ripartizione.
+        var unitIds = millesimalByUnit.Keys.ToList();
+
+        var unitData = await session.Query<RealEstateUnit>()
+            .Where(u => unitIds.Contains(u.Id) && !u.IsDeleted)
+            .Select(u => new { u.Id, u.Floor, u.NumeroAbitanti })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        decimal millesimalPct = account.MillesimalPercentage!.Value / 100m;   // quota per valore
+        decimal factorPct     = 1m - millesimalPct;                            // quota per altezza/uso
+        decimal floorW        = account.FloorWeight!.Value;
+        decimal inhabW        = account.InhabitantsWeight!.Value;
+
+        decimal millesimalPart = grossAmount * millesimalPct;
+        decimal factorPart     = grossAmount * factorPct;
+
+        // Fattore per unità: piano terra (Floor = 0) → quota altezza nulla (Math.Max(_, 0)).
+        var factorByUnit = unitData.ToDictionary(
+            u => u.Id,
+            u => floorW * Math.Max(u.Floor, 0) + inhabW * Math.Max(u.NumeroAbitanti, 0));
+
+        decimal totalFactor = factorByUnit.Values.Sum();
+        if (totalFactor == 0m)
+            return null;   // nessuna base per la quota altezza → fallback al 100% millesimale
+
+        // Prima passata: importi grezzi arrotondati
+        var raw = new Dictionary<int, (decimal rounded, decimal millesimal)>();
+        foreach (var unitId in unitIds)
+        {
+            decimal millesimal = millesimalByUnit[unitId];
+
+            decimal millesimalShare = totalMillesimal > 0
+                ? millesimalPart * millesimal / totalMillesimal
+                : 0m;
+            decimal factorShare = factorByUnit.TryGetValue(unitId, out var f)
+                ? factorPart * f / totalFactor
+                : 0m;
+
+            decimal rounded = Math.Round(millesimalShare + factorShare, 2, MidpointRounding.AwayFromZero);
+            raw[unitId] = (rounded, millesimal);
+        }
+
+        // Residuo da arrotondamento all'unità con la quota millesimale maggiore
+        decimal roundedSum = raw.Values.Sum(x => x.rounded);
+        decimal remainder  = Math.Round(grossAmount - roundedSum, 2, MidpointRounding.AwayFromZero);
+        int?    largestId  = raw.Count > 0
+            ? raw.OrderByDescending(kv => kv.Value.millesimal).First().Key
+            : null;
+
+        int millesimalLabel = (int)account.MillesimalPercentage.Value;
+        return raw.Select(kv =>
+        {
+            decimal rounding = kv.Key == largestId ? remainder : 0m;
+            decimal amount   = kv.Value.rounded + rounding;
+            return new AllocationRow
+            {
+                UnitId          = kv.Key,
+                Millesimal      = kv.Value.millesimal,
+                AllocatedAmount = amount,
+                Percentage      = grossAmount > 0 ? amount / grossAmount * 100m : 0m,
+                Rounding        = rounding,
+                Notes           = $"Criterio misto: {millesimalLabel}% per valore (millesimi) + {100 - millesimalLabel}% per altezza/uso (art. 1124 c.c.)",
+            };
+        }).ToList();
+    }
 
     private sealed class AllocationRow
     {

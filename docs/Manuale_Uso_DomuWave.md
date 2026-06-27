@@ -70,6 +70,25 @@ La navigazione e' organizzata per moduli. Le voci visibili dipendono dal ruolo e
 ### 8.3 Template categorie (SuperAdmin)
 - Usa i template per inizializzare velocemente le categorie standard.
 
+### 8.4 Criterio di ripartizione del conto
+Ogni conto definisce come le spese a esso imputate vengono ripartite tra le unita.
+
+- **Standard** (predefinito): la spesa e ripartita al 100% in base alla tabella millesimale
+  associata, cioe per valore (millesimi di proprieta).
+- **Misto** (valore/altezza, art. 1124 c.c. per scale e ascensori): la spesa e divisa in due quote:
+  - una quota **per valore**, pari alla *percentuale millesimale* impostata sul conto (es. 50%),
+    ripartita secondo la tabella millesimale;
+  - la quota restante **per altezza/uso**, ripartita in proporzione al fattore
+    `Peso Piano x numero del piano + Peso Abitanti x numero abitanti` di ciascuna unita.
+
+  Il **piano terra** (piano 0) non paga la quota per altezza (il fattore altezza vale zero),
+  ma contribuisce comunque alla quota per valore: e il comportamento richiesto dalla
+  giurisprudenza costante sull'art. 1124. Per un criterio 1124 "puro" (meta valore /
+  meta altezza) imposta percentuale millesimale = 50, Peso Piano = 1, Peso Abitanti = 0.
+
+  Esempio tipico: conto "Ascensore - manutenzione" o "Ascensore - energia elettrica"
+  configurato come Misto.
+
 ## 9. Tabelle millesimali
 ### 9.1 Creazione
 - Crea tutte le tabelle richieste (generale, scale, ascensore, ecc.).

@@ -82,6 +82,13 @@
       </button>
     </div>
 
+    <!-- ── Guida ── -->
+    <RouterLink to="/guida" class="sidebar-guide-link" :class="{ active: route.path === '/guida' }"
+                :title="collapsed ? 'Guida' : ''">
+      <i class="pi pi-book"></i>
+      <span v-show="!collapsed">Guida</span>
+    </RouterLink>
+
     <!-- ── Footer ── -->
     <div class="sidebar-footer">
       <div class="user-chip">
@@ -520,6 +527,43 @@
   .impersonate-banner__exit:hover {
     background: rgba(99, 102, 241, 0.45);
   }
+
+  /* Link Guida */
+  .sidebar-guide-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin: 0 0.5rem 0.25rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    border-top: 1px solid #1e293b;
+    border-radius: 0;
+    transition: background 0.12s, color 0.12s;
+  }
+
+    .sidebar-guide-link:hover {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+
+    .sidebar-guide-link.active {
+      background: rgba(52,211,153,0.1);
+      color: #34d399;
+      font-weight: 600;
+    }
+
+    .sidebar-guide-link .pi {
+      font-size: 0.95rem;
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
 
   /* Footer */
   .sidebar-footer {

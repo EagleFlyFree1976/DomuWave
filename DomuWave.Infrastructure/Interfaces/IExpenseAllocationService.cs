@@ -11,6 +11,5 @@ namespace DomuWave.Services.Interfaces
         Task<IList<ExpenseAllocation>> GetByExpenseIdAsync(long expenseId, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<ExpenseAllocation>> GetByUnitIdAsync(int unitId, IUser currentUser, CancellationToken cancellationToken);
         Task<decimal> GetTotalAllocationAsync(long expenseId, IUser currentUser, CancellationToken cancellationToken);
-        Task<bool> AllocateExpenseAsync(long expenseId, long userId, IUser currentUser, CancellationToken cancellationToken);
     }
 }
