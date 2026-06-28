@@ -49,6 +49,14 @@
     <property name="AdministratorPhone" column="AdministratorPhone" type="String" length="30" />
     <property name="AdministratorEmail" column="AdministratorEmail" type="String" length="255" />
 
+    <property name="StripeConnectedAccountId" column="StripeConnectedAccountId" type="String" length="255" />
+    <property name="StripeOnboardingComplete" column="StripeOnboardingComplete" type="Boolean" not-null="true" />
+
+    <property name="EInvoiceProviderId"   column="EInvoiceProviderId"   type="Int32" />
+    <property name="EInvoiceApiKey"        column="EInvoiceApiKey"       type="String"    length="500" />
+    <property name="EInvoiceVatNumber"     column="EInvoiceVatNumber"    type="String"    length="16" />
+    <property name="EInvoiceLastSyncDate"  column="EInvoiceLastSyncDate" type="datetime2" />
+
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />
     <property name="CreatedByFullName" column="CreatedByFullName" type="String" length="200" />
     <property name="LastUpdatedBy" column="LastUpdatedById" type="Int32" />

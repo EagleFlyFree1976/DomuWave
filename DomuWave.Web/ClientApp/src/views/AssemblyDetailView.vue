@@ -947,8 +947,24 @@ onMounted(loadAssembly)
 .agenda-content { flex: 1; }
 .agenda-title { font-weight: 600; font-size: .95rem; }
 .agenda-desc { font-size: .875rem; margin-top: .3rem; color: var(--text-secondary); }
-.agenda-resolution { margin-top: .5rem; font-size: .875rem; background: var(--bg-surface); border-left: 3px solid var(--accent-green); padding: .5rem .875rem; border-radius: 0 4px 4px 0; }
-.resolution-label { font-weight: 600; color: var(--accent-green); }
+.agenda-resolution { margin-top: .5rem; font-size: .875rem; background: var(--bg-surface); border-left: 3px solid var(--accent); padding: .5rem .875rem; border-radius: 0 4px 4px 0; }
+.resolution-label { font-weight: 600; color: var(--accent); }
+
+/* Riquadri di sezione del form (legenda + bordo) */
+.form-fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+.form-fieldset-legend {
+  display: block;
+  margin-bottom: .6rem;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
 .agenda-vote { flex-shrink: 0; padding-top: .1rem; }
 
 .agenda-inline-edit { display: flex; flex-direction: column; gap: .6rem; width: 100%; }

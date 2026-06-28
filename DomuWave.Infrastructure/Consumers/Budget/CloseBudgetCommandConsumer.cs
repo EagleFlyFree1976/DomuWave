@@ -5,6 +5,7 @@ using CPQ.Core.Services;
 using DomuWave.Services.Command.Budget;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
+using Microsoft.Extensions.Logging;
 using NHibernate.Linq;
 using SimpleMediator.Core;
 
@@ -15,14 +16,17 @@ public class CloseBudgetCommandConsumer
 {
     private readonly IBudgetService _budgetService;
     private readonly IUserService   _userService;
+    private readonly ILogger<CloseBudgetCommandConsumer> _logger;
 
     public CloseBudgetCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IBudgetService budgetService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        ILogger<CloseBudgetCommandConsumer> logger) : base(sessionFactoryProvider)
     {
         _budgetService = budgetService;
         _userService   = userService;
+        _logger        = logger;
     }
 
     protected override async Task<bool> Consume(
@@ -61,8 +65,14 @@ public class CloseBudgetCommandConsumer
                 $"Esiste già un budget {tipoLabel} chiuso per questo esercizio e condominio. " +
                 "Non è possibile chiuderne un altro.");
 
-        return await _budgetService
+        var closed = await _budgetService
             .CloseBudgetAsync(command.Id, command.CurrentUserId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        _logger.LogInformation(
+            "Budget {BudgetType} {BudgetId} chiuso per condominio {CondominiumId}, esercizio {FiscalYearId} (esito {Closed}, utente {UserId}).",
+            budget.Type, command.Id, budget.Condominium.Id, budget.FiscalYear.Id, closed, command.CurrentUserId);
+
+        return closed;
     }
 }

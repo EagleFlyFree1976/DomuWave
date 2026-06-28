@@ -2531,6 +2531,23 @@
           "lib/netstandard2.0/SimpleMediator.Extensions.Microsoft.DependencyInjection.dll": {}
         }
       },
+      "Stripe.net/52.1.0": {
+        "type": "package",
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.3",
+          "System.Configuration.ConfigurationManager": "8.0.0"
+        },
+        "compile": {
+          "lib/net8.0/Stripe.net.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/net8.0/Stripe.net.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "System.AppContext/4.3.0": {
         "type": "package",
         "dependencies": {
@@ -4102,6 +4119,7 @@
           "LicenseManager.Client": "1.1.15",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.0",
           "QuestPDF": "2026.2.4",
+          "Stripe.net": "52.1.0",
           "System.ServiceProcess.ServiceController": "8.0.1"
         },
         "compile": {
@@ -7379,6 +7397,30 @@
         "lib/netstandard2.0/SimpleMediator.Extensions.Microsoft.DependencyInjection.dll",
         "simplemediator.extensions.microsoft.dependencyinjection.1.0.6.nupkg.sha512",
         "simplemediator.extensions.microsoft.dependencyinjection.nuspec"
+      ]
+    },
+    "Stripe.net/52.1.0": {
+      "sha512": "xzYOMenSrhR2UIgk+zBOjfzADSFe9NnCuhffs2FMpWSJst4M19m6QS7GAxq4cLeBdWvUoUo3RuHNc5uzI5eOFg==",
+      "type": "package",
+      "path": "stripe.net/52.1.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "LICENSE",
+        "README.md",
+        "icon.png",
+        "lib/net462/Stripe.net.dll",
+        "lib/net462/Stripe.net.xml",
+        "lib/net6.0/Stripe.net.dll",
+        "lib/net6.0/Stripe.net.xml",
+        "lib/net8.0/Stripe.net.dll",
+        "lib/net8.0/Stripe.net.xml",
+        "lib/net9.0/Stripe.net.dll",
+        "lib/net9.0/Stripe.net.xml",
+        "lib/netstandard2.0/Stripe.net.dll",
+        "lib/netstandard2.0/Stripe.net.xml",
+        "stripe.net.52.1.0.nupkg.sha512",
+        "stripe.net.nuspec"
       ]
     },
     "System.AppContext/4.3.0": {

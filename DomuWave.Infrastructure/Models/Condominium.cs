@@ -42,6 +42,23 @@ namespace DomuWave.Services.Models
         public virtual string AdministratorPhone { get; set; }
         public virtual string AdministratorEmail { get; set; }
 
+        // ── Pagamenti online (Stripe Connect) ───────────────────────────────────────
+        // Id del connected account Stripe (Express) collegato a questo condominio.
+        // Null finché l'amministratore non avvia l'onboarding.
+        public virtual string StripeConnectedAccountId { get; set; }
+        // true quando l'onboarding Stripe è completo e il condominio può incassare online.
+        public virtual bool StripeOnboardingComplete { get; set; }
+
+        // ── Fatture elettroniche (download da Cassetto Fiscale / SdI via provider) ───
+        // Provider SdI usato (EInvoiceProviderLookup): null/0 = non configurato.
+        public virtual int? EInvoiceProviderId { get; set; }
+        // Chiave/token API del provider, CIFRATA a riposo (mai persistere/esporre in chiaro).
+        public virtual string EInvoiceApiKey { get; set; }
+        // P.IVA del condominio su cui filtrare le fatture passive ricevute.
+        public virtual string EInvoiceVatNumber { get; set; }
+        // Data dell'ultimo download fatture andato a buon fine.
+        public virtual DateTime? EInvoiceLastSyncDate { get; set; }
+
         public virtual CondominiumAddress Address { get; set; }
         public virtual CondominiumCadastralData CadastralData { get; set; }
         public virtual IList<Building> Buildings { get; set; } = new List<Building>();

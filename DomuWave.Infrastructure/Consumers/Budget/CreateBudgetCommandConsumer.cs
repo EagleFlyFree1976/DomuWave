@@ -8,8 +8,10 @@ using DomuWave.Services.Dto.Budget;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Interfaces.Extensions;
 using DomuWave.Services.Models;
+using Microsoft.Extensions.Logging;
 using NHibernate.Linq;
 using SimpleMediator.Core;
+using System.Diagnostics;
 
 namespace DomuWave.Services.Consumers;
 
@@ -20,18 +22,21 @@ public class CreateBudgetCommandConsumer
     private readonly ICondominiumService  _condominiumService;
     private readonly IFiscalYearService   _fiscalYearService;
     private readonly IUserService         _userService;
+    private readonly ILogger<CreateBudgetCommandConsumer> _logger;
 
     public CreateBudgetCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IBudgetService budgetService,
         ICondominiumService condominiumService,
         IFiscalYearService fiscalYearService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        ILogger<CreateBudgetCommandConsumer> logger) : base(sessionFactoryProvider)
     {
         _budgetService      = budgetService;
         _condominiumService = condominiumService;
         _fiscalYearService  = fiscalYearService;
         _userService        = userService;
+        _logger             = logger;
     }
 
     protected override async Task<BudgetReadDto> Consume(
@@ -39,6 +44,11 @@ public class CreateBudgetCommandConsumer
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
     {
+        var sw = Stopwatch.StartNew();
+        _logger.LogInformation(
+            "Creazione budget {BudgetType} per condominio {CondominiumId}, esercizio {FiscalYearId} (utente {UserId}).",
+            command.Dto.Type, command.Dto.CondominiumId, command.Dto.FiscalYearId, command.CurrentUserId);
+
         var currentUser = await _userService
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
@@ -61,8 +71,13 @@ public class CreateBudgetCommandConsumer
             .ConfigureAwait(false);
 
         if (duplicate)
+        {
+            _logger.LogWarning(
+                "Creazione budget rifiutata: esiste già un budget {TypeLabel} per condominio {CondominiumId}, esercizio {FiscalYearId}.",
+                typeLabel, command.Dto.CondominiumId, command.Dto.FiscalYearId);
             throw new ValidatorException(
                 $"Esiste già un budget {typeLabel} per questo condominio ed esercizio fiscale.");
+        }
 
         var budget = new Budget
         {
@@ -97,6 +112,14 @@ public class CreateBudgetCommandConsumer
         }
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        var itemsCount = await session.Query<BudgetItem>()
+            .CountAsync(i => i.Budget.Id == created.Id && !i.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        _logger.LogInformation(
+            "Budget {BudgetType} {BudgetId} creato per condominio {CondominiumId}: {ItemsCount} voci, totale uscite {TotalExpenses}. ({ElapsedMs} ms)",
+            command.Dto.Type, created.Id, command.Dto.CondominiumId, itemsCount, created.TotalExpenses, sw.ElapsedMilliseconds);
 
         return created.ToReadDto();
     }

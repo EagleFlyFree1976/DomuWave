@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "Q8bV6CNXaIM=",
+  "dgSpecHash": "VpssN9eX6Kk=",
   "success": true,
   "projectFilePath": "C:\\Projects\\Works\\DomuWave\\DomuWave.UnitTest\\DomuWave.Tests.csproj",
   "expectedPackageFiles": [
@@ -132,6 +132,7 @@
     "C:\\Users\\orazi\\.nuget\\packages\\runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl\\4.3.0\\runtime.ubuntu.16.10-x64.runtime.native.system.security.cryptography.openssl.4.3.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\simplemediator\\1.0.6\\simplemediator.1.0.6.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\simplemediator.extensions.microsoft.dependencyinjection\\1.0.6\\simplemediator.extensions.microsoft.dependencyinjection.1.0.6.nupkg.sha512",
+    "C:\\Users\\orazi\\.nuget\\packages\\stripe.net\\52.1.0\\stripe.net.52.1.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\system.appcontext\\4.3.0\\system.appcontext.4.3.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\system.buffers\\4.3.0\\system.buffers.4.3.0.nupkg.sha512",
     "C:\\Users\\orazi\\.nuget\\packages\\system.collections\\4.3.0\\system.collections.4.3.0.nupkg.sha512",

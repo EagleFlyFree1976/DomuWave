@@ -89,6 +89,10 @@
               "target": "Package",
               "version": "[2026.2.4, )"
             },
+            "Stripe.net": {
+              "target": "Package",
+              "version": "[52.1.0, )"
+            },
             "System.ServiceProcess.ServiceController": {
               "target": "Package",
               "version": "[8.0.1, )"

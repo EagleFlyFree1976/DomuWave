@@ -153,6 +153,8 @@ try
     #endregion
 
     builder.Services.Configure<DomuWaveSettings>(builder.Configuration.GetSection("DomuWave"));
+    builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+    builder.Services.Configure<EInvoiceSettings>(builder.Configuration.GetSection("EInvoice"));
     builder.Services
         .AddLicenseManager(builder.Configuration.GetSection("LicenseManager"))
         .WithHttpHeaderTenantResolver();

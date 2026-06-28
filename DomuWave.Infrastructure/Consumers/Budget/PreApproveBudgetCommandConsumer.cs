@@ -6,6 +6,7 @@ using CPQ.Core.Services;
 using DomuWave.Services.Command.Budget;
 using DomuWave.Services.Helpers;
 using DomuWave.Services.Models;
+using Microsoft.Extensions.Logging;
 using NHibernate.Linq;
 using SimpleMediator.Core;
 
@@ -15,11 +16,16 @@ public class PreApproveBudgetCommandConsumer
     : InMemoryConsumerBase<PreApproveBudgetCommand, bool>
 {
     private readonly IUserService _userService;
+    private readonly ILogger<PreApproveBudgetCommandConsumer> _logger;
 
     public PreApproveBudgetCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
-        IUserService userService) : base(sessionFactoryProvider)
-        => _userService = userService;
+        IUserService userService,
+        ILogger<PreApproveBudgetCommandConsumer> logger) : base(sessionFactoryProvider)
+    {
+        _userService = userService;
+        _logger      = logger;
+    }
 
     protected override async Task<bool> Consume(
         PreApproveBudgetCommand command,
@@ -92,6 +98,10 @@ public class PreApproveBudgetCommandConsumer
         budget.Trace(currentUser);
         await session.SaveOrUpdateAsync(budget, cancellationToken).ConfigureAwait(false);
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        _logger.LogInformation(
+            "Budget preventivo {BudgetId} pre-approvato (Bozza → In approvazione) per condominio {CondominiumId} (utente {UserId}).",
+            command.Id, budget.Condominium.Id, command.CurrentUserId);
 
         return true;
     }

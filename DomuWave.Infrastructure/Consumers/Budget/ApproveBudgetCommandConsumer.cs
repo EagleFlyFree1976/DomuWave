@@ -7,8 +7,10 @@ using DomuWave.Services.Command.Budget;
 using DomuWave.Services.Helpers;
 using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
+using Microsoft.Extensions.Logging;
 using NHibernate.Linq;
 using SimpleMediator.Core;
+using System.Diagnostics;
 
 namespace DomuWave.Services.Consumers;
 
@@ -17,14 +19,17 @@ public class ApproveBudgetCommandConsumer
 {
     private readonly IBudgetService _budgetService;
     private readonly IUserService   _userService;
+    private readonly ILogger<ApproveBudgetCommandConsumer> _logger;
 
     public ApproveBudgetCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IBudgetService budgetService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        ILogger<ApproveBudgetCommandConsumer> logger) : base(sessionFactoryProvider)
     {
         _budgetService = budgetService;
         _userService   = userService;
+        _logger        = logger;
     }
 
     protected override async Task<bool> Consume(
@@ -32,6 +37,11 @@ public class ApproveBudgetCommandConsumer
         IMediationContext mediationContext,
         CancellationToken cancellationToken)
     {
+        var sw = Stopwatch.StartNew();
+        _logger.LogInformation(
+            "Approvazione budget {BudgetId} avviata (utente {UserId}).",
+            command.Id, command.CurrentUserId);
+
         var currentUser = await _userService
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
@@ -49,6 +59,9 @@ public class ApproveBudgetCommandConsumer
 
         if (budget.Status?.Id != allowedStatus)
         {
+            _logger.LogWarning(
+                "Approvazione budget {BudgetId} rifiutata: stato {CurrentStatus} non valido (atteso {AllowedStatus}).",
+                command.Id, budget.Status?.Id, allowedStatus);
             var msg = budget.Type == BudgetType.Preventivo
                 ? "Il budget preventivo deve essere in stato 'In approvazione' per essere approvato definitivamente."
                 : "Solo i budget in stato Bozza possono essere approvati.";
@@ -103,7 +116,11 @@ public class ApproveBudgetCommandConsumer
             .ConfigureAwait(false);
 
         if (!approved)
+        {
+            _logger.LogWarning(
+                "Approvazione budget {BudgetId}: il service non ha confermato l'approvazione.", command.Id);
             return false;
+        }
 
         // Carica tabella millesimale una volta sola (già validata sopra)
         var (millesimalTable, unitMillesimals) = await MillesimalTableGuard
@@ -122,6 +139,10 @@ public class ApproveBudgetCommandConsumer
             await GenerateConsuntivoDistribution(budget, currentUser, millesimalTable, unitMillesimals, ct: cancellationToken)
                 .ConfigureAwait(false);
         }
+
+        _logger.LogInformation(
+            "Budget {BudgetId} ({BudgetType}) approvato per condominio {CondominiumId}, esercizio {FiscalYearId}: ripartizione su {UnitCount} unità generata. ({ElapsedMs} ms)",
+            command.Id, budget.Type, budget.Condominium.Id, budget.FiscalYear.Id, unitMillesimals.Count, sw.ElapsedMilliseconds);
 
         return true;
     }

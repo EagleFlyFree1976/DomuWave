@@ -43,4 +43,9 @@ public class CondominiumReadDto : TraceEntityDTO<int>
     public string AdministratorName  { get; set; }
     public string AdministratorPhone { get; set; }
     public string AdministratorEmail { get; set; }
+
+    // ── Pagamenti online (Stripe Connect) ───────────────────────────────────────
+    // true quando il condominio ha completato l'onboarding Stripe e può incassare online.
+    // La UI lo usa per abilitare/disabilitare "Paga online" e mostrare lo stato all'amministratore.
+    public bool StripeOnboardingComplete { get; set; }
 }

@@ -78,6 +78,7 @@
     <None Remove="Models\Mappings\PrivateThread.hbm.xml" />
     <None Remove="Models\Mappings\PrivateMessage.hbm.xml" />
     <None Remove="Models\Mappings\BilancioRipartizioneOverride.hbm.xml" />
+    <None Remove="Models\Mappings\ElectronicInvoice.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -159,6 +160,7 @@
     <EmbeddedResource Include="Models\Mappings\PrivateThread.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\PrivateMessage.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\BilancioRipartizioneOverride.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\ElectronicInvoice.hbm.xml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -170,6 +172,7 @@
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Hangfire.Core" Version="1.8.18" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Stripe.net" Version="52.1.0" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
   </ItemGroup>
 

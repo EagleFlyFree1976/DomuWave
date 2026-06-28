@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <!-- ── Build Vue frontend prima della compilazione ── -->
   <Target Name="BuildClientApp" BeforeTargets="Build">
@@ -31,6 +31,7 @@
     <!-- Hosting IIS in-process -->
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <UserSecretsId>b3c8970e-32cb-4542-9186-d381ce100265</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -99,6 +100,9 @@
     <Compile Include="..\DomuWave.Application\Controllers\Auth\PublicUserController.cs" Link="Controllers\Auth\Auth.PublicUserController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\LicenseController.cs" Link="Controllers\LicenseController.cs" />
     <Compile Include="..\DomuWave.Application\Controllers\TenantDisplayController.cs" Link="Controllers\TenantDisplayController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\CondominiumPaymentsController.cs" Link="Controllers\CondominiumPaymentsController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\StripeWebhookController.cs" Link="Controllers\StripeWebhookController.cs" />
+    <Compile Include="..\DomuWave.Application\Controllers\ElectronicInvoicesController.cs" Link="Controllers\ElectronicInvoicesController.cs" />
     <Compile Include="..\DomuWave.Application\Middleware\LicenseNotActivatedMiddleware.cs" Link="Middleware\LicenseNotActivatedMiddleware.cs" />
   </ItemGroup>
 

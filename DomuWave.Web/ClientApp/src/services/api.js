@@ -351,6 +351,17 @@ export const feeApi = {
   getInstallmentBatchNoticePdf: (installmentId)          => api.get(`/condominium-fees/installment-notice/${installmentId}/pdf`, { responseType: 'blob' }),
 }
 
+// ─── Pagamenti online (Stripe Connect) ─────────────────────────
+// Backend: api/condominium-payments  (CondominiumPaymentsController)
+export const condominiumPaymentApi = {
+  // Admin: avvia/riprende l'onboarding Stripe del condominio → { url }
+  startOnboarding: (condId)  => api.post(`/condominium-payments/stripe/onboarding/${condId}`),
+  // Admin: aggiorna lo stato onboarding interrogando Stripe → { complete }
+  refreshStatus:   (condId)  => api.post(`/condominium-payments/stripe/refresh/${condId}`),
+  // Condòmino: avvia il pagamento di una quota → { url } (Stripe Checkout)
+  initiatePayment: (feeId)   => api.post(`/condominium-payments/stripe/initiate/${feeId}`),
+}
+
 // ─── Tabelle Millesimali ───────────────────────────────────────
 export const millesimalTableApi = {
   getByCondominium:   (condId)        => api.get(`/millesimal-tables/by-condominium/${condId}`),
@@ -387,6 +398,16 @@ export const supplierApi = {
   createContract:     (data)          => api.post('/supplier-contracts', data),
   updateContract:     (id, data)      => api.put(`/supplier-contracts/${id}`, data),
   deleteContract:     (id)            => api.delete(`/supplier-contracts/${id}`),
+}
+
+// ─── Fatture Elettroniche (download da Cassetto Fiscale / SdI) ──
+export const eInvoiceApi = {
+  getByCondominium: (condId)               => api.get(`/electronic-invoices/by-condominium/${condId}`),
+  sync:             (condominiumId, from, to) => api.post('/electronic-invoices/sync', { condominiumId, from, to }),
+  linkExpense:      (id, expenseId)        => api.post(`/electronic-invoices/${id}/link-expense/${expenseId}`),
+  // Configurazione (per condominio)
+  getConfig:        (condId)               => api.get(`/electronic-invoices/config/${condId}`),
+  updateConfig:     (condId, data)         => api.put(`/electronic-invoices/config/${condId}`, data),
 }
 
 // ─── Lavori Straordinari ──────────────────────────────────────

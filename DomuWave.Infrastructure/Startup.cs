@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using DomuWave.Services.Clients;
+using DomuWave.Services.Clients.EInvoiceProviders;
 using DomuWave.Services.Consumers.Tenant;
 using DomuWave.Services.Implementations;
 using DomuWave.Services.Implementations.FileStorage;
@@ -58,7 +59,17 @@ public static class Startup
  
 
         // External clients
+        services.AddHttpClient();
         services.AddScoped<IExchangeRateClient, ExchangeRateApiClient>();
+        services.AddScoped<IStripeService, StripeService>();
+        services.AddScoped<IEInvoiceService, EInvoiceService>();
+        services.AddSingleton<IEInvoiceSecretProtector, EInvoiceSecretProtector>();
+        // Provider SdI (strategy): selezionati a runtime via EInvoiceProviderResolver in base
+        // a Condominium.EInvoiceProviderId. Aggiungere un provider = registrare la sua classe qui.
+        services.AddScoped<IEInvoiceProvider, AcubeInvoiceProvider>();
+        services.AddScoped<IEInvoiceProvider, ArubaInvoiceProvider>();
+        services.AddScoped<IEInvoiceProvider, FattureInCloudInvoiceProvider>();
+        services.AddScoped<IEInvoiceProviderResolver, EInvoiceProviderResolver>();
         
 
 

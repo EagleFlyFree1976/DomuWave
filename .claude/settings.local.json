@@ -47,7 +47,10 @@
       "Bash(git restore *)",
       "Bash(git commit *)",
       "Bash(Get-ChildItem -Path \"c:\\\\Projects\\\\Works\\\\DomuWave\\\\DomuWave.Infrastructure\\\\Jobs\" -Force)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "PowerShell(dotnet build DomuWave.Infrastructure/DomuWave.Services.csproj -c Debug --nologo -v q 2>&1)",
+      "WebFetch(domain:www.condominionostress.it)",
+      "WebSearch"
     ]
   }
 }

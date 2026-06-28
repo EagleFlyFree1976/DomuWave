@@ -248,6 +248,10 @@
                             <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(f.paymentDate) }}</td>
                             <td>
                               <div class="row-actions">
+                                <button v-if="isCondomino && f.balance > 0" class="btn btn-primary btn-sm" @click="payOnline(f)" :disabled="payingOnlineFeeId === f.id" title="Paga online">
+                                  <span v-if="payingOnlineFeeId === f.id" class="spinner" style="width:12px;height:12px"></span>
+                                  <span v-else>💳 Paga online</span>
+                                </button>
                                 <button v-if="canEdit" class="btn-icon" @click="openPayModal(f, inst)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
                                 <button v-if="canEdit" class="btn-icon" @click="openFeeModal(f, inst)" title="Modifica">✎</button>
                                 <button v-if="canDelete" class="btn-icon" @click="deleteFee(f.id)" style="color:var(--accent-red)">✕</button>
@@ -273,6 +277,10 @@
                           <td class="text-secondary mono" style="font-size:0.82rem">{{ fmtDate(row.fee.paymentDate) }}</td>
                           <td>
                             <div class="row-actions">
+                              <button v-if="isCondomino && row.fee.balance > 0" class="btn btn-primary btn-sm" @click="payOnline(row.fee)" :disabled="payingOnlineFeeId === row.fee.id" title="Paga online">
+                                <span v-if="payingOnlineFeeId === row.fee.id" class="spinner" style="width:12px;height:12px"></span>
+                                <span v-else>💳 Paga online</span>
+                              </button>
                               <button v-if="canEdit" class="btn-icon" @click="openPayModal(row.fee, inst)" title="Registra pagamento" style="color:var(--accent-green)">€</button>
                               <button v-if="canEdit" class="btn-icon" @click="openFeeModal(row.fee, inst)" title="Modifica">✎</button>
                               <button v-if="canDelete" class="btn-icon" @click="deleteFee(row.fee.id)" style="color:var(--accent-red)">✕</button>
@@ -768,13 +776,34 @@
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
-import { installmentApi, feeApi, unitApi, billingGroupApi, communicationNotificationApi, notificationTemplateApi } from '@/services/api'
+import { installmentApi, feeApi, unitApi, billingGroupApi, communicationNotificationApi, notificationTemplateApi, condominiumPaymentApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 
 const route  = useRoute()
 const router = useRouter()
 const store  = useAppStore()
-const { canCreate, canEdit, canDelete } = usePermissions()
+const { canCreate, canEdit, canDelete, isCondomino } = usePermissions()
+
+// ── Pagamento online (Stripe) ─────────────────────────────────
+// Il condòmino avvia il Checkout Stripe per la propria quota; al ritorno la
+// pagina si ricarica e lo stato reale arriva dal webhook (vedi loadData).
+const payingOnlineFeeId = ref(null)
+async function payOnline(fee) {
+  if (!fee || payingOnlineFeeId.value) return
+  payingOnlineFeeId.value = fee.id
+  try {
+    const { data } = await condominiumPaymentApi.initiatePayment(fee.id)
+    if (data?.url) {
+      window.location.href = data.url
+    } else {
+      store.toast('Impossibile avviare il pagamento online', 'error')
+    }
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    payingOnlineFeeId.value = null
+  }
+}
 
 // ── Esercizi fiscali — dallo store globale ────────────────────
 const fiscalYears          = computed(() => store.fiscalYears)
@@ -1423,6 +1452,15 @@ watch(() => [store.selectedFiscalYearId, instFilter.value, route.query.budgetId]
 onMounted(async () => {
   await store.loadFiscalYears()
   await Promise.all([loadInstallments(), loadBillingGroups()])
+
+  // Ritorno da Stripe Checkout: lo stato definitivo arriva dal webhook, qui diamo solo feedback.
+  if (route.query.payment === 'success') {
+    store.toast('Pagamento ricevuto: la quota verrà aggiornata a breve.', 'success')
+    router.replace({ query: { ...route.query, payment: undefined } })
+  } else if (route.query.payment === 'cancel') {
+    store.toast('Pagamento annullato.', 'info')
+    router.replace({ query: { ...route.query, payment: undefined } })
+  }
 })
 onUnmounted(() => window.removeEventListener('app:refresh', loadInstallments))
 window.addEventListener('app:refresh', loadInstallments)

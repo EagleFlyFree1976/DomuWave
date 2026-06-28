@@ -228,6 +228,8 @@ const sections = [
       ] },
       { sub: 'Comunicazione ai condòmini', text:
         'Con <strong>📧 Notifica condòmini</strong> invii ai condòmini il promemoria delle rate e degli importi dovuti.' },
+      { sub: 'Pagamento online (Stripe)', text:
+        'Se l\'amministratore collega un account Stripe al condominio (menu <strong>Amministrazione → Pagamenti Online</strong>), il condòmino vede il pulsante <strong>💳 Paga online</strong> sulle proprie quote e può pagare con carta. L\'incasso arriva direttamente sul conto del condominio; la quota viene saldata automaticamente alla conferma del pagamento.' },
       { example: 'Un condòmino paga 3 rate con un unico bonifico riportando in causale il codice quota. Incolli la causale, l\'app trova le 3 quote, clicchi “Salda tutto” e tutte risultano pagate.' },
     ],
   },
@@ -241,6 +243,33 @@ const sections = [
       { sub: 'Contratti', text:
         'A ogni fornitore puoi associare i contratti, con riferimenti e scadenze, così da avere sotto controllo manutenzioni e rinnovi.' },
       { example: 'Inserisci la ditta dell\'ascensore come fornitore e registri il contratto di manutenzione annuale con la sua scadenza: quando registri le fatture, le colleghi a questo fornitore.' },
+    ],
+  },
+  {
+    id: 'fatture-elettroniche', title: 'Fatture elettroniche', icon: 'pi-file-import',
+    blocks: [
+      { text: 'Questo modulo scarica automaticamente le <strong>fatture passive</strong> del condominio dal Cassetto Fiscale (Sistema di Interscambio), evitando l\'inserimento manuale. DomuWave non accede direttamente al portale dell\'Agenzia delle Entrate: si appoggia a un <strong>provider accreditato</strong> (intermediario SdI) tramite la sua API. Lo trovi nel menu <strong>Amministrazione → Fatture Elettroniche</strong>.' },
+      { sub: 'Prerequisito: delega all\'intermediario', text:
+        'Una tantum, l\'amministratore deve delegare il provider scelto come intermediario sul portale <strong>Fatture e Corrispettivi</strong> dell\'Agenzia delle Entrate, così che possa ricevere le fatture per conto del condominio. È un passaggio che si fa fuori da DomuWave.' },
+      { sub: 'Configurare il provider', steps: [
+        'Apri <strong>Fatture Elettroniche</strong> con il condominio selezionato.',
+        'Nel riquadro <strong>Configurazione provider</strong> scegli il provider SdI (Acube, Aruba o Fatture in Cloud).',
+        'Inserisci la <strong>chiave API</strong> fornita dal provider.',
+        'La <strong>Partita IVA di ricezione</strong> usa automaticamente quella dell\'anagrafica del condominio; compila il campo solo se serve un <strong>override</strong> (P.IVA diversa da quella anagrafica).',
+        'Premi <strong>Salva configurazione</strong>: la chiave viene memorizzata in forma cifrata e non è più visibile.',
+      ] },
+      { sub: 'Scaricare le fatture', steps: [
+        'Imposta l\'intervallo di date <strong>Dal / Al</strong>.',
+        'Premi <strong>Scarica fatture</strong>: il sistema interroga il provider e importa le fatture ricevute nel periodo.',
+        'Le fatture già presenti non vengono duplicate; per ognuna il sistema cerca di riconoscere il <strong>fornitore</strong> in base alla partita IVA.',
+      ] },
+      { sub: 'Stato delle fatture', items: [
+        '<strong>Nuova</strong>: scaricata, non ancora collegata a una spesa.',
+        '<strong>Collegata</strong>: associata a una spesa registrata in contabilità.',
+        '<strong>Ignorata</strong>: scartata manualmente perché non rilevante.',
+      ] },
+      { tip: 'Il pulsante “Scarica fatture” resta disattivato finché provider e chiave API non sono configurati e il condominio non ha una partita IVA (dell\'anagrafica o impostata come override). Se è grigio, completa prima il riquadro di configurazione.' },
+      { tip: 'La chiave API è un dato sensibile: viene salvata cifrata e non viene mai più mostrata. Per cambiarla basta inserirne una nuova e salvare; lasciando il campo vuoto, quella esistente resta invariata.' },
     ],
   },
   {

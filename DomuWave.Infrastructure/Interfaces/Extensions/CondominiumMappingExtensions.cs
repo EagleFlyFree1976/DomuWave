@@ -50,6 +50,7 @@ public static class CondominiumMappingExtensions
             AdministratorName    = condominium.AdministratorName,
             AdministratorPhone   = condominium.AdministratorPhone,
             AdministratorEmail   = condominium.AdministratorEmail,
+            StripeOnboardingComplete = condominium.StripeOnboardingComplete,
         };
 
         dto.SetTraceInfo(condominium);
