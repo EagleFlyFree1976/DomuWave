@@ -14,5 +14,6 @@ public class UnitTenantReadDto : TraceEntityDTO<int>
     public DateTime LeaseStartDate { get; set; }
     public DateTime? LeaseEndDate { get; set; }
     public bool IsActive { get; set; }
+    public bool IsAccessEnabled { get; set; }
     public string? Notes { get; set; }
 }

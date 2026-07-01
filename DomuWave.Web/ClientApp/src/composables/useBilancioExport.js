@@ -1,8 +1,41 @@
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { useTenantBranding } from '@/composables/useTenantBranding'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+// Recupera il logo del tenant (data-URL base64) per i report. Fail-safe: null.
+async function loadReportLogo() {
+  try {
+    return await useTenantBranding().getReportLogo()
+  } catch {
+    return null
+  }
+}
+
+// Disegna il logo del tenant in alto a destra nell'header PDF, se presente.
+// Restituisce true se disegnato (per lasciare spazio al titolo).
+function drawPdfLogo(doc, logo) {
+  if (!logo?.dataUrl) return false
+  try {
+    const fmtImg = (logo.mime || '').includes('png') ? 'PNG'
+      : (logo.mime || '').includes('webp') ? 'WEBP'
+      : 'JPEG'
+    const pageW = doc.internal.pageSize.getWidth()
+    // Riquadro max 32×16 mm, ancorato a destra
+    const maxW = 32, maxH = 16
+    const props = doc.getImageProperties(logo.dataUrl)
+    const ratio = props.width / props.height
+    let w = maxW, h = maxW / ratio
+    if (h > maxH) { h = maxH; w = maxH * ratio }
+    doc.addImage(logo.dataUrl, fmtImg, pageW - 14 - w, 10, w, h)
+    return true
+  } catch {
+    return false
+  }
+}
+
 const fmt = (v) =>
   new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v ?? 0)
 
@@ -23,8 +56,9 @@ function writeExcel(wb, filename) {
   triggerDownload(blob, `${filename}.xlsx`)
 }
 
-// Intestazione comune del PDF.
-function pdfHeader(doc, title, subtitle) {
+// Intestazione comune del PDF. Se `logo` è presente, viene disegnato in alto a destra.
+function pdfHeader(doc, title, subtitle, logo = null) {
+  drawPdfLogo(doc, logo)
   doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
   doc.text(title, 14, 15)
@@ -75,9 +109,10 @@ function usciteRows(d) {
   return rows
 }
 
-export function exportContoEconomicoPdf(d, filename = 'conto-economico') {
+export async function exportContoEconomicoPdf(d, filename = 'conto-economico') {
+  const logo = await loadReportLogo()
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  let y = pdfHeader(doc, 'Conto economico', subtitleOf(d))
+  let y = pdfHeader(doc, 'Conto economico', subtitleOf(d), logo)
   doc.setFontSize(9); doc.setTextColor(120)
   doc.text(`Periodo: ${fmtDate(d.startDate)} – ${fmtDate(d.endDate)}`, 14, y)
   doc.setTextColor(0); y += 6
@@ -114,11 +149,12 @@ export function exportContoEconomicoExcel(d, filename = 'conto-economico') {
 // FLUSSI DI CASSA
 // ═══════════════════════════════════════════════════════════════════════════
 function incassiRows(d) {
-  return [
-    { label: 'Avanzo di cassa iniziale', value: d.avanzoInizialeCassa },
+  const rows = [
     { label: 'Versamenti dei condòmini', value: d.versamentiCondomini },
-    { label: 'Totale incassi', value: d.totaleIncassi, bold: true },
   ]
+  if (d.altriIncassi) rows.push({ label: 'Altri incassi', value: d.altriIncassi })
+  rows.push({ label: 'Totale incassi', value: d.totaleIncassi, bold: true })
+  return rows
 }
 function pagamentiRows(d) {
   const rows = [
@@ -127,13 +163,15 @@ function pagamentiRows(d) {
   ]
   if (d.usciteIndividuali) rows.push({ label: 'Uscite individuali', value: d.usciteIndividuali })
   rows.push({ label: 'Totale pagamenti', value: d.totalePagamenti, bold: true })
+  rows.push({ label: 'Avanzo di cassa iniziale', value: d.avanzoInizialeCassa })
   rows.push({ label: 'Avanzo di cassa finale', value: d.avanzoFinaleCassa, bold: true })
   return rows
 }
 
-export function exportFlussiCassaPdf(d, filename = 'flussi-cassa') {
+export async function exportFlussiCassaPdf(d, filename = 'flussi-cassa') {
+  const logo = await loadReportLogo()
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  let y = pdfHeader(doc, 'Flussi di cassa', subtitleOf(d))
+  let y = pdfHeader(doc, 'Flussi di cassa', subtitleOf(d), logo)
   doc.setFontSize(9); doc.setTextColor(120)
   doc.text(`Periodo: ${fmtDate(d.startDate)} – ${fmtDate(d.endDate)}`, 14, y)
   doc.setTextColor(0); y += 6
@@ -180,9 +218,10 @@ function passivitaRows(d) {
   return rows
 }
 
-export function exportSituazionePatrimonialePdf(d, filename = 'situazione-patrimoniale') {
+export async function exportSituazionePatrimonialePdf(d, filename = 'situazione-patrimoniale') {
+  const logo = await loadReportLogo()
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-  let y = pdfHeader(doc, 'Situazione patrimoniale', subtitleOf(d))
+  let y = pdfHeader(doc, 'Situazione patrimoniale', subtitleOf(d), logo)
   doc.setFontSize(9); doc.setTextColor(120)
   doc.text(`Al ${fmtDate(d.referenceDate)}`, 14, y)
   doc.setTextColor(0); y += 6

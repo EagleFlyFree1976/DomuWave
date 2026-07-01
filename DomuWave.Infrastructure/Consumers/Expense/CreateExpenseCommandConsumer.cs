@@ -141,7 +141,7 @@ public class CreateExpenseCommandConsumer : InMemoryConsumerBase<CreateExpenseCo
                 "Non è possibile registrare spese su un esercizio bloccato.");
 
         var expenseType       = session.Load<ExpenseType>(dto.ExpenseTypeId);
-        var paymentStatus     = session.Load<ExpensePaymentStatus>(ExpensePaymentStatus.DaPagare);
+        var paymentStatus     = session.Load<ExpensePaymentStatus>(dto.PaymentStatusId > 0 ? dto.PaymentStatusId : ExpensePaymentStatus.DaPagare);
         var chargeabilityType = session.Load<ChargeabilityType>(dto.ChargeabilityTypeId);
         var paymentMethod     = dto.PaymentMethodId.HasValue
             ? session.Load<ExpensePaymentMethod>(dto.PaymentMethodId.Value)

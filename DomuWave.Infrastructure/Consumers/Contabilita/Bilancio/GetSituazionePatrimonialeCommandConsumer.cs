@@ -51,14 +51,17 @@ public class GetSituazionePatrimonialeCommandConsumer
         var condominiumId = fiscalYear.Condominium.Id;
 
         // ── CREDITI / DEBITI v/CONDÒMINI ─────────────────────────────────────────
-        // Balance = AmountDue - AmountPaid per ogni rata.
-        //   Balance > 0 -> il condòmino deve versare  -> CREDITO del condominio (Attività)
-        //   Balance < 0 -> il condòmino ha versato di più -> DEBITO del condominio (Passività)
+        // Saldo = AmountDue - AmountPaid per ogni rata (con segno).
+        //   Saldo > 0 -> il condòmino deve versare  -> CREDITO del condominio (Attività)
+        //   Saldo < 0 -> il condòmino ha versato di più -> DEBITO del condominio (Passività)
+        // NB: NON usare la colonna Balance: è il "residuo da pagare" troncato a 0 quando
+        //     la rata è saldata o sovra-versata (usata per avvisi/bollettini), quindi non
+        //     espone mai i saldi a credito. Qui serve il valore con segno.
         var balances = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.Condominium.Id == condominiumId
                      && f.Installment.FiscalYear.Id  == fiscalYear.Id
                      && !f.IsDeleted)
-            .Select(f => f.Balance)
+            .Select(f => f.AmountDue - f.AmountPaid)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -94,6 +97,26 @@ public class GetSituazionePatrimonialeCommandConsumer
             })
             .ToList();
 
+        // Saldo iniziale di cassa del condominio: confluisce SOLO per il primo esercizio
+        // (per quelli successivi la liquidità di apertura deriva dalla chiusura precedente).
+        var isFirstFiscalYear = !await session.Query<FiscalYear>()
+            .AnyAsync(f => f.Condominium.Id == condominiumId
+                        && f.Id != fiscalYear.Id
+                        && f.StartDate < fiscalYear.StartDate
+                        && !f.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (isFirstFiscalYear && fiscalYear.Condominium.InitialBalance != 0m)
+        {
+            disponibilita.Insert(0, new SituazionePatrimonialeRowDto
+            {
+                AccountId   = 0,
+                AccountCode = "—",
+                AccountName = "Saldo iniziale di cassa",
+                Amount      = fiscalYear.Condominium.InitialBalance,
+            });
+        }
+
         var fondi = patrimonialBalances
             .Where(b => !b.IsLiquidity)
             .OrderBy(b => b.Code)
@@ -110,6 +133,7 @@ public class GetSituazionePatrimonialeCommandConsumer
         var debitiVersoTerzi = await session.Query<Expense>()
             .Where(e => e.Condominium.Id == condominiumId
                      && e.FiscalYear.Id  == fiscalYear.Id
+                     && e.Account.Type   == ChartOfAccountsType.Uscita
                      && e.PaymentStatus.Id != ExpensePaymentStatus.Pagata
                      && !e.IsDeleted)
             .SumAsync(e => (decimal?)e.GrossAmount, cancellationToken)

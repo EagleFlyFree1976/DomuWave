@@ -101,6 +101,11 @@ function closeMore(e) {
 // Measure how many tabs fit — approximate via average tab width
 function recalc() {
   if (!navWrap.value) return
+  // Su mobile: niente dropdown "Altro", la tab-bar scorre orizzontalmente
+  if (window.innerWidth <= 768) {
+    visibleCount.value = allNav.length
+    return
+  }
   const available = navWrap.value.offsetWidth
   // "Altro" button ~ 90px, "Informazioni" tab ~ 120px, each other tab avg ~110px
   const infoWidth = 120
@@ -241,4 +246,17 @@ watch(() => route.params.id, (newId) => { if (newId) fetchCondominium(newId) })
 .more-item:hover { background: var(--accent-glow); color: var(--accent); text-decoration: none; }
 
 .more-item.router-link-exact-active { color: var(--accent); font-weight: 600; }
+
+/* ── Mobile: tab-bar scorrevole orizzontalmente come fallback ── */
+@media (max-width: 768px) {
+  .tab-bar {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-item { padding: 0.55rem 0.8rem; }
+  .header-left h1 { font-size: 1.25rem; }
+}
 </style>

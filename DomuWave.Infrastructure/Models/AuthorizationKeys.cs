@@ -27,6 +27,7 @@ public class AuthorizationKeys
     public const string Assembly = "Assembly";
 
     // Nuove chiavi
+    public const string Access = "Access";
     public const string UnitTenants         = "UnitTenant";
     public const string Suppliers           = "Supplier";
     public const string SupplierContracts   = "SupplierContract";

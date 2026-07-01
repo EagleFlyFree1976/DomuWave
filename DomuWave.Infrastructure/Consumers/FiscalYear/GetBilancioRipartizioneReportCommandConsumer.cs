@@ -159,13 +159,31 @@ public class GetBilancioRipartizioneReportCommandConsumer
             .ToList();
 
         // Tabelle millesimali usate (da spese NON dirette e NON su conti a consumo)
-        var usedTables = expenses
+        var usedTablesRaw = expenses
             .Where(e => e.MillesimalTableId.HasValue && e.MillesimalTableId.Value > 0
                      && !(e.DirectUnitId.HasValue && e.DirectUnitId.Value > 0)
                      && !consumoAccountIds.Contains(e.AccountId))
             .GroupBy(e => e.MillesimalTableId!.Value)
             .Select(g => new MillesimaleColumnDto { MillesimalTableId = g.Key, Name = g.First().MillesimalTableName ?? "Tabella" })
-            .OrderBy(c => c.Name)
+            .ToList();
+
+        // Determina quali tabelle usate sono "di default" per ordinarle per prime.
+        var usedTableIdsAll = usedTablesRaw.Select(t => t.MillesimalTableId).ToList();
+        var defaultTableIds = usedTableIdsAll.Any()
+            ? (await session.Query<MillesimalTable>()
+                .Where(t => usedTableIdsAll.Contains(t.Id) && t.IsDefault && !t.IsDeleted)
+                .Select(t => t.Id)
+                .ToListAsync(ct).ConfigureAwait(false))
+                .ToHashSet()
+            : new HashSet<int>();
+
+        foreach (var t in usedTablesRaw)
+            t.IsDefault = defaultTableIds.Contains(t.MillesimalTableId);
+
+        // Ordine: tabella di default per prima, poi le altre in ordine alfabetico.
+        var usedTables = usedTablesRaw
+            .OrderByDescending(t => t.IsDefault)
+            .ThenBy(t => t.Name)
             .ToList();
 
         // Millesimi per (tabella, unità) per le tabelle usate

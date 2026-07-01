@@ -645,4 +645,29 @@ window.addEventListener('app:refresh', loadData)
 .unit-check-info { display: flex; flex-direction: column; gap: 0.1rem; }
 .unit-code { font-weight: 500; }
 .unit-owners { font-size: 0.78rem; }
+
+@media (max-width: 768px) {
+  .search-input {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+  .comm-card {
+    flex-direction: column;
+  }
+  .comm-left {
+    width: 100%;
+    height: 4px;
+  }
+  .comm-priority-bar {
+    min-height: 4px;
+    width: 100%;
+    height: 4px;
+  }
+  .comm-actions {
+    flex-wrap: wrap;
+    width: 100%;
+    padding: 0 0.9rem 0.9rem;
+  }
+}
 </style>

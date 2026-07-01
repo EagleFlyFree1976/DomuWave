@@ -24,7 +24,7 @@
           <div>Nessuna tabella millesimale. Clicca "+ Nuova tabella" per iniziare.</div>
         </div>
         <div v-else class="table-wrap">
-          <table>
+          <table class="cards-on-mobile">
             <thead>
               <tr>
                 <th>Codice</th>
@@ -38,22 +38,22 @@
             </thead>
             <tbody>
               <tr v-for="t in tables" :key="t.id" :class="{ 'row-anomaly': hasAnomaly(t) }">
-                <td class="mono">{{ t.code }}</td>
-                <td>{{ t.name || '—' }}</td>
-                <td class="mono text-right">{{ fmtMillesimal(t.totalMillesimal) }}</td>
-                <td class="mono text-right">
+                <td data-label="Codice" class="mono">{{ t.code }}</td>
+                <td data-label="Nome">{{ t.name || '—' }}</td>
+                <td data-label="Totale definito" class="mono text-right">{{ fmtMillesimal(t.totalMillesimal) }}</td>
+                <td data-label="Totale calcolato" class="mono text-right">
                   <span :class="hasAnomaly(t) ? 'text-warning' : 'text-success'">
                     {{ fmtMillesimal(t.calculatedMillesimal) }}
                   </span>
                   <span v-if="hasAnomaly(t)" class="anomaly-icon"
                         title="Anomalia: la somma dei millesimi delle unità non corrisponde al totale definito">⚠</span>
                 </td>
-                <td>
+                <td data-label="Stato">
                   <span class="badge" :class="t.isDraft ? 'badge-draft' : 'badge-green'">
                     {{ t.isDraft ? 'Bozza' : 'Attiva' }}
                   </span>
                 </td>
-                <td>
+                <td data-label="Abilitazione">
                   <span class="badge" :class="t.isEnabled ? 'badge-green' : 'badge-muted'">
                     {{ t.isEnabled ? 'Abilitata' : 'Disabilitata' }}
                   </span>
@@ -658,4 +658,17 @@ window.addEventListener('app:refresh', loadTables)
 .row-assigned td { /* subtile highlight per righe con valore */ }
 .total-row td { font-weight: 600; border-top: 2px solid var(--border); }
 .unit-displayname { font-size: .82rem; color: var(--text-muted); font-style: italic; font-family: inherit; }
+
+@media (max-width: 768px) {
+  .edit-header-left {
+    flex-wrap: wrap;
+  }
+  .total-badge {
+    flex-wrap: wrap;
+  }
+  .page-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+}
 </style>

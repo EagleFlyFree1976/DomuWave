@@ -28,7 +28,7 @@ public class CondominiumFeesController(
     [HttpGet("by-installment/{installmentId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByInstallment(int installmentId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetFeesByInstallmentCommand(CurrentUser.Id, installmentId), ct));
+        => Ok(await _mediator.GetResponse(new GetFeesByInstallmentCommand(CurrentUser.Id, installmentId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-unit/{unitId:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
@@ -38,7 +38,7 @@ public class CondominiumFeesController(
     [HttpGet("by-user/{userId:long}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]
     public async Task<IActionResult> GetByUser(long userId, CancellationToken ct)
-        => Ok(await _mediator.GetResponse(new GetFeesByUserCommand(CurrentUser.Id, userId), ct));
+        => Ok(await _mediator.GetResponse(new GetFeesByUserCommand(CurrentUser.Id, userId, TenantId.GetValueOrDefault()), ct));
 
     [HttpGet("by-condominium/{condominiumId:int}/unpaid")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Installments, Modules.DomuWaveModule)]

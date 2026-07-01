@@ -39,6 +39,9 @@ public class CondominiumReadDto : TraceEntityDTO<int>
     public string BankAccountHolder  { get; set; }
     public string BankName           { get; set; }
 
+    // Saldo iniziale di cassa del condominio (disponibilità liquide di partenza).
+    public decimal InitialBalance    { get; set; }
+
     // ── Amministratore ────────────────────────────────────────────────────────
     public string AdministratorName  { get; set; }
     public string AdministratorPhone { get; set; }

@@ -63,6 +63,10 @@ public class PaymentNoticeDocument : IDocument
         {
             col.Item().Background(AccentColor).Padding(10).Row(row =>
             {
+                if (notice.LogoContent is { Length: > 0 })
+                    row.ConstantItem(70).PaddingRight(10).AlignMiddle()
+                        .Height(40).Image(notice.LogoContent).FitArea();
+
                 row.RelativeItem().Column(c =>
                 {
                     c.Item().Text(notice.CondominiumName)

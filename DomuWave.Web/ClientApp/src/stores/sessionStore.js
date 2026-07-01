@@ -45,6 +45,12 @@ export const useSessionStore = defineStore('session', () => {
   const condominoCondominiums = ref([])
 
   /**
+   * Tenant dove l'utente è AMMINISTRATORE (RoleCode != Condomino), dalla risposta di login.
+   * Coesiste con condominoCondominiums: lo stesso utente può avere entrambi i ruoli.
+   */
+  const adminTenants = ref([])
+
+  /**
    * Ruolo dell'utente corrente.
    * Adattare alla struttura del proprio authStore / oggetto utente.
    * Questo campo viene impostato da initFromAuth() al login.
@@ -58,6 +64,10 @@ export const useSessionStore = defineStore('session', () => {
   const isCondomino   = computed(() => currentUserRole.value == 3)
 
   const hasTenantSelected = computed(() => !!activeTenant.value)
+
+  /** True se l'utente ha SIA tenant-admin SIA condomìni → selettore unificato a sezioni */
+  const hasMixedRoles = computed(() =>
+    adminTenants.value.length > 0 && condominoCondominiums.value.length > 0)
 
   // ─── INIT ──────────────────────────────────────────────────────────────────
 
@@ -83,6 +93,12 @@ export const useSessionStore = defineStore('session', () => {
     const storedTenants = localStorage.getItem('domuwave_condomino_condominiums')
     if (storedTenants) {
       try { condominoCondominiums.value = JSON.parse(storedTenants) } catch { /* ignore */ }
+    }
+
+    // Ripristina i tenant-admin (se presenti)
+    const storedAdmin = localStorage.getItem('domuwave_admin_tenants')
+    if (storedAdmin) {
+      try { adminTenants.value = JSON.parse(storedAdmin) } catch { /* ignore */ }
     }
   }
 
@@ -150,6 +166,23 @@ export const useSessionStore = defineStore('session', () => {
     localStorage.setItem('domuwave_condomino_condominiums', JSON.stringify(condominoCondominiums.value))
   }
 
+  /** Salva i tenant dove l'utente è amministratore (dalla risposta di login). */
+  function setAdminTenants(tenants) {
+    adminTenants.value = tenants ?? []
+    localStorage.setItem('domuwave_admin_tenants', JSON.stringify(adminTenants.value))
+  }
+
+  /**
+   * Aggiorna il profilo dell'utente a runtime (ruolo per-tenant).
+   * Usato al cambio tenant quando lo stesso utente ha ruoli diversi su tenant diversi
+   * (es. admin nel proprio tenant, condòmino nel tenant di un altro amministratore).
+   * @param {number} profile  1=SuperAdmin, 2=TenantAdmin, 3=Condomino
+   */
+  function setProfile(profile) {
+    currentUserRole.value = profile
+    localStorage.setItem(UserProfile, profile)
+  }
+
   /**
    * Rimuove il tenant di sessione (es. alla disconnessione o cambio utente).
    */
@@ -166,7 +199,9 @@ export const useSessionStore = defineStore('session', () => {
     clearTenant()
     availableTenants.value = []
     condominoCondominiums.value = []
+    adminTenants.value = []
     localStorage.removeItem('domuwave_condomino_condominiums')
+    localStorage.removeItem('domuwave_admin_tenants')
     currentUserRole.value  = null
   }
 
@@ -174,6 +209,7 @@ export const useSessionStore = defineStore('session', () => {
     // state
     availableTenants,
     condominoCondominiums,
+    adminTenants,
     activeTenant,
     loadingTenants,
     currentUserRole,
@@ -182,9 +218,12 @@ export const useSessionStore = defineStore('session', () => {
     isTenantAdmin,
     isCondomino,
     hasTenantSelected,
+    hasMixedRoles,
     // actions
     initFromAuth,
     setCondominoCondominiums,
+    setAdminTenants,
+    setProfile,
     loadTenants,
     selectTenant,
     clearTenant,

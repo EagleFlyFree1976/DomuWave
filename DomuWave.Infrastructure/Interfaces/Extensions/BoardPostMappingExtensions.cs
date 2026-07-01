@@ -19,8 +19,59 @@ public static class BoardPostMappingExtensions
             Body            = entity.Description,
             IsPinned        = entity.IsPinned,
             CommentCount    = commentCount,
+            IsPoll          = entity.IsPoll,
+            IsAnonymous     = entity.IsAnonymous,
+            AllowMultiple   = entity.AllowMultiple,
+            ClosesAt        = entity.ClosesAt,
         };
         dto.SetTraceInfo(entity);
+        return dto;
+    }
+
+    /// <summary>
+    /// Proietta un sondaggio con il suo esito, applicando la gating dei risultati.
+    /// </summary>
+    /// <param name="votesByOption">Conteggio voti per OptionId (solo voti attivi).</param>
+    /// <param name="votersByOption">Votanti per OptionId (UserId, FullName), per i sondaggi non anonimi.</param>
+    /// <param name="myOptionIds">Opzioni votate dall'utente corrente.</param>
+    /// <param name="totalVoters">Numero di votanti distinti.</param>
+    public static BoardPostReadDto ToPollReadDto(
+        this BoardPost entity,
+        int commentCount,
+        IReadOnlyDictionary<int, int> votesByOption,
+        IReadOnlyDictionary<int, List<BoardPostVoterDto>> votersByOption,
+        IReadOnlyCollection<int> myOptionIds,
+        int totalVoters)
+    {
+        var dto = entity.ToReadDto(commentCount);
+
+        var isClosed = entity.ClosesAt.HasValue && entity.ClosesAt.Value < DateTime.UtcNow;
+        var hasVoted = myOptionIds.Count > 0;
+        var resultsVisible = hasVoted || isClosed;
+
+        dto.IsClosed       = isClosed;
+        dto.HasVoted       = hasVoted;
+        dto.MyVotes        = myOptionIds.ToList();
+        dto.ResultsVisible = resultsVisible;
+        dto.TotalVoters    = resultsVisible ? totalVoters : 0;
+
+        dto.Options = entity.Options
+            .Where(o => !o.IsDeleted)
+            .OrderBy(o => o.OrderKey)
+            .Select(o => new BoardPostOptionReadDto
+            {
+                Id       = o.Id,
+                Text     = o.Name,
+                OrderKey = o.OrderKey,
+                // Conteggi solo a risultati visibili.
+                VoteCount = resultsVisible && votesByOption.TryGetValue(o.Id, out var c) ? c : 0,
+                // Votanti solo se risultati visibili E sondaggio non anonimo.
+                Voters = resultsVisible && !entity.IsAnonymous && votersByOption.TryGetValue(o.Id, out var v)
+                    ? v
+                    : new List<BoardPostVoterDto>(),
+            })
+            .ToList();
+
         return dto;
     }
 
@@ -36,6 +87,10 @@ public static class BoardPostMappingExtensions
             Name        = dto.Title,
             Description = dto.Body,
             IsPinned       = dto.IsPinned,
+            IsPoll         = dto.IsPoll,
+            IsAnonymous    = dto.IsPoll && dto.IsAnonymous,
+            AllowMultiple  = dto.IsPoll && dto.AllowMultiple,
+            ClosesAt       = dto.IsPoll ? dto.ClosesAt : null,
         };
     }
 
@@ -44,6 +99,8 @@ public static class BoardPostMappingExtensions
         if (dto.Title != null) entity.Name        = dto.Title;
         if (dto.Body  != null) entity.Description = dto.Body;
         if (dto.IsPinned != null) entity.IsPinned = dto.IsPinned.Value;
+        // ClosesAt è l'unico campo poll editabile dopo la creazione (solo per i sondaggi).
+        if (entity.IsPoll && dto.ClosesAt != null) entity.ClosesAt = dto.ClosesAt;
     }
 
     public static BoardPostCommentReadDto ToReadDto(this BoardPostComment entity)

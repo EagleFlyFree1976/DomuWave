@@ -46,6 +46,8 @@ public class MillesimaleColumnDto
 {
     public int    MillesimalTableId { get; set; }
     public string Name              { get; set; } = string.Empty;
+    /// <summary>True se è la tabella millesimale di default del condominio (va mostrata come prima colonna).</summary>
+    public bool   IsDefault         { get; set; }
 }
 
 public class BilancioRowDto

@@ -20,18 +20,21 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
     private readonly IRealEstateUnitService _realEstateUnitService;
     private readonly IUserService           _userService;
     private readonly IAuthorizationClient   _authorizationClient;
+    private readonly IOccupantUserProvisioningService _provisioning;
 
     public UpdateUnitOwnerCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IUnitOwnerService unitOwnerService,
         IRealEstateUnitService realEstateUnitService,
         IUserService userService,
-        IAuthorizationClient authorizationClient) : base(sessionFactoryProvider)
+        IAuthorizationClient authorizationClient,
+        IOccupantUserProvisioningService provisioning) : base(sessionFactoryProvider)
     {
         _unitOwnerService      = unitOwnerService;
         _realEstateUnitService = realEstateUnitService;
         _userService           = userService;
         _authorizationClient   = authorizationClient;
+        _provisioning          = provisioning;
     }
 
     protected override async Task<UnitOwnerReadDto> Consume(
@@ -49,14 +52,27 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
         if (existing == null) return null;
 
         var previousEmail = existing.Email;
+        var hadUser       = existing.UserId > 0;
         existing.ApplyUpdate(command.Dto);
         var newEmail      = existing.Email;
+
+        // Se l'accesso è abilitato ma non c'è ancora un utente collegato e ora
+        // è disponibile un'email, provisiona ora l'account di piattaforma.
+        if (existing.IsAccessEnabled && existing.UserId <= 0 && !string.IsNullOrWhiteSpace(newEmail))
+        {
+            var unitTenant = existing.Unit?.Tenant ?? existing.Tenant;
+            var result = await _provisioning
+                .EnsureUserAsync(newEmail, existing.FirstName, existing.LastName,
+                                 unitTenant, currentUser, cancellationToken)
+                .ConfigureAwait(false);
+            existing.UserId = result.UserId;
+        }
 
         var updated = await _unitOwnerService
             .UpdateAsync(existing, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
-        // Sync name back to the auth user record via Refit (email excluded: it's the login credential)
+        // Sincronizza nome/cognome sull'utente auth collegato.
         if (existing.UserId > 0)
         {
             await _authorizationClient.UpdateUserAsync(
@@ -68,6 +84,17 @@ public class UpdateUnitOwnerCommandConsumer : InMemoryConsumerBase<UpdateUnitOwn
                     SurName = command.Dto.LastName,
                 },
                 cancellationToken).ConfigureAwait(false);
+
+            // L'admin ha aggiornato l'email reale: aggiorna anche l'email auth e
+            // reinvia l'invito/reset per impostare la password (vale anche per gli
+            // utenti creati con email placeholder).
+            if (hadUser && !string.IsNullOrWhiteSpace(newEmail)
+                && !string.Equals(previousEmail, newEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                await _provisioning
+                    .ChangeEmailAndInviteAsync(existing.UserId, newEmail, currentUser, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
         // Cascade email change to BillingGroup.ContactEmail and unsent CommunicationNotifications

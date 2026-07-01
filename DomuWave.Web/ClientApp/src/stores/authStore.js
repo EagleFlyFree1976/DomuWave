@@ -75,15 +75,14 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('domuwave_user', JSON.stringify(user.value))
       localStorage.setItem('domuwave_userprofile', user.value.profile)
 
-      // ── Flusso Condomino: salva la lista dei condomini nello store ──────────
-      // Profilo 3 = User/Condomino; la lista arriva già dalla risposta di login
-      if (user.value.profile == 3) {
-        console.log('[Condomino] availableCondominiums:', data.availableCondominiums)
-        if (Array.isArray(data.availableCondominiums) && data.availableCondominiums.length > 0) {
-          session.setCondominoCondominiums(data.availableCondominiums)
-        } else {
-          console.warn('[Condomino] Nessun condominio ricevuto dal login — controlla GetCondominiumsByCondominoUserIdAsync')
-        }
+      // ── Liste multi-ruolo (lo stesso utente può avere ruoli su tenant diversi) ──
+      // Il login restituisce SEMPRE entrambe le liste: condomìni (dove è condòmino)
+      // e tenant-admin (dove è amministratore). Il selettore in sidebar le unisce.
+      if (Array.isArray(data.availableCondominiums)) {
+        session.setCondominoCondominiums(data.availableCondominiums)
+      }
+      if (Array.isArray(data.availableTenants)) {
+        session.setAdminTenants(data.availableTenants)
       }
       // ────────────────────────────────────────────────────────────────────────
 
@@ -146,6 +145,15 @@ export const useAuthStore = defineStore('auth', () => {
 
       const session = useSessionStore()
       session.initFromAuth(user)
+
+      // Liste multi-ruolo dell'utente impersonato (come al login): senza queste
+      // la combo di selezione del condominio resta vuota.
+      if (Array.isArray(data.availableCondominiums)) {
+        session.setCondominoCondominiums(data.availableCondominiums)
+      }
+      if (Array.isArray(data.availableTenants)) {
+        session.setAdminTenants(data.availableTenants)
+      }
 
       if (data.tenant) {
         localStorage.setItem(STORAGE_KEY, data.tenant.id)

@@ -1,12 +1,39 @@
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { useTenantBranding } from '@/composables/useTenantBranding'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v) =>
   new Intl.NumberFormat('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v ?? 0)
 
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString('it-IT') : '—')
+
+// Logo del tenant (data-URL base64) per i report. Fail-safe: null.
+async function loadReportLogo() {
+  try {
+    return await useTenantBranding().getReportLogo()
+  } catch {
+    return null
+  }
+}
+
+// Disegna il logo in alto a destra nell'header PDF, se presente.
+function drawPdfLogo(doc, logo) {
+  if (!logo?.dataUrl) return
+  try {
+    const fmtImg = (logo.mime || '').includes('png') ? 'PNG'
+      : (logo.mime || '').includes('webp') ? 'WEBP'
+      : 'JPEG'
+    const pageW = doc.internal.pageSize.getWidth()
+    const maxW = 32, maxH = 16
+    const props = doc.getImageProperties(logo.dataUrl)
+    const ratio = props.width / props.height
+    let w = maxW, h = maxW / ratio
+    if (h > maxH) { h = maxH; w = maxH * ratio }
+    doc.addImage(logo.dataUrl, fmtImg, pageW - 14 - w, 8, w, h)
+  } catch { /* ignora logo non renderizzabile */ }
+}
 
 function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob)
@@ -125,10 +152,12 @@ export function exportConsuntivoExcel(detail, filename = 'consuntivo') {
 }
 
 // ── PDF ───────────────────────────────────────────────────────────────────────
-export function exportConsuntivoPdf(detail, title = 'Dettaglio Consuntivo', filename = 'consuntivo') {
+export async function exportConsuntivoPdf(detail, title = 'Dettaglio Consuntivo', filename = 'consuntivo') {
+  const logo = await loadReportLogo()
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
 
   // ── Intestazione ──────────────────────────────────────────────────────────
+  drawPdfLogo(doc, logo)
   doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
   doc.text(title, 14, 15)

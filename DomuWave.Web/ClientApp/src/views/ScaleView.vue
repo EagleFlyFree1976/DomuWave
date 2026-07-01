@@ -59,7 +59,7 @@
         </div>
       </div>
       <div v-else class="table-wrap">
-        <table>
+        <table class="cards-on-mobile">
           <thead>
             <tr>
               <th style="width:3rem">#</th>
@@ -71,12 +71,12 @@
           </thead>
           <tbody>
             <tr v-for="(s, i) in filtered" :key="s.id">
-              <td class="text-muted mono" style="font-size:0.8rem">{{ i + 1 }}</td>
-              <td>
+              <td data-label="#" class="text-muted mono" style="font-size:0.8rem">{{ i + 1 }}</td>
+              <td data-label="Nome scala">
                 <span class="scala-badge">{{ s.name }}</span>
               </td>
-              <td v-if="buildings.length" class="text-secondary">{{ s.buildingName || '—' }}</td>
-              <td>
+              <td v-if="buildings.length" data-label="Edificio" class="text-secondary">{{ s.buildingName || '—' }}</td>
+              <td data-label="Stato">
                 <span class="badge" :class="s.isActive ? 'badge-green' : 'badge-muted'">
                   {{ s.isActive ? 'Attiva' : 'Inattiva' }}
                 </span>
@@ -368,4 +368,20 @@ watch(condominiumId, loadData)
 
 .has-error .form-input { border-color: var(--accent-red, #e53e3e); }
 .field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; }
+
+@media (max-width: 768px) {
+  .generate-panel__action {
+    width: 100%;
+  }
+  .generate-panel__action select,
+  .generate-panel__action input,
+  .generate-panel__action .btn {
+    width: 100%;
+  }
+  .search-input,
+  .toolbar-row select {
+    max-width: none !important;
+    width: 100%;
+  }
+}
 </style>

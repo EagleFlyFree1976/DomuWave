@@ -56,3 +56,11 @@ public class DeleteBoardPostCommentCommand : BaseCommand, IQuery<bool>
     public DeleteBoardPostCommentCommand() { }
     public DeleteBoardPostCommentCommand(int currentUserId, int id) : base(currentUserId) => Id = id;
 }
+
+/// <summary>Esprime/modifica/revoca il voto del condòmino su un sondaggio. Ritorna il post aggiornato.</summary>
+public class CastVoteCommand : BaseCommand, IQuery<BoardPostReadDto>
+{
+    public CastVoteDto Dto { get; set; } = null!;
+    public CastVoteCommand() { }
+    public CastVoteCommand(int currentUserId, CastVoteDto dto) : base(currentUserId) => Dto = dto;
+}

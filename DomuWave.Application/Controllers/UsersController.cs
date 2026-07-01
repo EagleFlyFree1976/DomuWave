@@ -29,6 +29,7 @@ public class UsersController(
     IUserTenantService userTenantService,
     ITenantService tenantService,
     IUserService userService,
+    Auth.Services.Interfaces.IAuthUserService authUserService,
     IMediator mediator)
     : PrivateControllerBase(logger, configuration)
 
@@ -173,6 +174,13 @@ public class UsersController(
         if (authUser == null)
             return NotFound();
 
+        // Auto-riparazione: utenti storici possono avere Token nullo. Senza token
+        // l'impersonificazione manda in errore il frontend. Lo si genera e persiste
+        // (stessa formula/logica del login).
+        var token = string.IsNullOrEmpty(authUser.Token)
+            ? await authUserService.EnsureUserTokenAsync(id, ct).ConfigureAwait(false)
+            : authUser.Token;
+
         var systemUser = await userService.GetByTokenAsync(CommonKeys.SystemUserToken, ct)
             .ConfigureAwait(false);
 
@@ -182,46 +190,81 @@ public class UsersController(
             Id       = authUser.Id,
             LastName = authUser.LastName,
             Name     = authUser.Email ?? authUser.Name,
-            Token    = authUser.Token,
+            Token    = token,
             Role     = authUser.RoleCode,
             IsActive = authUser.IsActive,
         };
 
         var domainUser = await userService.GetByIdAsync(id, ct).ConfigureAwait(false);
-        if (domainUser != null)
-        {
-            returnDto.Profile = domainUser.IsSystemUser
-                ? DomuWave.Application.Models.UserProfile.SuperAdmin
-                : domainUser.Role?.Code?.ToLower() == "condomino"
-                    ? DomuWave.Application.Models.UserProfile.User
-                    : DomuWave.Application.Models.UserProfile.TenantAdministrator;
-        }
 
+        // Ruolo per-tenant: lo stesso utente può essere admin in un tenant e
+        // condòmino in un altro. Popoliamo SEMPRE entrambe le liste (come al login).
         IList<UserTenant> tenants = await _mediator
             .GetResponse(new GetUserTenantsByUserCommand(CurrentUser.Id, id), ct)
             .ConfigureAwait(false);
+        var activeLinks = tenants.Where(k => k.Tenant.IsActive && k.IsActive).ToList();
 
-        var tenantsDto    = tenants.Where(k => k.Tenant.IsActive && k.IsActive).Select(j => j.ToDto()).ToList();
-        var defaultTenant = tenantsDto.FirstOrDefault(j => j.IsDefault) ?? tenantsDto.FirstOrDefault();
+        var defaultLink = activeLinks.FirstOrDefault(ut => ut.IsDefault) ?? activeLinks.FirstOrDefault();
+        var defaultIsCondomino = defaultLink != null &&
+            string.Equals(defaultLink.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase);
 
-        if (defaultTenant != null)
+        if (domainUser != null && domainUser.IsSystemUser)
         {
-            returnDto.AvailableTenants = tenantsDto
-                .Select(k => new DomuWave.Services.Dto.Tenant.TenantReadDto
-                {
-                    Code      = k.TenantCode,
-                    Name      = k.TenantName,
-                    Id        = k.TenantId,
-                    IsPrimary = k.IsDefault,
-                })
-                .ToList();
-            returnDto.Tenant = new DomuWave.Services.Dto.Tenant.TenantReadDto
+            returnDto.Profile = DomuWave.Application.Models.UserProfile.SuperAdmin;
+        }
+        else if (defaultLink != null)
+        {
+            returnDto.Profile = defaultIsCondomino
+                ? DomuWave.Application.Models.UserProfile.User
+                : DomuWave.Application.Models.UserProfile.TenantAdministrator;
+        }
+        else
+        {
+            returnDto.Profile = domainUser?.Role?.Code?.ToLower() == "condomino"
+                ? DomuWave.Application.Models.UserProfile.User
+                : DomuWave.Application.Models.UserProfile.TenantAdministrator;
+        }
+
+        // 1. Condomìni dove l'utente impersonato è condòmino (qualsiasi tenant).
+        var condominiums = await userTenantService
+            .GetCondominiumsByCondominoUserIdAsync(id, systemUser, ct)
+            .ConfigureAwait(false);
+        returnDto.AvailableCondominiums = condominiums;
+
+        // 2. Tenant dove l'utente è amministratore.
+        var adminTenants = activeLinks
+            .Where(ut => !string.Equals(ut.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase))
+            .Select(j => j.ToDto())
+            .ToList();
+        returnDto.AvailableTenants = adminTenants
+            .Select(k => new DomuWave.Services.Dto.Tenant.TenantReadDto
             {
-                Code      = defaultTenant.TenantCode,
-                Name      = defaultTenant.TenantName,
-                Id        = defaultTenant.TenantId,
-                IsPrimary = defaultTenant.IsDefault,
-            };
+                Code = k.TenantCode, Name = k.TenantName, Id = k.TenantId, IsPrimary = k.IsDefault,
+            })
+            .ToList();
+
+        // 3. Tenant/condominio iniziale in base al profilo di partenza.
+        if (returnDto.Profile == DomuWave.Application.Models.UserProfile.User)
+        {
+            var initial = (defaultLink != null && defaultIsCondomino
+                              ? condominiums.FirstOrDefault(c => c.TenantId == defaultLink.Tenant.Id)
+                              : null)
+                          ?? condominiums.FirstOrDefault();
+            if (initial != null)
+                returnDto.Tenant = new DomuWave.Services.Dto.Tenant.TenantReadDto
+                {
+                    Id = initial.TenantId, Name = initial.CondominiumName,
+                };
+        }
+        else
+        {
+            var defaultTenant = adminTenants.FirstOrDefault(j => j.IsDefault) ?? adminTenants.FirstOrDefault();
+            if (defaultTenant != null)
+                returnDto.Tenant = new DomuWave.Services.Dto.Tenant.TenantReadDto
+                {
+                    Code = defaultTenant.TenantCode, Name = defaultTenant.TenantName,
+                    Id = defaultTenant.TenantId, IsPrimary = defaultTenant.IsDefault,
+                };
         }
 
         return Ok(returnDto);

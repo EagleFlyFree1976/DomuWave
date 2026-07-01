@@ -214,3 +214,20 @@ BEGIN
         CONSTRAINT DF_ChartOfAccounts_IsLiquidity DEFAULT 0;
 END
 GO
+
+-- ============================================================================
+-- 8) TenantDisplaySettings: logo configurabile per tenant (sidebar + report).
+--   LogoContent (VARBINARY MAX), LogoContentType, LogoFileName, LogoUpdatedDate.
+-- ============================================================================
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('TenantDisplaySettings') AND name = 'LogoContent')
+    ALTER TABLE TenantDisplaySettings ADD LogoContent VARBINARY(MAX) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('TenantDisplaySettings') AND name = 'LogoContentType')
+    ALTER TABLE TenantDisplaySettings ADD LogoContentType NVARCHAR(100) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('TenantDisplaySettings') AND name = 'LogoFileName')
+    ALTER TABLE TenantDisplaySettings ADD LogoFileName NVARCHAR(260) NULL;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('TenantDisplaySettings') AND name = 'LogoUpdatedDate')
+    ALTER TABLE TenantDisplaySettings ADD LogoUpdatedDate DATETIME2 NULL;
+GO

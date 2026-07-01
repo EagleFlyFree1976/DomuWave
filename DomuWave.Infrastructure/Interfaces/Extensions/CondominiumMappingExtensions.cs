@@ -47,6 +47,7 @@ public static class CondominiumMappingExtensions
             Iban                 = condominium.Iban,
             BankAccountHolder    = condominium.BankAccountHolder,
             BankName             = condominium.BankName,
+            InitialBalance       = condominium.InitialBalance,
             AdministratorName    = condominium.AdministratorName,
             AdministratorPhone   = condominium.AdministratorPhone,
             AdministratorEmail   = condominium.AdministratorEmail,
@@ -114,6 +115,7 @@ public static class CondominiumMappingExtensions
             Iban                 = dto.Iban,
             BankAccountHolder    = dto.BankAccountHolder,
             BankName             = dto.BankName,
+            InitialBalance       = dto.InitialBalance ?? 0m,
             AdministratorName    = dto.AdministratorName,
             AdministratorPhone   = dto.AdministratorPhone,
             AdministratorEmail   = dto.AdministratorEmail,
@@ -171,6 +173,9 @@ public static class CondominiumMappingExtensions
         entity.Iban                 = dto.Iban;
         entity.BankAccountHolder    = dto.BankAccountHolder;
         entity.BankName             = dto.BankName;
+        // Aggiornato solo se valorizzato, così un update mirato del solo saldo
+        // (o un update che non lo include) non lo azzera.
+        if (dto.InitialBalance.HasValue) entity.InitialBalance = dto.InitialBalance.Value;
         entity.AdministratorName    = dto.AdministratorName;
         entity.AdministratorPhone   = dto.AdministratorPhone;
         entity.AdministratorEmail   = dto.AdministratorEmail;

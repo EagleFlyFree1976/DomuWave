@@ -32,4 +32,20 @@
   gap: 0.5rem;
   flex-shrink: 0;
 }
+
+@media (max-width: 768px) {
+  .toolbar-row {
+    flex-wrap: wrap;
+  }
+
+  .toolbar-row__left {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .toolbar-row__right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
 </style>

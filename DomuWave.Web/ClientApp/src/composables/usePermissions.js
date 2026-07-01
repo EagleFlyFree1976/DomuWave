@@ -1,5 +1,7 @@
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { condominoCanEdit, condominoCanCreate } from '@/config/condominoAccess'
 
 /**
  * Permessi basati sul profilo dell'utente loggato.
@@ -11,6 +13,7 @@ import { useAuthStore } from '@/stores/authStore'
  */
 export function usePermissions() {
   const authStore = useAuthStore()
+  const route = useRoute()
 
   const profile = computed(() => Number(authStore.user?.profile ?? 0))
 
@@ -18,10 +21,20 @@ export function usePermissions() {
   const isTenantAdmin = computed(() => profile.value === 2)
   const isCondomino   = computed(() => profile.value === 3)
 
-  // Solo SuperAdmin e TenantAdmin possono creare, modificare o eliminare
-  const canCreate = computed(() => profile.value === 1 || profile.value === 2)
-  const canEdit   = computed(() => profile.value === 1 || profile.value === 2)
-  const canDelete = computed(() => profile.value === 1 || profile.value === 2)
+  const isAdmin = computed(() => profile.value === 1 || profile.value === 2)
 
-  return { isSuperAdmin, isTenantAdmin, isCondomino, canCreate, canEdit, canDelete }
+  /**
+   * Per il condòmino i permessi sono per-sezione (dedotta dalla route corrente)
+   * e limitati ai propri dati lato backend. Vedi config/condominoAccess.js.
+   */
+  const condominoEditHere   = computed(() => isCondomino.value && condominoCanEdit(route.path))
+  const condominoCreateHere = computed(() => isCondomino.value && condominoCanCreate(route.path))
+
+  // SuperAdmin/TenantAdmin: pieno controllo.
+  // Condòmino: crea/modifica solo dove l'allow-list lo consente; mai elimina.
+  const canCreate = computed(() => isAdmin.value || condominoCreateHere.value)
+  const canEdit   = computed(() => isAdmin.value || condominoEditHere.value)
+  const canDelete = computed(() => isAdmin.value)
+
+  return { isSuperAdmin, isTenantAdmin, isCondomino, isAdmin, canCreate, canEdit, canDelete }
 }

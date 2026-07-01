@@ -125,6 +125,9 @@ public static class Startup
         // ─── LicenseManager ───────────────────────────────────────────────────
         services.AddScoped<LicenseManager.Client.TenantResolver.ITenantProvider, LicenseTenantProvider>();
 
+        // ─── Provisioning utenti occupanti ───────────────────────────────────
+        services.AddScoped<IOccupantUserProvisioningService, OccupantUserProvisioningService>();
+
         // ─── Notification system ──────────────────────────────────────────────
         services.AddScoped<SmtpEmailService>();
         services.AddScoped<IEmailService>(sp =>

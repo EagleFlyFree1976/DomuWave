@@ -400,6 +400,11 @@ public class SendEmailNotificationsCommandConsumer
                                 };
                             }).ToList();
 
+                        var logoBytes = await TenantLogoProvider
+                            .GetLogoForCondominiumAsync(session, condominium, cancellationToken)
+                            .ConfigureAwait(false);
+                        foreach (var n in notices) n.LogoContent = logoBytes;
+
                         var pdfBytes = new PaymentNoticeDocument(notices).GeneratePdf();
                         attachments = [new EmailAttachment(
                             FileName:    $"cedolini-{notification.RecipientFullName?.Replace(" ", "-")}.pdf",
@@ -578,6 +583,11 @@ public class SendSingleEmailNotificationCommandConsumer
                         }).ToList(),
                     };
                 }).ToList();
+
+                var logoBytes = await TenantLogoProvider
+                    .GetLogoForCondominiumAsync(session, condominium, cancellationToken)
+                    .ConfigureAwait(false);
+                foreach (var n in notices) n.LogoContent = logoBytes;
 
                 var pdfBytes = new PaymentNoticeDocument(notices).GeneratePdf();
                 attachments = [new EmailAttachment(
@@ -785,6 +795,11 @@ public class GetNotificationBatchPdfCommandConsumer
             }
         }
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+
+        var logo = await TenantLogoProvider
+            .GetLogoForCondominiumAsync(session, communication.Condominium, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var nd in notices) nd.LogoContent = logo;
 
         var document = new CommunicationLetterDocument(notices);
         return document.GeneratePdf();
@@ -1113,6 +1128,11 @@ public class GetNotificationAttachmentPdfCommandConsumer
                     }).ToList(),
                 };
             }).ToList();
+
+        var logo = await TenantLogoProvider
+            .GetLogoForCondominiumAsync(session, condominium, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var nd in notices) nd.LogoContent = logo;
 
         return new PaymentNoticeDocument(notices).GeneratePdf();
     }

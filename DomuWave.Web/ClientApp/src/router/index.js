@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { useSessionStore } from '@/stores/sessionStore'
+import { condominoCanAccess } from '@/config/condominoAccess'
 
 const routes = [
   // ── Pubblica ────────────────────────────────────────────────────────────
@@ -163,6 +164,13 @@ router.beforeEach((to, _from, next) => {
 
   if (requiresTenant && session.isSuperAdmin && !session.hasTenantSelected) {
     return next('/tenants')
+  }
+
+  // ── Perimetro Condomino (profile == 3) ──────────────────────────────────
+  // Il condòmino può navigare solo nelle sezioni consentite dall'allow-list.
+  // Tutto il resto viene reindirizzato alla dashboard.
+  if (session.isCondomino && to.path !== '/dashboard' && !condominoCanAccess(to.path)) {
+    return next('/dashboard')
   }
 
   next()

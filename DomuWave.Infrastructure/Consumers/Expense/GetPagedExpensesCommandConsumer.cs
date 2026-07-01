@@ -52,11 +52,24 @@ public class GetPagedExpensesCommandConsumer
         if (command.FiscalYearId.HasValue)
             query = query.Where(e => e.FiscalYear.Id == command.FiscalYearId.Value);
 
+        if (command.AccountId.HasValue)
+            query = query.Where(e => e.Account.Id == command.AccountId.Value);
+
         if (command.DateFrom.HasValue)
             query = query.Where(e => e.DocumentDate >= command.DateFrom.Value);
 
         if (command.DateTo.HasValue)
             query = query.Where(e => e.DocumentDate <= command.DateTo.Value);
+
+        // Range su data di pagamento (PaymentDate). Il "To" è inclusivo fino a fine giornata.
+        if (command.PaymentDateFrom.HasValue)
+            query = query.Where(e => e.PaymentDate >= command.PaymentDateFrom.Value);
+
+        if (command.PaymentDateTo.HasValue)
+        {
+            var to = command.PaymentDateTo.Value.Date.AddDays(1);
+            query = query.Where(e => e.PaymentDate != null && e.PaymentDate < to);
+        }
 
         if (!string.IsNullOrWhiteSpace(command.Search))
         {
@@ -70,6 +83,7 @@ public class GetPagedExpensesCommandConsumer
         query = command.SortField?.ToLower() switch
         {
             "documentdate"  => command.Asc ? query.OrderBy(e => e.DocumentDate)  : query.OrderByDescending(e => e.DocumentDate),
+            "paymentdate"   => command.Asc ? query.OrderBy(e => e.PaymentDate)   : query.OrderByDescending(e => e.PaymentDate),
             "grossamount"   => command.Asc ? query.OrderBy(e => e.GrossAmount)   : query.OrderByDescending(e => e.GrossAmount),
             "suppliername"  => command.Asc ? query.OrderBy(e => e.Supplier.Name) : query.OrderByDescending(e => e.Supplier.Name),
             _               => query.OrderByDescending(e => e.DocumentDate),

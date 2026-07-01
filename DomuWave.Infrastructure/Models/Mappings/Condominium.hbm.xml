@@ -44,6 +44,7 @@
     <property name="Iban"              column="Iban"              type="String" length="34" />
     <property name="BankAccountHolder" column="BankAccountHolder" type="String" length="200" />
     <property name="BankName"          column="BankName"          type="String" length="100" />
+    <property name="InitialBalance"    column="InitialBalance"    type="Decimal" not-null="true" />
 
     <property name="AdministratorName"  column="AdministratorName"  type="String" length="200" />
     <property name="AdministratorPhone" column="AdministratorPhone" type="String" length="30" />

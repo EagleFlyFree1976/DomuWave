@@ -108,6 +108,10 @@ public class GetUnitPaymentNoticeCommandConsumer
             }).ToList(),
         };
 
+        notice.LogoContent = await TenantLogoProvider
+            .GetLogoForCondominiumAsync(session, condominium, cancellationToken)
+            .ConfigureAwait(false);
+
         // 6. Generate PDF
         var document = new PaymentNoticeDocument(new[] { notice });
         return document.GeneratePdf();
@@ -210,6 +214,10 @@ public class GetUnitInstallmentPaymentNoticeCommandConsumer
                 }
             ],
         };
+
+        notice.LogoContent = await TenantLogoProvider
+            .GetLogoForCondominiumAsync(session, condominium, cancellationToken)
+            .ConfigureAwait(false);
 
         var document = new PaymentNoticeDocument(new[] { notice });
         return document.GeneratePdf();

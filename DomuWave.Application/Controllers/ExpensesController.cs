@@ -38,8 +38,11 @@ public class ExpensesController(
         [FromQuery] int?  paymentStatusId = null,
         [FromQuery] int?  supplierId      = null,
         [FromQuery] int?  fiscalYearId    = null,
+        [FromQuery] int?  accountId       = null,
         [FromQuery] string? dateFrom      = null,
         [FromQuery] string? dateTo        = null,
+        [FromQuery] string? paymentDateFrom = null,
+        [FromQuery] string? paymentDateTo   = null,
         [FromQuery] string? search        = null,
         [FromQuery] ChartOfAccountsType? accountType = null,
         CancellationToken ct = default)
@@ -55,8 +58,11 @@ public class ExpensesController(
                 PaymentStatusId = paymentStatusId,
                 SupplierId      = supplierId,
                 FiscalYearId    = fiscalYearId,
+                AccountId       = accountId,
                 DateFrom        = dateFrom  != null ? DateTime.Parse(dateFrom)  : null,
                 DateTo          = dateTo    != null ? DateTime.Parse(dateTo)    : null,
+                PaymentDateFrom = paymentDateFrom != null ? DateTime.Parse(paymentDateFrom) : null,
+                PaymentDateTo   = paymentDateTo   != null ? DateTime.Parse(paymentDateTo)   : null,
                 Search          = search,
                 AccountType     = accountType,
             }, ct);

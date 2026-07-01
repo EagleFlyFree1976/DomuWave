@@ -91,6 +91,19 @@ public class BoardPostsController(
         if (!deleted) return NotFound();
         return NoContent();
     }
+
+    // ── Sondaggi ─────────────────────────────────────────────────────────────
+    // Esprime/modifica/revoca il voto del condòmino. CanCreate: i condòmini possono votare.
+    [HttpPost("{postId:int}/vote")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanCreate, AuthorizationKeys.BoardPost, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(BoardPostReadDto), 200)]
+    public async Task<IActionResult> Vote(int postId, [FromBody] CastVoteDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        dto.BoardPostId = postId;
+        var result = await _mediator.GetResponse(new CastVoteCommand(CurrentUser.Id, dto), ct);
+        return Ok(result);
+    }
 }
 
 // ── Guasti ───────────────────────────────────────────────────────────────────

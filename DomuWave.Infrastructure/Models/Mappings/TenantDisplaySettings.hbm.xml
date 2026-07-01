@@ -22,6 +22,12 @@
     <!-- Convenzione segno: enum salvato come int -->
     <property name="AccountingSignConvention" column="AccountingSignConvention" type="Int32" not-null="true" />
 
+    <!-- Logo del tenant (BLOB in DB) -->
+    <property name="LogoContent"     column="LogoContent"     type="BinaryBlob" />
+    <property name="LogoContentType" column="LogoContentType" type="String" length="100" />
+    <property name="LogoFileName"    column="LogoFileName"    type="String" length="260" />
+    <property name="LogoUpdatedDate" column="LogoUpdatedDate" type="datetime2" />
+
     <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
     <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />
     <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />

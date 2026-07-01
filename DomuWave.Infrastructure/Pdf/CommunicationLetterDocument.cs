@@ -47,6 +47,10 @@ public class CommunicationLetterDocument : IDocument
                     // ── Header condominio ──────────────────────────────────────
                     col.Item().BorderBottom(1).BorderColor(BorderColor).PaddingBottom(8).Row(row =>
                     {
+                        if (letter.LogoContent is { Length: > 0 })
+                            row.ConstantItem(60).PaddingRight(10).AlignMiddle()
+                                .Height(36).Image(letter.LogoContent).FitArea();
+
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().Text(letter.CondominiumName).Bold().FontSize(13).FontColor(AccentColor);

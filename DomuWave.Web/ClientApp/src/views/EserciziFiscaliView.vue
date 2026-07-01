@@ -1100,4 +1100,20 @@ window.addEventListener('app:refresh', loadFiscalYears)
 .opening-balances-table td   { padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .opening-balances-table tbody tr:last-child td { border-bottom: none; }
 .opening-balances-table .form-input--sm { padding: 0.2rem 0.4rem; font-size: 0.8rem; height: auto; }
+
+@media (max-width: 768px) {
+  .table-wrap table th,
+  .table-wrap table td {
+    white-space: nowrap;
+  }
+  .detail-panel {
+    padding: 1rem;
+  }
+  .detail-grid {
+    gap: 0.6rem;
+  }
+  .detail-card {
+    flex: 1 1 120px;
+  }
+}
 </style>

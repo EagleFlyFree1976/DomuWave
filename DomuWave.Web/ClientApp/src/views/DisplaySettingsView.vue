@@ -43,6 +43,37 @@
             Salva impostazioni
           </button>
         </div>
+
+        <!-- Logo del tenant -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <i class="pi pi-image"></i>
+            <span>Logo</span>
+          </div>
+          <p class="settings-hint">
+            Il logo appare nella barra laterale e nei report esportati (Excel e PDF).
+            Formati ammessi: PNG, JPG, WebP, SVG · max 512 KB.
+          </p>
+
+          <div class="logo-row">
+            <div class="logo-preview">
+              <img :src="logoPreview" alt="Logo tenant" />
+            </div>
+            <div class="logo-actions">
+              <input ref="fileInput" type="file"
+                     accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                     style="display:none" @change="onLogoSelected" />
+              <button class="btn btn-primary" @click="fileInput?.click()" :disabled="logoBusy">
+                <span v-if="logoBusy" class="spinner" style="width:14px;height:14px"></span>
+                <i v-else class="pi pi-upload"></i>
+                {{ hasLogo ? 'Sostituisci logo' : 'Carica logo' }}
+              </button>
+              <button v-if="hasLogo" class="btn btn-ghost" @click="removeLogo" :disabled="logoBusy">
+                <i class="pi pi-trash"></i> Rimuovi
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Colonna laterale: anteprima -->
@@ -77,16 +108,75 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { tenantDisplaySettingsApi } from '@/services/api'
 import { useAccountingFormat, SIGN_CONVENTION } from '@/composables/useAccountingFormat'
+import { useTenantBranding } from '@/composables/useTenantBranding'
 
 const store   = useAppStore()
 const loading = ref(false)
 const saving  = ref(false)
 
 const { load: reloadAccountingFormat, fmtAccounting } = useAccountingFormat()
+
+// ── Logo ─────────────────────────────────────────────────────────────────────
+const { hasLogo, logoUrl, reload: reloadBranding, DEFAULT_LOGO } = useTenantBranding()
+const fileInput = ref(null)
+const logoBusy  = ref(false)
+const logoPreview = computed(() => logoUrl.value || DEFAULT_LOGO)
+
+const MAX_LOGO_BYTES = 512 * 1024
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload  = () => resolve(String(reader.result).split(',')[1] || '')
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function onLogoSelected(e) {
+  const file = e.target.files?.[0]
+  if (fileInput.value) fileInput.value.value = ''  // consente re-upload dello stesso file
+  if (!file) return
+
+  if (file.size > MAX_LOGO_BYTES) {
+    store.toast('Il logo supera la dimensione massima di 512 KB', 'error')
+    return
+  }
+
+  logoBusy.value = true
+  try {
+    const base64 = await fileToBase64(file)
+    await tenantDisplaySettingsApi.uploadLogo({
+      fileName:    file.name,
+      contentType: file.type,
+      base64Data:  base64,
+    })
+    await reloadBranding()
+    store.toast('Logo aggiornato', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    logoBusy.value = false
+  }
+}
+
+async function removeLogo() {
+  if (!confirm('Rimuovere il logo del tenant?')) return
+  logoBusy.value = true
+  try {
+    await tenantDisplaySettingsApi.deleteLogo()
+    await reloadBranding()
+    store.toast('Logo rimosso', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    logoBusy.value = false
+  }
+}
 
 const form = ref({ accountingSignConvention: SIGN_CONVENTION.SOLO_COLORE })
 
@@ -129,7 +219,7 @@ async function save() {
   }
 }
 
-onMounted(load)
+onMounted(() => { load(); reloadBranding() })
 </script>
 
 <style scoped>
@@ -189,4 +279,15 @@ onMounted(load)
 
 .text-red   { color: var(--accent-red, #ef4444); }
 .text-green { color: var(--accent-green, #22c55e); }
+
+/* Logo */
+.logo-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.logo-preview {
+  width: 120px; height: 120px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-base, #fff);
+  display: flex; align-items: center; justify-content: center; padding: 8px;
+}
+.logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.logo-actions { display: flex; flex-direction: column; gap: 8px; }
 </style>

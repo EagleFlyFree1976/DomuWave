@@ -134,6 +134,11 @@ public class GetBillingGroupPaymentNoticeCommandConsumer
             .OrderBy(n => n.UnitInternalNumber)
             .ToList();
 
+        var logo = await TenantLogoProvider
+            .GetLogoForCondominiumAsync(session, condominium, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var n in notices) n.LogoContent = logo;
+
         var document = new PaymentNoticeDocument(notices);
         return document.GeneratePdf();
     }
@@ -252,6 +257,10 @@ public class GetBillingGroupInstallmentNoticeCommandConsumer
                 }
             ],
         };
+
+        notice.LogoContent = await TenantLogoProvider
+            .GetLogoForCondominiumAsync(session, condominium, cancellationToken)
+            .ConfigureAwait(false);
 
         var document = new PaymentNoticeDocument(new[] { notice });
         return document.GeneratePdf();

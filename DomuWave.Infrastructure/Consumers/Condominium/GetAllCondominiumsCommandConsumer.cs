@@ -15,14 +15,17 @@ public class GetAllCondominiumsCommandConsumer : InMemoryConsumerBase<GetAllCond
 {
     private readonly ICondominiumService _condominiumService;
     private readonly IUserService _userService;
+    private readonly IUserTenantService _userTenantService;
 
     public GetAllCondominiumsCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         ICondominiumService condominiumService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        IUserTenantService userTenantService) : base(sessionFactoryProvider)
     {
         _condominiumService = condominiumService;
         _userService = userService;
+        _userTenantService = userTenantService;
     }
 
     protected override async Task<IList<CondominiumReadDto>> Consume(
@@ -34,15 +37,23 @@ public class GetAllCondominiumsCommandConsumer : InMemoryConsumerBase<GetAllCond
             .GetByIdAsync(command.CurrentUserId, cancellationToken)
             .ConfigureAwait(false);
 
-        if (string.Equals(currentUser.Role?.Code, "condomino", StringComparison.OrdinalIgnoreCase))
+        // Condòmino NEL TENANT ATTIVO: vede solo i condomìni dove ha unità
+        // (proprietario o inquilino).
+        var isCondomino = await _userTenantService
+            .IsCondominoInTenantAsync(command.CurrentUserId, command.TenantId, cancellationToken)
+            .ConfigureAwait(false);
+        if (isCondomino)
         {
             long userId = command.CurrentUserId;
-            var condominiumIds = await session.Query<UnitOwner>()
+            var ownerCondoIds = await session.Query<UnitOwner>()
                 .Where(o => o.UserId == userId && o.IsActive && !o.IsDeleted)
                 .Select(o => o.Unit.Condominium.Id)
-                .Distinct()
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+            var tenantCondoIds = await session.Query<UnitTenant>()
+                .Where(t => t.UserId == userId && t.IsActive && !t.IsDeleted)
+                .Select(t => t.Unit.Condominium.Id)
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+            var condominiumIds = ownerCondoIds.Concat(tenantCondoIds).Distinct().ToList();
 
             var result = await _condominiumService
                 .GetByTenantIdAsync(command.TenantId, currentUser, cancellationToken)

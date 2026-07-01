@@ -60,10 +60,12 @@ public class GetContoEconomicoCommandConsumer
             .SumAsync(f => (decimal?)f.AmountPaid, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
-        // ── USCITE: spese per competenza dell'esercizio, raggruppate per conto Uscita ──
-        var expenseRows = await session.Query<Expense>()
+        // ── ALTRE ENTRATE: movimenti su conti di tipo Entrata (rimborsi, interessi, ecc.) ──
+        // Sono registrati come Expense ma imputati a un conto Entrata: vanno a Entrate, non a Uscite.
+        var entrateRows = (await session.Query<Expense>()
             .Where(e => e.Condominium.Id == condominiumId
                      && e.FiscalYear.Id  == fiscalYear.Id
+                     && e.Account.Type   == ChartOfAccountsType.Entrata
                      && !e.IsDeleted)
             .GroupBy(e => new { e.Account.Id, e.Account.Code, e.Account.Name })
             .Select(g => new ContoEconomicoRowDto
@@ -72,6 +74,30 @@ public class GetContoEconomicoCommandConsumer
                 AccountCode = g.Key.Code,
                 AccountName = g.Key.Name,
                 Amount      = g.Sum(e => e.GrossAmount),
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false))
+            .OrderBy(r => r.AccountCode)
+            .ToList();
+
+        var altreEntrate = entrateRows.Sum(r => r.Amount);
+
+        // ── USCITE: spese per competenza dell'esercizio, raggruppate per conto Uscita ──
+        // Importo = GrossAmount + WithholdingTax (base lorda): la ritenuta d'acconto è a
+        // carico dei condòmini, quindi il costo di competenza la include. Così il totale
+        // riconcilia con la base di ripartizione del Bilancio di ripartizione.
+        var expenseRows = await session.Query<Expense>()
+            .Where(e => e.Condominium.Id == condominiumId
+                     && e.FiscalYear.Id  == fiscalYear.Id
+                     && e.Account.Type   == ChartOfAccountsType.Uscita
+                     && !e.IsDeleted)
+            .GroupBy(e => new { e.Account.Id, e.Account.Code, e.Account.Name })
+            .Select(g => new ContoEconomicoRowDto
+            {
+                AccountId   = g.Key.Id,
+                AccountCode = g.Key.Code,
+                AccountName = g.Key.Name,
+                Amount      = g.Sum(e => e.GrossAmount + e.WithholdingTax),
             })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -90,7 +116,7 @@ public class GetContoEconomicoCommandConsumer
                 .ConfigureAwait(false) ?? 0m;
         }
 
-        var totaleEntrate = versamenti;
+        var totaleEntrate = versamenti + altreEntrate;
         var saldoFinale   = totaleEntrate - totaleUscite + saldoPrec;
 
         return new ContoEconomicoDto
@@ -103,6 +129,7 @@ public class GetContoEconomicoCommandConsumer
             EndDate         = fiscalYear.EndDate,
 
             VersamentiCondomini = versamenti,
+            EntrateRows         = entrateRows,
             TotaleEntrate       = totaleEntrate,
 
             UsciteRows      = usciteRows,

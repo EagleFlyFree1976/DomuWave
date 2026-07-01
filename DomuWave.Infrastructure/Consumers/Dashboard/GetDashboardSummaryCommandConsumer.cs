@@ -3,6 +3,7 @@ using CPQ.Core.Persistence.SessionFactories;
 using CPQ.Core.Services;
 using DomuWave.Services.Command.Dashboard;
 using DomuWave.Services.Dto.Dashboard;
+using DomuWave.Services.Interfaces;
 using DomuWave.Services.Models;
 using NHibernate.Linq;
 using SimpleMediator.Core;
@@ -12,13 +13,19 @@ namespace DomuWave.Services.Consumers.Dashboard;
 public class GetDashboardSummaryCommandConsumer
     : InMemoryConsumerBase<GetDashboardSummaryCommand, DashboardSummaryDto>
 {
-    private readonly IUserService _userService;
+    private readonly IUserService           _userService;
+    private readonly IUserTenantService     _userTenantService;
+    private readonly IRealEstateUnitService _realEstateUnitService;
 
     public GetDashboardSummaryCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        IUserTenantService userTenantService,
+        IRealEstateUnitService realEstateUnitService) : base(sessionFactoryProvider)
     {
-        _userService = userService;
+        _userService           = userService;
+        _userTenantService     = userTenantService;
+        _realEstateUnitService = realEstateUnitService;
     }
 
     protected override async Task<DashboardSummaryDto> Consume(
@@ -51,6 +58,24 @@ public class GetDashboardSummaryCommandConsumer
                 .Select(c => c.Id)
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
+
+            // Condòmino NEL TENANT ATTIVO: restringe ai soli condomìni delle proprie unità.
+            var isCondomino = await _userTenantService
+                .IsCondominoInTenantAsync(command.CurrentUserId, command.TenantId, cancellationToken)
+                .ConfigureAwait(false);
+            if (isCondomino)
+            {
+                var ownUnitIds = await _realEstateUnitService
+                    .GetCondominoUnitIdsAsync(command.CurrentUserId, cancellationToken)
+                    .ConfigureAwait(false);
+                var ownCondoIds = await session.Query<RealEstateUnit>()
+                    .Where(u => ownUnitIds.Contains(u.Id) && !u.IsDeleted)
+                    .Select(u => u.Condominium.Id)
+                    .Distinct()
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                condominiumIds = condominiumIds.Where(cid => ownCondoIds.Contains(cid)).ToList();
+            }
 
             dto.CondominiumsCount = condominiumIds.Count;
 

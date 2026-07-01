@@ -87,11 +87,22 @@ public static class ExpenseMappingExtensions
             NetAmount              = gross - dto.WithholdingTax,
             ExpenseType            = expenseType,
             PaymentStatus          = paymentStatus,
+            // Data di pagamento valorizzata solo se la spesa è pagata; in mancanza di una
+            // data esplicita si usa la data di registrazione (NON "oggi").
+            PaymentDate            = ResolvePaymentDate(paymentStatus, dto.PaymentDate, dto.RegistrationDate),
             PaymentMethod          = paymentMethod,
             Description            = dto.Description,
             ChargeabilityType      = chargeabilityType,
             Send770                = dto.Send770,
         };
+    }
+
+    // Determina la data di pagamento coerente con lo stato: se "Pagata" usa la data fornita
+    // (fallback: data di registrazione, poi oggi); altrimenti nessuna data (null).
+    private static DateTime? ResolvePaymentDate(ExpensePaymentStatus paymentStatus, DateTime? paymentDate, DateTime? registrationDate)
+    {
+        if (paymentStatus?.Id != ExpensePaymentStatus.Pagata) return null;
+        return paymentDate ?? registrationDate ?? DateTime.Today;
     }
 
     public static void ApplyUpdate(this Expense entity, UpdateExpenseDto dto,
@@ -119,6 +130,8 @@ public static class ExpenseMappingExtensions
         entity.NetAmount               = gross - dto.WithholdingTax;
         entity.ExpenseType             = expenseType;
         entity.PaymentStatus           = paymentStatus;
+        // Allinea la data di pagamento allo stato: valorizzata se pagata, azzerata se non pagata.
+        entity.PaymentDate             = ResolvePaymentDate(paymentStatus, dto.PaymentDate, dto.RegistrationDate);
         entity.PaymentMethod           = paymentMethod;
         entity.Description             = dto.Description;
         entity.ChargeabilityType       = chargeabilityType;

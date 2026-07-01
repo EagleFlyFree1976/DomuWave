@@ -30,6 +30,10 @@ export const userTenantApi = {
   getDefault:   (userId)   => api.get(`/user-tenants/user/${userId}/default`),
   /** Tutti gli utenti associati a un tenant */
   getByTenantId: (tenantId) => api.get(`/user-tenants/tenant/${tenantId}`),
+  /** Profilo dell'utente corrente in uno specifico tenant (ruolo per-tenant) */
+  getProfileForTenant: (tenantId) => api.get(`/user-tenants/profile-for-tenant/${tenantId}`),
+  /** Imposta il tenant come predefinito per l'utente corrente */
+  setMyDefaultTenant:  (tenantId) => api.patch(`/user-tenants/my-default/${tenantId}`),
   getById:      (id)       => api.get(`/user-tenants/${id}`),
   /** Crea associazione: { userId, tenantId, isDefault, isActive } */
   create:       (data)     => api.post('/user-tenants', data),

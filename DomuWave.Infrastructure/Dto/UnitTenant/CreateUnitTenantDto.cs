@@ -12,5 +12,6 @@ public class CreateUnitTenantDto
     public DateTime LeaseStartDate { get; set; }
     public DateTime? LeaseEndDate { get; set; }
     public bool IsActive { get; set; }
+    public bool IsAccessEnabled { get; set; } = true;
     public string? Notes { get; set; }
 }

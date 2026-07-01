@@ -22,7 +22,7 @@
         <div>Nessun edificio trovato</div>
       </div>
       <div v-else class="table-wrap">
-        <table>
+        <table class="cards-on-mobile">
           <thead>
             <tr>
               <th>Nome</th>
@@ -38,18 +38,18 @@
           </thead>
           <tbody>
             <tr v-for="b in filtered" :key="b.id">
-              <td style="font-weight:500">{{ b.name }}</td>
-              <td class="mono text-secondary">{{ b.code || '—' }}</td>
-              <td class="text-secondary">{{ b.address || '—' }}</td>
-              <td class="text-secondary">{{ b.yearOfConstruction || '—' }}</td>
-              <td class="text-secondary">{{ b.numberOfFloors != null ? b.numberOfFloors : '—' }}</td>
-              <td>
+              <td data-label="Nome" style="font-weight:500">{{ b.name }}</td>
+              <td data-label="Codice" class="mono text-secondary">{{ b.code || '—' }}</td>
+              <td data-label="Indirizzo" class="text-secondary">{{ b.address || '—' }}</td>
+              <td data-label="Anno costr." class="text-secondary">{{ b.yearOfConstruction || '—' }}</td>
+              <td data-label="Piani" class="text-secondary">{{ b.numberOfFloors != null ? b.numberOfFloors : '—' }}</td>
+              <td data-label="Ascensore">
                 <span class="badge" :class="b.hasElevator ? 'badge-green' : 'badge-muted'">
                   {{ b.hasElevator ? 'Sì' : 'No' }}
                 </span>
               </td>
-              <td class="text-center text-secondary">{{ b.unitCount }}</td>
-              <td>
+              <td data-label="Unità" class="text-center text-secondary">{{ b.unitCount }}</td>
+              <td data-label="Stato">
                 <span class="badge" :class="b.isActive ? 'badge-green' : 'badge-muted'">
                   {{ b.isActive ? 'Attivo' : 'Inattivo' }}
                 </span>
@@ -263,4 +263,11 @@ watch(condominiumId, loadData)
 
 .has-error .form-input { border-color: var(--accent-red, #e53e3e); }
 .field-error { font-size: 0.78rem; color: var(--accent-red, #e53e3e); margin-top: 0.2rem; }
+
+@media (max-width: 768px) {
+  .search-input {
+    max-width: none !important;
+    width: 100%;
+  }
+}
 </style>

@@ -24,6 +24,11 @@
     <property name="AuthorFullName" column="AuthorFullName" type="String" length="200" not-null="true" />
     <property name="IsPinned"       column="IsPinned"       type="Boolean" not-null="true" />
 
+    <property name="IsPoll"        column="IsPoll"        type="Boolean"   not-null="true" />
+    <property name="IsAnonymous"   column="IsAnonymous"   type="Boolean"   not-null="true" />
+    <property name="AllowMultiple" column="AllowMultiple" type="Boolean"   not-null="true" />
+    <property name="ClosesAt"      column="ClosesAt"      type="datetime2" />
+
     <property name="CreatedBy"             column="CreatedById"           type="Int32"   not-null="true" />
     <property name="CreatedByFullName"     column="CreatedByFullName"     type="String"  length="200" />
     <property name="LastUpdatedBy"         column="LastUpdatedById"       type="Int32" />
@@ -35,6 +40,16 @@
     <bag name="Comments" inverse="true" cascade="all-delete-orphan" lazy="true">
       <key column="BoardPostId" />
       <one-to-many class="DomuWave.Services.Models.BoardPostComment, DomuWave.Services" />
+    </bag>
+
+    <bag name="Options" inverse="true" cascade="all-delete-orphan" lazy="true" order-by="OrderKey asc">
+      <key column="BoardPostId" />
+      <one-to-many class="DomuWave.Services.Models.BoardPostOption, DomuWave.Services" />
+    </bag>
+
+    <bag name="Votes" inverse="true" cascade="all-delete-orphan" lazy="true">
+      <key column="BoardPostId" />
+      <one-to-many class="DomuWave.Services.Models.BoardPostVote, DomuWave.Services" />
     </bag>
 
   </class>

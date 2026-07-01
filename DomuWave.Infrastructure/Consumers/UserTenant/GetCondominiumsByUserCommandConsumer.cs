@@ -46,15 +46,18 @@ public class GetCondominiumsByUserCommandConsumer
 
         // 2. Per utenti con ruolo "condomino", filtra solo i condomini dove è proprietario
         IEnumerable<int> allowedCondominiumIds = null;
-        if (currentUser != null && 
+        if (currentUser != null &&
             string.Equals(currentUser.Role?.Code, "condomino", StringComparison.OrdinalIgnoreCase))
         {
-            allowedCondominiumIds = await session.Query<UnitOwner>()
+            var ownerIds = await session.Query<UnitOwner>()
                 .Where(o => o.UserId == command.UserId && o.IsActive && !o.IsDeleted)
                 .Select(o => o.Unit.Condominium.Id)
-                .Distinct()
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+            var tenantIdsList = await session.Query<UnitTenant>()
+                .Where(t => t.UserId == command.UserId && t.IsActive && !t.IsDeleted)
+                .Select(t => t.Unit.Condominium.Id)
+                .ToListAsync(cancellationToken).ConfigureAwait(false);
+            allowedCondominiumIds = ownerIds.Concat(tenantIdsList).Distinct().ToList();
 
             // Se l'utente condomino non ha unità, non deve vedere nessun condominio
             if (!allowedCondominiumIds.Any())

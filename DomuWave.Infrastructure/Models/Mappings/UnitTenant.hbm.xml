@@ -29,6 +29,7 @@
     <property name="LeaseEndDate" column="LeaseEndDate" type="DateTime" />
     <property name="ContractPath" column="ContractPath" type="String" length="500" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
+    <property name="IsAccessEnabled" column="IsAccessEnabled" type="Boolean" not-null="true" />
     <property name="Notes" column="Notes" type="String" length="500" insert="false" update="false" />
 
     <property name="CreatedBy" column="CreatedById" type="Int32" not-null="true" />

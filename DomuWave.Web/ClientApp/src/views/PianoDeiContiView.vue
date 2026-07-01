@@ -50,7 +50,7 @@
 
     <!-- Tabella -->
     <div v-else class="table-wrapper">
-      <table class="data-table">
+      <table class="data-table cards-on-mobile">
         <thead>
           <tr>
             <th>Codice</th>
@@ -67,20 +67,20 @@
         </thead>
         <tbody>
           <tr v-for="a in filtered" :key="a.id" :class="{ 'row-inactive': !a.isActive }">
-            <td class="mono">{{ a.code }}</td>
-            <td :style="{ paddingLeft: `${(a.level - 1) * 1.2 + 0.75}rem` }">{{ a.name }}</td>
-            <td><span class="badge badge-type">{{ typeLabel(a.type) }}</span></td>
-            <td class="text-secondary">{{ a.categoryName ?? '—' }}</td>
-            <td class="text-center">{{ a.level }}</td>
-            <td class="text-secondary mono">{{ parentCode(a.parentAccountId) }}</td>
-            <td class="text-secondary">{{ a.defaultMillesimalTableName ?? '—' }}</td>
-            <td>
+            <td data-label="Codice" class="mono">{{ a.code }}</td>
+            <td data-label="Nome" :style="{ paddingLeft: `${(a.level - 1) * 1.2 + 0.75}rem` }">{{ a.name }}</td>
+            <td data-label="Tipo"><span class="badge badge-type">{{ typeLabel(a.type) }}</span></td>
+            <td data-label="Categoria" class="text-secondary">{{ a.categoryName ?? '—' }}</td>
+            <td data-label="Livello" class="text-center">{{ a.level }}</td>
+            <td data-label="Conto padre" class="text-secondary mono">{{ parentCode(a.parentAccountId) }}</td>
+            <td data-label="Tab. millesimale" class="text-secondary">{{ a.defaultMillesimalTableName ?? '—' }}</td>
+            <td data-label="Ripartizione">
               <span v-if="a.allocationMethod === 1" class="badge badge-mixed" :title="`${a.millesimalPercentage}% millesimale + ${100 - a.millesimalPercentage}% piano/abitanti`">
                 Misto {{ a.millesimalPercentage }}%
               </span>
               <span v-else class="badge badge-standard">Standard</span>
             </td>
-            <td>
+            <td data-label="Stato">
               <span class="badge" :class="a.isActive ? 'badge-open' : 'badge-muted'">
                 {{ a.isActive ? 'Attivo' : 'Inattivo' }}
               </span>
@@ -875,4 +875,29 @@ textarea.form-input { resize: vertical; min-height: 60px; }
   font-size: .875rem; color: var(--text-primary); cursor: pointer;
 }
 .radio-label input[type="radio"] { accent-color: #34d399; width: 15px; height: 15px; cursor: pointer; }
+
+@media (max-width: 768px) {
+  .view-container {
+    padding: 1rem;
+    max-width: 100%;
+  }
+  .view-header {
+    flex-wrap: wrap;
+  }
+  .header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .filter-bar {
+    flex-wrap: wrap;
+  }
+  .filter-input,
+  .filter-select {
+    max-width: none;
+    width: 100%;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

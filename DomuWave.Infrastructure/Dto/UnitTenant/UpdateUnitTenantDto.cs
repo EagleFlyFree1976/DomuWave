@@ -10,5 +10,6 @@ public class UpdateUnitTenantDto
     public DateTime? LeaseEndDate { get; set; }
     public string? TaxCode { get; set; }
     public bool IsActive { get; set; }
+    public bool IsAccessEnabled { get; set; } = true;
     public string? Notes { get; set; }
 }

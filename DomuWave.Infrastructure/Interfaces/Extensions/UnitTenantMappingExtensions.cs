@@ -22,6 +22,7 @@ public static class UnitTenantMappingExtensions
             LeaseStartDate = tenant.LeaseStartDate,
             LeaseEndDate   = tenant.LeaseEndDate,
             IsActive       = tenant.IsActive,
+            IsAccessEnabled = tenant.IsAccessEnabled,
             Notes          = tenant.Notes,
         };
 
@@ -46,6 +47,7 @@ public static class UnitTenantMappingExtensions
             LeaseStartDate = dto.LeaseStartDate,
             LeaseEndDate   = dto.LeaseEndDate,
             IsActive       = dto.IsActive,
+            IsAccessEnabled = dto.IsAccessEnabled,
             Description    = dto.Notes,
         };
     }
@@ -60,6 +62,7 @@ public static class UnitTenantMappingExtensions
         entity.LeaseEndDate   = dto.LeaseEndDate;
         entity.TaxCode        = dto.TaxCode;
         entity.IsActive       = dto.IsActive;
+        entity.IsAccessEnabled = dto.IsAccessEnabled;
         entity.Description    = dto.Notes;
     }
 }

@@ -50,8 +50,7 @@ public class MenuesController(
 
 
     [HttpGet("")]
-    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Authorizations,
-        Modules.AuthModule)]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.Access, Modules.AuthModule)]
     [ProducesResponseType(statusCode: StatusCodes.Status200OK, type: typeof(IList<MenuItemDto>))]
     public async Task<IActionResult> GetAllMenues(CancellationToken cancellationToken)
     {

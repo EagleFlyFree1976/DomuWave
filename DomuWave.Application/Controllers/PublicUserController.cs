@@ -66,61 +66,97 @@ public class PublicUserController(
             if (authUser == null || authUser.Password != logininfo.Password.EncryptString())
                 return NotFound();
 
+            // Auto-riparazione: alcuni utenti storici hanno Token nullo. Se manca,
+            // lo si genera e persiste al primo login (formula = Id cifrato).
+            var token = string.IsNullOrEmpty(authUser.Token)
+                ? await _authUserService.EnsureUserTokenAsync(authUser.Id, cancellationToken).ConfigureAwait(false)
+                : authUser.Token;
+
             UserDto returnDto = new UserDto
             {
                 FullName = authUser.FullName,
                 Id       = authUser.Id,
                 LastName = authUser.LastName,
                 Name     = authUser.Name,
-                Token    = authUser.Token,
+                Token    = token,
                 Role     = authUser.Role?.Code,
                 IsActive = authUser.IsActive,
             };
 
             CPQ.Core.Memberships.User? _user = await _userService.GetByIdAsync(authUser.Id, cancellationToken).ConfigureAwait(false);
+
+            // Determina se l'utente è condòmino in ALMENO un tenant (RoleCode per-tenant).
+            var allUserTenants = await _userTenantService
+                .GetByUserIdAsync(authUser.Id, systemUser, cancellationToken)
+                .ConfigureAwait(false);
+            var activeLinks = allUserTenants.Where(ut => ut.IsActive && !ut.IsDeleted).ToList();
+            var hasCondominoTenant = activeLinks.Any(ut =>
+                string.Equals(ut.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase));
+            var hasAdminTenant = activeLinks.Any(ut =>
+                !string.Equals(ut.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase));
+
+            // Tenant di default (per scegliere il profilo iniziale).
+            var defaultLink = activeLinks.FirstOrDefault(ut => ut.IsDefault) ?? activeLinks.FirstOrDefault();
+            var defaultIsCondomino = defaultLink != null &&
+                string.Equals(defaultLink.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase);
+
             if (_user.IsSystemUser)
             {
                 returnDto.Profile = UserProfile.SuperAdmin;
             }
+            else if (defaultLink != null)
+            {
+                // Profilo iniziale = ruolo nel tenant di default (per-tenant).
+                returnDto.Profile = defaultIsCondomino ? UserProfile.User : UserProfile.TenantAdministrator;
+            }
             else
             {
+                // Fallback legacy: nessun UserTenant → ruolo globale.
                 returnDto.Profile = _user.Role?.Code?.ToLower() == "condomino"
                     ? UserProfile.User
                     : UserProfile.TenantAdministrator;
             }
 
+            // Lo STESSO utente può avere più ruoli su tenant diversi (es. admin nel
+            // proprio tenant + condòmino nel tenant di un altro amministratore).
+            // Popoliamo SEMPRE entrambe le liste: il selettore in sidebar le unisce
+            // e il profilo viene ricalcolato a ogni cambio (profile-for-tenant).
+
+            // 1. Condomìni dove l'utente è condòmino (qualsiasi tenant).
+            var condominiums = await _userTenantService
+                .GetCondominiumsByCondominoUserIdAsync(authUser.Id, systemUser, cancellationToken)
+                .ConfigureAwait(false);
+            returnDto.AvailableCondominiums = condominiums;
+
+            // 2. Tenant dove l'utente è amministratore (RoleCode != Condomino).
+            var adminTenants = activeLinks
+                .Where(ut => ut.Tenant.IsActive
+                    && !string.Equals(ut.RoleCode, "Condomino", StringComparison.OrdinalIgnoreCase))
+                .Select(k => k.ToDto())
+                .ToList();
+            returnDto.AvailableTenants = adminTenants
+                .Select(k => new TenantReadDto { Code = k.TenantCode, Name = k.TenantName, Id = k.TenantId, IsPrimary = k.IsDefault })
+                .ToList();
+
+            // 3. Tenant/condominio iniziale, in base al profilo di partenza.
             if (returnDto.Profile == UserProfile.User)
             {
-                var condominiums = await _userTenantService
-                    .GetCondominiumsByCondominoUserIdAsync(authUser.Id, systemUser, cancellationToken)
-                    .ConfigureAwait(false);
-
-                returnDto.AvailableCondominiums = condominiums;
-
-                var first = condominiums.FirstOrDefault();
-                if (first != null)
-                    returnDto.Tenant = new TenantReadDto { Id = first.TenantId, Name = first.CondominiumName };
+                var initial = (defaultLink != null && defaultIsCondomino
+                                  ? condominiums.FirstOrDefault(c => c.TenantId == defaultLink.Tenant.Id)
+                                  : null)
+                              ?? condominiums.FirstOrDefault();
+                if (initial != null)
+                    returnDto.Tenant = new TenantReadDto { Id = initial.TenantId, Name = initial.CondominiumName };
             }
             else
             {
-                IList<UserTenant> tenants = await _userTenantService
-                    .GetByUserIdAsync(authUser.Id, systemUser, cancellationToken)
-                    .ConfigureAwait(false);
-
-                var tenantsDto = tenants.Where(k => k.Tenant.IsActive && k.IsActive).Select(j => j.ToDto()).ToList();
-                var defaultTenant = tenantsDto.FirstOrDefault(j => j.IsDefault) ?? tenantsDto.FirstOrDefault();
-
-                if (tenants.Any() && defaultTenant != null)
-                {
-                    returnDto.AvailableTenants = tenantsDto
-                        .Select(k => new TenantReadDto { Code = k.TenantCode, Name = k.TenantName, Id = k.TenantId, IsPrimary = k.IsDefault })
-                        .ToList();
+                var defaultTenant = adminTenants.FirstOrDefault(j => j.IsDefault) ?? adminTenants.FirstOrDefault();
+                if (defaultTenant != null)
                     returnDto.Tenant = new TenantReadDto
                     {
                         Code = defaultTenant.TenantCode, Name = defaultTenant.TenantName,
                         Id = defaultTenant.TenantId, IsPrimary = defaultTenant.IsDefault
                     };
-                }
             }
 
             return Ok(returnDto);

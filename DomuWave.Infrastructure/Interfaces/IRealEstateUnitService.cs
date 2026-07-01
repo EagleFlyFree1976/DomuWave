@@ -14,5 +14,12 @@ namespace DomuWave.Services.Interfaces
         Task<IList<RealEstateUnit>> GetByFloorAsync(int condominiumId, int floor, IUser currentUser, CancellationToken cancellationToken);
         Task<IList<RealEstateUnit>> GetByTypeAsync(int condominiumId, string unitType, IUser currentUser, CancellationToken cancellationToken);
         Task<int> GetTotalUnitsCountAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Restituisce gli Id delle unità di cui l'utente Condomino è proprietario o
+        /// inquilino (in base a UnitOwner/UnitTenant.UserId). Usato per limitare la
+        /// visibilità del condòmino alle sole proprie unità.
+        /// </summary>
+        Task<IList<int>> GetCondominoUnitIdsAsync(long userId, CancellationToken cancellationToken);
     }
 }

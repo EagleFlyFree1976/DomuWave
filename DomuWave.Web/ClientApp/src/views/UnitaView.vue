@@ -36,7 +36,7 @@
         <div>Nessuna unità trovata</div>
       </div>
       <div v-else class="table-wrap">
-        <table>
+        <table class="cards-on-mobile">
           <thead>
             <tr>
               <th>N° Interno</th>
@@ -55,17 +55,17 @@
           </thead>
           <tbody>
             <tr v-for="u in filtered" :key="u.id">
-              <td class="mono" style="font-weight:500">{{ u.internalNumber || '—' }}</td>
-              <td class="display-name-cell">{{ u.displayName || '—' }}</td>
-              <td v-if="buildings.length" class="text-secondary">{{ u.buildingName || '—' }}</td>
-              <td>{{ u.staircaseName || '—' }}</td>
-              <td>{{ u.floor }}</td>
-              <td class="text-secondary">{{ u.unitType || '—' }}</td>
-              <td class="text-secondary">{{ u.occupancyStatus || '—' }}</td>
-              <td class="text-secondary">{{ u.areaSqm != null ? `${u.areaSqm} m²` : '—' }}</td>
-              <td><span class="badge" :class="u.isActive ? 'badge-green' : 'badge-muted'">{{ u.isActive ? 'Attiva' : 'Inattiva' }}</span></td>
-              <td class="text-center text-secondary count-cell">{{ u.ownersCount }}</td>
-              <td class="text-center text-secondary count-cell">{{ u.tenantsCount }}</td>
+              <td data-label="N° Interno" class="mono" style="font-weight:500">{{ u.internalNumber || '—' }}</td>
+              <td data-label="Denominazione" class="display-name-cell">{{ u.displayName || '—' }}</td>
+              <td data-label="Edificio" v-if="buildings.length" class="text-secondary">{{ u.buildingName || '—' }}</td>
+              <td data-label="Scala">{{ u.staircaseName || '—' }}</td>
+              <td data-label="Piano">{{ u.floor }}</td>
+              <td data-label="Tipo" class="text-secondary">{{ u.unitType || '—' }}</td>
+              <td data-label="Occupazione" class="text-secondary">{{ u.occupancyStatus || '—' }}</td>
+              <td data-label="Mq" class="text-secondary">{{ u.areaSqm != null ? `${u.areaSqm} m²` : '—' }}</td>
+              <td data-label="Stato"><span class="badge" :class="u.isActive ? 'badge-green' : 'badge-muted'">{{ u.isActive ? 'Attiva' : 'Inattiva' }}</span></td>
+              <td data-label="Prop." class="text-center text-secondary count-cell">{{ u.ownersCount }}</td>
+              <td data-label="Inq." class="text-center text-secondary count-cell">{{ u.tenantsCount }}</td>
               <td>
                 <div class="row-actions">
                   <button class="btn-icon" @click="openOccupanti(u)" title="Occupanti">👤</button>
@@ -605,6 +605,15 @@ watch(() => form.value.buildingId, (newBuildingId) => {
 .field-hint  { font-size:0.78rem; color:var(--text-muted); margin-top:0.2rem; }
 
 .modal--wide { min-width: 520px; }
+
+@media (max-width: 768px) {
+  .search-input,
+  .filter-select {
+    width: 100%;
+    max-width: none;
+  }
+  .modal--wide { min-width: 0; width: 100%; }
+}
 
 
 .balance-summary { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }

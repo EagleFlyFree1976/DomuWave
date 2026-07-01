@@ -13,14 +13,17 @@ public class GetRealEstateUnitByIdCommandConsumer : InMemoryConsumerBase<GetReal
 {
     private readonly IRealEstateUnitService _realEstateUnitService;
     private readonly IUserService           _userService;
+    private readonly IUserTenantService     _userTenantService;
 
     public GetRealEstateUnitByIdCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IRealEstateUnitService realEstateUnitService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        IUserTenantService userTenantService) : base(sessionFactoryProvider)
     {
         _realEstateUnitService = realEstateUnitService;
         _userService           = userService;
+        _userTenantService     = userTenantService;
     }
 
     protected override async Task<RealEstateUnitReadDto> Consume(
@@ -36,6 +39,20 @@ public class GetRealEstateUnitByIdCommandConsumer : InMemoryConsumerBase<GetReal
             .GetByIdAsync(command.UnitId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
-        return unit?.ToReadDto();
+        if (unit == null) return null;
+
+        // Condòmino NEL TENANT ATTIVO: può vedere solo le proprie unità.
+        var isCondomino = await _userTenantService
+            .IsCondominoInTenantAsync(command.CurrentUserId, command.TenantId, cancellationToken)
+            .ConfigureAwait(false);
+        if (isCondomino)
+        {
+            var ownUnitIds = await _realEstateUnitService
+                .GetCondominoUnitIdsAsync(command.CurrentUserId, cancellationToken)
+                .ConfigureAwait(false);
+            if (!ownUnitIds.Contains(unit.Id)) return null;
+        }
+
+        return unit.ToReadDto();
     }
 }

@@ -16,6 +16,7 @@ namespace DomuWave.Services.Models
         public virtual DateTime? LeaseEndDate { get; set; }
         public virtual string ContractPath { get; set; }
         public virtual bool IsActive { get; set; }
+        public virtual bool IsAccessEnabled { get; set; }
         public virtual string Notes { get; set; }
 
         public override int GetHashCode()

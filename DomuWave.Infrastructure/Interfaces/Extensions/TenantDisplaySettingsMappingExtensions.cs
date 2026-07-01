@@ -9,10 +9,16 @@ public static class TenantDisplaySettingsMappingExtensions
     public static TenantDisplaySettingsReadDto ToReadDto(this TenantDisplaySettings entity)
     {
         if (entity == null) return null!;
+        var hasLogo = entity.LogoContent != null && entity.LogoContent.Length > 0;
         var dto = new TenantDisplaySettingsReadDto
         {
             AccountingSignConvention     = (int)entity.AccountingSignConvention,
             AccountingSignConventionName = entity.AccountingSignConvention.ToString(),
+            HasLogo                      = hasLogo,
+            LogoContentType              = hasLogo ? entity.LogoContentType : null,
+            LogoUrl                      = hasLogo
+                ? $"/api/tenant-display/logo?v={(entity.LogoUpdatedDate ?? entity.CreationDate).Ticks}"
+                : null,
         };
         dto.SetTraceInfo(entity);
         return dto;

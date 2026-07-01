@@ -104,6 +104,8 @@ const sections = [
         'Dati tecnici: edifici, scale, numero di piani, presenza ascensore.',
         'Dati amministrativi: recapiti, parametri gestionali.',
       ] },
+      { sub: 'Saldo iniziale di cassa', text:
+        'Nei dati amministrativi del condominio puoi impostare il <strong>Saldo iniziale di cassa</strong>: le disponibilità liquide con cui il condominio parte. Lo trovi anche nella pagina <strong>Rendiconto</strong>, sopra i prospetti. Confluisce come avanzo/disponibilità iniziale nei <strong>Flussi di cassa</strong> e nella <strong>Situazione patrimoniale</strong>, ma <strong>solo per il primo esercizio</strong> del condominio: per gli esercizi successivi la liquidità di apertura deriva automaticamente dalla chiusura dell\'esercizio precedente.' },
       { sub: 'Unità immobiliari', text:
         'Ogni unità rappresenta un appartamento, un box, un negozio, ecc. I campi tipici sono scala, piano, interno, destinazione d\'uso e metri quadri. Il <strong>piano</strong> è particolarmente importante: viene usato per la ripartizione delle spese con criterio misto (vedi “Piano dei conti”).' },
       { example: 'Un negozio al piano terra si inserisce con <span class="mono">Piano = 0</span>. In questo modo non parteciperà alla quota “per altezza” delle spese ascensore, ma resterà soggetto alla quota “per valore”.' },
@@ -293,6 +295,8 @@ const sections = [
         'Pubblica: la comunicazione comparirà nella bacheca nel periodo indicato.',
       ] },
       { example: 'Pubblichi l\'avviso di interruzione dell\'acqua per lavori: imposti la data di inizio e fine visibilità e attivi l\'invio via email per avvisare subito tutti.' },
+      { sub: 'Sondaggi in bacheca', text:
+        'Dalla <strong>Bacheca</strong> (Bacheca & Messaggi) puoi creare un <strong>sondaggio</strong>: spunta “Crea un sondaggio”, inserisci almeno due opzioni e scegli se consentire la <strong>scelta multipla</strong>, se renderlo <strong>anonimo</strong> (si vedono solo i conteggi, non chi ha votato) e un\'eventuale <strong>scadenza</strong>. I condòmini votano dalla bacheca; i risultati diventano visibili dopo aver votato. È una consultazione informale e non sostituisce una delibera assembleare.' },
     ],
   },
   {
@@ -322,6 +326,22 @@ const sections = [
         'Imposta il criterio di ripartizione corretto sui conti “ascensore” e “scale” prima di registrare le relative spese.',
         'Archivia con ordine documenti e comunicazioni.',
       ] },
+    ],
+  },
+  {
+    id: 'impostazioni', title: 'Impostazioni', icon: 'pi-cog',
+    blocks: [
+      { text:
+        'La pagina <strong>Impostazioni</strong> raccoglie le preferenze valide per tutto lo studio (tenant): aspetto e formato dei valori contabili.' },
+      { sub: 'Logo' },
+      { text:
+        'Carica il <strong>logo</strong> dello studio: comparirà nella barra laterale e in cima a tutti i <strong>report esportati in PDF</strong> (rendiconto, bilancio di ripartizione, consuntivo) e negli <strong>avvisi di pagamento</strong> e nelle <strong>comunicazioni</strong> generati dal sistema.' },
+      { text:
+        'Formati ammessi: PNG, JPG, WebP, SVG · dimensione massima 512 KB. Puoi sostituirlo o rimuoverlo in qualsiasi momento.' },
+      { tip: 'I report <strong>Excel</strong> riportano l\'intestazione con condominio ed esercizio ma non l\'immagine del logo: nei fogli di calcolo il logo grafico è presente solo nella versione PDF.' },
+      { sub: 'Convenzione segno valori' },
+      { text:
+        'Scegli come mostrare spese, incassi e saldi: <strong>Solo colore</strong> (uscite in rosso senza segno) oppure <strong>Segno esplicito</strong> (uscite con −, entrate con +).' },
     ],
   },
   {

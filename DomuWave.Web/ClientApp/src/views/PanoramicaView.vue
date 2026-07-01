@@ -341,4 +341,27 @@ watch(condominiumId, loadData)
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .units-grid {
+    grid-template-columns: 1fr;
+  }
+  .search-input {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+  .unit-body {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .col-divider {
+    width: 100%;
+    height: 1px;
+    margin: 0;
+  }
+  .unit-displayname {
+    max-width: 120px;
+  }
+}
 </style>

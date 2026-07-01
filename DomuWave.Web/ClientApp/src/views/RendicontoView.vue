@@ -28,6 +28,18 @@
       </div>
     </div>
 
+    <!-- Saldo iniziale di cassa del condominio (vale per il primo esercizio) -->
+    <div v-if="store.selectedCondominioId" class="initial-balance-bar">
+      <label class="ib-label">Saldo iniziale di cassa</label>
+      <input class="form-input ib-input" type="number" step="0.01"
+             v-model.number="initialBalance" :disabled="savingInitialBalance" />
+      <button class="btn btn-ghost btn-sm" @click="saveInitialBalance" :disabled="savingInitialBalance">
+        <span v-if="savingInitialBalance" class="spinner" style="width:14px;height:14px"></span>
+        Salva
+      </button>
+      <span class="text-muted ib-hint">Disponibilità liquide di partenza del condominio (confluisce nei prospetti del primo esercizio).</span>
+    </div>
+
     <!-- Toolbar export (solo per i prospetti di bilancio, quando i dati sono pronti) -->
     <div v-if="canExport" class="export-toolbar">
       <button class="btn btn-ghost btn-sm" @click="exportPdf">📄 Salva come PDF</button>
@@ -144,10 +156,10 @@
               <div class="table-wrap">
                 <table>
                   <tbody>
-                    <tr><td>Avanzo di cassa iniziale</td>
-                      <td class="mono text-right">{{ fmt(flussiCassa.avanzoInizialeCassa) }}</td></tr>
                     <tr><td>Versamenti dei condòmini</td>
                       <td class="mono text-right">{{ fmt(flussiCassa.versamentiCondomini) }}</td></tr>
+                    <tr v-if="flussiCassa.altriIncassi"><td>Altri incassi</td>
+                      <td class="mono text-right">{{ fmt(flussiCassa.altriIncassi) }}</td></tr>
                   </tbody>
                   <tfoot>
                     <tr class="row-total"><td><strong>Totale incassi</strong></td>
@@ -172,7 +184,9 @@
                   <tfoot>
                     <tr class="row-total"><td><strong>Totale pagamenti</strong></td>
                       <td class="mono text-right"><strong>{{ fmt(flussiCassa.totalePagamenti) }}</strong></td></tr>
-                    <tr><td>Avanzo di cassa finale</td>
+                    <tr><td class="text-secondary">Avanzo di cassa iniziale</td>
+                      <td class="mono text-right text-secondary">+ {{ fmt(flussiCassa.avanzoInizialeCassa) }}</td></tr>
+                    <tr><td><strong>Avanzo di cassa finale</strong></td>
                       <td class="mono text-right"
                           :class="flussiCassa.avanzoFinaleCassa >= 0 ? 'text-green' : 'text-red'">
                         <strong>{{ fmt(flussiCassa.avanzoFinaleCassa) }}</strong></td></tr>
@@ -500,7 +514,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { budgetApi, fiscalYearApi, unitApi } from '@/services/api'
+import { budgetApi, fiscalYearApi, unitApi, condominiumApi } from '@/services/api'
 import {
   exportContoEconomicoPdf, exportContoEconomicoExcel,
   exportFlussiCassaPdf, exportFlussiCassaExcel,
@@ -531,6 +545,31 @@ const flussiCassa          = ref(null)
 const patrimoniale         = ref(null)
 const expandedGroups       = ref(new Set())
 const expandedDetailGroups = ref(new Set())
+
+// ── Saldo iniziale di cassa del condominio ──────────────────────────────────
+const initialBalance       = ref(0)
+const savingInitialBalance = ref(false)
+
+function syncInitialBalanceFromStore() {
+  initialBalance.value = Number(store.selectedCondominio?.initialBalance) || 0
+}
+
+async function saveInitialBalance() {
+  const condId = store.selectedCondominioId
+  if (!condId) return
+  savingInitialBalance.value = true
+  try {
+    await condominiumApi.updateInitialBalance(condId, Number(initialBalance.value) || 0)
+    await store.loadCondomini()
+    store.toast('Saldo iniziale aggiornato', 'success')
+    // Ricarica i prospetti di cassa che dipendono dal saldo iniziale.
+    await Promise.all([loadFlussiCassa(), loadPatrimoniale()])
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    savingInitialBalance.value = false
+  }
+}
 
 // ── Load ────────────────────────────────────────────────────────────────────
 function toggleGroup(id) {
@@ -703,6 +742,8 @@ watch(fiscalYears, (fys) => {
   }
 }, { immediate: true })
 
+watch(() => store.selectedCondominio, syncInitialBalanceFromStore, { immediate: true })
+
 // ── Formatters ──────────────────────────────────────────────────────────────
 const fmt     = (v) => v != null ? '€\u00a0' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2 }) : '—'
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString('it-IT') : '—'
@@ -716,12 +757,12 @@ const exportableData = computed(() => {
 })
 const canExport = computed(() => !!exportableData.value)
 
-function exportPdf() {
+async function exportPdf() {
   const d = exportableData.value
   if (!d) return
-  if (activeTab.value === 'economico')    exportContoEconomicoPdf(d)
-  if (activeTab.value === 'cassa')        exportFlussiCassaPdf(d)
-  if (activeTab.value === 'patrimoniale') exportSituazionePatrimonialePdf(d)
+  if (activeTab.value === 'economico')    await exportContoEconomicoPdf(d)
+  if (activeTab.value === 'cassa')        await exportFlussiCassaPdf(d)
+  if (activeTab.value === 'patrimoniale') await exportSituazionePatrimonialePdf(d)
 }
 
 function exportExcel() {
@@ -753,6 +794,26 @@ window.addEventListener('app:refresh', refresh)
   gap: 1rem;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+}
+
+/* ── Saldo iniziale di cassa ──────────────────────────────────────────────── */
+.initial-balance-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.initial-balance-bar .ib-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.initial-balance-bar .ib-input {
+  width: 160px;
+}
+.initial-balance-bar .ib-hint {
+  font-size: 0.75rem;
 }
 
 /* ── Export toolbar ───────────────────────────────────────────────────────── */
@@ -864,6 +925,22 @@ window.addEventListener('app:refresh', refresh)
 .balance-grid .row-total td { border-top: 2px solid var(--border); }
 @media (max-width: 880px) {
   .balance-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .tab-pills {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .kpi-row,
+  .summary-meta {
+    gap: 1rem;
+  }
+  .table-wrap table th,
+  .table-wrap table td {
+    white-space: nowrap;
+  }
 }
 
 /* ── Colors ─────────────────────────────────────────────────────────────── */

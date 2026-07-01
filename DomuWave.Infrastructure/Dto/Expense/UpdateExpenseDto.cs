@@ -18,6 +18,7 @@ public class UpdateExpenseDto
     public decimal  StampDuty              { get; set; }
     public int      ExpenseTypeId        { get; set; }
     public int      PaymentStatusId      { get; set; } = 1;
+    public DateTime? PaymentDate         { get; set; }
     public int?     PaymentMethodId      { get; set; }
     public string?  Description          { get; set; }
     public int      ChargeabilityTypeId  { get; set; } = 0;

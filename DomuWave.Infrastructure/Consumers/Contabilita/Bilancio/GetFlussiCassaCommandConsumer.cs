@@ -62,6 +62,18 @@ public class GetFlussiCassaCommandConsumer
             .SumAsync(b => (decimal?)b.OpeningBalance, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
+        // Saldo iniziale di cassa del condominio: confluisce SOLO per il primo esercizio
+        // (per quelli successivi la liquidità di apertura deriva dalla chiusura precedente).
+        var isFirstFiscalYear = !await session.Query<FiscalYear>()
+            .AnyAsync(f => f.Condominium.Id == condominiumId
+                        && f.Id != fiscalYear.Id
+                        && f.StartDate < fiscalYear.StartDate
+                        && !f.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (isFirstFiscalYear)
+            avanzoIniziale += fiscalYear.Condominium.InitialBalance;
+
         // ── INCASSI: versamenti dei condòmini con data di pagamento nel periodo ───
         var versamenti = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.Condominium.Id == condominiumId
@@ -72,8 +84,8 @@ public class GetFlussiCassaCommandConsumer
             .SumAsync(f => (decimal?)f.AmountPaid, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
-        // ── PAGAMENTI: spese con data di pagamento nel periodo ────────────────────
-        var paidExpenses = await session.Query<Expense>()
+        // ── MOVIMENTI con data di pagamento nel periodo (incassi + pagamenti) ─────
+        var paidMovements = await session.Query<Expense>()
             .Where(e => e.Condominium.Id == condominiumId
                      && e.PaymentDate != null
                      && e.PaymentDate >= start
@@ -82,11 +94,22 @@ public class GetFlussiCassaCommandConsumer
             .Select(e => new
             {
                 e.GrossAmount,
+                AccountType  = e.Account.Type,
                 FiscalYearId = (int?)e.FiscalYear.Id,
                 IsIndividual = e.Unit != null,
             })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
+
+        // Movimenti su conti di tipo Entrata: sono incassi, non pagamenti.
+        var altriIncassi = paidMovements
+            .Where(e => e.AccountType == ChartOfAccountsType.Entrata)
+            .Sum(e => e.GrossAmount);
+
+        // ── PAGAMENTI: solo movimenti su conti di tipo Uscita ─────────────────────
+        var paidExpenses = paidMovements
+            .Where(e => e.AccountType == ChartOfAccountsType.Uscita)
+            .ToList();
 
         // Uscite individuali: spese imputate a singola unità.
         var usciteIndividuali = paidExpenses.Where(e => e.IsIndividual).Sum(e => e.GrossAmount);
@@ -98,7 +121,9 @@ public class GetFlussiCassaCommandConsumer
         var pagamentiPrecedenti = condominiali
             .Where(e => e.FiscalYearId != fiscalYear.Id).Sum(e => e.GrossAmount);
 
-        var totaleIncassi   = avanzoIniziale + versamenti;
+        // Totale incassi = solo gli incassi effettivi del periodo (NON l'avanzo iniziale,
+        // che è il saldo di partenza ed è esposto come riga a sé).
+        var totaleIncassi   = versamenti + altriIncassi;
         var totalePagamenti = pagamentiCorrente + pagamentiPrecedenti + usciteIndividuali;
 
         return new FlussiCassaDto
@@ -112,6 +137,7 @@ public class GetFlussiCassaCommandConsumer
 
             AvanzoInizialeCassa = avanzoIniziale,
             VersamentiCondomini = versamenti,
+            AltriIncassi        = altriIncassi,
             TotaleIncassi       = totaleIncassi,
 
             PagamentiEsercizioCorrente  = pagamentiCorrente,
@@ -119,7 +145,8 @@ public class GetFlussiCassaCommandConsumer
             UsciteIndividuali           = usciteIndividuali,
             TotalePagamenti = totalePagamenti,
 
-            AvanzoFinaleCassa = totaleIncassi - totalePagamenti,
+            // Avanzo finale = avanzo iniziale + incassi del periodo − pagamenti del periodo.
+            AvanzoFinaleCassa = avanzoIniziale + totaleIncassi - totalePagamenti,
         };
     }
 }

@@ -22,6 +22,25 @@ public class UserTenantsController(
 {
     private readonly IMediator _mediator = mediator;
 
+    /// <summary>
+    /// Profilo dell'utente corrente nel tenant indicato (ruolo per-tenant).
+    /// Il frontend lo usa al cambio tenant per ricalcolare profilo/menu/permessi.
+    /// </summary>
+    [HttpGet("profile-for-tenant/{tenantId:guid}")]
+    [ProducesResponseType(typeof(DomuWave.Services.Dto.UserTenants.TenantProfileDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProfileForTenant(Guid tenantId, CancellationToken ct)
+        => Ok(await _mediator.GetResponse(new GetTenantProfileCommand(CurrentUser.Id, tenantId), ct));
+
+    /// <summary>Imposta il tenant indicato come predefinito per l'utente corrente.</summary>
+    [HttpPatch("my-default/{tenantId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> SetMyDefaultTenant(Guid tenantId, CancellationToken ct)
+    {
+        var ok = await _mediator.GetResponse(new SetMyDefaultTenantCommand(CurrentUser.Id, tenantId), ct);
+        if (!ok) return NotFound();
+        return Ok(new { tenantId, isDefault = true });
+    }
+
     [HttpGet("user/{userId:long}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.UserTenants, Modules.DomuWaveModule)]
     [ProducesResponseType(typeof(IList<UserTenantReadDto>), StatusCodes.Status200OK)]

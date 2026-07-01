@@ -21,6 +21,19 @@ namespace DomuWave.Services.Models
         public virtual AccountingSignConvention AccountingSignConvention { get; set; }
             = AccountingSignConvention.SoloColore;
 
+        // ── Logo del tenant (usato in sidebar e nei report esportati) ──────────────
+        /// <summary>Contenuto binario del logo (VARBINARY(MAX)). Null se non impostato.</summary>
+        public virtual byte[] LogoContent { get; set; }
+
+        /// <summary>Content-type MIME del logo (es. image/png).</summary>
+        public virtual string LogoContentType { get; set; }
+
+        /// <summary>Nome file originale del logo caricato.</summary>
+        public virtual string LogoFileName { get; set; }
+
+        /// <summary>Data ultimo aggiornamento del logo (usata per cache-busting).</summary>
+        public virtual DateTime? LogoUpdatedDate { get; set; }
+
         public override int GetHashCode() => Id.GetHashCode();
     }
 }

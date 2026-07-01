@@ -20,6 +20,8 @@ public class FlussiCassaDto
     public decimal  AvanzoInizialeCassa { get; set; }
     /// <summary>Versamenti dei condòmini con data di pagamento nel periodo.</summary>
     public decimal  VersamentiCondomini { get; set; }
+    /// <summary>Altri incassi del periodo: movimenti su conti di tipo Entrata (rimborsi, interessi, ecc.).</summary>
+    public decimal  AltriIncassi    { get; set; }
     public decimal  TotaleIncassi   { get; set; }
 
     // ── PAGAMENTI ────────────────────────────────────────────────────────────

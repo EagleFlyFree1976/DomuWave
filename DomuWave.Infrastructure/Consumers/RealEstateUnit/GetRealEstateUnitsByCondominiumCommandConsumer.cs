@@ -15,14 +15,17 @@ public class GetRealEstateUnitsByCondominiumCommandConsumer : InMemoryConsumerBa
 {
     private readonly IRealEstateUnitService _realEstateUnitService;
     private readonly IUserService           _userService;
+    private readonly IUserTenantService     _userTenantService;
 
     public GetRealEstateUnitsByCondominiumCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
         IRealEstateUnitService realEstateUnitService,
-        IUserService userService) : base(sessionFactoryProvider)
+        IUserService userService,
+        IUserTenantService userTenantService) : base(sessionFactoryProvider)
     {
         _realEstateUnitService = realEstateUnitService;
         _userService           = userService;
+        _userTenantService     = userTenantService;
     }
 
     protected override async Task<IList<RealEstateUnitReadDto>> Consume(
@@ -37,6 +40,19 @@ public class GetRealEstateUnitsByCondominiumCommandConsumer : InMemoryConsumerBa
         var units = await _realEstateUnitService
             .GetByCondominiumIdAsync(command.CondominiumId, command.TenantId, currentUser, cancellationToken)
             .ConfigureAwait(false);
+
+        // Condòmino NEL TENANT ATTIVO: restringe alle sole unità proprie.
+        // (ruolo per-tenant: lo stesso utente può essere admin altrove)
+        var isCondomino = await _userTenantService
+            .IsCondominoInTenantAsync(command.CurrentUserId, command.TenantId, cancellationToken)
+            .ConfigureAwait(false);
+        if (isCondomino)
+        {
+            var ownUnitIds = await _realEstateUnitService
+                .GetCondominoUnitIdsAsync(command.CurrentUserId, cancellationToken)
+                .ConfigureAwait(false);
+            units = units.Where(u => ownUnitIds.Contains(u.Id)).ToList();
+        }
 
         var unitIds = units.Select(u => u.Id).ToList();
 

@@ -1757,4 +1757,24 @@ window.addEventListener('app:refresh', loadInstallments)
   border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
   vertical-align: middle;
 }
+
+@media (max-width: 768px) {
+  /* Form del modal a colonna singola */
+  .form-grid { grid-template-columns: 1fr; }
+
+  /* Le tabelle quote interne non sono dentro .table-wrap: diamo a loro
+     uno scroll orizzontale così la pagina non sfora oltre lo schermo. */
+  .fees-body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .inner-table {
+    min-width: max-content;
+  }
+  /* Celle delle quote: niente a capo, così lo scroll è pulito */
+  .inner-table th,
+  .inner-table td {
+    white-space: nowrap;
+  }
+}
 </style>

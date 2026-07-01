@@ -45,6 +45,31 @@
         <option :value="1">Non evasa</option>
         <option :value="2">Evasa</option>
       </select>
+
+      <select class="form-select" v-model.number="accountFilter" style="min-width:200px" @change="resetAndLoad">
+        <option :value="null">Tutti i conti</option>
+        <optgroup v-for="grp in expenseAccountGroups" :key="grp.typeId" :label="grp.typeLabel">
+          <option v-for="r in grp.rows" :key="r.accountId" :value="r.accountId">{{ r.label }}</option>
+        </optgroup>
+      </select>
+
+      <div class="filter-daterange">
+        <span class="filter-daterange-label">Data documento</span>
+        <input class="form-input" type="date" v-model="docDateFrom" @change="resetAndLoad" title="Dal" />
+        <span class="filter-daterange-sep">–</span>
+        <input class="form-input" type="date" v-model="docDateTo" @change="resetAndLoad" title="Al" />
+      </div>
+
+      <div class="filter-daterange">
+        <span class="filter-daterange-label">Data pagamento</span>
+        <input class="form-input" type="date" v-model="payDateFrom" @change="resetAndLoad" title="Dal" />
+        <span class="filter-daterange-sep">–</span>
+        <input class="form-input" type="date" v-model="payDateTo" @change="resetAndLoad" title="Al" />
+      </div>
+
+      <button v-if="hasActiveFilters" class="btn btn-ghost btn-sm" @click="clearFilters" title="Azzera filtri">
+        ✕ Azzera filtri
+      </button>
     </div>
 
     <!-- ── Tabella ──────────────────────────────────────── -->
@@ -55,7 +80,7 @@
       </div>
       <div v-else class="table-wrap">
         <AppPaginator v-model="currentPage" v-model:pageSize="pageSize" :total-count="totalCount" />
-        <table>
+        <table class="cards-on-mobile">
           <thead>
             <tr>
               <th class="sortable" @click="setSort('documentdate')">
@@ -71,22 +96,24 @@
                 Importo <span class="sort-icon">{{ sortIcon('grossamount') }}</span>
               </th>
               <th class="text-right">IVA</th>
-              <th>Pagamento</th>
+              <th class="sortable" @click="setSort('paymentdate')">
+                Data pagamento <span class="sort-icon">{{ sortIcon('paymentdate') }}</span>
+              </th>
               <th>Stato</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="e in expenses" :key="e.id">
-              <td class="mono text-secondary">{{ fmtDate(e.documentDate) }}</td>
-              <td><span class="badge" :class="movementBadge(e.accountType)">{{ movementLabel(e.accountType) }}</span></td>
-              <td>{{ e.name }}</td>
-              <td>{{ e.supplierName || '—' }}</td>
-              <td class="text-secondary">{{ e.fiscalYearCode || '—' }}</td>
-              <td class="mono text-right">{{ fmt(e.grossAmount) }}</td>
-              <td class="mono text-right text-secondary">{{ fmt(e.vatAmount) }}</td>
-              <td class="text-secondary">{{ e.paymentMethodName || '—' }}</td>
-              <td><span class="badge" :class="payBadge(e.paymentStatusId)">{{ paymentStatusLabel(e) }}</span></td>
+              <td data-label="Data" class="mono text-secondary">{{ fmtDate(e.documentDate) }}</td>
+              <td data-label="Tipo"><span class="badge" :class="movementBadge(e.accountType)">{{ movementLabel(e.accountType) }}</span></td>
+              <td data-label="Descrizione">{{ e.name }}</td>
+              <td data-label="Fornitore">{{ e.supplierName || '—' }}</td>
+              <td data-label="Esercizio" class="text-secondary">{{ e.fiscalYearCode || '—' }}</td>
+              <td data-label="Importo" class="mono text-right">{{ fmt(e.grossAmount) }}</td>
+              <td data-label="IVA" class="mono text-right text-secondary">{{ fmt(e.vatAmount) }}</td>
+              <td data-label="Data pagamento" class="mono text-secondary">{{ e.paymentDate ? fmtDate(e.paymentDate) : '—' }}</td>
+              <td data-label="Stato"><span class="badge" :class="payBadge(e.paymentStatusId)">{{ paymentStatusLabel(e) }}</span></td>
               <td>
                 <div class="row-actions">
                   <button v-if="canEdit && e.paymentStatusId !== 2" class="action-pill action-pill--pay"
@@ -324,6 +351,18 @@
             <option v-for="m in paymentMethods" :key="m.id" :value="m.id">{{ m.name }}</option>
           </select>
         </div>
+        <div class="form-group">
+          <label class="form-label">Stato pagamento</label>
+          <label class="checkbox-label" style="margin-top:0.35rem">
+            <input type="checkbox" :checked="expForm.paymentStatusId === 2"
+                   @change="onPaidToggle($event.target.checked)" />
+            Spesa pagata / evasa
+          </label>
+        </div>
+        <div class="form-group" v-if="expForm.paymentStatusId === 2">
+          <label class="form-label">Data pagamento</label>
+          <input class="form-input" type="date" v-model="expForm.paymentDate" />
+        </div>
       </div>
       <div class="form-group form-group--full" style="margin-top:0.5rem">
         <label class="form-label">A carico di</label>
@@ -385,6 +424,26 @@
         </button>
       </template>
     </BaseModal>
+
+    <!-- ══════════════════════════════════════════════════
+         MODAL — Data di pagamento (segna come pagata)
+    ══════════════════════════════════════════════════ -->
+    <BaseModal
+      :show="showPayModal"
+      @close="showPayModal = false"
+      title="Segna come pagata"
+      :subtitle="store.selectedCondominio?.name"
+      size="sm"
+    >
+      <div class="form-group">
+        <label class="form-label">Data di pagamento</label>
+        <input class="form-input" type="date" v-model="payDate" @keyup.enter="confirmMarkPaid" />
+      </div>
+      <template #footer>
+        <button class="btn btn-ghost" @click="showPayModal = false">Annulla</button>
+        <button class="btn btn-primary" @click="confirmMarkPaid" :disabled="!payDate">Conferma</button>
+      </template>
+    </BaseModal>
   </div>
 </template>
 
@@ -433,6 +492,11 @@ const search              = ref(qStr('search'))
 const expTypeFilter       = ref(qInt('type'))
 const paymentStatusFilter = ref(qInt('status'))
 const movementTypeFilter  = ref(qInt('movementType'))
+const accountFilter       = ref(qInt('accountId'))
+const docDateFrom         = ref(qStr('docFrom'))
+const docDateTo           = ref(qStr('docTo'))
+const payDateFrom         = ref(qStr('payFrom'))
+const payDateTo           = ref(qStr('payTo'))
 const sortField           = ref(qStr('sortField', 'documentdate'))
 const sortAsc             = ref(route.query.sortAsc === 'true')
 
@@ -448,6 +512,11 @@ function syncUrl() {
   if (expTypeFilter.value)                     q.type      = expTypeFilter.value
   if (paymentStatusFilter.value)               q.status    = paymentStatusFilter.value
   if (movementTypeFilter.value)                q.movementType = movementTypeFilter.value
+  if (accountFilter.value)                     q.accountId = accountFilter.value
+  if (docDateFrom.value)                       q.docFrom   = docDateFrom.value
+  if (docDateTo.value)                         q.docTo     = docDateTo.value
+  if (payDateFrom.value)                       q.payFrom   = payDateFrom.value
+  if (payDateTo.value)                         q.payTo     = payDateTo.value
   if (selectedFiscalYearId.value)              q.fy        = selectedFiscalYearId.value
   if (sortField.value !== 'documentdate')      q.sortField = sortField.value
   if (sortAsc.value)                           q.sortAsc   = 'true'
@@ -479,6 +548,23 @@ function onSearchInput() {
 function resetAndLoad() {
   currentPage.value = 1
   loadExpenses()
+}
+
+const hasActiveFilters = computed(() =>
+  !!(search.value || expTypeFilter.value || paymentStatusFilter.value || movementTypeFilter.value
+     || accountFilter.value || docDateFrom.value || docDateTo.value || payDateFrom.value || payDateTo.value))
+
+function clearFilters() {
+  search.value = ''
+  expTypeFilter.value = null
+  paymentStatusFilter.value = null
+  movementTypeFilter.value = null
+  accountFilter.value = null
+  docDateFrom.value = ''
+  docDateTo.value = ''
+  payDateFrom.value = ''
+  payDateTo.value = ''
+  resetAndLoad()
 }
 
 // ─── Metodi di pagamento ──────────────────────────────────────
@@ -641,6 +727,12 @@ function validateExpForm() {
 }
 
 const today = new Date().toISOString().slice(0, 10)
+
+// Modale "Segna come pagata" (scelta data di pagamento)
+const showPayModal = ref(false)
+const payDate      = ref(today)
+const payTargetId  = ref(null)
+
 const suppliers        = ref([])
 const millesimalTables = ref([])
 const units            = ref([])
@@ -656,7 +748,7 @@ const emptyExpForm = () => ({
   taxableAmount: 0, taxableAmountVatExempt: 0,
   grossAmount: 0, vatAmount: 0, netAmount: 0,
   pensionFund: 0, withholdingTax: 0, stampDuty: 0,
-  expenseTypeId: 0, paymentStatusId: 1,
+  expenseTypeId: 0, paymentStatusId: 1, paymentDate: null,
   paymentMethodId: null, supplierId: null, accountId: null, millesimalTableId: null, description: '',
   chargeabilityTypeId: 1,
   send770: false,
@@ -712,6 +804,11 @@ async function loadExpenses() {
       // Filtro per esercizio fiscale tramite l'assegnazione della spesa, non per range di date.
       fiscalYearId:    selectedFiscalYearId.value || undefined,
       accountType:     movementTypeFilter.value || undefined,
+      accountId:       accountFilter.value || undefined,
+      dateFrom:        docDateFrom.value || undefined,
+      dateTo:          docDateTo.value || undefined,
+      paymentDateFrom: payDateFrom.value || undefined,
+      paymentDateTo:   payDateTo.value || undefined,
     })
     expenses.value   = data?.items      ?? []
     totalCount.value = data?.totalCount ?? 0
@@ -746,6 +843,7 @@ editingExp.value = e?.id ?? null
     stampDuty:              e.stampDuty              ?? 0,
     expenseTypeId:          e.expenseTypeId          ?? 0,
     paymentStatusId:    e.paymentStatusId ?? 1,
+    paymentDate:        e.paymentDate?.slice(0, 10) ?? null,
     paymentMethodId:    e.paymentMethodId ?? null,
     supplierId:         e.supplierId ?? null,
     accountId:          e.accountId ?? null,
@@ -832,6 +930,7 @@ async function saveExpense() {
       stampDuty:              isUscita ? (expForm.value.stampDuty              || 0) : 0,
       expenseTypeId:      isUscita ? expForm.value.expenseTypeId : 6,
       paymentStatusId:    expForm.value.paymentStatusId || 1,
+      paymentDate:        expForm.value.paymentStatusId === 2 ? (expForm.value.paymentDate || null) : null,
       paymentMethodId:    expForm.value.paymentMethodId || null,
       description:        expForm.value.description || null,
       condominiumId:      store.selectedCondominioId,
@@ -861,9 +960,32 @@ async function saveExpense() {
   } finally { savingExp.value = false }
 }
 
-async function markPaid(id) {
+// Toggle "spesa pagata" nel form: imposta lo stato e propone una data di pagamento
+// di default (data di registrazione, altrimenti oggi) senza forzarla a "oggi".
+function onPaidToggle(checked) {
+  if (checked) {
+    expForm.value.paymentStatusId = 2
+    if (!expForm.value.paymentDate)
+      expForm.value.paymentDate = expForm.value.registrationDate || today
+  } else {
+    expForm.value.paymentStatusId = 1
+    expForm.value.paymentDate = null
+  }
+}
+
+// Apre la modale per scegliere la data di pagamento (default oggi).
+function markPaid(id) {
+  payTargetId.value = id
+  payDate.value = today
+  showPayModal.value = true
+}
+
+async function confirmMarkPaid() {
+  const id = payTargetId.value
+  if (!id || !payDate.value) return
+  showPayModal.value = false
   actionInProgress.value[`pay-${id}`] = true
-  try { await expenseApi.markAsPaid(id, today, null); await loadExpenses() }
+  try { await expenseApi.markAsPaid(id, payDate.value, null); await loadExpenses() }
   catch {} finally { actionInProgress.value[`pay-${id}`] = false }
 }
 
@@ -924,10 +1046,22 @@ watch(currentPage,         loadExpenses)
 watch(pageSize,            () => { currentPage.value = 1; loadExpenses() })
 watch(selectedFiscalYearId, () => { currentPage.value = 1; loadExpenses() })
 
+// Carica i conti del condominio (riusati sia dalla modale sia dal filtro).
+async function ensureAccountsLoaded() {
+  if (accountsLoaded || !store.selectedCondominioId) return
+  try {
+    const { data } = await chartOfAccountsApi.getByCondominium(store.selectedCondominioId)
+    chartOfAccounts.value = data ?? []
+    accountsLoaded = true
+    buildExpenseAccountGroups()
+  } catch { chartOfAccounts.value = [] }
+}
+
 onMounted(async () => {
   if (!store.fiscalYears.length) await store.loadFiscalYears()
   const { data } = await expenseApi.getPaymentMethods()
   paymentMethods.value = data ?? []
+  await ensureAccountsLoaded()
   await loadExpenses()
 })
 onUnmounted(() => window.removeEventListener('app:refresh', loadExpenses))
@@ -937,6 +1071,12 @@ window.addEventListener('app:refresh', loadExpenses)
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ── Filtro range di date ──────────────────────────────────────── */
+.filter-daterange { display: inline-flex; align-items: center; gap: 0.35rem; }
+.filter-daterange-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+.filter-daterange-sep { color: var(--text-muted); }
+.filter-daterange .form-input { width: 140px; }
 
 /* ── Azioni riga tabella movimenti ─────────────────────────────── */
 .row-actions { display: flex; align-items: center; gap: 0.35rem; justify-content: flex-end; }

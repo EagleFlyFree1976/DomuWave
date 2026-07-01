@@ -192,6 +192,10 @@
             <input type="checkbox" id="ownerIsActive" v-model="ownerModal.form.isActive" />
             <label for="ownerIsActive" style="font-size:0.875rem;cursor:pointer">Attivo</label>
           </div>
+          <div v-if="!ownerModal.editing" class="form-group" style="flex-direction:row;align-items:center;gap:0.5rem;margin-top:0.25rem">
+            <input type="checkbox" id="ownerAccessEnabledCreate" v-model="ownerModal.form.isAccessEnabled" />
+            <label for="ownerAccessEnabledCreate" style="font-size:0.875rem;cursor:pointer">Abilita accesso al sito</label>
+          </div>
           <div class="form-group" style="margin-top:0.75rem">
             <label class="form-label">Note</label>
             <textarea class="form-textarea" v-model="ownerModal.form.notes" rows="2"></textarea>
@@ -256,12 +260,11 @@
 
         <!-- Accesso piattaforma in CREAZIONE: opzionale -->
         <template v-if="!ownerModal.editing">
-          <fieldset class="form-fieldset platform-access-fieldset" style="margin-top:1rem">
-            <legend class="form-fieldset-legend">Accesso alla piattaforma <span class="badge-optional">opzionale</span></legend>
+          <fieldset v-if="ownerModal.form.isAccessEnabled" class="form-fieldset platform-access-fieldset" style="margin-top:1rem">
+            <legend class="form-fieldset-legend">Collega un account esistente <span class="badge-optional">opzionale</span></legend>
             <p class="platform-access-hint">
-              Se vuoi dare accesso alla piattaforma al proprietario, cercalo qui e selezionalo.
-              Se non ha ancora un account,
-              <button type="button" class="btn-link" @click="openCreateCondomino('owner')">clicca qui per crearne uno</button>.
+              Verrà creato automaticamente un account per il proprietario (con invito via
+              email se indicata). In alternativa, se ha già un account, cercalo e collegalo qui.
             </p>
             <div class="user-search-row">
               <input class="form-input" v-model="userSearch" placeholder="Cerca per nome o email…" @input="searchUsers" />
@@ -370,6 +373,14 @@
             <input type="checkbox" id="tenantIsActive" v-model="tenantModal.form.isActive" />
             <label for="tenantIsActive" style="font-size:0.875rem;cursor:pointer">Attivo</label>
           </div>
+          <div class="form-group" style="flex-direction:row;align-items:center;gap:0.5rem;margin-top:0.25rem">
+            <input type="checkbox" id="tenantAccessEnabled" v-model="tenantModal.form.isAccessEnabled" />
+            <label for="tenantAccessEnabled" style="font-size:0.875rem;cursor:pointer">Abilita accesso al sito</label>
+          </div>
+          <p class="platform-access-hint" style="margin:0.35rem 0 0">
+            Verrà creato un account per l'inquilino. Se l'email è indicata, riceverà
+            l'invito per impostare la password.
+          </p>
           <div class="form-group" style="margin-top:0.75rem">
             <label class="form-label">Note</label>
             <textarea class="form-textarea" v-model="tenantModal.form.notes" rows="2"></textarea>
@@ -516,15 +527,16 @@ const tenantModal = reactive({
   editing: null,
   saving:  false,
   form: {
-    firstName:      '',
-    lastName:       '',
-    email:          '',
-    phone:          '',
-    leaseStartDate: '',
-    leaseEndDate:   '',
-    taxCode:        '',
-    isActive:       true,
-    notes:          '',
+    firstName:       '',
+    lastName:        '',
+    email:           '',
+    phone:           '',
+    leaseStartDate:  '',
+    leaseEndDate:    '',
+    taxCode:         '',
+    isActive:        true,
+    isAccessEnabled: true,
+    notes:           '',
   },
 })
 
@@ -735,6 +747,7 @@ function openAddTenant() {
   tenantModal.form.leaseEndDate   = ''
   tenantModal.form.taxCode        = ''
   tenantModal.form.isActive       = true
+  tenantModal.form.isAccessEnabled = true
   tenantModal.form.notes          = ''
   tenantModal.show = true
 }
@@ -749,6 +762,7 @@ function openEditTenant(t) {
   tenantModal.form.leaseEndDate   = t.leaseEndDate?.split('T')[0] ?? ''
   tenantModal.form.taxCode        = t.taxCode ?? ''
   tenantModal.form.isActive       = t.isActive
+  tenantModal.form.isAccessEnabled = t.isAccessEnabled ?? true
   tenantModal.form.notes          = t.notes ?? ''
   tenantModal.show = true
 }
@@ -765,10 +779,11 @@ async function saveTenant() {
       email:          tenantModal.form.email || null,
       phone:          tenantModal.form.phone || null,
       leaseStartDate: tenantModal.form.leaseStartDate,
-      leaseEndDate:   tenantModal.form.leaseEndDate || null,
-      taxCode:        tenantModal.form.taxCode || null,
-      isActive:       tenantModal.form.isActive,
-      notes:          tenantModal.form.notes || null,
+      leaseEndDate:    tenantModal.form.leaseEndDate || null,
+      taxCode:         tenantModal.form.taxCode || null,
+      isActive:        tenantModal.form.isActive,
+      isAccessEnabled: tenantModal.form.isAccessEnabled,
+      notes:           tenantModal.form.notes || null,
     }
     if (tenantModal.editing) {
       await unitTenantApi.update(tenantModal.editing, dto)

@@ -33,8 +33,15 @@ const showPostModal = ref(false)
 const editingPost   = ref(null)
 const postErrors    = ref({})
 
-const defaultPostForm = () => ({ title: '', body: '', isPinned: false })
+const defaultPostForm = () => ({
+  title: '', body: '', isPinned: false,
+  isPoll: false, isAnonymous: false, allowMultiple: false, closesAt: '',
+  options: ['', ''],
+})
 const postForm = ref(defaultPostForm())
+
+function addOption()    { postForm.value.options.push('') }
+function removeOption(i) { if (postForm.value.options.length > 2) postForm.value.options.splice(i, 1) }
 
 async function loadPosts() {
   if (!store.selectedCondominioId) return
@@ -60,7 +67,10 @@ async function loadComments(postId) {
 
 function openPostModal(post = null) {
   editingPost.value = post?.id ?? null
-  postForm.value = post ? { title: post.title, body: post.body, isPinned: post.isPinned } : defaultPostForm()
+  // In modifica si editano solo i campi base (per i sondaggi opzioni/tipo sono immutabili).
+  postForm.value = post
+    ? { ...defaultPostForm(), title: post.title, body: post.body, isPinned: post.isPinned, isPoll: post.isPoll }
+    : defaultPostForm()
   postErrors.value = {}
   showPostModal.value = true
 }
@@ -69,6 +79,11 @@ function validatePost() {
   const e = {}
   if (!postForm.value.title?.trim()) e.title = 'Il titolo è obbligatorio'
   if (!postForm.value.body?.trim())  e.body  = 'Il testo è obbligatorio'
+  // Sondaggio: validare opzioni solo in creazione (in modifica sono immutabili).
+  if (!editingPost.value && postForm.value.isPoll) {
+    const opts = postForm.value.options.map(o => o.trim()).filter(Boolean)
+    if (opts.length < 2) e.options = 'Inserisci almeno 2 opzioni'
+  }
   postErrors.value = e
   return !Object.keys(e).length
 }
@@ -78,19 +93,86 @@ async function savePost() {
   if (!validatePost()) return
   savingPost.value = true
   try {
-    const payload = { ...postForm.value, condominiumId: store.selectedCondominioId }
     if (editingPost.value) {
-      await boardPostApi.update(editingPost.value, payload)
+      // Update: solo campi base + eventuale proroga scadenza sondaggio.
+      await boardPostApi.update(editingPost.value, {
+        title: postForm.value.title,
+        body: postForm.value.body,
+        isPinned: postForm.value.isPinned,
+        closesAt: postForm.value.isPoll && postForm.value.closesAt ? postForm.value.closesAt : null,
+      })
       store.toast('Post aggiornato', 'success')
     } else {
+      const payload = {
+        condominiumId: store.selectedCondominioId,
+        title: postForm.value.title,
+        body: postForm.value.body,
+        isPinned: postForm.value.isPinned,
+        isPoll: postForm.value.isPoll,
+        isAnonymous: postForm.value.isPoll && postForm.value.isAnonymous,
+        allowMultiple: postForm.value.isPoll && postForm.value.allowMultiple,
+        closesAt: postForm.value.isPoll && postForm.value.closesAt ? postForm.value.closesAt : null,
+        options: postForm.value.isPoll ? postForm.value.options.map(o => o.trim()).filter(Boolean) : [],
+      }
       await boardPostApi.create(payload)
-      store.toast('Post pubblicato', 'success')
+      store.toast(postForm.value.isPoll ? 'Sondaggio pubblicato' : 'Post pubblicato', 'success')
     }
     showPostModal.value = false
     await loadPosts()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
   } finally { savingPost.value = false }
+}
+
+// ── Voto sondaggio ───────────────────────────────────────────────────────────
+const voteSelections = ref({}) // postId -> Set(optionId)
+const votingPost     = ref(null)
+
+function isOptionSelected(post, optionId) {
+  return voteSelections.value[post.id]?.has(optionId) ?? false
+}
+function toggleOption(post, optionId) {
+  let sel = voteSelections.value[post.id]
+  if (!sel) { sel = new Set(); voteSelections.value[post.id] = sel }
+  if (post.allowMultiple) {
+    sel.has(optionId) ? sel.delete(optionId) : sel.add(optionId)
+  } else {
+    sel.clear(); sel.add(optionId)
+  }
+  // forza reattività sul Set
+  voteSelections.value = { ...voteSelections.value }
+}
+async function submitVote(post) {
+  const sel = voteSelections.value[post.id]
+  if (!sel || !sel.size) { store.toast('Seleziona almeno un\'opzione', 'info'); return }
+  votingPost.value = post.id
+  try {
+    const { data } = await boardPostApi.vote(post.id, [...sel])
+    replacePost(data)
+    store.toast('Voto registrato', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { votingPost.value = null }
+}
+async function revokeVote(post) {
+  if (!confirm('Revocare il tuo voto?')) return
+  votingPost.value = post.id
+  try {
+    const { data } = await boardPostApi.vote(post.id, [])
+    replacePost(data)
+    delete voteSelections.value[post.id]
+    store.toast('Voto revocato', 'success')
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { votingPost.value = null }
+}
+function replacePost(updated) {
+  const i = posts.value.findIndex(p => p.id === updated.id)
+  if (i !== -1) posts.value[i] = { ...posts.value[i], ...updated }
+}
+function pollPercent(post, option) {
+  if (!post.totalVoters) return 0
+  return Math.round((option.voteCount / post.totalVoters) * 100)
 }
 
 async function deletePost(id) {
@@ -361,6 +443,8 @@ watch(() => store.selectedCondominioId, () => loadTab(activeTab.value))
             <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0">
               <span v-if="post.isPinned" style="color:var(--accent);font-size:0.8rem">📌</span>
               <strong class="post-title">{{ post.title }}</strong>
+              <span v-if="post.isPoll" class="badge" style="font-size:0.7rem;background:var(--accent-glow);color:var(--accent)">📊 Sondaggio</span>
+              <span v-if="post.isPoll && post.isClosed" class="badge badge-muted" style="font-size:0.7rem">Scaduto</span>
               <span class="badge badge-muted" style="font-size:0.7rem">{{ post.commentCount }} commenti</span>
             </div>
             <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
@@ -372,6 +456,56 @@ watch(() => store.selectedCondominioId, () => loadTab(activeTab.value))
 
           <div v-if="expandedPost === post.id" class="post-body">
             <p style="white-space:pre-wrap;margin:0 0 12px">{{ post.body }}</p>
+
+            <!-- Sondaggio -->
+            <div v-if="post.isPoll" class="poll-block">
+              <!-- Votazione: l'utente non ha votato e il sondaggio è aperto -->
+              <div v-if="!post.hasVoted && !post.isClosed">
+                <div class="text-muted" style="font-size:0.75rem;margin-bottom:6px">
+                  {{ post.allowMultiple ? 'Scelta multipla' : 'Scelta singola' }} ·
+                  i risultati saranno visibili dopo il voto
+                </div>
+                <label v-for="opt in post.options" :key="opt.id" class="poll-option-choice">
+                  <input
+                    :type="post.allowMultiple ? 'checkbox' : 'radio'"
+                    :checked="isOptionSelected(post, opt.id)"
+                    @change="toggleOption(post, opt.id)"
+                  />
+                  <span>{{ opt.text }}</span>
+                </label>
+                <button class="btn btn-primary btn-sm" style="margin-top:8px"
+                        :disabled="votingPost === post.id" @click="submitVote(post)">
+                  <span v-if="votingPost === post.id" class="spinner" style="width:12px;height:12px"></span>
+                  <span v-else>Vota</span>
+                </button>
+              </div>
+
+              <!-- Risultati: ha votato oppure è chiuso -->
+              <div v-else>
+                <div v-for="opt in post.options" :key="opt.id" class="poll-result-row">
+                  <div class="poll-result-head">
+                    <span :class="{ 'poll-mine': post.myVotes.includes(opt.id) }">
+                      {{ opt.text }}
+                      <span v-if="post.myVotes.includes(opt.id)" title="Il tuo voto">✓</span>
+                    </span>
+                    <span class="text-muted" style="font-size:0.78rem">{{ opt.voteCount }} ({{ pollPercent(post, opt) }}%)</span>
+                  </div>
+                  <div class="poll-bar"><div class="poll-bar-fill" :style="{ width: pollPercent(post, opt) + '%' }"></div></div>
+                  <!-- Votanti (solo sondaggi non anonimi) -->
+                  <div v-if="!post.isAnonymous && opt.voters?.length" class="poll-voters">
+                    {{ opt.voters.map(v => v.fullName).join(', ') }}
+                  </div>
+                </div>
+                <div class="text-muted" style="font-size:0.75rem;margin-top:6px">
+                  {{ post.totalVoters }} votant{{ post.totalVoters === 1 ? 'e' : 'i' }}
+                  <span v-if="post.isAnonymous"> · sondaggio anonimo</span>
+                </div>
+                <button v-if="!post.isClosed && post.hasVoted" class="btn btn-ghost btn-sm" style="margin-top:6px"
+                        :disabled="votingPost === post.id" @click="revokeVote(post)">
+                  Revoca voto
+                </button>
+              </div>
+            </div>
 
             <!-- Commenti -->
             <div class="comments-section">
@@ -542,6 +676,48 @@ watch(() => store.selectedCondominioId, () => loadTab(activeTab.value))
             <input type="checkbox" v-model="postForm.isPinned" />
             Fissa in cima alla bacheca
           </label>
+        </div>
+
+        <!-- Sondaggio: tipo selezionabile solo in creazione -->
+        <div v-if="!editingPost" class="form-group form-group--full">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" v-model="postForm.isPoll" />
+            Crea un sondaggio
+          </label>
+        </div>
+
+        <template v-if="postForm.isPoll && !editingPost">
+          <div class="form-group form-group--full" :class="{ 'has-error': postErrors.options }">
+            <label class="form-label">Opzioni *</label>
+            <div v-for="(opt, i) in postForm.options" :key="i" style="display:flex;gap:6px;margin-bottom:6px">
+              <input class="form-input" v-model="postForm.options[i]" :placeholder="'Opzione ' + (i+1)" @input="delete postErrors.options" />
+              <button class="btn-icon" v-if="postForm.options.length > 2" style="color:var(--accent-red)" @click="removeOption(i)" title="Rimuovi">✕</button>
+            </div>
+            <button class="btn btn-ghost btn-sm" @click="addOption">+ Aggiungi opzione</button>
+            <span v-if="postErrors.options" class="field-error">{{ postErrors.options }}</span>
+          </div>
+          <div class="form-group form-group--full">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" v-model="postForm.allowMultiple" /> Permetti scelta multipla
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:6px">
+              <input type="checkbox" v-model="postForm.isAnonymous" /> Voto anonimo (mostra solo i conteggi)
+            </label>
+          </div>
+          <div class="form-group form-group--full">
+            <label class="form-label">Scadenza (opzionale)</label>
+            <input class="form-input" type="datetime-local" v-model="postForm.closesAt" />
+          </div>
+          <div class="form-group form-group--full text-muted" style="font-size:0.78rem">
+            ⓘ Il sondaggio è una consultazione informale e non sostituisce una delibera assembleare.
+          </div>
+        </template>
+
+        <!-- In modifica di un sondaggio: solo proroga scadenza -->
+        <div v-if="editingPost && postForm.isPoll" class="form-group form-group--full">
+          <label class="form-label">Scadenza sondaggio</label>
+          <input class="form-input" type="datetime-local" v-model="postForm.closesAt" />
+          <span class="text-muted" style="font-size:0.75rem">Le opzioni non sono modificabili dopo la pubblicazione.</span>
         </div>
       </div>
       <div class="modal-footer">
@@ -715,4 +891,46 @@ watch(() => store.selectedCondominioId, () => loadTab(activeTab.value))
 }
 .user-result-row:last-child { border-bottom: none; }
 .user-result-row:hover { background: var(--accent-glow); }
+
+/* ── Sondaggi ── */
+.poll-block {
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-base);
+}
+.poll-option-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+.poll-result-row { margin-bottom: 10px; }
+.poll-result-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+}
+.poll-mine { font-weight: 600; color: var(--accent); }
+.poll-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.poll-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.25s;
+}
+.poll-voters {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
 </style>

@@ -65,7 +65,7 @@
           <router-link to="/condomini" class="btn btn-ghost btn-sm">Vedi tutti</router-link>
         </div>
         <div class="table-wrap">
-          <table>
+          <table class="cards-on-mobile">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -77,13 +77,13 @@
             </thead>
             <tbody>
               <tr v-for="c in store.condomini.slice(0, 5)" :key="c.id">
-                <td>
+                <td data-label="Nome">
                   <router-link :to="`/condomini/${c.id}`" class="text-accent">{{ c.name }}</router-link>
                 </td>
-                <td class="mono text-muted">{{ c.code || '—' }}</td>
-                <td>{{ c.numberOfUnits }}</td>
-                <td>{{ c.installmentFrequency }}</td>
-                <td><span class="badge" :class="c.isActive ? 'badge-green' : 'badge-muted'">{{ c.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
+                <td data-label="Codice" class="mono text-muted">{{ c.code || '—' }}</td>
+                <td data-label="Unità">{{ c.numberOfUnits }}</td>
+                <td data-label="Frequenza rate">{{ c.installmentFrequency }}</td>
+                <td data-label="Stato"><span class="badge" :class="c.isActive ? 'badge-green' : 'badge-muted'">{{ c.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -179,4 +179,17 @@ onMounted(async () => {
 .quick-icon  { font-size: 1rem; color: var(--accent); flex-shrink: 0; }
 .quick-label { flex: 1; }
 .quick-arrow { color: var(--text-muted); font-size: 0.85rem; }
+
+@media (max-width: 768px) {
+  /* Stat card a due colonne per sfruttare meglio lo schermo */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+  }
+  .stat-card { padding: 0.9rem 1rem; }
+  .stat-value { font-size: 1.5rem; }
+  /* Accesso rapido in colonna singola */
+  .quick-grid { grid-template-columns: 1fr; }
+}
 </style>

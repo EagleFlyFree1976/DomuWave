@@ -4,7 +4,7 @@ namespace DomuWave.Services.Models;
 
 /// <summary>
 /// Associazione tra un utente del sistema e un tenant (azienda/studio).
-/// Un utente può appartenere a più tenant, ma uno solo è marcato come default.
+/// Un utente puï¿½ appartenere a piï¿½ tenant, ma uno solo ï¿½ marcato come default.
 /// </summary>
 public class UserTenant : TenantEntity<int>
 {
@@ -15,13 +15,20 @@ public class UserTenant : TenantEntity<int>
     public virtual Tenant Tenant { get; set; } = null!;
 
     /// <summary>
-    /// Indica se questo è il tenant di default per l'utente.
-    /// Solo uno per UserId può avere questo flag a true.
+    /// Indica se questo ï¿½ il tenant di default per l'utente.
+    /// Solo uno per UserId puï¿½ avere questo flag a true.
     /// </summary>
     public virtual bool IsDefault { get; set; }
 
-    /// <summary>Indica se l'associazione è attiva.</summary>
+    /// <summary>Indica se l'associazione ï¿½ attiva.</summary>
     public virtual bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Ruolo dell'utente IN QUESTO tenant: "Admin" | "Condomino".
+    /// Null = legacy, fallback al ruolo globale dell'utente auth.
+    /// Permette allo stesso utente di essere admin in un tenant e condï¿½mino in un altro.
+    /// </summary>
+    public virtual string? RoleCode { get; set; }
 
     public override int GetHashCode()
     {

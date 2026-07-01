@@ -37,6 +37,11 @@ namespace DomuWave.Services.Models
         public virtual string BankAccountHolder  { get; set; }
         public virtual string BankName           { get; set; }
 
+        // Saldo iniziale di cassa del condominio (disponibilità liquide di partenza).
+        // Confluisce come avanzo/disponibilità iniziale nei prospetti di cassa
+        // (Flussi di cassa, Situazione patrimoniale) SOLO per il primo esercizio.
+        public virtual decimal InitialBalance    { get; set; }
+
         // ── Amministratore ────────────────────────────────────────────────────────
         public virtual string AdministratorName  { get; set; }
         public virtual string AdministratorPhone { get; set; }

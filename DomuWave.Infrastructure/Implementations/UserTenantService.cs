@@ -39,27 +39,68 @@ public class UserTenantService : BaseService, IUserTenantService
             .ToListAsync(ct);
     }
     
+    public async Task<string?> GetRoleCodeForTenantAsync(long userId, Guid tenantId, CancellationToken ct)
+    {
+        var link = await session.Query<UserTenant>()
+            .Where(x => x.UserId == userId && x.Tenant.Id == tenantId && x.IsActive && !x.IsDeleted)
+            .OrderByDescending(x => x.IsDefault)
+            .FirstOrDefaultAsync(ct);
+        return link?.RoleCode;
+    }
+
+    public async Task<bool> IsCondominoInTenantAsync(long userId, Guid tenantId, CancellationToken ct)
+    {
+        var roleCode = await GetRoleCodeForTenantAsync(userId, tenantId, ct);
+        return string.Equals(roleCode, "Condomino", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public async Task<bool> IsCondominoInCondominiumAsync(long userId, int condominiumId, CancellationToken ct)
+    {
+        var tenantId = await session.Query<Condominium>()
+            .Where(c => c.Id == condominiumId && !c.IsDeleted)
+            .Select(c => (Guid?)c.Tenant.Id)
+            .FirstOrDefaultAsync(ct);
+        if (tenantId == null) return false;
+        return await IsCondominoInTenantAsync(userId, tenantId.Value, ct);
+    }
+
     public async Task<IList<Tenant>> GetByCondominoUserIdAsync(long userId, IUser currentUser, CancellationToken ct)
     {
-        List<UnitOwner> unitOwners = await session.Query<UnitOwner>()
+        // Il condòmino può essere proprietario E/O inquilino: unisco entrambi.
+        var ownerTenants = await session.Query<UnitOwner>()
             .Where(x => x.UserId == userId && !x.IsDeleted)
-            .Fetch(x => x.Tenant)
-
+            .Select(x => x.Unit.Condominium.Tenant)
             .ToListAsync(ct);
-        return unitOwners.ToList().Select(k=>k.Unit.Condominium.Tenant).ToList();
+
+        var tenantTenants = await session.Query<UnitTenant>()
+            .Where(x => x.UserId == userId && !x.IsDeleted)
+            .Select(x => x.Unit.Condominium.Tenant)
+            .ToListAsync(ct);
+
+        return ownerTenants
+            .Concat(tenantTenants)
+            .Where(t => t != null)
+            .GroupBy(t => t.Id)
+            .Select(g => g.First())
+            .ToList();
     }
 
     public async Task<IList<CondominiumSummaryDto>> GetCondominiumsByCondominoUserIdAsync(long userId, IUser currentUser, CancellationToken ct)
     {
-        var unitOwners = await session.Query<UnitOwner>()
-            .Where(x => x.UserId == userId && !x.IsDeleted && x.IsActive)
-            .Fetch(x => x.Tenant)
-            .Fetch(x => x.Unit)
+        // Il condòmino può essere proprietario E/O inquilino: raccolgo i
+        // condomìni da entrambe le relazioni.
+        var ownerCondoIds = await session.Query<UnitOwner>()
+            .Where(x => x.UserId == userId && !x.IsDeleted && x.IsActive && x.Unit != null)
+            .Select(x => x.Unit.Condominium.Id)
             .ToListAsync(ct);
 
-        var condominiumIds = unitOwners
-            .Where(o => o.Unit != null)
-            .Select(o => o.Unit.Condominium.Id)
+        var tenantCondoIds = await session.Query<UnitTenant>()
+            .Where(x => x.UserId == userId && !x.IsDeleted && x.IsActive && x.Unit != null)
+            .Select(x => x.Unit.Condominium.Id)
+            .ToListAsync(ct);
+
+        var condominiumIds = ownerCondoIds
+            .Concat(tenantCondoIds)
             .Distinct()
             .ToList();
 
@@ -79,6 +120,16 @@ public class UserTenantService : BaseService, IUserTenantService
                 TenantId        = c.Tenant.Id,
             })
             .ToList();
+    }
+
+    public async Task<UserTenant?> SetDefaultByTenantAsync(
+        long userId, Guid tenantId, IUser currentUser, CancellationToken ct)
+    {
+        var link = await session.Query<UserTenant>()
+            .Where(x => x.UserId == userId && x.Tenant.Id == tenantId && x.IsActive && !x.IsDeleted)
+            .FirstOrDefaultAsync(ct);
+        if (link == null) return null;
+        return await SetDefaultAsync(userId, link.Id, currentUser, ct);
     }
 
     public async Task<UserTenant?> GetDefaultByUserIdAsync(

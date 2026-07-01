@@ -72,6 +72,8 @@
     <None Remove="Models\Mappings\Building.hbm.xml" />
     <None Remove="Models\Mappings\BoardPost.hbm.xml" />
     <None Remove="Models\Mappings\BoardPostComment.hbm.xml" />
+    <None Remove="Models\Mappings\BoardPostOption.hbm.xml" />
+    <None Remove="Models\Mappings\BoardPostVote.hbm.xml" />
     <None Remove="Models\Mappings\FaultStatus.hbm.xml" />
     <None Remove="Models\Mappings\Fault.hbm.xml" />
     <None Remove="Models\Mappings\FaultMessage.hbm.xml" />
@@ -154,6 +156,8 @@
     <EmbeddedResource Include="Models\Mappings\Building.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\BoardPost.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\BoardPostComment.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BoardPostOption.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BoardPostVote.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\FaultStatus.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Fault.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\FaultMessage.hbm.xml" />
@@ -174,6 +178,10 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
     <PackageReference Include="Stripe.net" Version="52.1.0" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Blizio\Blizio.Auth\Auth.Services\Auth.Services.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -34,7 +34,7 @@
           <div>Nessun budget per questo esercizio</div>
         </div>
         <div v-else class="table-wrap">
-          <table>
+          <table class="cards-on-mobile">
             <thead>
               <tr>
                 <th>Tipo</th>
@@ -47,11 +47,11 @@
             </thead>
             <tbody>
               <tr v-for="b in budgets" :key="b.id">
-                <td><span class="text-muted mono">#{{ b.id }}</span> {{ b.type === 1 ? 'Preventivo' : 'Consuntivo' }}</td>
-                <td class="mono text-right text-green">{{ fmt(b.totalIncome) }}</td>
-                <td class="mono text-right text-red">{{ fmt(b.totalExpenses) }}</td>
-                <td class="text-secondary">{{ fmtDate(b.approvalDate) }}</td>
-                <td><span class="badge" :class="statusBadge(b.statusId)">{{ statusLabel(b.statusId) }}</span></td>
+                <td data-label="Tipo"><span class="text-muted mono">#{{ b.id }}</span> {{ b.type === 1 ? 'Preventivo' : 'Consuntivo' }}</td>
+                <td data-label="Entrate" class="mono text-right text-green">{{ fmt(b.totalIncome) }}</td>
+                <td data-label="Uscite" class="mono text-right text-red">{{ fmt(b.totalExpenses) }}</td>
+                <td data-label="Approvazione" class="text-secondary">{{ fmtDate(b.approvalDate) }}</td>
+                <td data-label="Stato"><span class="badge" :class="statusBadge(b.statusId)">{{ statusLabel(b.statusId) }}</span></td>
                 <td>
                   <div class="row-actions">
                     <button class="btn btn-sm btn-ghost" @click="openItemsModal(b)">Voci</button>

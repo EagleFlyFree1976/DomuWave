@@ -48,6 +48,26 @@ namespace DomuWave.Services.Implementations
                 .ToListAsync(cancellationToken);
         }
 
+        public async Task<IList<int>> GetCondominoUnitIdsAsync(long userId, CancellationToken cancellationToken)
+        {
+            var ownedTask = session.Query<UnitOwner>()
+                .Where(o => o.UserId == userId && o.IsActive && !o.IsDeleted)
+                .Select(o => o.Unit.Id)
+                .ToListAsync(cancellationToken);
+
+            var rentedTask = session.Query<UnitTenant>()
+                .Where(t => t.UserId == userId && t.IsActive && !t.IsDeleted)
+                .Select(t => t.Unit.Id)
+                .ToListAsync(cancellationToken);
+
+            await Task.WhenAll(ownedTask, rentedTask).ConfigureAwait(false);
+
+            return ownedTask.Result
+                .Concat(rentedTask.Result)
+                .Distinct()
+                .ToList();
+        }
+
         public async Task<IList<RealEstateUnit>> FindAsync(Expression<Func<RealEstateUnit, bool>> predicate, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<RealEstateUnit>()

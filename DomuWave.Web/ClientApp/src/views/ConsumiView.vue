@@ -44,21 +44,21 @@
           <div>Nessun tipo di consumo. Crea il primo.</div>
         </div>
         <div v-else class="table-wrap">
-          <table>
+          <table class="cards-on-mobile">
             <thead><tr><th>Nome</th><th>U.M.</th><th>Conto spesa</th><th>Stato</th><th></th></tr></thead>
             <tbody>
               <tr v-for="t in visibleTypes" :key="t.id" :class="{ 'row-type-deleted': t.isDeleted }">
-                <td>
+                <td data-label="Nome">
                   <button class="link-btn" @click="selectType(t)" :disabled="t.isDeleted">{{ t.name }}</button>
                   <span v-if="t.isDeleted" class="badge badge-muted type-deleted-badge" title="Tipo cancellato">Cancellato</span>
                 </td>
-                <td class="text-secondary mono">{{ t.unitOfMeasure }}</td>
-                <td class="text-secondary" style="font-size:0.85em">
+                <td data-label="U.M." class="text-secondary mono">{{ t.unitOfMeasure }}</td>
+                <td data-label="Conto spesa" class="text-secondary" style="font-size:0.85em">
                   <span v-if="t.accountId" class="mono">{{ t.accountCode }}</span>
                   <span v-if="t.accountId"> {{ t.accountName }}</span>
                   <span v-else class="text-muted">—</span>
                 </td>
-                <td>
+                <td data-label="Stato">
                   <span v-if="!t.isDeleted" class="badge" :class="t.isActive ? 'badge-green' : 'badge-muted'">{{ t.isActive ? 'Attivo' : 'Inattivo' }}</span>
                   <span v-else class="badge badge-muted">—</span>
                 </td>
@@ -98,21 +98,21 @@
           <div>Nessun contatore. Crea il primo.</div>
         </div>
         <div v-else class="table-wrap">
-          <table>
+          <table class="cards-on-mobile">
             <thead><tr><th>Tipo</th><th>Unità</th><th>Matricola</th><th>Stato</th><th></th></tr></thead>
           <tbody>
             <tr v-for="m in visibleMeters" :key="m.id"
                 :class="{ 'row-type-deleted': m.consumptionTypeIsDeleted || m.isDeleted }">
-              <td>
+              <td data-label="Tipo">
                 {{ m.consumptionTypeName }}
                 <span v-if="m.consumptionTypeIsDeleted" class="badge badge-muted type-deleted-badge" title="Il tipo consumo è stato eliminato">Cancellato</span>
               </td>
-              <td class="text-secondary">{{ m.unitName }}</td>
-              <td class="mono">
+              <td data-label="Unità" class="text-secondary">{{ m.unitName }}</td>
+              <td data-label="Matricola" class="mono">
                 {{ m.code }}
                 <span v-if="m.isDeleted" class="badge badge-muted type-deleted-badge" title="Contatore eliminato">Cancellato</span>
               </td>
-              <td>
+              <td data-label="Stato">
                 <span v-if="!m.isDeleted" class="badge" :class="m.isActive ? 'badge-green' : 'badge-muted'">{{ m.isActive ? 'Attivo' : 'Inattivo' }}</span>
                 <span v-else class="badge badge-muted">—</span>
               </td>
@@ -1329,4 +1329,33 @@ input[type="date"].inline-input { color-scheme: dark; }
 .row-error-msg { color: var(--accent-red); font-size: 0.8rem; white-space: nowrap; }
 .saved-check { color: var(--accent-green); font-size: 1rem; }
 .field-hint { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+
+@media (max-width: 768px) {
+  .tab-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+  .readings-selectors {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .readings-select {
+    width: 100%;
+  }
+  .readings-table th,
+  .readings-table td {
+    white-space: nowrap;
+  }
+  .charge-header {
+    flex-wrap: wrap;
+  }
+  .charge-amount {
+    margin-left: auto;
+  }
+  .items-table th,
+  .items-table td {
+    white-space: nowrap;
+  }
+}
 </style>

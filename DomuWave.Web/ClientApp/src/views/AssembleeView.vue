@@ -388,4 +388,27 @@ watch(condominiumId, loadData)
 .count-chip { font-size: .78rem; color: var(--text-secondary); display: flex; align-items: center; gap: .35rem; }
 
 .assembly-card-actions { display: flex; align-items: center; gap: .15rem; flex-shrink: 0; }
+
+@media (max-width: 768px) {
+  .filter-select {
+    max-width: none;
+    width: 100%;
+  }
+  .assembly-card-main {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .assembly-card-dates {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .assembly-card-title {
+    white-space: normal;
+  }
+  .assembly-card-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
 </style>

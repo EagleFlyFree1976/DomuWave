@@ -15,8 +15,11 @@ public class GetPagedExpensesCommand : BasePagedCommand, IQuery<PagedResult<Expe
     public int?      PaymentStatusId { get; set; }
     public int?      SupplierId      { get; set; }
     public int?      FiscalYearId    { get; set; }
-    public DateTime? DateFrom        { get; set; }
+    public int?      AccountId       { get; set; }   // filtro per conto del piano dei conti
+    public DateTime? DateFrom        { get; set; }   // range su DocumentDate
     public DateTime? DateTo          { get; set; }
+    public DateTime? PaymentDateFrom { get; set; }   // range su PaymentDate
+    public DateTime? PaymentDateTo   { get; set; }
     public string?   Search          { get; set; }
     public ChartOfAccountsType? AccountType { get; set; }
 

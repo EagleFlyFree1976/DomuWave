@@ -130,6 +130,7 @@ export const condominiumApi = {
   getActive:      (tenantId) => api.get(`/condominiums/active`, { params: { tenantId } }),
   create:         (data)     => api.post('/condominiums', data),
   update:         (id, data) => api.put(`/condominiums/${id}`, data),
+  updateInitialBalance: (id, initialBalance) => api.put(`/condominiums/${id}/initial-balance`, { initialBalance }),
   delete:         (id)       => api.delete(`/condominiums/${id}`),
   getSetupStatus: (id)       => api.get(`/condominiums/${id}/setup-status`),
 }
@@ -219,8 +220,12 @@ export const accountBalanceApi = {
 
 // ─── Impostazioni di visualizzazione per tenant ───────────────
 export const tenantDisplaySettingsApi = {
-  get:    ()     => api.get('/tenant-display'),
-  update: (data) => api.put('/tenant-display', data),
+  get:         ()     => api.get('/tenant-display'),
+  update:      (data) => api.put('/tenant-display', data),
+  // Logo del tenant (usato in sidebar e nei report esportati)
+  uploadLogo:  (data) => api.post('/tenant-display/logo', data),
+  deleteLogo:  ()     => api.delete('/tenant-display/logo'),
+  getLogoBlob: ()     => api.get('/tenant-display/logo', { responseType: 'blob' }),
 }
 
 // ─── Piano dei conti ──────────────────────────────────────────
@@ -622,6 +627,7 @@ export const boardPostApi = {
   getComments:      (postId)             => api.get(`/board-posts/${postId}/comments`),
   createComment:    (postId, data)       => api.post(`/board-posts/${postId}/comments`, data),
   deleteComment:    (commentId)          => api.delete(`/board-posts/comments/${commentId}`),
+  vote:             (postId, optionIds)  => api.post(`/board-posts/${postId}/vote`, { optionIds }),
 }
 
 export const faultApi = {

@@ -197,6 +197,11 @@ public class GetInstallmentBatchNoticeCommandConsumer
         // 7. Sort notices by owner name and generate PDF
         notices = notices.OrderBy(n => n.OwnerFullName).ToList();
 
+        var logo = await TenantLogoProvider
+            .GetLogoForCondominiumAsync(session, condominium, cancellationToken)
+            .ConfigureAwait(false);
+        foreach (var n in notices) n.LogoContent = logo;
+
         var document = new PaymentNoticeDocument(notices);
         return document.GeneratePdf();
     }

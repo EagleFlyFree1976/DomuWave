@@ -35,7 +35,7 @@
           <div class="empty-icon">◈</div><div>Nessun fornitore trovato</div>
         </div>
         <div v-else class="table-wrap">
-          <table>
+          <table class="cards-on-mobile">
             <thead>
               <tr>
                 <th>Ragione sociale</th>
@@ -49,12 +49,12 @@
             </thead>
             <tbody>
               <tr v-for="s in filtered" :key="s.id">
-                <td style="font-weight:500">{{ s.companyName }}</td>
-                <td class="mono text-muted">{{ s.vatNumber || '—' }}</td>
-                <td>{{ s.supplierType || '—' }}</td>
-                <td class="text-secondary">{{ s.email || '—' }}</td>
-                <td class="text-secondary">{{ s.phone || '—' }}</td>
-                <td><span class="badge" :class="s.isActive ? 'badge-green' : 'badge-muted'">{{ s.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
+                <td data-label="Ragione sociale" style="font-weight:500">{{ s.companyName }}</td>
+                <td data-label="P.IVA" class="mono text-muted">{{ s.vatNumber || '—' }}</td>
+                <td data-label="Tipo">{{ s.supplierType || '—' }}</td>
+                <td data-label="Email" class="text-secondary">{{ s.email || '—' }}</td>
+                <td data-label="Telefono" class="text-secondary">{{ s.phone || '—' }}</td>
+                <td data-label="Stato"><span class="badge" :class="s.isActive ? 'badge-green' : 'badge-muted'">{{ s.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
                 <td>
                   <div v-if="canEdit || canDelete" class="row-actions">
                     <button v-if="canEdit" class="btn-icon" @click="openModal(s)">✎</button>
@@ -91,7 +91,7 @@
           <div class="empty-icon">◈</div><div>Nessun contratto trovato</div>
         </div>
         <div v-else class="table-wrap">
-          <table>
+          <table class="cards-on-mobile">
             <thead>
               <tr>
                 <th>N° contratto</th>
@@ -106,13 +106,13 @@
             </thead>
             <tbody>
               <tr v-for="c in contracts" :key="c.id">
-                <td class="mono text-muted">{{ c.contractNumber || '—' }}</td>
-                <td style="font-weight:500">{{ c.subject }}</td>
-                <td class="text-secondary">{{ c.supplierName || '—' }}</td>
-                <td class="mono text-secondary">{{ fmtDate(c.startDate) }}</td>
-                <td class="mono" :class="isExpiring(c.endDate) ? 'text-amber' : 'text-secondary'">{{ fmtDate(c.endDate) }}</td>
-                <td class="mono">{{ c.annualAmount ? fmt(c.annualAmount) : '—' }}</td>
-                <td><span class="badge" :class="contractBadge(c.status)">{{ c.status }}</span></td>
+                <td data-label="N° contratto" class="mono text-muted">{{ c.contractNumber || '—' }}</td>
+                <td data-label="Oggetto" style="font-weight:500">{{ c.subject }}</td>
+                <td data-label="Fornitore" class="text-secondary">{{ c.supplierName || '—' }}</td>
+                <td data-label="Inizio" class="mono text-secondary">{{ fmtDate(c.startDate) }}</td>
+                <td data-label="Fine" class="mono" :class="isExpiring(c.endDate) ? 'text-amber' : 'text-secondary'">{{ fmtDate(c.endDate) }}</td>
+                <td data-label="Importo annuo" class="mono">{{ c.annualAmount ? fmt(c.annualAmount) : '—' }}</td>
+                <td data-label="Stato"><span class="badge" :class="contractBadge(c.status)">{{ c.status }}</span></td>
                 <td>
                   <div v-if="canEdit || canDelete" class="row-actions">
                     <button v-if="canEdit" class="btn-icon" @click="openContractModal(c)">✎</button>
@@ -463,4 +463,15 @@ window.addEventListener('app:refresh', loadAll)
 .search-input { flex: 1; min-width: 200px; max-width: 320px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
 .btn-active { background: var(--accent-glow) !important; color: var(--accent) !important; border-color: var(--border-active) !important; }
+
+@media (max-width: 768px) {
+  .search-input {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+  .page-header .flex {
+    flex-wrap: wrap;
+  }
+}
 </style>

@@ -22,7 +22,7 @@
         <div>Nessun condominio trovato</div>
       </div>
       <div v-else class="table-wrap">
-        <table>
+        <table class="cards-on-mobile">
           <thead>
             <tr>
               <th>Nome</th>
@@ -37,15 +37,15 @@
           </thead>
           <tbody>
             <tr v-for="c in filtered" :key="c.id">
-              <td>
+              <td data-label="Nome">
                 <router-link :to="`/condomini/${c.id}`" class="text-accent" style="font-weight:500">{{ c.name }}</router-link>
               </td>
-              <td class="mono text-muted">{{ c.code || '—' }}</td>
-              <td class="text-secondary">{{ c.email || '—' }}</td>
-              <td>{{ c.numberOfUnits }}</td>
-              <td class="text-secondary">{{ c.installmentFrequency }}</td>
-              <td><span class="badge" :class="c.isActive ? 'badge-green' : 'badge-muted'">{{ c.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
-              <td class="text-center setup-cell">
+              <td data-label="Codice" class="mono text-muted">{{ c.code || '—' }}</td>
+              <td data-label="Email" class="text-secondary">{{ c.email || '—' }}</td>
+              <td data-label="Unità">{{ c.numberOfUnits }}</td>
+              <td data-label="Rate" class="text-secondary">{{ c.installmentFrequency }}</td>
+              <td data-label="Stato"><span class="badge" :class="c.isActive ? 'badge-green' : 'badge-muted'">{{ c.isActive ? 'Attivo' : 'Inattivo' }}</span></td>
+              <td data-label="Setup" class="text-center setup-cell">
                 <template v-if="setupStatus[c.id] === null">
                   <span class="setup-loading">…</span>
                 </template>
@@ -183,6 +183,11 @@
                 <label class="form-label">Ultima assemblea</label>
                 <input class="form-input" type="date" v-model="form.lastAssemblyDate" />
               </div>
+              <div class="form-group">
+                <label class="form-label">Saldo iniziale di cassa (€)</label>
+                <input class="form-input" type="number" step="0.01" v-model.number="form.initialBalance" />
+                <span class="text-muted" style="font-size:0.75rem">Disponibilità liquide di partenza. Confluisce nei prospetti del primo esercizio.</span>
+              </div>
             </div>
           </fieldset>
 
@@ -272,6 +277,7 @@ const defaultForm = () => ({
   hasCentralHeating: false, hasConcierge: false, commonAreasSqm: null,
   mandateStartDate: null, mandateEndDate: null, lastAssemblyDate: null,
   installmentFrequency: 'Monthly', installmentDueDay: 1,
+  initialBalance: 0,
   notes: '', isActive: true,
   address: defaultAddress(),
 })
@@ -421,6 +427,12 @@ onMounted(loadData)
 .toolbar { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
 .search-input { flex: 1; max-width: 360px; }
 .row-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
+
+@media (max-width: 768px) {
+  .toolbar { flex-wrap: wrap; }
+  .search-input { max-width: none; flex: 1 1 100%; }
+  .toolbar .btn { flex: 1; }
+}
 
 .setup-cell { width: 80px; }
 .setup-loading { font-size: 0.8rem; color: var(--text-muted); }

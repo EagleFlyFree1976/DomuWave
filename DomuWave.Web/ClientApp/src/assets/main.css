@@ -471,6 +471,7 @@ h3 {
 /* ── Table ─────────────────────────────────────────────────────── */
 .table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
@@ -640,6 +641,169 @@ tbody tr:hover td {
 .app-main > * {
   padding: 1.5rem;
   flex: 1;
+}
+
+/* ── Mobile globale (≤768px) ───────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Header di pagina in colonna */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  /* Tabelle: niente colonne schiacciate. Le celle non vanno a capo e la
+     tabella scorre orizzontalmente dentro .table-wrap (scroll touch). */
+  .table-wrap table {
+    width: auto;
+    min-width: 100%;
+  }
+  .table-wrap th,
+  .table-wrap td {
+    white-space: nowrap;
+    padding: 0.6rem 0.75rem;
+  }
+  /* Indizio visivo che la tabella è scorrevole */
+  .table-wrap {
+    border-radius: var(--radius-md);
+  }
+
+  /* ── Tabelle "card-on-mobile" ──
+     Aggiungi la classe `cards-on-mobile` alla <table> e l'attributo
+     data-label="Etichetta" a ogni <td>: su mobile ogni riga diventa una
+     scheda verticale (etichetta a sinistra, valore a destra) e nulla esce
+     dallo schermo. Pensato per tabelle "piatte" (senza righe espandibili). */
+  .table-wrap:has(table.cards-on-mobile) {
+    overflow-x: visible;
+  }
+
+  table.cards-on-mobile {
+    width: 100%;
+    min-width: 0;
+  }
+
+  table.cards-on-mobile thead {
+    display: none;
+  }
+
+  table.cards-on-mobile tbody,
+  table.cards-on-mobile tr,
+  table.cards-on-mobile td {
+    display: block;
+    width: 100%;
+  }
+
+  table.cards-on-mobile tr {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    margin-bottom: 0.75rem;
+    padding: 0.35rem 0.85rem;
+  }
+
+  table.cards-on-mobile tbody tr:hover td {
+    background: transparent;
+  }
+
+  table.cards-on-mobile td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    white-space: normal;
+    text-align: right;
+    border: none;
+    border-bottom: 1px solid var(--border-muted);
+    padding: 0.5rem 0;
+  }
+
+  table.cards-on-mobile tr td:last-child {
+    border-bottom: none;
+  }
+
+  /* Etichetta della colonna a sinistra */
+  table.cards-on-mobile td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+  }
+
+  /* Celle senza etichetta (es. azioni) occupano tutta la larghezza */
+  table.cards-on-mobile td:not([data-label]) {
+    justify-content: flex-end;
+  }
+
+  /* Le azioni di riga restano allineate e possono andare a capo */
+  table.cards-on-mobile .row-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  /* Form: una sola colonna */
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Card più compatte */
+  .card-body {
+    padding: 1rem;
+  }
+
+  .card-header {
+    padding: 0.85rem 1rem;
+  }
+
+  /* Toolbar e tab-toolbar vanno a capo */
+  .toolbar,
+  .tab-toolbar {
+    flex-wrap: wrap;
+  }
+
+  /* Modali a piena larghezza */
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal,
+  .modal-sm,
+  .modal-md,
+  .modal-lg,
+  .modal-xl,
+  .modal-wide {
+    width: 100%;
+    max-width: none;
+    max-height: 95vh;
+    border-radius: var(--radius-lg);
+  }
+
+  .modal-header {
+    padding: 1rem 1.1rem;
+  }
+
+  .modal-body {
+    padding: 1.1rem;
+  }
+
+  .modal-footer {
+    padding: 0.85rem 1.1rem;
+    flex-wrap: wrap;
+  }
+
+  /* Bottoni del footer modale tappabili a piena larghezza */
+  .modal-footer .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  /* Titoli più piccoli */
+  h1 {
+    font-size: 1.4rem;
+  }
 }
 
 /* ── Stampa: mostra solo il contenuto, nasconde chrome dell'app ──── */

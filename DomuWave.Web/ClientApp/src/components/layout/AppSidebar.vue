@@ -1,5 +1,5 @@
 <template>
-  <aside class="app-sidebar" :class="{ collapsed }">
+  <aside class="app-sidebar" :class="{ collapsed, 'mobile-open': ui.mobileSidebarOpen }">
 
     <!-- ── Header ── -->
     <div class="sidebar-header">
@@ -7,10 +7,13 @@
         <div class="logo-icon" v-show="collapsed">
           <i class="pi pi-building"></i>
         </div>
-        <img v-show="!collapsed" src="@/assets/logostudiogalli.png" alt="Studio Amministrativo Galli" class="sidebar-logo-img" />
+        <img v-show="!collapsed" :src="logoUrl || DEFAULT_LOGO" alt="Logo" class="sidebar-logo-img" />
       </div>
-      <button class="icon-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Espandi' : 'Comprimi'">
+      <button class="icon-btn collapse-btn" @click="collapsed = !collapsed" :title="collapsed ? 'Espandi' : 'Comprimi'">
         <i class="pi" :class="collapsed ? 'pi-angle-right' : 'pi-angle-left'"></i>
+      </button>
+      <button class="icon-btn mobile-close-btn" @click="ui.closeMobileSidebar()" title="Chiudi menu">
+        <i class="pi pi-times"></i>
       </button>
     </div>
 
@@ -64,8 +67,11 @@
       </Transition>
     </nav>
 
-    <TenantSelectorWidget />
-    <CondominioSelectorWidget />
+    <!-- Selettori nascosti quando la sidebar è compressa (es. landscape) -->
+    <div v-show="!collapsed" class="sidebar-selectors">
+      <TenantSelectorWidget />
+      <CondominioSelectorWidget />
+    </div>
 
     <!-- ── Banner impersonificazione ── -->
     <div v-if="authStore.isImpersonating" class="impersonate-banner" :class="{ collapsed }">
@@ -107,19 +113,36 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, computed, onMounted, watch } from 'vue'
   import { RouterLink, useRoute, useRouter } from 'vue-router'
   import { useAuthStore } from '@/stores/authStore'
   import { useMenuStore } from '@/stores/menuStore'
   import { useSessionStore } from '@/stores/sessionStore'
+  import { useUiStore } from '@/stores/uiStore'
   import TenantSelectorWidget from '@/components/layout/TenantSelectorWidget.vue'
   import CondominioSelectorWidget from '@/components/layout/CondominioSelectorWidget.vue'
+  import { condominoCanAccess } from '@/config/condominoAccess'
+  import { useTenantBranding } from '@/composables/useTenantBranding'
 
   const route    = useRoute()
   const router   = useRouter()
   const authStore = useAuthStore()
   const menuStore = useMenuStore()
   const session   = useSessionStore()
+  const ui        = useUiStore()
+
+  // Logo del tenant (sidebar). Ricaricato al cambio tenant.
+  const { logoUrl, load: loadBranding, reload: reloadBranding, DEFAULT_LOGO } = useTenantBranding()
+  onMounted(() => loadBranding())
+  watch(() => session.activeTenant?.id, () => reloadBranding())
+
+  // Chiudi il drawer mobile a ogni cambio di rotta
+  watch(() => route.path, () => ui.closeMobileSidebar())
+
+  // All'apertura del drawer su mobile, forza lo stato espanso (mostra le label)
+  watch(() => ui.mobileSidebarOpen, (open) => {
+    if (open) collapsed.value = false
+  })
 
   const collapsed   = ref(false)
   const openGroups  = ref([])
@@ -159,11 +182,33 @@
   })
 
   /**
+   * Restringe il menu al perimetro del condòmino:
+   * tiene solo le voci consentite dall'allow-list; per i gruppi, mantiene
+   * solo i figli consentiti ed elimina i gruppi rimasti senza figli.
+   */
+  function filterForCondomino(items) {
+    return items.reduce((acc, item) => {
+      if (item.children?.length) {
+        const children = item.children.filter(c => condominoCanAccess(c.path))
+        if (children.length) acc.push({ ...item, children })
+        else if (condominoCanAccess(item.path)) acc.push({ ...item, children: undefined })
+      } else if (condominoCanAccess(item.path)) {
+        acc.push(item)
+      }
+      return acc
+    }, [])
+  }
+
+  /**
    * Menu filtrato:
+   * - Se condòmino → solo le sezioni consentite dall'allow-list
    * - Se superadmin senza tenant → solo voci always-visible
    * - Altrimenti → tutto il menu
    */
   const visibleMenu = computed(() => {
+    if (session.isCondomino) {
+      return filterForCondomino(allMenuItems.value)
+    }
     if (session.isSuperAdmin && !session.hasTenantSelected) {
       return allMenuItems.value.filter(isAlwaysVisible)
     }
@@ -226,7 +271,6 @@
     height: 100vh;
     position: sticky;
     top: 0;
-    overflow-y: auto;
     flex-shrink: 0;
     background: #0f172a;
     border-right: 1px solid #1e293b;
@@ -234,12 +278,20 @@
     flex-direction: column;
     transition: width 0.25s ease;
     flex-shrink: 0;
-    overflow: hidden;
+    /* Scroll verticale dell'intera sidebar quando l'altezza non basta
+       (es. dispositivo in orizzontale); niente overflow orizzontale */
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
     .app-sidebar.collapsed {
       width: 64px;
     }
+
+  /* Pulsante chiudi-drawer: visibile solo su mobile */
+  .mobile-close-btn {
+    display: none;
+  }
 
   /* Header */
   .sidebar-header {
@@ -652,4 +704,59 @@
   .fade-leave-active { transition: opacity 0.2s, transform 0.2s; }
   .fade-enter-from,
   .fade-leave-to     { opacity: 0; transform: translateY(-4px); }
+
+  /* ── Mobile: sidebar come drawer a scomparsa ── */
+  @media (max-width: 768px) {
+    .app-sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      height: 100vh;
+      width: min(280px, 80vw);
+      z-index: 1100;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+      box-shadow: 0 0 32px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Su mobile il drawer è sempre "espanso", ignora lo stato collapsed */
+    .app-sidebar.collapsed {
+      width: min(280px, 80vw);
+    }
+
+    .app-sidebar.mobile-open {
+      transform: translateX(0);
+    }
+
+    /* Nascondi il toggle comprimi/espandi, mostra il pulsante chiudi */
+    .collapse-btn {
+      display: none;
+    }
+
+    .mobile-close-btn {
+      display: flex;
+    }
+  }
+
+  /* ── Altezza ridotta (es. dispositivo in orizzontale) ──
+     Lascia che l'intera sidebar scorra invece di comprimere la nav:
+     così tutte le voci di menu, i selettori, la guida e il footer
+     restano raggiungibili scrollando. */
+  @media (max-height: 640px) {
+    .app-sidebar {
+      overflow-y: auto;
+    }
+
+    .sidebar-nav {
+      flex: 0 0 auto;
+      overflow-y: visible;
+    }
+
+    .sidebar-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: #0f172a;
+    }
+  }
 </style>

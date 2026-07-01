@@ -529,7 +529,8 @@
       align-items: stretch;
     }
 
-    .filter-select {
+    .filter-select,
+    .filter-select--sm {
       width: 100%;
     }
   }

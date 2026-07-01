@@ -13,12 +13,17 @@ namespace DomuWave.Services.Consumers;
 
 public class GetCommunicationsByCondominiumCommandConsumer : InMemoryConsumerBase<GetCommunicationsByCondominiumCommand, IList<CommunicationReadDto>>
 {
-    private readonly IUserService _userService;
+    private readonly IUserService       _userService;
+    private readonly IUserTenantService _userTenantService;
 
     public GetCommunicationsByCondominiumCommandConsumer(
         ISessionFactoryProvider sessionFactoryProvider,
-        IUserService            userService) : base(sessionFactoryProvider)
-        => _userService = userService;
+        IUserService            userService,
+        IUserTenantService      userTenantService) : base(sessionFactoryProvider)
+    {
+        _userService       = userService;
+        _userTenantService = userTenantService;
+    }
 
     protected override async Task<IList<CommunicationReadDto>> Consume(
         GetCommunicationsByCondominiumCommand command,
@@ -30,7 +35,10 @@ public class GetCommunicationsByCondominiumCommandConsumer : InMemoryConsumerBas
         var query = session.Query<Communication>()
             .Where(c => c.Condominium.Id == command.CondominiumId && !c.IsDeleted);
 
-        if (string.Equals(currentUser.Role?.Code, "condomino", StringComparison.OrdinalIgnoreCase))
+        var isCondomino = await _userTenantService
+            .IsCondominoInCondominiumAsync(command.CurrentUserId, command.CondominiumId, cancellationToken)
+            .ConfigureAwait(false);
+        if (isCondomino)
         {
             query = query.Where(c => c.IsVisible && !c.IsArchived);
         }

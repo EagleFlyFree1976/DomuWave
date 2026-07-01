@@ -115,6 +115,20 @@ public class CondominiumsController(
         return Ok(result);
     }
 
+    [HttpPut("{id:int}/initial-balance")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(CondominiumReadDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateInitialBalance(
+        int id, [FromBody] UpdateCondominiumInitialBalanceDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var result = await _mediator.GetResponse(
+            new UpdateCondominiumInitialBalanceCommand(CurrentUser.Id, TenantId.GetValueOrDefault(), id, dto.InitialBalance), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpDelete("{id:int}")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanDelete, AuthorizationKeys.Condominiums, Modules.DomuWaveModule)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

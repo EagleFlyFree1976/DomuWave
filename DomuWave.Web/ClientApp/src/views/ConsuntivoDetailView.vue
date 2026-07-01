@@ -238,9 +238,9 @@ function doExportExcel() {
   exportConsuntivoExcel(detail.value, exportFilename())
 }
 
-function doExportPdf() {
+async function doExportPdf() {
   const title = `Dettaglio Consuntivo — ${detail.value?.fiscalYear ?? ''}`
-  exportConsuntivoPdf(detail.value, title, exportFilename())
+  await exportConsuntivoPdf(detail.value, title, exportFilename())
 }
 
 onMounted(load)

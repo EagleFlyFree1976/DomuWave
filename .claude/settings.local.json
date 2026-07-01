@@ -50,7 +50,9 @@
       "Bash(Select-Object FullName)",
       "PowerShell(dotnet build DomuWave.Infrastructure/DomuWave.Services.csproj -c Debug --nologo -v q 2>&1)",
       "WebFetch(domain:www.condominionostress.it)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(stripe listen *)",
+      "Bash(grep -viE \"//|xml comment\")"
     ]
   }
 }

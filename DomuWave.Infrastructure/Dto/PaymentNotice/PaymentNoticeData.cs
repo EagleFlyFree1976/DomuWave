@@ -50,6 +50,9 @@ public class PaymentNoticeData
     public string? CustomSubject { get; set; }
     public string? CustomBody    { get; set; }
 
+    // ── Logo del tenant (opzionale, mostrato in intestazione) ─────────────────
+    public byte[]? LogoContent { get; set; }
+
     // ── Metadati ──────────────────────────────────────────────────────────────
     public DateTime GeneratedAt { get; set; } = DateTime.Now;
 }

@@ -10,7 +10,6 @@
       </select>
       <button class="btn btn-ghost" :disabled="!report || loading" @click="exportExcel">⬇ Excel</button>
       <button class="btn btn-ghost" :disabled="!report || loading" @click="exportPdf">📄 PDF</button>
-      <button class="btn btn-ghost" :disabled="!report || loading" @click="printReport">🖨 Stampa</button>
 
       <template v-if="report && report.isEditable">
         <template v-if="!editMode">
@@ -58,11 +57,11 @@
             <tr>
               <th rowspan="2" class="col-nom">Nominativo</th>
               <th rowspan="2">Tipo</th>
-              <th v-for="c in report.consumoColumns" :key="'ch'+c.consumptionTypeId" colspan="2" class="grp-consumo">
-                {{ c.name }}<span v-if="c.unitOfMeasure" class="uom"> ({{ c.unitOfMeasure }})</span>
-              </th>
               <th v-for="m in report.millesimaleColumns" :key="'mh'+m.millesimalTableId" colspan="2" class="grp-mill">
                 {{ m.name }}
+              </th>
+              <th v-for="c in report.consumoColumns" :key="'ch'+c.consumptionTypeId" colspan="2" class="grp-consumo">
+                {{ c.name }}<span v-if="c.unitOfMeasure" class="uom"> ({{ c.unitOfMeasure }})</span>
               </th>
               <th rowspan="2" class="col-num">Dirette</th>
               <th rowspan="2" class="col-num">Accrediti</th>
@@ -71,12 +70,12 @@
               <th rowspan="2" class="col-num">Saldo</th>
             </tr>
             <tr>
-              <template v-for="c in report.consumoColumns" :key="'sub'+c.consumptionTypeId">
-                <th class="col-num sub">Q.tà</th>
-                <th class="col-num sub">Importo</th>
-              </template>
               <template v-for="m in report.millesimaleColumns" :key="'subm'+m.millesimalTableId">
                 <th class="col-num sub">Mill.</th>
+                <th class="col-num sub">Importo</th>
+              </template>
+              <template v-for="c in report.consumoColumns" :key="'sub'+c.consumptionTypeId">
+                <th class="col-num sub">Q.tà</th>
                 <th class="col-num sub">Importo</th>
               </template>
             </tr>
@@ -85,15 +84,6 @@
             <tr v-for="(r, i) in displayRows" :key="i" :class="{ 'row-tenant': r.rowType === 'Inquilini' }">
               <td>{{ r.nominativo || '—' }}</td>
               <td class="text-secondary">{{ r.rowType }}</td>
-              <template v-for="c in report.consumoColumns" :key="'c'+i+'_'+c.consumptionTypeId">
-                <td class="col-num mono">{{ cellQta(r, c.consumptionTypeId) }}</td>
-                <td class="col-num mono" :class="{ 'cell-ovr': findC(r, c.consumptionTypeId)?.isOverridden }">
-                  <input v-if="editMode" class="cell-input" type="number" step="0.01"
-                         :value="findC(r, c.consumptionTypeId)?.importo ?? 0"
-                         @input="e => { const cc = findC(r, c.consumptionTypeId); if (cc) { cc.importo = e.target.value; markConsumo(r, c.consumptionTypeId) } }" />
-                  <template v-else>{{ cellImp(r, c.consumptionTypeId) }}</template>
-                </td>
-              </template>
               <template v-for="m in report.millesimaleColumns" :key="'m'+i+'_'+m.millesimalTableId">
                 <td class="col-num mono text-secondary">{{ cellMillVal(r, m.millesimalTableId) }}</td>
                 <td class="col-num mono" :class="{ 'cell-ovr': r.millesimali.find(x => x.millesimalTableId === m.millesimalTableId)?.isOverridden }">
@@ -101,6 +91,15 @@
                          :value="r.millesimali.find(x => x.millesimalTableId === m.millesimalTableId)?.importo ?? 0"
                          @input="e => { const mm = r.millesimali.find(x => x.millesimalTableId === m.millesimalTableId); if (mm) { mm.importo = e.target.value; markMill(r, m.millesimalTableId) } }" />
                   <template v-else>{{ cellMill(r, m.millesimalTableId) }}</template>
+                </td>
+              </template>
+              <template v-for="c in report.consumoColumns" :key="'c'+i+'_'+c.consumptionTypeId">
+                <td class="col-num mono">{{ cellQta(r, c.consumptionTypeId) }}</td>
+                <td class="col-num mono" :class="{ 'cell-ovr': findC(r, c.consumptionTypeId)?.isOverridden }">
+                  <input v-if="editMode" class="cell-input" type="number" step="0.01"
+                         :value="findC(r, c.consumptionTypeId)?.importo ?? 0"
+                         @input="e => { const cc = findC(r, c.consumptionTypeId); if (cc) { cc.importo = e.target.value; markConsumo(r, c.consumptionTypeId) } }" />
+                  <template v-else>{{ cellImp(r, c.consumptionTypeId) }}</template>
                 </td>
               </template>
               <td class="col-num mono" :class="{ 'cell-ovr': r.diretteOverridden }">
@@ -125,13 +124,13 @@
           <tfoot>
             <tr class="totals-row">
               <td colspan="2">TOTALI</td>
-              <template v-for="c in report.consumoColumns" :key="'tc'+c.consumptionTypeId">
-                <td class="col-num mono">{{ totQta(c.consumptionTypeId) }}</td>
-                <td class="col-num mono">{{ totImp(c.consumptionTypeId) }}</td>
-              </template>
               <template v-for="m in report.millesimaleColumns" :key="'tm'+m.millesimalTableId">
                 <td class="col-num mono text-secondary">{{ totMillVal(m.millesimalTableId) }}</td>
                 <td class="col-num mono">{{ totMill(m.millesimalTableId) }}</td>
+              </template>
+              <template v-for="c in report.consumoColumns" :key="'tc'+c.consumptionTypeId">
+                <td class="col-num mono">{{ totQta(c.consumptionTypeId) }}</td>
+                <td class="col-num mono">{{ totImp(c.consumptionTypeId) }}</td>
               </template>
               <td class="col-num mono">{{ fmt(report.totals.dirette) }}</td>
               <td class="col-num mono">{{ fmt(report.totals.accrediti) }}</td>
@@ -143,72 +142,6 @@
         </table>
       </div>
 
-      <!-- ── Stampa: una tabella per ogni gruppo di 2 colonne dinamiche ───────── -->
-      <div v-if="report.rows.length" class="print-only">
-        <div v-for="(page, pi) in printPages" :key="'pp'+pi" class="print-page">
-          <div class="print-page-header">
-            <h2>Bilancio di ripartizione</h2>
-            <div class="report-meta">
-              <span><strong>Condominio:</strong> {{ report.condominiumName || '—' }}</span>
-              <span><strong>Esercizio:</strong> {{ report.fiscalYearCode || '—' }}</span>
-              <span class="report-gen">Pag. {{ pi + 1 }} di {{ printPages.length }} — {{ today }}</span>
-            </div>
-          </div>
-
-          <table class="bilancio-table">
-            <thead>
-              <tr>
-                <th rowspan="2" class="col-nom">Nominativo</th>
-                <th rowspan="2">Tipo</th>
-                <th v-for="col in page" :key="'pch'+pi+'_'+col.kind+col.id" colspan="2"
-                    :class="col.kind === 'consumo' ? 'grp-consumo' : 'grp-mill'">
-                  {{ col.name }}<span v-if="col.uom" class="uom"> ({{ col.uom }})</span>
-                </th>
-                <th rowspan="2" class="col-num">Dirette</th>
-                <th rowspan="2" class="col-num">Accrediti</th>
-                <th rowspan="2" class="col-num">Totale speso</th>
-                <th rowspan="2" class="col-num">Versato</th>
-                <th rowspan="2" class="col-num">Saldo</th>
-              </tr>
-              <tr>
-                <template v-for="col in page" :key="'pcs'+pi+'_'+col.kind+col.id">
-                  <th class="col-num sub">{{ printSub2(col) }}</th>
-                  <th class="col-num sub">Importo</th>
-                </template>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(r, i) in report.rows" :key="'pr'+pi+'_'+i" :class="{ 'row-tenant': r.rowType === 'Inquilini' }">
-                <td>{{ r.nominativo || '—' }}</td>
-                <td class="text-secondary">{{ r.rowType }}</td>
-                <template v-for="col in page" :key="'pc'+pi+'_'+i+'_'+col.kind+col.id">
-                  <td class="col-num mono text-secondary">{{ printCellVal(r, col) }}</td>
-                  <td class="col-num mono">{{ printCellImp(r, col) }}</td>
-                </template>
-                <td class="col-num mono">{{ fmt(r.dirette) }}</td>
-                <td class="col-num mono">{{ fmt(r.accrediti) }}</td>
-                <td class="col-num mono"><strong>{{ fmt(r.totale) }}</strong></td>
-                <td class="col-num mono">{{ fmt(r.versato) }}</td>
-                <td class="col-num mono">{{ fmt(r.saldo) }}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr class="totals-row">
-                <td colspan="2">TOTALI</td>
-                <template v-for="col in page" :key="'pt'+pi+'_'+col.kind+col.id">
-                  <td class="col-num mono">{{ printTotVal(col) }}</td>
-                  <td class="col-num mono">{{ printTotImp(col) }}</td>
-                </template>
-                <td class="col-num mono">{{ fmt(report.totals.dirette) }}</td>
-                <td class="col-num mono">{{ fmt(report.totals.accrediti) }}</td>
-                <td class="col-num mono"><strong>{{ fmt(report.totals.totale) }}</strong></td>
-                <td class="col-num mono">{{ fmt(report.totals.versato) }}</td>
-                <td class="col-num mono">{{ fmt(report.totals.saldo) }}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -217,8 +150,27 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
 import { fiscalYearApi } from '@/services/api'
+import { useTenantBranding } from '@/composables/useTenantBranding'
 
 const store = useAppStore()
+const { getReportLogo } = useTenantBranding()
+
+// Disegna il logo del tenant in alto a destra nell'header PDF, se presente.
+function drawPdfLogo(doc, logo) {
+  if (!logo?.dataUrl) return
+  try {
+    const fmtImg = (logo.mime || '').includes('png') ? 'PNG'
+      : (logo.mime || '').includes('webp') ? 'WEBP'
+      : 'JPEG'
+    const pageW = doc.internal.pageSize.getWidth()
+    const maxW = 32, maxH = 16
+    const props = doc.getImageProperties(logo.dataUrl)
+    const ratio = props.width / props.height
+    let w = maxW, h = maxW / ratio
+    if (h > maxH) { h = maxH; w = maxH * ratio }
+    doc.addImage(logo.dataUrl, fmtImg, pageW - 10 - w, 8, w, h)
+  } catch { /* ignora logo non renderizzabile */ }
+}
 const fiscalYears          = computed(() => store.fiscalYears ?? [])
 const selectedFiscalYearId = ref(null)
 const report               = ref(null)
@@ -248,17 +200,18 @@ const displayRows = computed(() => editMode.value ? editRows.value : (report.val
 // COLS_PER_PAGE colonne dinamiche, con page-break tra l'una e l'altra.
 const COLS_PER_PAGE = 2
 
-// Sequenza unificata di colonne dinamiche: prima i consumi, poi i millesimali.
+// Sequenza unificata di colonne dinamiche: prima le tabelle millesimali
+// (la tabella di default è già in testa, ordinata dal backend), poi i consumi.
 const dynamicColumns = computed(() => {
   const r = report.value
   if (!r) return []
-  const consumi = (r.consumoColumns ?? []).map(c => ({
-    kind: 'consumo', id: c.consumptionTypeId, name: c.name, uom: c.unitOfMeasure,
-  }))
   const mill = (r.millesimaleColumns ?? []).map(m => ({
     kind: 'mill', id: m.millesimalTableId, name: m.name, uom: null,
   }))
-  return [...consumi, ...mill]
+  const consumi = (r.consumoColumns ?? []).map(c => ({
+    kind: 'consumo', id: c.consumptionTypeId, name: c.name, uom: c.unitOfMeasure,
+  }))
+  return [...mill, ...consumi]
 })
 
 // Gruppi di colonne dinamiche per pagina di stampa.
@@ -359,22 +312,30 @@ const totImp = (id) => { const c = report.value.totals.consumi.find(x => x.consu
 const totMill = (id) => { const m = report.value.totals.millesimali.find(x => x.millesimalTableId === id); return m ? fmt(m.importo) : '—' }
 const totMillVal = (id) => { const m = report.value.totals.millesimali.find(x => x.millesimalTableId === id); return m ? fmtQ(m.millesimal) : '—' }
 
-function printReport() { window.print() }
-
 // ── Export PDF (file scaricabile) ───────────────────────────────────────────
-// Stessa logica della stampa: una tabella per ogni gruppo di COLS_PER_PAGE
-// colonne dinamiche, con le colonne fisse ripetute su ogni pagina.
+// Una tabella per ogni gruppo di COLS_PER_PAGE colonne dinamiche,
+// con le colonne fisse ripetute su ogni pagina.
 async function exportPdf() {
   const rpt = report.value
   if (!rpt) return
   const { default: jsPDF }   = await import('jspdf')
   const { default: autoTable } = await import('jspdf-autotable')
 
+  let logo = null
+  try { logo = await getReportLogo() } catch { /* fail-safe */ }
+
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
   const pages = printPages.value
 
   pages.forEach((page, pi) => {
     if (pi > 0) doc.addPage()
+
+    // Le colonne fisse (Dirette…Saldo) vanno stampate SOLO sull'ultima pagina,
+    // dopo che tutte le colonne dinamiche (millesimali + consumi) sono state stampate.
+    const isLastPage = pi === pages.length - 1
+
+    // Logo tenant (in alto a destra, su ogni pagina)
+    drawPdfLogo(doc, logo)
 
     // Intestazione pagina
     doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(0)
@@ -386,16 +347,20 @@ async function exportPdf() {
       14, 20)
     doc.setTextColor(0)
 
-    // Intestazione tabella: colonne fisse + le 2 colonne dinamiche (ognuna su 2 sub-colonne)
-    const head1 = [
-      { content: 'Nominativo', rowSpan: 2 },
-      { content: 'Tipo',       rowSpan: 2 },
-      ...page.map(col => ({ content: col.name + (col.uom ? ` (${col.uom})` : ''), colSpan: 2, styles: { halign: 'center' } })),
+    // Intestazione tabella: colonne dinamiche (ognuna su 2 sub-colonne) + colonne fisse solo sull'ultima pagina
+    const fixedHead = isLastPage ? [
       { content: 'Dirette',      rowSpan: 2, styles: { halign: 'right' } },
       { content: 'Accrediti',    rowSpan: 2, styles: { halign: 'right' } },
       { content: 'Totale speso', rowSpan: 2, styles: { halign: 'right' } },
       { content: 'Versato',      rowSpan: 2, styles: { halign: 'right' } },
       { content: 'Saldo',        rowSpan: 2, styles: { halign: 'right' } },
+    ] : []
+
+    const head1 = [
+      { content: 'Nominativo', rowSpan: 2 },
+      { content: 'Tipo',       rowSpan: 2 },
+      ...page.map(col => ({ content: col.name + (col.uom ? ` (${col.uom})` : ''), colSpan: 2, styles: { halign: 'center' } })),
+      ...fixedHead,
     ]
     const head2 = page.flatMap(col => [
       { content: printSub2(col), styles: { halign: 'right' } },
@@ -405,7 +370,8 @@ async function exportPdf() {
     const body = rpt.rows.map(r => {
       const cells = [r.nominativo || '—', r.rowType]
       for (const col of page) { cells.push(printCellVal(r, col), printCellImp(r, col)) }
-      cells.push(fmt(r.dirette), fmt(r.accrediti), fmt(r.totale), fmt(r.versato), fmt(r.saldo))
+      if (isLastPage)
+        cells.push(fmt(r.dirette), fmt(r.accrediti), fmt(r.totale), fmt(r.versato), fmt(r.saldo))
       return cells
     })
 
@@ -414,14 +380,16 @@ async function exportPdf() {
       foot.push({ content: printTotVal(col), styles: { halign: 'right', fontStyle: 'bold' } })
       foot.push({ content: printTotImp(col), styles: { halign: 'right', fontStyle: 'bold' } })
     }
-    foot.push({ content: fmt(rpt.totals.dirette),   styles: { halign: 'right', fontStyle: 'bold' } })
-    foot.push({ content: fmt(rpt.totals.accrediti), styles: { halign: 'right', fontStyle: 'bold' } })
-    foot.push({ content: fmt(rpt.totals.totale),    styles: { halign: 'right', fontStyle: 'bold' } })
-    foot.push({ content: fmt(rpt.totals.versato),   styles: { halign: 'right', fontStyle: 'bold' } })
-    foot.push({ content: fmt(rpt.totals.saldo),     styles: { halign: 'right', fontStyle: 'bold' } })
+    if (isLastPage) {
+      foot.push({ content: fmt(rpt.totals.dirette),   styles: { halign: 'right', fontStyle: 'bold' } })
+      foot.push({ content: fmt(rpt.totals.accrediti), styles: { halign: 'right', fontStyle: 'bold' } })
+      foot.push({ content: fmt(rpt.totals.totale),    styles: { halign: 'right', fontStyle: 'bold' } })
+      foot.push({ content: fmt(rpt.totals.versato),   styles: { halign: 'right', fontStyle: 'bold' } })
+      foot.push({ content: fmt(rpt.totals.saldo),     styles: { halign: 'right', fontStyle: 'bold' } })
+    }
 
     // Allinea a destra tutte le colonne numeriche (tutte tranne Nominativo+Tipo)
-    const totalCols = 2 + page.length * 2 + 5
+    const totalCols = 2 + page.length * 2 + (isLastPage ? 5 : 0)
     const columnStyles = {}
     for (let i = 2; i < totalCols; i++) columnStyles[i] = { halign: 'right' }
 
@@ -448,11 +416,11 @@ async function exportExcel() {
 
   // ── Intestazioni (con millesimi + importo per ogni tabella) ───────────────
   const header = ['Nominativo', 'Tipo']
+  rpt.millesimaleColumns.forEach(m => { header.push(`${m.name} mill.`, `${m.name} importo`) })
   rpt.consumoColumns.forEach(c => {
     const um = c.unitOfMeasure ? ` (${c.unitOfMeasure})` : ''
     header.push(`${c.name} Q.tà${um}`, `${c.name} Importo`)
   })
-  rpt.millesimaleColumns.forEach(m => { header.push(`${m.name} mill.`, `${m.name} importo`) })
   header.push('Dirette', 'Accrediti', 'Totale speso', 'Versato', 'Saldo')
 
   // Indici delle colonne numeriche (per formattazione): tutte tranne le prime 2
@@ -465,19 +433,19 @@ async function exportExcel() {
 
   // calcola i formati per colonna in base alla posizione
   let ci = 2
-  rpt.consumoColumns.forEach(() => { numFmtByCol[ci] = NUM; numFmtByCol[ci+1] = EUR; ci += 2 })
   rpt.millesimaleColumns.forEach(() => { numFmtByCol[ci] = NUM; numFmtByCol[ci+1] = EUR; ci += 2 })
+  rpt.consumoColumns.forEach(() => { numFmtByCol[ci] = NUM; numFmtByCol[ci+1] = EUR; ci += 2 })
   ;['Dirette','Accrediti','Totale speso','Versato','Saldo'].forEach(() => { numFmtByCol[ci] = EUR; ci += 1 })
 
   function rowToArray(r) {
     const a = [r.nominativo || '', r.rowType]
-    rpt.consumoColumns.forEach(c => {
-      const cell = findC(r, c.consumptionTypeId)
-      a.push(cell ? Number(cell.quantita) : 0, cell ? Number(cell.importo) : 0)
-    })
     rpt.millesimaleColumns.forEach(m => {
       const cell = r.millesimali.find(x => x.millesimalTableId === m.millesimalTableId)
       a.push(cell ? Number(cell.millesimal) : 0, cell ? Number(cell.importo) : 0)
+    })
+    rpt.consumoColumns.forEach(c => {
+      const cell = findC(r, c.consumptionTypeId)
+      a.push(cell ? Number(cell.quantita) : 0, cell ? Number(cell.importo) : 0)
     })
     a.push(Number(r.dirette), Number(r.accrediti), Number(r.totale), Number(r.versato), Number(r.saldo))
     return a
@@ -486,13 +454,13 @@ async function exportExcel() {
 
   // ── Riga totali ───────────────────────────────────────────────────────────
   const tot = ['TOTALI', '']
-  rpt.consumoColumns.forEach(c => {
-    const t = rpt.totals.consumi.find(x => x.consumptionTypeId === c.consumptionTypeId)
-    tot.push(t ? Number(t.quantita) : 0, t ? Number(t.importo) : 0)
-  })
   rpt.millesimaleColumns.forEach(m => {
     const t = rpt.totals.millesimali.find(x => x.millesimalTableId === m.millesimalTableId)
     tot.push(t ? Number(t.millesimal) : 0, t ? Number(t.importo) : 0)
+  })
+  rpt.consumoColumns.forEach(c => {
+    const t = rpt.totals.consumi.find(x => x.consumptionTypeId === c.consumptionTypeId)
+    tot.push(t ? Number(t.quantita) : 0, t ? Number(t.importo) : 0)
   })
   tot.push(Number(rpt.totals.dirette), Number(rpt.totals.accrediti), Number(rpt.totals.totale), Number(rpt.totals.versato), Number(rpt.totals.saldo))
   aoa.push(tot)
@@ -582,22 +550,4 @@ const today = new Date().toLocaleDateString('it-IT')
   border-color: var(--accent-green, #22c55e);
 }
 
-/* Blocco di sole tabelle di stampa: nascosto a schermo */
-.print-only { display: none; }
-
-@media print {
-  .no-print { display: none !important; }
-  .report-sheet { border: none; padding: 0; background: #fff; color: #000; }
-  .bilancio-table th, .bilancio-table td { color: #000 !important; border-color: #999 !important; }
-  @page { size: landscape; margin: 10mm; }
-
-  /* In stampa mostriamo solo le tabelle spezzate, una per pagina */
-  .print-only { display: block; }
-  .print-page { page-break-after: always; break-after: page; }
-  .print-page:last-child { page-break-after: auto; break-after: auto; }
-  .print-page .bilancio-table { width: 100%; table-layout: fixed; }
-  .print-page-header { border-bottom: 2px solid #000; padding-bottom: 0.4rem; margin-bottom: 0.6rem; }
-  .print-page-header h2 { margin: 0 0 0.3rem; font-size: 1.05rem; color: #000; }
-  .print-page-header .report-meta { color: #000; font-size: 0.8rem; }
-}
 </style>
