@@ -30,7 +30,7 @@
 
       <!-- ── Tab ──────────────────────────────────────────────────────────── -->
       <div class="detail-tabs">
-        <button class="detail-tab-btn" :class="{ active: tab === 'accounts' }" @click="tab = 'accounts'">
+        <button v-if="false" class="detail-tab-btn" :class="{ active: tab === 'accounts' }" @click="tab = 'accounts'">
           Per conto
         </button>
         <button class="detail-tab-btn" :class="{ active: tab === 'units' }" @click="tab = 'units'">
@@ -173,7 +173,7 @@ const budgetId = Number(route.params.budgetId)
 const loading      = ref(false)
 const regenerating = ref(false)
 const detail       = ref(null)
-const tab          = ref('accounts')
+const tab          = ref('units')
 
 const expandedAccounts = ref(new Set())
 const expandedExpenses = ref(new Set())

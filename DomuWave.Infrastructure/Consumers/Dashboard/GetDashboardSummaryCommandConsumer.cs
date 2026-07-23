@@ -48,7 +48,8 @@ public class GetDashboardSummaryCommandConsumer
                 .ConfigureAwait(false);
 
             dto.TotalActiveCondominiumsCount = await session.Query<Models.Condominium>()
-                .CountAsync(c => c.IsActive && !c.IsDeleted, cancellationToken)
+                .CountAsync(c => c.IsActive && !c.IsDeleted
+                    && c.Tenant.IsActive && !c.Tenant.IsDeleted, cancellationToken)
                 .ConfigureAwait(false);
         }
         else

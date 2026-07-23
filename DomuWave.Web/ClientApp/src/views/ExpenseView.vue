@@ -308,7 +308,7 @@
           <span v-if="expErrors.accountId" class="field-error">{{ expErrors.accountId }}</span>
         </div>
         <div class="form-group" style="grid-column:span 2" :class="{ 'has-error': expErrors.allocation }">
-          <label class="form-label">Imputazione spesa *</label>
+          <label class="form-label">{{ expForm.movementType === 'Entrata' ? 'Imputazione entrata' : 'Imputazione spesa' }} *</label>
           <div class="radio-group" style="margin-bottom:0.4rem">
             <label class="radio-label">
               <input type="radio" value="table" v-model="expForm.allocationMode" @change="onAllocationModeChange" />
@@ -365,7 +365,7 @@
         </div>
       </div>
       <div class="form-group form-group--full" style="margin-top:0.5rem">
-        <label class="form-label">A carico di</label>
+        <label class="form-label">{{ expForm.movementType === 'Entrata' ? 'A favore di' : 'A carico di' }}</label>
         <div class="charge-row">
           <label class="radio-label">
             <input type="radio" v-model.number="expForm.chargeabilityTypeId" :value="1" />
