@@ -77,6 +77,13 @@ namespace DomuWave.Services.Implementations
 
             installment.Trace(currentUser);
             installment.IsDeleted = true;
+
+            foreach (var fee in installment.Fees.Where(f => !f.IsDeleted))
+            {
+                fee.Trace(currentUser);
+                fee.IsDeleted = true;
+            }
+
             await session.SaveOrUpdateAsync(installment, cancellationToken);
             await session.FlushAsync(cancellationToken);
             return true;

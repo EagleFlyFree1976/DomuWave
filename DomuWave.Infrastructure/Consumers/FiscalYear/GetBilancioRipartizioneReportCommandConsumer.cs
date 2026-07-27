@@ -127,7 +127,8 @@ public class GetBilancioRipartizioneReportCommandConsumer
         var versatoRows = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.FiscalYear.Id == fy.Id
                      && f.Installment.Condominium.Id == condId
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .Select(f => new { UnitId = f.Unit.Id, f.AmountPaid })
             .ToListAsync(ct).ConfigureAwait(false);
         var versatoByUnit = versatoRows

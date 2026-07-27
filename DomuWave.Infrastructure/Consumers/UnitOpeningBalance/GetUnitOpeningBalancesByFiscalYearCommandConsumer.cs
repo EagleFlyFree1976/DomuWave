@@ -55,6 +55,18 @@ public class GetUnitOpeningBalancesByFiscalYearCommandConsumer
 
         var recordByUnitId = records.ToDictionary(r => r.Unit.Id);
 
+        // Millesimi della tabella principale del condominio (per la ripartizione lato client)
+        var millesimalRows = await session.Query<UnitMillesimal>()
+            .Where(um => um.MillesimalTable.Condominium.Id == fiscalYear.Condominium.Id
+                      && um.MillesimalTable.IsDefault
+                      && !um.MillesimalTable.IsDeleted
+                      && !um.IsDeleted)
+            .Select(um => new { UnitId = um.Unit.Id, um.Millesimal })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var millesimalByUnitId = millesimalRows.ToDictionary(um => um.UnitId, um => um.Millesimal);
+
         return units
             .OrderBy(u => u.FormatUnitName())
             .Select(u =>
@@ -67,6 +79,9 @@ public class GetUnitOpeningBalancesByFiscalYearCommandConsumer
                     UnitName        = u.FormatUnitName(),
                     FiscalYearId    = command.FiscalYearId,
                     FiscalYearCode  = fiscalYear.Code,
+                    BillingGroupId   = u.BillingGroup?.Id,
+                    BillingGroupName = u.BillingGroup?.Name,
+                    Millesimal       = millesimalByUnitId.TryGetValue(u.Id, out var mil) ? mil : 0,
                     OpeningBalance  = rec?.OpeningBalance  ?? 0,
                     RateAddebitate  = rec?.RateAddebitate  ?? 0,
                     RateIncassate   = rec?.RateIncassate   ?? 0,

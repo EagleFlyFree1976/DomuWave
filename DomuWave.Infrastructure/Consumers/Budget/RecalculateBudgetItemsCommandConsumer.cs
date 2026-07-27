@@ -156,14 +156,16 @@ public class RecalculateBudgetItemsCommandConsumer
         var totalAccrued = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.Condominium.Id == condominiumId
                      && f.Installment.FiscalYear.Id  == fiscalYearId
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .SumAsync(f => (decimal?)f.AmountDue, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 
         var totalCollected = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.Condominium.Id == condominiumId
                      && f.Installment.FiscalYear.Id  == fiscalYearId
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .SumAsync(f => (decimal?)f.AmountPaid, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 

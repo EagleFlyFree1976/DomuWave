@@ -100,7 +100,8 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
             .Where(f => f.Installment.FiscalYear.Id == fiscalYearId
                      && (f.Installment.Budget == null
                          || f.Installment.Budget.Type == BudgetType.Preventivo)
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .GroupBy(f => f.Unit.Id)
             .Select(g => new
             {

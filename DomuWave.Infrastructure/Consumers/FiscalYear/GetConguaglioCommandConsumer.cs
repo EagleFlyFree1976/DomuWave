@@ -99,7 +99,8 @@ public class GetConguaglioCommandConsumer
                      && f.Installment.FiscalYear.Id  == fiscalYear.Id
                      && (f.Installment.Budget == null
                          || f.Installment.Budget.Type == BudgetType.Preventivo)
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .GroupBy(f => f.Unit.Id)
             .Select(g => new { UnitId = g.Key, TotalPaid = g.Sum(f => f.AmountPaid) })
             .ToListAsync(cancellationToken)

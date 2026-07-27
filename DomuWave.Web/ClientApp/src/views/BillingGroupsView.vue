@@ -49,6 +49,7 @@
               </td>
               <td>
                 <div class="row-actions">
+                  <button v-if="canEdit" class="btn-icon" @click="openBalanceModal(g)" title="Saldo iniziale gruppo">₿</button>
                   <button v-if="canEdit" class="btn-icon" @click="openGroupModal(g)" title="Modifica">✎</button>
                   <button v-if="canEdit" class="btn-icon" @click="deleteGroup(g.id)" style="color:var(--accent-red)" title="Elimina">✕</button>
                 </div>
@@ -161,13 +162,67 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Saldo iniziale gruppo -->
+    <div class="modal-overlay" v-if="showBalanceModal" @mousedown.self="showBalanceModal=false">
+      <div class="modal">
+        <div class="modal-header">
+          <h2>Saldo iniziale — {{ balanceGroup?.name }}</h2>
+          <button class="btn-icon" @click="showBalanceModal=false">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Criterio di ripartizione</label>
+            <select class="form-select" v-model="balanceForm.criterion">
+              <option value="millesimal">Per millesimi (tabella principale)</option>
+              <option value="equal">In parti uguali</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Esercizio fiscale *</label>
+            <select class="form-select" v-model.number="balanceForm.fiscalYearId" @change="loadGroupBalanceState">
+              <option :value="null">— Seleziona —</option>
+              <option v-for="fy in fiscalYears" :key="fy.id" :value="fy.id">{{ fy.code }}</option>
+            </select>
+          </div>
+          <div v-if="balanceForm.fiscalYearId">
+            <div v-if="balanceLoading" class="loading-state"><div class="spinner"></div></div>
+            <div v-else-if="!balanceEditable" class="empty-state" style="padding:1rem">
+              {{ balanceNotEditableReason }}
+            </div>
+            <template v-else>
+              <div class="form-group" style="margin-top:0.5rem">
+                <label class="form-label">Importo totale da ripartire (€) *</label>
+                <input class="form-input" type="number" step="0.01" v-model.number="balanceForm.totalAmount" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Note</label>
+                <textarea class="form-textarea" v-model="balanceForm.notes" rows="2"></textarea>
+              </div>
+            </template>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" @click="showBalanceModal=false">Annulla</button>
+          <button
+            v-if="balanceEditable"
+            class="btn btn-primary"
+            @click="saveGroupBalance"
+            :disabled="balanceSaving || !balanceForm.fiscalYearId"
+          >
+            <span v-if="balanceSaving" class="spinner" style="width:14px;height:14px"></span>
+            Ripartisci e salva
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { billingGroupApi, unitApi } from '@/services/api'
+import { billingGroupApi, unitApi, fiscalYearApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
 import { useAppStore } from '@/stores/app'
 import ToolbarRow from '@/components/ToolbarRow.vue'
@@ -193,6 +248,16 @@ const selectedSuggestions = ref([])
 
 const defaultGroupForm = () => ({ name: '', contactEmail: '', contactPhone: '', notes: '', unitIds: [] })
 const groupForm = ref(defaultGroupForm())
+
+const showBalanceModal      = ref(false)
+const balanceGroup          = ref(null)
+const balanceSaving         = ref(false)
+const balanceLoading        = ref(false)
+const balanceEditable       = ref(false)
+const balanceNotEditableReason = ref('')
+const fiscalYears           = ref([])
+const defaultBalanceForm = () => ({ fiscalYearId: null, totalAmount: 0, notes: '', criterion: 'millesimal' })
+const balanceForm = ref(defaultBalanceForm())
 
 async function loadBillingGroups() {
   if (!condominiumId.value) return
@@ -255,6 +320,63 @@ async function deleteGroup(id) {
     await loadBillingGroups()
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  }
+}
+
+async function openBalanceModal(group) {
+  if (!group.units?.length) {
+    store.toast('Il gruppo non contiene unità', 'error')
+    return
+  }
+  balanceGroup.value  = group
+  balanceForm.value   = defaultBalanceForm()
+  balanceEditable.value = false
+  showBalanceModal.value = true
+
+  try {
+    const { data } = await fiscalYearApi.getByCondominium(condominiumId.value)
+    fiscalYears.value = (data ?? []).filter(f => !f.isDeleted)
+    const active = fiscalYears.value.find(f => f.isActive) ?? fiscalYears.value[0]
+    if (active) {
+      balanceForm.value.fiscalYearId = active.id
+      await loadGroupBalanceState()
+    }
+  } catch { /* handled by interceptor */ }
+}
+
+async function loadGroupBalanceState() {
+  if (!balanceForm.value.fiscalYearId || !balanceGroup.value) return
+  balanceLoading.value = true
+  try {
+    const firstUnitId = balanceGroup.value.units[0].unitId
+    const { data } = await unitApi.getOpeningBalance(firstUnitId, balanceForm.value.fiscalYearId)
+    balanceEditable.value = !!data.isEditable
+    balanceNotEditableReason.value = data.isClosed
+      ? "L'esercizio selezionato è chiuso: il saldo non è più modificabile."
+      : 'Il saldo di apertura non è modificabile: non è il primo esercizio del condominio.'
+  } catch {
+    balanceEditable.value = false
+  } finally {
+    balanceLoading.value = false
+  }
+}
+
+async function saveGroupBalance() {
+  if (!balanceGroup.value || !balanceForm.value.fiscalYearId) return
+  balanceSaving.value = true
+  try {
+    await billingGroupApi.setOpeningBalance(balanceGroup.value.id, {
+      fiscalYearId: balanceForm.value.fiscalYearId,
+      totalAmount:  balanceForm.value.totalAmount,
+      notes:        balanceForm.value.notes,
+      criterion:    balanceForm.value.criterion,
+    })
+    store.toast('Saldo iniziale ripartito tra le unità del gruppo', 'success')
+    showBalanceModal.value = false
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally {
+    balanceSaving.value = false
   }
 }
 

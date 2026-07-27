@@ -55,7 +55,7 @@ public class GetFiscalYearByIdCommandConsumer : InMemoryConsumerBase<GetFiscalYe
 
         var fees = installmentIds.Any()
             ? await session.Query<CondominiumFee>()
-                .Where(f => installmentIds.Contains(f.Installment.Id) && !f.IsDeleted)
+                .Where(f => installmentIds.Contains(f.Installment.Id) && !f.IsDeleted && !f.Installment.IsDeleted)
                 .ToListAsync(cancellationToken).ConfigureAwait(false)
             : new System.Collections.Generic.List<CondominiumFee>();
 

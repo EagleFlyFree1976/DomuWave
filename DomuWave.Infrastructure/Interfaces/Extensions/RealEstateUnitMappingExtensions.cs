@@ -54,6 +54,7 @@ public static class RealEstateUnitMappingExtensions
             OccupancyStatus = unit.OccupancyStatus,
             Notes           = unit.Notes,
             DisplayName     = unit.DisplayName,
+            IsDisplayNameOverridden = unit.IsDisplayNameOverridden,
             NumeroAbitanti  = unit.NumeroAbitanti,
             IsActive        = unit.IsActive,
         };
@@ -135,6 +136,9 @@ public static class RealEstateUnitMappingExtensions
     /// </summary>
     public static void RefreshDisplayName(this RealEstateUnit unit, string overrideName = null)
     {
+        if (unit.IsDisplayNameOverridden)
+            return; // l'utente ha impostato una denominazione manuale: non ricalcolare
+
         if (!string.IsNullOrWhiteSpace(overrideName))
         {
             unit.DisplayName = overrideName.Trim();
@@ -174,7 +178,18 @@ public static class RealEstateUnitMappingExtensions
         entity.UnitType        = dto.UnitType ?? string.Empty;
         entity.OccupancyStatus = dto.OccupancyStatus ?? string.Empty;
         entity.Notes           = dto.Notes;
-        entity.DisplayName     = dto.DisplayName;
+
+        if (!string.IsNullOrWhiteSpace(dto.DisplayName))
+        {
+            entity.DisplayName = dto.DisplayName.Trim();
+            entity.IsDisplayNameOverridden = true;
+        }
+        else
+        {
+            entity.IsDisplayNameOverridden = false;
+            entity.RefreshDisplayName();
+        }
+
         entity.NumeroAbitanti  = dto.NumeroAbitanti;
         entity.IsActive        = dto.IsActive;
     }

@@ -356,7 +356,7 @@ public class SendEmailNotificationsCommandConsumer
 
                     // Carica le fee per queste unità associate agli installment di questa comunicazione
                     var fees = await session.Query<CondominiumFee>()
-                        .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted)
+                        .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted && !f.Installment.IsDeleted)
                         .OrderBy(f => f.Installment.InstallmentNumber)
                         .ThenBy(f => f.Unit.InternalNumber)
                         .ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -544,7 +544,7 @@ public class SendSingleEmailNotificationCommandConsumer
             }
 
             var fees = await session.Query<CondominiumFee>()
-                .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted)
+                .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted && !f.Installment.IsDeleted)
                 .OrderBy(f => f.Installment.InstallmentNumber)
                 .ThenBy(f => f.Unit.InternalNumber)
                 .ToListAsync(cancellationToken).ConfigureAwait(false);
@@ -833,7 +833,7 @@ public class GenerateNotificationsFromFeesCommandConsumer
 
         // Load fees for selected installments, filtered by unit if specified
         var feesQuery = session.Query<CondominiumFee>()
-            .Where(f => dto.InstallmentIds.Contains(f.Installment.Id) && !f.IsDeleted);
+            .Where(f => dto.InstallmentIds.Contains(f.Installment.Id) && !f.IsDeleted && !f.Installment.IsDeleted);
         if (dto.UnitIds != null && dto.UnitIds.Count > 0)
             feesQuery = feesQuery.Where(f => dto.UnitIds.Contains(f.Unit.Id));
 
@@ -1086,7 +1086,7 @@ public class GetNotificationAttachmentPdfCommandConsumer
             throw new ValidatorException("Nessuna unità trovata per questa notifica.");
 
         var fees = await session.Query<CondominiumFee>()
-            .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted)
+            .Where(f => unitIds.Contains(f.Unit.Id) && !f.IsDeleted && !f.Installment.IsDeleted)
             .OrderBy(f => f.Installment.InstallmentNumber)
             .ThenBy(f => f.Unit.InternalNumber)
             .ToListAsync(cancellationToken).ConfigureAwait(false);

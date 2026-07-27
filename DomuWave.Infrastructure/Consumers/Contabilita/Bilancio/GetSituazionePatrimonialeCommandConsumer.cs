@@ -60,7 +60,8 @@ public class GetSituazionePatrimonialeCommandConsumer
         var balances = await session.Query<CondominiumFee>()
             .Where(f => f.Installment.Condominium.Id == condominiumId
                      && f.Installment.FiscalYear.Id  == fiscalYear.Id
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .Select(f => f.AmountDue - f.AmountPaid)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

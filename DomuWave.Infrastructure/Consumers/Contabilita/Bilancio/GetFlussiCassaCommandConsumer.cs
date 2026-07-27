@@ -80,7 +80,8 @@ public class GetFlussiCassaCommandConsumer
                      && f.PaymentDate != null
                      && f.PaymentDate >= start
                      && f.PaymentDate <= end
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .SumAsync(f => (decimal?)f.AmountPaid, cancellationToken)
             .ConfigureAwait(false) ?? 0m;
 

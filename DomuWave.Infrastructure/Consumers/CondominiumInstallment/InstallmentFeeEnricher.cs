@@ -22,7 +22,7 @@ internal static class InstallmentFeeEnricher
         var instIds = dtos.Select(d => d.Id).ToList();
 
         var feeAggregates = await session.Query<CondominiumFee>()
-            .Where(f => instIds.Contains(f.Installment.Id) && !f.IsDeleted)
+            .Where(f => instIds.Contains(f.Installment.Id) && !f.IsDeleted && !f.Installment.IsDeleted)
             .Select(f => new
             {
                 InstallmentId = f.Installment.Id,

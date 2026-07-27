@@ -9,6 +9,13 @@ public class UnitOpeningBalanceReadDto : TraceEntityDTO<int>
     public int     FiscalYearId   { get; set; }
     public string  FiscalYearCode { get; set; }
 
+    /// <summary>Gruppo di fatturazione a cui appartiene l'unità, se presente.</summary>
+    public int?    BillingGroupId   { get; set; }
+    public string? BillingGroupName { get; set; }
+
+    /// <summary>Millesimi dell'unità nella tabella millesimale principale del condominio (0 se non assegnati).</summary>
+    public decimal Millesimal       { get; set; }
+
     /// <summary>Saldo riportato dall'esercizio precedente (morosità o credito pregresso).</summary>
     public decimal OpeningBalance  { get; set; }
 

@@ -406,9 +406,26 @@
                 <th v-if="isFirstFiscalYear">Note</th>
               </tr>
             </thead>
-            <tbody>
-              <tr v-for="ub in unitBalances" :key="ub.unitId">
-                <td>{{ ub.unitName }}</td>
+            <tbody v-for="group in groupedUnitBalances" :key="group.key">
+              <tr v-if="group.billingGroupId" class="group-header-row">
+                <td>
+                  <span class="group-header-label">◈ {{ group.billingGroupName }}</span>
+                </td>
+                <td class="col-num" v-if="isFirstFiscalYear">
+                  <input class="inline-input" type="number" step="0.01"
+                         v-model.number="group.totalAmount" placeholder="Importo totale" />
+                </td>
+                <td v-if="isFirstFiscalYear">
+                  <button type="button" class="btn btn-ghost btn-sm" @click="applyGroupAmount(group, 'millesimal')">
+                    Ripartisci sui millesimi
+                  </button>
+                  <button type="button" class="btn btn-ghost btn-sm" @click="applyGroupAmount(group, 'equal')">
+                    Ripartisci equamente
+                  </button>
+                </td>
+              </tr>
+              <tr v-for="ub in group.items" :key="ub.unitId">
+                <td :style="group.billingGroupId ? 'padding-left:1.5rem' : ''">{{ ub.unitName }}</td>
                 <td class="col-num">
                   <input v-if="isFirstFiscalYear" class="inline-input" type="number" step="0.01"
                          v-model.number="ub.openingBalance" />
@@ -763,16 +780,71 @@ async function loadUnitsForOpeningBalances() {
   try {
     const { data } = await unitApi.getOpeningBalancesByFiscalYear(createdFiscalYearId.value)
     unitBalances.value = (data ?? []).map(b => ({
-      unitId:         b.unitId,
-      unitName:       b.unitName ?? `Unità ${b.unitId}`,
-      openingBalance: b.openingBalance,
-      notes:          b.notes ?? '',
+      unitId:           b.unitId,
+      unitName:         b.unitName ?? `Unità ${b.unitId}`,
+      openingBalance:   b.openingBalance,
+      notes:            b.notes ?? '',
+      billingGroupId:   b.billingGroupId ?? null,
+      billingGroupName: b.billingGroupName ?? null,
+      millesimal:       b.millesimal ?? 0,
     }))
   } catch {
     unitBalances.value = []
   } finally {
     loadingUnits.value = false
   }
+}
+
+// Raggruppa le unità per gruppo di fatturazione; le unità senza gruppo restano fuori da qualsiasi intestazione.
+const groupedUnitBalances = computed(() => {
+  const groups = []
+  const groupByKey = new Map()
+
+  for (const ub of unitBalances.value) {
+    const key = ub.billingGroupId ?? `unit-${ub.unitId}`
+    let group = groupByKey.get(key)
+    if (!group) {
+      group = {
+        key,
+        billingGroupId:   ub.billingGroupId,
+        billingGroupName: ub.billingGroupName,
+        totalAmount:      0,
+        items:            [],
+      }
+      groupByKey.set(key, group)
+      groups.push(group)
+    }
+    group.items.push(ub)
+  }
+  return groups
+})
+
+function applyGroupAmount(group, criterion) {
+  const totalAmount = Number(group.totalAmount) || 0
+  const weights = criterion === 'equal'
+    ? group.items.map(() => 1)
+    : group.items.map(ub => Number(ub.millesimal) || 0)
+
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0)
+  if (totalWeight <= 0) {
+    store.toast('Le unità del gruppo non hanno millesimi assegnati nella tabella principale', 'error')
+    return
+  }
+
+  let roundedSum = 0
+  let largestIndex = 0
+
+  group.items.forEach((ub, i) => {
+    const raw = totalAmount * weights[i] / totalWeight
+    ub.openingBalance = Math.round(raw * 100) / 100
+    roundedSum += ub.openingBalance
+    if (weights[i] > weights[largestIndex]) largestIndex = i
+  })
+
+  // Il residuo di arrotondamento va all'unità con peso maggiore, per far tornare esattamente il totale.
+  const remainder = Math.round((totalAmount - roundedSum) * 100) / 100
+  const largestItem = group.items[largestIndex]
+  largestItem.openingBalance = Math.round((largestItem.openingBalance + remainder) * 100) / 100
 }
 
 async function saveOpeningBalances() {
@@ -1100,6 +1172,8 @@ window.addEventListener('app:refresh', loadFiscalYears)
 .opening-balances-table td   { padding: 0.4rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
 .opening-balances-table tbody tr:last-child td { border-bottom: none; }
 .opening-balances-table .form-input--sm { padding: 0.2rem 0.4rem; font-size: 0.8rem; height: auto; }
+.group-header-row td { background: var(--accent-glow, #eef2ff); font-weight: 600; }
+.group-header-label { color: var(--accent); }
 
 @media (max-width: 768px) {
   .table-wrap table th,

@@ -285,7 +285,8 @@ public class ApproveBudgetCommandConsumer
                      && f.Installment.FiscalYear.Id  == budget.FiscalYear.Id
                      && (f.Installment.Budget == null
                          || f.Installment.Budget.Type == BudgetType.Preventivo)
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .GroupBy(f => f.Unit.Id)
             .Select(g => new { UnitId = g.Key, TotalDue = g.Sum(f => f.AmountDue) })
             .ToListAsync(ct)

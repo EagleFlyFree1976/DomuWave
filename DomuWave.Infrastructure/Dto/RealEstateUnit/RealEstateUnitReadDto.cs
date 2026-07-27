@@ -24,6 +24,7 @@ public class RealEstateUnitReadDto : TraceEntityDTO<int>
     public string OccupancyStatus { get; set; }
     public string Notes { get; set; }
     public string? DisplayName { get; set; }
+    public bool IsDisplayNameOverridden { get; set; }
     public int    NumeroAbitanti { get; set; }
     public bool IsActive { get; set; }
     public int OwnersCount  { get; set; }

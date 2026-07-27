@@ -97,9 +97,25 @@
                 <label class="form-label">ID</label>
                 <input class="form-input" :value="editing" readonly />
               </div>
-              <div v-if="editing || isCloning" class="form-group form-group--full">
+              <div v-if="editing" class="form-group form-group--full">
                 <label class="form-label">Denominazione</label>
-                <input class="form-input" :value="form.displayName || '—'" readonly />
+                <div style="display:flex;gap:0.5rem;align-items:center">
+                  <input class="form-input" v-model="form.displayName" placeholder="Calcolata automaticamente dai proprietari" />
+                  <button
+                    v-if="form.isDisplayNameOverridden"
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    title="Ripristina il calcolo automatico dai proprietari"
+                    @click="resetDisplayName"
+                  >Ripristina automatico</button>
+                </div>
+                <span class="text-muted" style="font-size:0.8rem">
+                  {{ form.isDisplayNameOverridden ? 'Denominazione impostata manualmente.' : 'Calcolata automaticamente dai proprietari attivi.' }}
+                </span>
+              </div>
+              <div v-else-if="isCloning" class="form-group form-group--full">
+                <label class="form-label">Denominazione</label>
+                <input class="form-input" value="—" readonly />
               </div>
               <div class="form-group">
                 <label class="form-label">N° interno</label>
@@ -351,7 +367,7 @@ function fmtCurrency(v) {
 
 const unitTypes = [
   'Residenziale', 'Commerciale', 'Artigianale', 'Direzionale',
-  'Autorimessa', 'Cantina', 'Deposito', 'Altro',
+  'Autorimessa', 'Box', 'Cantina', 'Deposito', 'Altro',
 ]
 const occupancyStatuses = ['Occupata proprietario', 'Occupata inquilino', 'Libera', 'Non abitabile']
 
@@ -470,6 +486,11 @@ function cloneUnit(item) {
 
 function clearError(field) {
   delete errors.value[field]
+}
+
+function resetDisplayName() {
+  form.value.displayName = ''
+  form.value.isDisplayNameOverridden = false
 }
 
 function validate() {

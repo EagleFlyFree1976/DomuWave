@@ -47,7 +47,7 @@ public class GetInstallmentBatchNoticeCommandConsumer
 
         // 2. Load all fees for this installment (with unit)
         var fees = await session.Query<CondominiumFee>()
-            .Where(f => f.Installment.Id == command.InstallmentId && !f.IsDeleted)
+            .Where(f => f.Installment.Id == command.InstallmentId && !f.IsDeleted && !f.Installment.IsDeleted)
             .OrderBy(f => f.Unit.InternalNumber)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

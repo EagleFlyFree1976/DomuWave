@@ -31,6 +31,7 @@
     <property name="OccupancyStatus" column="OccupancyStatus" type="String" length="50" not-null="true" />
     <property name="Notes" column="Notes" type="String" length="1000" insert="false" update="false" />
     <property name="DisplayName" column="DisplayName" type="String" length="200" />
+    <property name="IsDisplayNameOverridden" column="IsDisplayNameOverridden" type="Boolean" not-null="true" />
     <property name="NumeroAbitanti" column="NumeroAbitanti" type="Int32" not-null="true" />
     <property name="IsActive" column="IsActive" type="Boolean" not-null="true" />
 

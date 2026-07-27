@@ -64,7 +64,8 @@ public class GetUnitPaymentNoticeCommandConsumer
         var fees = await session.Query<CondominiumFee>()
             .Where(f => f.Unit.Id == command.UnitId
                      && f.Installment.FiscalYear.Id == command.FiscalYearId
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .OrderBy(f => f.Installment.InstallmentNumber)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -157,7 +158,8 @@ public class GetUnitInstallmentPaymentNoticeCommandConsumer
         var fee = await session.Query<CondominiumFee>()
             .Where(f => f.Unit.Id == command.UnitId
                      && f.Installment.Id == command.InstallmentId
-                     && !f.IsDeleted)
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
 

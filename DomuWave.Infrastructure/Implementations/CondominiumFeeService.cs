@@ -140,7 +140,7 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<CondominiumFee>> GetByInstallmentIdAsync(int installmentId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<CondominiumFee>()
-                .Where(x => x.Installment.Id == installmentId && !x.IsDeleted)
+                .Where(x => x.Installment.Id == installmentId && !x.IsDeleted && !x.Installment.IsDeleted)
                 .OrderBy(x => x.Unit.InternalNumber)
                 .ToListAsync(cancellationToken);
         }
@@ -148,7 +148,7 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<CondominiumFee>> GetByUnitIdAsync(int unitId, Guid tenantId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<CondominiumFee>()
-                .Where(x => x.Unit.Id == unitId && x.Tenant.Id == tenantId && !x.IsDeleted)
+                .Where(x => x.Unit.Id == unitId && x.Tenant.Id == tenantId && !x.IsDeleted && !x.Installment.IsDeleted)
                 .OrderByDescending(x => x.Installment.FiscalYear.StartDate.Year)
                 .ThenByDescending(x => x.Installment.InstallmentNumber)
                 .ToListAsync(cancellationToken);
@@ -157,7 +157,7 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<CondominiumFee>> GetByUserIdAsync(long userId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<CondominiumFee>()
-                .Where(x => x.UserId == userId && !x.IsDeleted)
+                .Where(x => x.UserId == userId && !x.IsDeleted && !x.Installment.IsDeleted)
                 .OrderByDescending(x => x.Installment.FiscalYear.StartDate.Year)
                 .ThenByDescending(x => x.Installment.InstallmentNumber)
                 .ToListAsync(cancellationToken);
@@ -166,9 +166,10 @@ namespace DomuWave.Services.Implementations
         public async Task<IList<CondominiumFee>> GetUnpaidFeesAsync(int condominiumId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<CondominiumFee>()
-                .Where(x => x.Installment.Condominium.Id == condominiumId 
-                    && x.PaymentStatus != "Paid" 
-                    && !x.IsDeleted)
+                .Where(x => x.Installment.Condominium.Id == condominiumId
+                    && x.PaymentStatus != "Paid"
+                    && !x.IsDeleted
+                    && !x.Installment.IsDeleted)
                 .OrderByDescending(x => x.Installment.FiscalYear.StartDate.Year)
                 .ThenByDescending(x => x.Installment.InstallmentNumber)
                 .ToListAsync(cancellationToken);
@@ -178,10 +179,11 @@ namespace DomuWave.Services.Implementations
         {
             var today = DateTime.Now;
             return await session.Query<CondominiumFee>()
-                .Where(x => x.Installment.Condominium.Id == condominiumId 
-                    && x.Installment.DueDate < today 
-                    && x.PaymentStatus != "Paid" 
-                    && !x.IsDeleted)
+                .Where(x => x.Installment.Condominium.Id == condominiumId
+                    && x.Installment.DueDate < today
+                    && x.PaymentStatus != "Paid"
+                    && !x.IsDeleted
+                    && !x.Installment.IsDeleted)
                 .OrderByDescending(x => x.Installment.FiscalYear.StartDate.Year)
                 .ThenByDescending(x => x.Installment.InstallmentNumber)
                 .ToListAsync(cancellationToken);
@@ -190,16 +192,17 @@ namespace DomuWave.Services.Implementations
         public async Task<decimal> GetTotalDueAsync(long userId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<CondominiumFee>()
-                .Where(x => x.UserId == userId 
-                    && x.PaymentStatus != "Paid" 
-                    && !x.IsDeleted)
+                .Where(x => x.UserId == userId
+                    && x.PaymentStatus != "Paid"
+                    && !x.IsDeleted
+                    && !x.Installment.IsDeleted)
                 .SumAsync(x => x.Balance, cancellationToken);
         }
 
         public async Task<decimal> GetTotalBalanceAsync(long userId, IUser currentUser, CancellationToken cancellationToken)
         {
             return await session.Query<CondominiumFee>()
-                .Where(x => x.UserId == userId && !x.IsDeleted)
+                .Where(x => x.UserId == userId && !x.IsDeleted && !x.Installment.IsDeleted)
                 .SumAsync(x => x.Balance, cancellationToken);
         }
 

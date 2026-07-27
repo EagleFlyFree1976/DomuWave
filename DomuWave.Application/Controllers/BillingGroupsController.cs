@@ -4,7 +4,9 @@ using CPQ.Core.Settings;
 using DomuWave.Application.Code;
 using DomuWave.Services.Models;
 using DomuWave.Services.Command.BillingGroup;
+using DomuWave.Services.Command.UnitOpeningBalance;
 using DomuWave.Services.Dto.BillingGroup;
+using DomuWave.Services.Dto.UnitOpeningBalance;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using SimpleMediator.Core;
@@ -90,5 +92,15 @@ public class BillingGroupsController(
         var bytes = await _mediator.GetResponse(
             new GetBillingGroupInstallmentNoticeCommand(CurrentUser.Id, id, installmentId), ct);
         return File(bytes, "application/pdf", $"avviso-gruppo-{id}-rata-{installmentId}.pdf");
+    }
+
+    [HttpPut("{id:int}/opening-balance")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> SetOpeningBalance(int id, [FromBody] SetGroupOpeningBalanceDto dto, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        await _mediator.GetResponse(new SetGroupOpeningBalanceCommand(CurrentUser.Id, id, dto), ct);
+        return NoContent();
     }
 }

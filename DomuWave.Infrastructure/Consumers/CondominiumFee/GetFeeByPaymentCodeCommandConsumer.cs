@@ -40,7 +40,7 @@ public class GetFeeByPaymentCodeCommandConsumer
             return [];
 
         var fees = await session.Query<CondominiumFee>()
-            .Where(f => codes.Contains(f.PaymentCode) && !f.IsDeleted)
+            .Where(f => codes.Contains(f.PaymentCode) && !f.IsDeleted && !f.Installment.IsDeleted)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

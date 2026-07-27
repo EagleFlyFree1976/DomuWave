@@ -22,10 +22,16 @@ namespace DomuWave.Services.Models
         public virtual string OccupancyStatus { get; set; }
         public virtual string Notes { get; set; }
         /// <summary>
-        /// Etichetta visualizzata (es. cognomi proprietari). Editabile dall'utente;
-        /// viene ricalcolata automaticamente quando si aggiungono/modificano proprietari.
+        /// Etichetta visualizzata (es. cognomi proprietari). Ricalcolata automaticamente
+        /// quando si aggiungono/modificano proprietari, a meno che <see cref="IsDisplayNameOverridden"/>
+        /// sia true, nel qual caso il valore impostato manualmente dall'utente ha priorità.
         /// </summary>
         public virtual string DisplayName { get; set; }
+        /// <summary>
+        /// Se true, <see cref="DisplayName"/> è stato impostato manualmente dall'utente
+        /// e non deve essere sovrascritto dal ricalcolo automatico sui proprietari.
+        /// </summary>
+        public virtual bool IsDisplayNameOverridden { get; set; }
         public virtual int    NumeroAbitanti { get; set; } = 1;
         public virtual bool IsActive { get; set; }
         public virtual BillingGroup? BillingGroup { get; set; }

@@ -24,6 +24,7 @@
     <Nullable>enable</Nullable>
 	  <RuntimeIdentifier>win-x86</RuntimeIdentifier>
 	  <SelfContained>true</SelfContained>
+	  <SatelliteResourceLanguages>it</SatelliteResourceLanguages>
 	  <GenerateDocumentationFile>True</GenerateDocumentationFile>
     <NoWarn>1701;1702;1572;1573;1591</NoWarn>
     <!-- Serve i file statici dalla wwwroot del progetto Web -->

@@ -347,7 +347,7 @@ public class GetConsuntivoDetailCommandConsumer
 
         // ── 7. Quote (rate) emesse per l'esercizio — aggregato per unità ────────
         var feesByUnit = await session.Query<CondominiumFee>()
-            .Where(f => f.Installment.FiscalYear.Id == fiscalYearId && !f.IsDeleted)
+            .Where(f => f.Installment.FiscalYear.Id == fiscalYearId && !f.IsDeleted && !f.Installment.IsDeleted)
             .Select(f => new
             {
                 UnitId     = f.Unit.Id,
