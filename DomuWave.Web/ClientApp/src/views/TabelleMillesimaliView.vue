@@ -114,6 +114,9 @@
                 <th class="th-sortable" @click="toggleSort('unit')">
                   Unità <span class="sort-icon">{{ sortIcon('unit') }}</span>
                 </th>
+                <th class="th-sortable" @click="toggleSort('unitType')">
+                  Tipologia <span class="sort-icon">{{ sortIcon('unitType') }}</span>
+                </th>
                 <th class="th-sortable text-right col-millesimal" @click="toggleSort('millesimal')">
                   Millesimi <span class="sort-icon">{{ sortIcon('millesimal') }}</span>
                 </th>
@@ -128,6 +131,9 @@
               <tr class="filter-row">
                 <th>
                   <input class="filter-input" v-model="filterUnit" placeholder="Filtra unità…" />
+                </th>
+                <th>
+                  <input class="filter-input" v-model="filterUnitType" placeholder="Filtra tipologia…" />
                 </th>
                 <th></th>
                 <th>
@@ -146,6 +152,7 @@
                   {{ row.unit.internalNumber }}
                   <span v-if="row.unit.displayName" class="unit-displayname"> – {{ row.unit.displayName }}</span>
                 </td>
+                <td class="text-secondary">{{ row.unit.unitType || '—' }}</td>
                 <td class="col-millesimal">
                   <input
                     class="mill-input"
@@ -180,7 +187,7 @@
                     :class="totalOk ? 'text-success' : 'text-error'">
                   {{ fmtMillesimal(totalAssigned) }}
                 </td>
-                <td colspan="3"></td>
+                <td colspan="4"></td>
               </tr>
             </tfoot>
           </table>
@@ -245,9 +252,10 @@ const { canCreate, canEdit, canDelete } = usePermissions()
 
 // ─── Filtri e ordinamento voci ─────────────────────────────
 const filterUnit      = ref('')
+const filterUnitType  = ref('')
 const filterStaircase = ref('')
 const filterFloor     = ref('')
-const sortKey         = ref('unit')   // 'unit' | 'millesimal' | 'staircase' | 'floor'
+const sortKey         = ref('unit')   // 'unit' | 'unitType' | 'millesimal' | 'staircase' | 'floor'
 const sortDir         = ref(1)        // 1 = asc, -1 = desc
 
 function toggleSort(key) {
@@ -359,12 +367,14 @@ const unitRows = ref([])
 const filteredSortedRows = computed(() => {
   let rows = unitRows.value
   const fu = filterUnit.value.trim().toLowerCase()
+  const fut = filterUnitType.value.trim().toLowerCase()
   const fs = filterStaircase.value.trim().toLowerCase()
   const ff = filterFloor.value.trim().toLowerCase()
   if (fu) rows = rows.filter(r =>
     (r.unit.internalNumber ?? '').toLowerCase().includes(fu) ||
     (r.unit.displayName ?? '').toLowerCase().includes(fu)
   )
+  if (fut) rows = rows.filter(r => (r.unit.unitType ?? '').toLowerCase().includes(fut))
   if (fs) rows = rows.filter(r => (r.unit.staircase ?? '').toLowerCase().includes(fs))
   if (ff) rows = rows.filter(r => String(r.unit.floor ?? '').toLowerCase().includes(ff))
 
@@ -373,6 +383,9 @@ const filteredSortedRows = computed(() => {
     if (sortKey.value === 'millesimal') {
       av = Number(a.millesimal) || 0
       bv = Number(b.millesimal) || 0
+    } else if (sortKey.value === 'unitType') {
+      av = (a.unit.unitType ?? '').toLowerCase()
+      bv = (b.unit.unitType ?? '').toLowerCase()
     } else if (sortKey.value === 'staircase') {
       av = (a.unit.staircase ?? '').toLowerCase()
       bv = (b.unit.staircase ?? '').toLowerCase()

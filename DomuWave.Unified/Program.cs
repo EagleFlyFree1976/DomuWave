@@ -53,7 +53,7 @@ else
 
 _initSettings(out var _jobSettings, out var _oxCoreSettings);
 
-var logPath = Path.Combine(AppContext.BaseDirectory, "Logs", "domuwave-unified_.log");
+var logPath = Path.Combine(builder.Environment.ContentRootPath, "App_Data", "logs", "domuwave-unified_.log");
 
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(configuration)
@@ -68,13 +68,14 @@ Log.Logger = new LoggerConfiguration()
         fileSizeLimitBytes: 52428800,
         retainedFileCountLimit: 7,
         rollOnFileSizeLimit: true,
-        shared: false).WriteTo.MSSqlServer(
-        connectionString: configuration.GetConnectionString("Logs"),
-        sinkOptions: new MSSqlServerSinkOptions
-        {
-            TableName = "AppLogs",
-            AutoCreateSqlTable = true
-        })
+        shared: true)
+    //.WriteTo.MSSqlServer(
+    //    connectionString: configuration.GetConnectionString("Logs"),
+    //    sinkOptions: new MSSqlServerSinkOptions
+    //    {
+    //        TableName = "AppLogs",
+    //        AutoCreateSqlTable = true
+    //    })
     .CreateLogger();
 
 var logger = Log.Logger;
@@ -203,7 +204,9 @@ try
     app.UseRouting();
 
     app.UseAuthorization();
-    app.UseLicenseManager();
+    app.UseWhen(
+        ctx => ctx.Request.Path.StartsWithSegments("/api"),
+        apiApp => apiApp.UseLicenseManager());
     app.UseMiddleware<LicenseNotActivatedMiddleware>();
     app.UseSwagger(c =>
     {

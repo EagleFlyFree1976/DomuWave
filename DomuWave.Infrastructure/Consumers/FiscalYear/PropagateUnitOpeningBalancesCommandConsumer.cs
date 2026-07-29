@@ -101,6 +101,48 @@ public class PropagateUnitOpeningBalancesCommandConsumer
             count++;
         }
 
+        // ── Propaga anche i saldi di gruppo (mai spalmati sulle unità componenti) ──
+        var previousGroupBalances = await session.Query<Models.BillingGroupOpeningBalance>()
+            .Where(b => b.FiscalYear.Id == previousFiscalYearId && !b.IsDeleted)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var existingGroupRecords = await session.Query<Models.BillingGroupOpeningBalance>()
+            .Where(b => b.FiscalYear.Id == fiscalYear.Id && !b.IsDeleted)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var existingByGroupId = existingGroupRecords.ToDictionary(r => r.BillingGroup.Id);
+
+        foreach (var prev in previousGroupBalances)
+        {
+            if (existingByGroupId.TryGetValue(prev.BillingGroup.Id, out var existing))
+            {
+                existing.OpeningBalance = prev.ClosingBalance;
+                existing.Trace(currentUser);
+                await session.SaveOrUpdateAsync(existing, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                var newGroupBalance = new Models.BillingGroupOpeningBalance
+                {
+                    BillingGroup    = prev.BillingGroup,
+                    FiscalYear      = fiscalYear,
+                    Tenant          = fiscalYear.Tenant,
+                    OpeningBalance  = prev.ClosingBalance,
+                    RateAddebitate  = 0m,
+                    RateIncassate   = 0m,
+                    QuotaConsuntiva = 0m,
+                    SaldoConguaglio = 0m,
+                    TotalMovements  = 0m,
+                    ClosingBalance  = 0m,
+                };
+                if (user != null) newGroupBalance.Trace(user);
+                await session.SaveAsync(newGroupBalance, cancellationToken).ConfigureAwait(false);
+            }
+            count++;
+        }
+
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);
         return count;
     }

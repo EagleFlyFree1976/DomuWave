@@ -586,6 +586,7 @@ export const billingGroupApi = {
   applySuggestions:        (condominiumId, suggestions)      => api.post(`/billing-groups/apply-suggestions/${condominiumId}`, suggestions),
   getGroupNoticePdf:       (id, fiscalYearId)                => api.get(`/billing-groups/${id}/fiscal-year/${fiscalYearId}/notice/pdf`, { responseType: 'blob' }),
   getGroupInstNoticePdf:   (id, installmentId)               => api.get(`/billing-groups/${id}/installment/${installmentId}/notice/pdf`, { responseType: 'blob' }),
+  getOpeningBalance:       (id, fiscalYearId)                => api.get(`/billing-groups/${id}/opening-balance`, { params: { fiscalYearId } }),
   setOpeningBalance:       (id, data)                        => api.put(`/billing-groups/${id}/opening-balance`, data),
 }
 

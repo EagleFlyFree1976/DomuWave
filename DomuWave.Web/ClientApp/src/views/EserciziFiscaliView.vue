@@ -401,31 +401,17 @@
           <table class="opening-balances-table">
             <thead>
               <tr>
-                <th>Unità</th>
+                <th>Unità / Gruppo</th>
                 <th class="col-num">Saldo iniziale (€)</th>
                 <th v-if="isFirstFiscalYear">Note</th>
               </tr>
             </thead>
-            <tbody v-for="group in groupedUnitBalances" :key="group.key">
-              <tr v-if="group.billingGroupId" class="group-header-row">
+            <tbody>
+              <tr v-for="ub in groupedUnitBalances" :key="ub.isGroup ? `group-${ub.billingGroupId}` : `unit-${ub.unitId}`">
                 <td>
-                  <span class="group-header-label">◈ {{ group.billingGroupName }}</span>
+                  <span v-if="ub.isGroup" class="group-header-label">◈ {{ ub.unitName }}</span>
+                  <span v-else>{{ ub.unitName }}</span>
                 </td>
-                <td class="col-num" v-if="isFirstFiscalYear">
-                  <input class="inline-input" type="number" step="0.01"
-                         v-model.number="group.totalAmount" placeholder="Importo totale" />
-                </td>
-                <td v-if="isFirstFiscalYear">
-                  <button type="button" class="btn btn-ghost btn-sm" @click="applyGroupAmount(group, 'millesimal')">
-                    Ripartisci sui millesimi
-                  </button>
-                  <button type="button" class="btn btn-ghost btn-sm" @click="applyGroupAmount(group, 'equal')">
-                    Ripartisci equamente
-                  </button>
-                </td>
-              </tr>
-              <tr v-for="ub in group.items" :key="ub.unitId">
-                <td :style="group.billingGroupId ? 'padding-left:1.5rem' : ''">{{ ub.unitName }}</td>
                 <td class="col-num">
                   <input v-if="isFirstFiscalYear" class="inline-input" type="number" step="0.01"
                          v-model.number="ub.openingBalance" />
@@ -784,6 +770,7 @@ async function loadUnitsForOpeningBalances() {
       unitName:         b.unitName ?? `Unità ${b.unitId}`,
       openingBalance:   b.openingBalance,
       notes:            b.notes ?? '',
+      isGroup:          b.isGroup ?? false,
       billingGroupId:   b.billingGroupId ?? null,
       billingGroupName: b.billingGroupName ?? null,
       millesimal:       b.millesimal ?? 0,
@@ -795,57 +782,12 @@ async function loadUnitsForOpeningBalances() {
   }
 }
 
-// Raggruppa le unità per gruppo di fatturazione; le unità senza gruppo restano fuori da qualsiasi intestazione.
-const groupedUnitBalances = computed(() => {
-  const groups = []
-  const groupByKey = new Map()
-
-  for (const ub of unitBalances.value) {
-    const key = ub.billingGroupId ?? `unit-${ub.unitId}`
-    let group = groupByKey.get(key)
-    if (!group) {
-      group = {
-        key,
-        billingGroupId:   ub.billingGroupId,
-        billingGroupName: ub.billingGroupName,
-        totalAmount:      0,
-        items:            [],
-      }
-      groupByKey.set(key, group)
-      groups.push(group)
-    }
-    group.items.push(ub)
-  }
-  return groups
-})
-
-function applyGroupAmount(group, criterion) {
-  const totalAmount = Number(group.totalAmount) || 0
-  const weights = criterion === 'equal'
-    ? group.items.map(() => 1)
-    : group.items.map(ub => Number(ub.millesimal) || 0)
-
-  const totalWeight = weights.reduce((sum, w) => sum + w, 0)
-  if (totalWeight <= 0) {
-    store.toast('Le unità del gruppo non hanno millesimi assegnati nella tabella principale', 'error')
-    return
-  }
-
-  let roundedSum = 0
-  let largestIndex = 0
-
-  group.items.forEach((ub, i) => {
-    const raw = totalAmount * weights[i] / totalWeight
-    ub.openingBalance = Math.round(raw * 100) / 100
-    roundedSum += ub.openingBalance
-    if (weights[i] > weights[largestIndex]) largestIndex = i
-  })
-
-  // Il residuo di arrotondamento va all'unità con peso maggiore, per far tornare esattamente il totale.
-  const remainder = Math.round((totalAmount - roundedSum) * 100) / 100
-  const largestItem = group.items[largestIndex]
-  largestItem.openingBalance = Math.round((largestItem.openingBalance + remainder) * 100) / 100
-}
+// Ogni riga è già indipendente: un gruppo di fatturazione conta come una singola "unità"
+// con il proprio saldo (mai spalmato sulle unità componenti); le unità senza gruppo restano
+// righe individuali. Ordinamento: gruppi e unità insieme, per nome.
+const groupedUnitBalances = computed(() =>
+  [...unitBalances.value].sort((a, b) => a.unitName.localeCompare(b.unitName))
+)
 
 async function saveOpeningBalances() {
   const fyId = createdFiscalYearId.value
@@ -855,11 +797,20 @@ async function saveOpeningBalances() {
   try {
     await unitApi.setOpeningBalancesBulk({
       fiscalYearId: fyId,
-      items: unitBalances.value.map(ub => ({
-        unitId:         ub.unitId,
-        openingBalance: ub.openingBalance,
-        notes:          ub.notes || null,
-      })),
+      items: unitBalances.value
+        .filter(ub => !ub.isGroup)
+        .map(ub => ({
+          unitId:         ub.unitId,
+          openingBalance: ub.openingBalance,
+          notes:          ub.notes || null,
+        })),
+      groupItems: unitBalances.value
+        .filter(ub => ub.isGroup)
+        .map(ub => ({
+          billingGroupId: ub.billingGroupId,
+          openingBalance: ub.openingBalance,
+          notes:          ub.notes || null,
+        })),
     })
     store.toast('Saldi iniziali salvati', 'success')
     showModal.value = false

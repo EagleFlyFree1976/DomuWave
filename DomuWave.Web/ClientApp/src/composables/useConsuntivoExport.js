@@ -48,56 +48,7 @@ function triggerDownload(blob, filename) {
 export function exportConsuntivoExcel(detail, filename = 'consuntivo') {
   const wb = XLSX.utils.book_new()
 
-  // ── Foglio 1: Per conto ────────────────────────────────────────────────────
-  const rowsAcc = []
-  for (const acc of detail.accounts) {
-    rowsAcc.push({
-      Conto:       `${acc.accountCode} ${acc.accountName}`,
-      Data:        '',
-      Spesa:       '',
-      Fornitore:   '',
-      Unità:       '',
-      Millesimi:   '',
-      'Importo (€)': acc.totalAmount,
-      _bold: true,
-    })
-    for (const exp of acc.expenses) {
-      if (exp.allocations?.length) {
-        for (const alloc of exp.allocations) {
-          rowsAcc.push({
-            Conto:         '',
-            Data:          fmtDate(exp.documentDate),
-            Spesa:         exp.name,
-            Fornitore:     exp.supplierName ?? '',
-            Unità:         alloc.unitName,
-            Millesimi:     alloc.millesimal,
-            'Importo (€)': alloc.allocatedAmount,
-          })
-        }
-      } else {
-        rowsAcc.push({
-          Conto:         '',
-          Data:          fmtDate(exp.documentDate),
-          Spesa:         exp.name,
-          Fornitore:     exp.supplierName ?? '',
-          Unità:         '—',
-          Millesimi:     '',
-          'Importo (€)': exp.grossAmount,
-        })
-      }
-    }
-  }
-
-  const wsAcc = XLSX.utils.json_to_sheet(
-    rowsAcc.map(({ _bold, ...r }) => r)
-  )
-  wsAcc['!cols'] = [
-    { wch: 35 }, { wch: 12 }, { wch: 40 }, { wch: 25 },
-    { wch: 20 }, { wch: 12 }, { wch: 14 },
-  ]
-  XLSX.utils.book_append_sheet(wb, wsAcc, 'Per conto')
-
-  // ── Foglio 2: Per unità (pivot) ────────────────────────────────────────────
+  // ── Foglio: Per unità (pivot) ──────────────────────────────────────────────
   if (detail.units?.length) {
     const accounts = detail.accounts.map(a => ({
       accountId:   a.accountId,
@@ -169,7 +120,7 @@ export async function exportConsuntivoPdf(detail, title = 'Dettaglio Consuntivo'
 
   let y = 28
 
-  // ── Sezione Per unità (pivot) — PRIMA pagina ──────────────────────────────
+  // ── Sezione Per unità (pivot) ──────────────────────────────────────────────
   if (detail.units?.length && detail.hasAllocations) {
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
@@ -225,66 +176,6 @@ export async function exportConsuntivoPdf(detail, title = 'Dettaglio Consuntivo'
       margin: { left: 14, right: 14 },
       showFoot: 'lastPage',
     })
-  }
-
-  // ── Sezione Per conto — pagina successiva ─────────────────────────────────
-  doc.addPage()
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
-  doc.text('Dettaglio per conto', 14, 15)
-  y = 20
-
-  for (const acc of detail.accounts) {
-    const accRows = []
-    for (const exp of acc.expenses) {
-      if (exp.allocations?.length) {
-        for (const alloc of exp.allocations) {
-          accRows.push([
-            fmtDate(exp.documentDate),
-            exp.name,
-            exp.supplierName ?? '—',
-            alloc.unitName,
-            alloc.millesimal.toFixed(3),
-            fmt(alloc.allocatedAmount),
-          ])
-        }
-      } else {
-        accRows.push([
-          fmtDate(exp.documentDate),
-          exp.name,
-          exp.supplierName ?? '—',
-          '—',
-          '—',
-          fmt(exp.grossAmount),
-        ])
-      }
-    }
-
-    autoTable(doc, {
-      startY: y,
-      head: [[
-        { content: `${acc.accountCode}  ${acc.accountName}`, colSpan: 5, styles: { fontStyle: 'bold', fillColor: [50, 50, 80] } },
-        { content: fmt(acc.totalAmount), styles: { fontStyle: 'bold', fillColor: [50, 50, 80], halign: 'right' } },
-      ], [
-        'Data', 'Spesa', 'Fornitore', 'Unità', 'Millesimi', 'Importo (€)',
-      ]],
-      body: accRows,
-      foot: [[
-        { content: 'Totale', colSpan: 5, styles: { fontStyle: 'bold' } },
-        { content: fmt(acc.totalAmount), styles: { fontStyle: 'bold', halign: 'right' } },
-      ]],
-      styles:      { fontSize: 8, cellPadding: 2 },
-      headStyles:  { fillColor: [80, 80, 160], textColor: 255 },
-      footStyles:  { fillColor: [50, 50, 120], textColor: 255 },
-      columnStyles: {
-        0: { cellWidth: 22 },
-        4: { halign: 'right', cellWidth: 20 },
-        5: { halign: 'right', cellWidth: 28 },
-      },
-      margin: { left: 14, right: 14 },
-      showFoot: 'lastPage',
-    })
-    y = doc.lastAutoTable.finalY + 6
   }
 
   doc.save(`${filename}.pdf`)

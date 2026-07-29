@@ -83,6 +83,10 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
         await ComputeUnitClosingBalances(command.FiscalYearId, currentUser, cancellationToken)
             .ConfigureAwait(false);
 
+        // ── Calcolo ClosingBalance per ogni BillingGroupOpeningBalance dell'esercizio ──
+        await ComputeGroupClosingBalances(command.FiscalYearId, currentUser, cancellationToken)
+            .ConfigureAwait(false);
+
         return true;
     }
 
@@ -100,6 +104,7 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
             .Where(f => f.Installment.FiscalYear.Id == fiscalYearId
                      && (f.Installment.Budget == null
                          || f.Installment.Budget.Type == BudgetType.Preventivo)
+                     && f.Unit.BillingGroup == null
                      && !f.IsDeleted
                      && !f.Installment.IsDeleted)
             .GroupBy(f => f.Unit.Id)
@@ -156,6 +161,11 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
 
             if (unit == null || fiscalYear == null) continue;
 
+            // Le unità appartenenti a un gruppo di fatturazione non hanno un proprio
+            // UnitOpeningBalance: il saldo viene gestito a livello di gruppo (vedi
+            // ComputeGroupClosingBalances), mai spalmato sulle unità componenti.
+            if (unit.BillingGroup != null) continue;
+
             var insoluto = fee.TotalDue - fee.TotalPaid;
             var newBalance = new Models.UnitOpeningBalance
             {
@@ -172,6 +182,100 @@ public class CloseFiscalYearCommandConsumer : InMemoryConsumerBase<CloseFiscalYe
             };
             if (user != null) newBalance.Trace(user);
             await session.SaveAsync(newBalance, cancellationToken).ConfigureAwait(false);
+        }
+
+        await session.FlushAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Calcola RateAddebitate/RateIncassate/ClosingBalance per ogni gruppo di fatturazione,
+    /// aggregando i movimenti (CondominiumFee) di TUTTE le unità che appartengono al gruppo.
+    /// Il saldo del gruppo non viene mai spalmato sulle unità componenti.
+    /// </summary>
+    private async Task ComputeGroupClosingBalances(
+        int fiscalYearId,
+        object currentUser,
+        CancellationToken cancellationToken)
+    {
+        var user = currentUser as CPQ.Core.Memberships.IUser;
+
+        // Rate addebitate/incassate per unità, poi aggregate per gruppo di appartenenza.
+        var feesByUnit = await session.Query<CondominiumFee>()
+            .Where(f => f.Installment.FiscalYear.Id == fiscalYearId
+                     && (f.Installment.Budget == null
+                         || f.Installment.Budget.Type == BudgetType.Preventivo)
+                     && f.Unit.BillingGroup != null
+                     && !f.IsDeleted
+                     && !f.Installment.IsDeleted)
+            .GroupBy(f => f.Unit.BillingGroup.Id)
+            .Select(g => new
+            {
+                BillingGroupId = g.Key,
+                TotalDue       = g.Sum(f => f.AmountDue),
+                TotalPaid      = g.Sum(f => f.AmountPaid),
+            })
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var feeMap = feesByUnit.ToDictionary(f => f.BillingGroupId);
+
+        var groupBalances = await session.Query<Models.BillingGroupOpeningBalance>()
+            .Where(b => b.FiscalYear.Id == fiscalYearId && !b.IsDeleted)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var balance in groupBalances)
+        {
+            feeMap.TryGetValue(balance.BillingGroup.Id, out var fees);
+
+            var rateAddebitate = fees?.TotalDue  ?? 0m;
+            var rateIncassate  = fees?.TotalPaid ?? 0m;
+
+            // SaldoConguaglio è già stato impostato dall'approvazione del Consuntivo;
+            // qui lo leggiamo senza sovrascriverlo.
+            var insolutoRate   = rateAddebitate - rateIncassate;
+            var totalMovements = insolutoRate + balance.SaldoConguaglio;
+
+            balance.RateAddebitate = rateAddebitate;
+            balance.RateIncassate  = rateIncassate;
+            balance.TotalMovements = totalMovements;
+            balance.ClosingBalance = balance.OpeningBalance + totalMovements;
+
+            if (user != null) balance.Trace(user);
+            await session.UpdateAsync(balance, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Gruppi con fee ma senza record BillingGroupOpeningBalance ancora creato.
+        var existingGroupIds = groupBalances.Select(b => b.BillingGroup.Id).ToHashSet();
+
+        var fiscalYear = await session.Query<FiscalYear>()
+            .FirstOrDefaultAsync(f => f.Id == fiscalYearId && !f.IsDeleted, cancellationToken)
+            .ConfigureAwait(false);
+
+        foreach (var fee in feesByUnit.Where(f => !existingGroupIds.Contains(f.BillingGroupId)))
+        {
+            var group = await session.Query<BillingGroup>()
+                .FirstOrDefaultAsync(g => g.Id == fee.BillingGroupId && !g.IsDeleted, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (group == null || fiscalYear == null) continue;
+
+            var insoluto = fee.TotalDue - fee.TotalPaid;
+            var newGroupBalance = new Models.BillingGroupOpeningBalance
+            {
+                BillingGroup    = group,
+                FiscalYear      = fiscalYear,
+                Tenant          = group.Tenant,
+                OpeningBalance  = 0m,
+                RateAddebitate  = fee.TotalDue,
+                RateIncassate   = fee.TotalPaid,
+                QuotaConsuntiva = 0m,
+                SaldoConguaglio = 0m,
+                TotalMovements  = insoluto,
+                ClosingBalance  = insoluto,
+            };
+            if (user != null) newGroupBalance.Trace(user);
+            await session.SaveAsync(newGroupBalance, cancellationToken).ConfigureAwait(false);
         }
 
         await session.FlushAsync(cancellationToken).ConfigureAwait(false);

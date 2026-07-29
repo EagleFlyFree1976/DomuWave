@@ -53,6 +53,11 @@
         </optgroup>
       </select>
 
+      <select class="form-select" v-model.number="supplierFilter" style="min-width:180px" @change="resetAndLoad">
+        <option :value="null">Tutti i fornitori</option>
+        <option v-for="s in suppliers" :key="s.id" :value="s.id">{{ s.name || s.companyName }}</option>
+      </select>
+
       <div class="filter-daterange">
         <span class="filter-daterange-label">Data documento</span>
         <input class="form-input" type="date" v-model="docDateFrom" @change="resetAndLoad" title="Dal" />
@@ -69,6 +74,22 @@
 
       <button v-if="hasActiveFilters" class="btn btn-ghost btn-sm" @click="clearFilters" title="Azzera filtri">
         ✕ Azzera filtri
+      </button>
+    </div>
+
+    <!-- ── Toolbar export ──────────────────────────────── -->
+    <div class="export-toolbar">
+      <label class="checkbox-label group-toggle">
+        <input type="checkbox" v-model="groupBySupplierExport" />
+        Raggruppa per fornitore
+      </label>
+      <button class="btn btn-ghost btn-sm" :disabled="exporting || !expenses.length" @click="onExportPdf">
+        <span v-if="exporting === 'pdf'" class="spinner" style="width:12px;height:12px"></span>
+        <template v-else>🖨 Stampa PDF</template>
+      </button>
+      <button class="btn btn-ghost btn-sm" :disabled="exporting || !expenses.length" @click="onExportExcel">
+        <span v-if="exporting === 'excel'" class="spinner" style="width:12px;height:12px"></span>
+        <template v-else>⇩ Esporta Excel</template>
       </button>
     </div>
 
@@ -453,6 +474,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { expenseApi, chartOfAccountsApi, supplierApi, millesimalTableApi, documentApi, unitApi } from '@/services/api'
 import { usePermissions } from '@/composables/usePermissions'
+import { exportExpensesPdf, exportExpensesExcel } from '@/composables/useExpenseExport'
 import BaseModal from '@/components/BaseModal.vue'
 import AppPaginator from '@/components/AppPaginator.vue'
 
@@ -493,6 +515,7 @@ const expTypeFilter       = ref(qInt('type'))
 const paymentStatusFilter = ref(qInt('status'))
 const movementTypeFilter  = ref(qInt('movementType'))
 const accountFilter       = ref(qInt('accountId'))
+const supplierFilter      = ref(qInt('supplierId'))
 const docDateFrom         = ref(qStr('docFrom'))
 const docDateTo           = ref(qStr('docTo'))
 const payDateFrom         = ref(qStr('payFrom'))
@@ -513,6 +536,7 @@ function syncUrl() {
   if (paymentStatusFilter.value)               q.status    = paymentStatusFilter.value
   if (movementTypeFilter.value)                q.movementType = movementTypeFilter.value
   if (accountFilter.value)                     q.accountId = accountFilter.value
+  if (supplierFilter.value)                    q.supplierId = supplierFilter.value
   if (docDateFrom.value)                       q.docFrom   = docDateFrom.value
   if (docDateTo.value)                         q.docTo     = docDateTo.value
   if (payDateFrom.value)                       q.payFrom   = payDateFrom.value
@@ -552,7 +576,7 @@ function resetAndLoad() {
 
 const hasActiveFilters = computed(() =>
   !!(search.value || expTypeFilter.value || paymentStatusFilter.value || movementTypeFilter.value
-     || accountFilter.value || docDateFrom.value || docDateTo.value || payDateFrom.value || payDateTo.value))
+     || accountFilter.value || supplierFilter.value || docDateFrom.value || docDateTo.value || payDateFrom.value || payDateTo.value))
 
 function clearFilters() {
   search.value = ''
@@ -560,6 +584,7 @@ function clearFilters() {
   paymentStatusFilter.value = null
   movementTypeFilter.value = null
   accountFilter.value = null
+  supplierFilter.value = null
   docDateFrom.value = ''
   docDateTo.value = ''
   payDateFrom.value = ''
@@ -573,6 +598,8 @@ const paymentMethods = ref([])
 // ─── Spese ────────────────────────────────────────────────────
 const expenses         = ref([])
 const loadingExp       = ref(false)
+const groupBySupplierExport = ref(false)
+const exporting        = ref(null)   // null | 'pdf' | 'excel'
 const showExpenseModal = ref(false)
 const editingExp       = ref(null)
 const savingExp        = ref(false)
@@ -805,6 +832,7 @@ async function loadExpenses() {
       fiscalYearId:    selectedFiscalYearId.value || undefined,
       accountType:     movementTypeFilter.value || undefined,
       accountId:       accountFilter.value || undefined,
+      supplierId:      supplierFilter.value || undefined,
       dateFrom:        docDateFrom.value || undefined,
       dateTo:          docDateTo.value || undefined,
       paymentDateFrom: payDateFrom.value || undefined,
@@ -813,6 +841,66 @@ async function loadExpenses() {
     expenses.value   = data?.items      ?? []
     totalCount.value = data?.totalCount ?? 0
   } catch { expenses.value = []; totalCount.value = 0 } finally { loadingExp.value = false }
+}
+
+// Carica TUTTI i movimenti che rispettano i filtri correnti (non solo la pagina a schermo),
+// per l'export PDF/Excel.
+async function loadAllFilteredExpenses() {
+  const { data } = await expenseApi.getByCondominium(store.selectedCondominioId, {
+    page:            1,
+    pageSize:        100000,
+    sortField:       sortField.value,
+    sortAsc:         sortAsc.value,
+    search:          search.value || undefined,
+    expenseTypeId:   expTypeFilter.value  || undefined,
+    paymentStatusId: paymentStatusFilter.value || undefined,
+    fiscalYearId:    selectedFiscalYearId.value || undefined,
+    accountType:     movementTypeFilter.value || undefined,
+    accountId:       accountFilter.value || undefined,
+    supplierId:      supplierFilter.value || undefined,
+    dateFrom:        docDateFrom.value || undefined,
+    dateTo:          docDateTo.value || undefined,
+    paymentDateFrom: payDateFrom.value || undefined,
+    paymentDateTo:   payDateTo.value || undefined,
+  })
+  return data?.items ?? []
+}
+
+function exportSubtitle() {
+  const fy = fiscalYears.value.find(f => f.id === selectedFiscalYearId.value)
+  const parts = [store.selectedCondominio?.name]
+  if (fy) parts.push(`${fy.code}${fy.description ? ' – ' + fy.description : ''}`)
+  return parts.filter(Boolean).join(' — ')
+}
+
+async function onExportPdf() {
+  if (!store.selectedCondominioId) return
+  exporting.value = 'pdf'
+  try {
+    const all = await loadAllFilteredExpenses()
+    await exportExpensesPdf(all, {
+      subtitle: exportSubtitle(),
+      groupBySupplier: groupBySupplierExport.value,
+      filename: 'movimenti',
+    })
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { exporting.value = null }
+}
+
+async function onExportExcel() {
+  if (!store.selectedCondominioId) return
+  exporting.value = 'excel'
+  try {
+    const all = await loadAllFilteredExpenses()
+    exportExpensesExcel(all, {
+      subtitle: exportSubtitle(),
+      groupBySupplier: groupBySupplierExport.value,
+      filename: 'movimenti',
+    })
+  } catch (err) {
+    if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')
+  } finally { exporting.value = null }
 }
 
 async function openExpenseModal(e = null, movementType = 'Uscita') {
@@ -1036,6 +1124,8 @@ watch(() => store.selectedCondominioId, () => {
   expTypeFilter.value       = null
   paymentStatusFilter.value = null
   movementTypeFilter.value  = null
+  accountFilter.value       = null
+  supplierFilter.value      = null
   selectedFiscalYearId.value = null
   currentPage.value         = 1
   loadExpenses()
@@ -1062,6 +1152,10 @@ onMounted(async () => {
   const { data } = await expenseApi.getPaymentMethods()
   paymentMethods.value = data ?? []
   await ensureAccountsLoaded()
+  try {
+    const { data: supData } = await supplierApi.getAll()
+    suppliers.value = supData ?? []
+  } catch { suppliers.value = [] }
   await loadExpenses()
 })
 onUnmounted(() => window.removeEventListener('app:refresh', loadExpenses))
@@ -1071,6 +1165,27 @@ window.addEventListener('app:refresh', loadExpenses)
 <style scoped>
 .tab-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+/* ── Export toolbar ─────────────────────────────────────────────── */
+.export-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.export-toolbar .group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  margin-right: auto;
+}
+.export-toolbar .group-toggle input { cursor: pointer; }
 
 /* ── Filtro range di date ──────────────────────────────────────── */
 .filter-daterange { display: inline-flex; align-items: center; gap: 0.35rem; }

@@ -47,13 +47,21 @@ public class GetUnitOpeningBalancesByFiscalYearCommandConsumer
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        // Tutti i saldi già salvati per questo esercizio
-        var records = await session.Query<Models.UnitOpeningBalance>()
+        // Tutti i saldi unità già salvati per questo esercizio
+        var unitRecords = await session.Query<Models.UnitOpeningBalance>()
             .Where(b => b.FiscalYear.Id == command.FiscalYearId && !b.IsDeleted)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        var recordByUnitId = records.ToDictionary(r => r.Unit.Id);
+        var recordByUnitId = unitRecords.ToDictionary(r => r.Unit.Id);
+
+        // Tutti i saldi gruppo già salvati per questo esercizio
+        var groupRecords = await session.Query<Models.BillingGroupOpeningBalance>()
+            .Where(b => b.FiscalYear.Id == command.FiscalYearId && !b.IsDeleted)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var recordByGroupId = groupRecords.ToDictionary(r => r.BillingGroup.Id);
 
         // Millesimi della tabella principale del condominio (per la ripartizione lato client)
         var millesimalRows = await session.Query<UnitMillesimal>()
@@ -67,35 +75,72 @@ public class GetUnitOpeningBalancesByFiscalYearCommandConsumer
 
         var millesimalByUnitId = millesimalRows.ToDictionary(um => um.UnitId, um => um.Millesimal);
 
-        return units
-            .OrderBy(u => u.FormatUnitName())
-            .Select(u =>
+        var result = new List<UnitOpeningBalanceReadDto>();
+
+        // Unità senza gruppo → riga individuale
+        foreach (var u in units.Where(u => u.BillingGroup == null).OrderBy(u => u.FormatUnitName()))
+        {
+            recordByUnitId.TryGetValue(u.Id, out var rec);
+            var dto = new UnitOpeningBalanceReadDto
             {
-                recordByUnitId.TryGetValue(u.Id, out var rec);
-                var dto = new UnitOpeningBalanceReadDto
-                {
-                    Id              = rec?.Id ?? 0,
-                    UnitId          = u.Id,
-                    UnitName        = u.FormatUnitName(),
-                    FiscalYearId    = command.FiscalYearId,
-                    FiscalYearCode  = fiscalYear.Code,
-                    BillingGroupId   = u.BillingGroup?.Id,
-                    BillingGroupName = u.BillingGroup?.Name,
-                    Millesimal       = millesimalByUnitId.TryGetValue(u.Id, out var mil) ? mil : 0,
-                    OpeningBalance  = rec?.OpeningBalance  ?? 0,
-                    RateAddebitate  = rec?.RateAddebitate  ?? 0,
-                    RateIncassate   = rec?.RateIncassate   ?? 0,
-                    QuotaConsuntiva = rec?.QuotaConsuntiva ?? 0,
-                    SaldoConguaglio = rec?.SaldoConguaglio ?? 0,
-                    TotalMovements  = rec?.TotalMovements  ?? 0,
-                    ClosingBalance  = rec?.ClosingBalance  ?? 0,
-                    Notes           = rec?.Notes,
-                    IsEditable      = isEditable,
-                    IsClosed        = isClosed,
-                };
-                if (rec != null) dto.SetTraceInfo(rec);
-                return dto;
-            })
-            .ToList();
+                Id              = rec?.Id ?? 0,
+                UnitId          = u.Id,
+                UnitName        = u.FormatUnitName(),
+                FiscalYearId    = command.FiscalYearId,
+                FiscalYearCode  = fiscalYear.Code,
+                Millesimal       = millesimalByUnitId.TryGetValue(u.Id, out var mil) ? mil : 0,
+                OpeningBalance  = rec?.OpeningBalance  ?? 0,
+                RateAddebitate  = rec?.RateAddebitate  ?? 0,
+                RateIncassate   = rec?.RateIncassate   ?? 0,
+                QuotaConsuntiva = rec?.QuotaConsuntiva ?? 0,
+                SaldoConguaglio = rec?.SaldoConguaglio ?? 0,
+                TotalMovements  = rec?.TotalMovements  ?? 0,
+                ClosingBalance  = rec?.ClosingBalance  ?? 0,
+                Notes           = rec?.Notes,
+                IsEditable      = isEditable,
+                IsClosed        = isClosed,
+            };
+            if (rec != null) dto.SetTraceInfo(rec);
+            result.Add(dto);
+        }
+
+        // Unità con gruppo → una riga aggregata per gruppo (mai spalmata sulle unità componenti)
+        var unitsByGroup = units
+            .Where(u => u.BillingGroup != null)
+            .GroupBy(u => u.BillingGroup);
+
+        foreach (var grp in unitsByGroup.OrderBy(g => g.Key.Name))
+        {
+            var group = grp.Key;
+            recordByGroupId.TryGetValue(group.Id, out var rec);
+            var groupMillesimal = grp.Sum(u => millesimalByUnitId.TryGetValue(u.Id, out var mil) ? mil : 0);
+
+            var dto = new UnitOpeningBalanceReadDto
+            {
+                Id               = rec?.Id ?? 0,
+                UnitId           = 0,
+                UnitName         = group.Name,
+                FiscalYearId     = command.FiscalYearId,
+                FiscalYearCode   = fiscalYear.Code,
+                IsGroup          = true,
+                BillingGroupId   = group.Id,
+                BillingGroupName = group.Name,
+                Millesimal       = groupMillesimal,
+                OpeningBalance   = rec?.OpeningBalance  ?? 0,
+                RateAddebitate   = rec?.RateAddebitate  ?? 0,
+                RateIncassate    = rec?.RateIncassate   ?? 0,
+                QuotaConsuntiva  = rec?.QuotaConsuntiva ?? 0,
+                SaldoConguaglio  = rec?.SaldoConguaglio ?? 0,
+                TotalMovements   = rec?.TotalMovements  ?? 0,
+                ClosingBalance   = rec?.ClosingBalance  ?? 0,
+                Notes            = rec?.Notes,
+                IsEditable       = isEditable,
+                IsClosed         = isClosed,
+            };
+            if (rec != null) dto.SetTraceInfo(rec);
+            result.Add(dto);
+        }
+
+        return result;
     }
 }

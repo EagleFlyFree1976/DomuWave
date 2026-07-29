@@ -94,6 +94,17 @@ public class BillingGroupsController(
         return File(bytes, "application/pdf", $"avviso-gruppo-{id}-rata-{installmentId}.pdf");
     }
 
+    [HttpGet("{id:int}/opening-balance")]
+    [AuthorizationApiFactory(AuthorizationFilterType.CanView, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
+    [ProducesResponseType(typeof(UnitOpeningBalanceReadDto), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> GetOpeningBalance(int id, [FromQuery] int fiscalYearId, CancellationToken ct)
+    {
+        var result = await _mediator.GetResponse(new GetGroupOpeningBalanceCommand(CurrentUser.Id, id, fiscalYearId), ct);
+        if (result == null) return NotFound();
+        return Ok(result);
+    }
+
     [HttpPut("{id:int}/opening-balance")]
     [AuthorizationApiFactory(AuthorizationFilterType.CanModify, AuthorizationKeys.BillingGroups, Modules.DomuWaveModule)]
     [ProducesResponseType(204)]

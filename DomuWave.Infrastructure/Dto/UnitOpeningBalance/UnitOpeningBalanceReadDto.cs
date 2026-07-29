@@ -9,11 +9,18 @@ public class UnitOpeningBalanceReadDto : TraceEntityDTO<int>
     public int     FiscalYearId   { get; set; }
     public string  FiscalYearCode { get; set; }
 
-    /// <summary>Gruppo di fatturazione a cui appartiene l'unità, se presente.</summary>
+    /// <summary>
+    /// True se la riga rappresenta un GRUPPO di fatturazione (aggregato di più unità) invece di
+    /// una singola unità. Quando true, UnitId è 0 e il saldo va gestito/salvato sul gruppo:
+    /// non viene mai spalmato sulle unità componenti.
+    /// </summary>
+    public bool    IsGroup          { get; set; }
+
+    /// <summary>Gruppo di fatturazione a cui appartiene l'unità (o riga di gruppo stessa), se presente.</summary>
     public int?    BillingGroupId   { get; set; }
     public string? BillingGroupName { get; set; }
 
-    /// <summary>Millesimi dell'unità nella tabella millesimale principale del condominio (0 se non assegnati).</summary>
+    /// <summary>Millesimi dell'unità (o somma millesimi del gruppo) nella tabella millesimale principale del condominio (0 se non assegnati).</summary>
     public decimal Millesimal       { get; set; }
 
     /// <summary>Saldo riportato dall'esercizio precedente (morosità o credito pregresso).</summary>

@@ -172,13 +172,6 @@
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">Criterio di ripartizione</label>
-            <select class="form-select" v-model="balanceForm.criterion">
-              <option value="millesimal">Per millesimi (tabella principale)</option>
-              <option value="equal">In parti uguali</option>
-            </select>
-          </div>
-          <div class="form-group">
             <label class="form-label">Esercizio fiscale *</label>
             <select class="form-select" v-model.number="balanceForm.fiscalYearId" @change="loadGroupBalanceState">
               <option :value="null">— Seleziona —</option>
@@ -192,8 +185,11 @@
             </div>
             <template v-else>
               <div class="form-group" style="margin-top:0.5rem">
-                <label class="form-label">Importo totale da ripartire (€) *</label>
-                <input class="form-input" type="number" step="0.01" v-model.number="balanceForm.totalAmount" />
+                <label class="form-label">Saldo iniziale del gruppo (€) *</label>
+                <p class="text-muted" style="font-size:0.8rem;margin:0 0 0.35rem">
+                  Il saldo resta sul gruppo: non viene ripartito sulle singole unità componenti.
+                </p>
+                <input class="form-input" type="number" step="0.01" v-model.number="balanceForm.openingBalance" />
               </div>
               <div class="form-group">
                 <label class="form-label">Note</label>
@@ -211,7 +207,7 @@
             :disabled="balanceSaving || !balanceForm.fiscalYearId"
           >
             <span v-if="balanceSaving" class="spinner" style="width:14px;height:14px"></span>
-            Ripartisci e salva
+            Salva saldo
           </button>
         </div>
       </div>
@@ -256,7 +252,7 @@ const balanceLoading        = ref(false)
 const balanceEditable       = ref(false)
 const balanceNotEditableReason = ref('')
 const fiscalYears           = ref([])
-const defaultBalanceForm = () => ({ fiscalYearId: null, totalAmount: 0, notes: '', criterion: 'millesimal' })
+const defaultBalanceForm = () => ({ fiscalYearId: null, openingBalance: 0, notes: '' })
 const balanceForm = ref(defaultBalanceForm())
 
 async function loadBillingGroups() {
@@ -348,9 +344,10 @@ async function loadGroupBalanceState() {
   if (!balanceForm.value.fiscalYearId || !balanceGroup.value) return
   balanceLoading.value = true
   try {
-    const firstUnitId = balanceGroup.value.units[0].unitId
-    const { data } = await unitApi.getOpeningBalance(firstUnitId, balanceForm.value.fiscalYearId)
+    const { data } = await billingGroupApi.getOpeningBalance(balanceGroup.value.id, balanceForm.value.fiscalYearId)
     balanceEditable.value = !!data.isEditable
+    balanceForm.value.openingBalance = data.openingBalance ?? 0
+    balanceForm.value.notes          = data.notes ?? ''
     balanceNotEditableReason.value = data.isClosed
       ? "L'esercizio selezionato è chiuso: il saldo non è più modificabile."
       : 'Il saldo di apertura non è modificabile: non è il primo esercizio del condominio.'
@@ -366,12 +363,11 @@ async function saveGroupBalance() {
   balanceSaving.value = true
   try {
     await billingGroupApi.setOpeningBalance(balanceGroup.value.id, {
-      fiscalYearId: balanceForm.value.fiscalYearId,
-      totalAmount:  balanceForm.value.totalAmount,
-      notes:        balanceForm.value.notes,
-      criterion:    balanceForm.value.criterion,
+      fiscalYearId:   balanceForm.value.fiscalYearId,
+      openingBalance: balanceForm.value.openingBalance,
+      notes:          balanceForm.value.notes,
     })
-    store.toast('Saldo iniziale ripartito tra le unità del gruppo', 'success')
+    store.toast('Saldo iniziale del gruppo salvato', 'success')
     showBalanceModal.value = false
   } catch (err) {
     if (!err?.response) store.toast('Impossibile raggiungere il server', 'error')

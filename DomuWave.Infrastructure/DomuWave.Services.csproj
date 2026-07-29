@@ -51,6 +51,7 @@
     <None Remove="Models\Mappings\ExtraordinaryWork.hbm.xml" />
     <None Remove="Models\Mappings\Maintenance.hbm.xml" />
     <None Remove="Models\Mappings\UnitOpeningBalance.hbm.xml" />
+    <None Remove="Models\Mappings\BillingGroupOpeningBalance.hbm.xml" />
     <None Remove="Models\Mappings\WorkQuote.hbm.xml" />
     <None Remove="Models\Mappings\WorkQuoteDocument.hbm.xml" />
     <None Remove="Models\Mappings\SupplierContract.hbm.xml" />
@@ -131,6 +132,7 @@
     <EmbeddedResource Include="Models\Mappings\ExtraordinaryWork.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\Maintenance.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\UnitOpeningBalance.hbm.xml" />
+    <EmbeddedResource Include="Models\Mappings\BillingGroupOpeningBalance.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\WorkQuote.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\WorkQuoteDocument.hbm.xml" />
     <EmbeddedResource Include="Models\Mappings\SupplierContract.hbm.xml" />
@@ -169,7 +171,7 @@
 
   <ItemGroup>
     <PackageReference Include="Bogus" Version="35.6.3" />
-    <PackageReference Include="LicenseManager.Client" Version="1.1.15" />
+    <PackageReference Include="LicenseManager.Client" Version="1.1.18" />
     <PackageReference Include="QuestPDF" Version="2026.2.4" />
     <PackageReference Include="CPQ.Core" Version="1.7.8" />
     <PackageReference Include="CPQ.Core.EventSource" Version="1.0.0" />
